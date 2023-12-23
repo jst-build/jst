@@ -22,16 +22,30 @@
 #include "src/utils/cpp/atomic.hpp"
 
 // Value that can be set and get atomically. Reset is not thread-safe.
+// Assignment operators will not overwrite existing values.
 template <class T>
 class AtomicValue {
   public:
     AtomicValue() noexcept = default;
-    AtomicValue(AtomicValue const& other) noexcept = delete;
+    AtomicValue(AtomicValue const& other) noexcept
+        : data_{other.data_.load()} {}
     AtomicValue(AtomicValue&& other) noexcept : data_{other.data_.load()} {}
     ~AtomicValue() noexcept = default;
 
-    auto operator=(AtomicValue const& other) noexcept = delete;
-    auto operator=(AtomicValue&& other) noexcept = delete;
+    auto operator=(AtomicValue const& other) noexcept -> AtomicValue& {
+        auto data = other.data_.load();
+        if (data) {
+            this->SetOnceAndGet([&data]() { return data; });
+        }
+        return *this;
+    }
+    auto operator=(AtomicValue&& other) noexcept -> AtomicValue& {
+        auto data = other.data_.load();
+        if (data) {
+            this->SetOnceAndGet([&data]() { return data; });
+        }
+        return *this;
+    }
 
     // Atomically set value once and return its reference. If this method is
     // called multiple times concurrently, the setter is called only once. In
@@ -41,6 +55,20 @@ class AtomicValue {
         if (data_.load() == nullptr) {
             if (not load_.exchange(true)) {
                 data_.store(std::make_shared<T>(setter()));
+                data_.notify_all();
+            }
+            else {
+                data_.wait(nullptr);
+            }
+        }
+        return *data_.load();
+    }
+
+    [[nodiscard]] auto SetOnceAndGet(std::function<std::shared_ptr<T>()> const&
+                                         setter) const& noexcept -> T const& {
+        if (data_.load() == nullptr) {
+            if (not load_.exchange(true)) {
+                data_.store(setter());
                 data_.notify_all();
             }
             else {
