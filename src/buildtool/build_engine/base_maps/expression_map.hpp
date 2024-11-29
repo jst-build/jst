@@ -37,6 +37,7 @@ using ExpressionFileMap = AsyncMapConsumer<ModuleName, nlohmann::json>;
     std::size_t jobs) -> JsonFileMap {
     return CreateJsonFileMap<&RepositoryConfig::ExpressionRoot,
                              &RepositoryConfig::ExpressionFileName,
+                             JustFileType::kExpressions,
                              /*kMandatory=*/true>(repo_config, jobs);
 }
 

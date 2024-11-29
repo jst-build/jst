@@ -429,12 +429,19 @@ void SetupFileChunker() {
     try {
         json = nlohmann::json::parse(*file_content);
     } catch (std::exception const& e) {
-        Logger::Log(LogLevel::Error,
-                    "While searching for the default target in {}:\n"
-                    "Failed to parse json with error {}",
-                    target_file,
-                    e.what());
-        std::exit(kExitFailure);
+        auto jlang_ast = target_root->ReadJustlang(main_repo,
+                                                   target_file,
+                                                   std::move(*file_content),
+                                                   JustFileType::kTargets);
+        if (not jlang_ast) {
+            Logger::Log(LogLevel::Error,
+                        "While searching for the default target in {}:\n"
+                        "Parsing failed as it does not contain valid JSON nor "
+                        "Justlang code.",
+                        target_file);
+            std::exit(kExitFailure);
+        }
+        json = std::move(*jlang_ast);
     }
     if (not json.is_object()) {
         Logger::Log(

@@ -33,6 +33,7 @@ using TargetsFileMap = AsyncMapConsumer<ModuleName, nlohmann::json>;
     std::size_t jobs) -> JsonFileMap {
     return CreateJsonFileMap<&RepositoryConfig::TargetRoot,
                              &RepositoryConfig::TargetFileName,
+                             JustFileType::kTargets,
                              /*kMandatory=*/true>(repo_config, jobs);
 }
 }  // namespace BuildMaps::Base

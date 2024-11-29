@@ -41,7 +41,10 @@ using RootGetter = auto (RepositoryConfig::*)(std::string const&) const
 using FileNameGetter = auto (RepositoryConfig::*)(std::string const&) const
     -> std::string const*;
 
-template <RootGetter kGetRoot, FileNameGetter kGetName, bool kMandatory = true>
+template <RootGetter kGetRoot,
+          FileNameGetter kGetName,
+          JustFileType kFileType,
+          bool kMandatory = true>
 auto CreateJsonFileMap(
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     std::size_t jobs) -> JsonFileMap {
@@ -107,12 +110,27 @@ auto CreateJsonFileMap(
         try {
             json = nlohmann::json::parse(*file_content);
         } catch (std::exception const& e) {
-            (*logger)(
-                fmt::format("JSON file {} does not contain valid JSON:\n{}",
-                            json_file_path.string(),
-                            e.what()),
-                true);
-            return;
+            if constexpr (kFileType != JustFileType::kTargets) {
+                (*logger)(
+                    fmt::format("JSON file {} does not contain valid JSON:\n{}",
+                                json_file_path.string(),
+                                e.what()),
+                    true);
+                return;
+            }
+            // failed, so try justlang
+            auto jlang_ast = root->ReadJustlang(key.repository,
+                                                json_file_path,
+                                                std::move(*file_content),
+                                                kFileType);
+            if (not jlang_ast) {
+                (*logger)(fmt::format("Parsing file {} failed. It does not "
+                                      "contain valid JSON nor Justlang code.",
+                                      json_file_path.string()),
+                          true);
+                return;
+            }
+            json = std::move(*jlang_ast);
         }
         if (not json.is_object()) {
             (*logger)(fmt::format("JSON in {} is not an object.",

@@ -36,6 +36,7 @@ using RuleFileMap = AsyncMapConsumer<ModuleName, nlohmann::json>;
     std::size_t jobs) -> JsonFileMap {
     return CreateJsonFileMap<&RepositoryConfig::RuleRoot,
                              &RepositoryConfig::RuleFileName,
+                             JustFileType::kRules,
                              /*kMandatory=*/true>(repo_config, jobs);
 }
 
