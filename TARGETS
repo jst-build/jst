@@ -1,7 +1,7 @@
-{ "":
+{ "ALL":
   { "type": "export"
-  , "target": "installed jst_backend"
-  , "doc": ["The jst_backend binary."]
+  , "target": "installed_binaries"
+  , "doc": ["The jst binaries."]
   , "flexible_config":
     [ "ADD_CFLAGS"
     , "ADD_CXXFLAGS"
@@ -165,6 +165,38 @@
       ]
     , "body":
       {"type": "env", "vars": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]}
+    }
+  }
+, "installed_binaries":
+  { "type": ["@", "rules", "CC", "install-with-deps"]
+  , "targets": ["jst", "jst_backend"]
+  }
+, "manpages":
+  { "type": "generic"
+  , "cmds":
+    [ "pandoc -s -t man share/man/jst.1.md -o man1/jst.1"
+    , "pandoc -s -t man share/man/jst-lock.1.md -o man1/jst-lock.1"
+    , "pandoc -s -t man share/man/jst-import-git.1.md -o man1/jst-import-git.1"
+    , "pandoc -s -t man share/man/jst-deduplicate-repos.1.md -o man1/jst-deduplicate-repos.1"
+    , "pandoc -s -t man share/man/jst_backend.1.md -o man1/jst_backend.1"
+    , "pandoc -s -t man share/man/jstrc.5.md -o man5/jstrc.5"
+    , "pandoc -s -t man share/man/jst-repo-config.5.md -o man5/jst-repo-config.5"
+    , "pandoc -s -t man share/man/jst-lock-config.5.md -o man5/jst-lock-config.5"
+    , "pandoc -s -t man share/man/jst_backend-repo-config.5.md -o man5/jst_backend-repo-config.5"
+    , "pandoc -s -t man share/man/jst_backend-serve-config.5.md -o man5/jst_backend-serve-config.5"
+    , "pandoc -s -t man share/man/jst_backend-graph-file.5.md -o man5/jst_backend-graph-file.5"
+    ]
+  , "out_dirs": ["man1", "man5"]
+  , "deps": [["TREE", null, "share"]]
+  }
+, "PACKAGE":
+  { "type": "install"
+  , "dirs": [["installed_binaries", "."], ["manpages", "share/man"]]
+  , "files":
+    { "bin/jst-lock": "bin/jst-lock.py"
+    , "bin/jst-import-git": "bin/jst-import-git.py"
+    , "bin/jst-deduplicate-repos": "bin/jst-deduplicate-repos.py"
+    , "share/bash-completion/completions/jst": "share/jst_complete.bash"
     }
   }
 , "libgit2":
