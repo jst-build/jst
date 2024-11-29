@@ -45,6 +45,11 @@
     ]
   , "stage": ["test"]
   }
+, "justlang_tests":
+  { "type": "install"
+  , "tainted": ["test"]
+  , "dirs": [[["@", "justlang_tests", "", "ALL"], "other_tools/justlang"]]
+  }
 , "TESTS":
   { "type": ["@", "rules", "test", "suite"]
   , "arguments_config": ["DROP_LARGE_TESTS"]
@@ -55,9 +60,10 @@
         , ["./", "utils", "TESTS"]
         , ["./", "end-to-end", "TESTS"]
         , ["./", "other_tools", "TESTS"]
+        , "justlang_tests"
         ]
       , { "type": "if"
-        , "cond": {"type": "var", "name": "DROP_LARGE_TESTS"}
+        , "cond": {"type": "var", "name": "DROP_LARGE_TESTS", "default": true}
         , "then": []
         , "else": ["bootstrap-test"]
         }

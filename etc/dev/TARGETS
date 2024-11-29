@@ -19,6 +19,7 @@
     , ["@", "fmt", "", "fmt"]
     , ["@", "cli11", "", "cli11"]
     , ["@", "json", "", "json"]
+    , ["@", "justlang", "", "preprocessor"]
     , ["", "libgit2"]
     , ["", "libcurl"]
     , ["", "libarchive"]
