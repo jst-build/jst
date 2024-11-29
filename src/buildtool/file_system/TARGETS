@@ -171,16 +171,24 @@
   , "hdrs": ["git_types.hpp"]
   , "stage": ["src", "buildtool", "file_system"]
   }
+, "file_type":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["file_type"]
+  , "hdrs": ["file_type.hpp"]
+  , "stage": ["src", "buildtool", "file_system"]
+  }
 , "file_root":
   { "type": ["@", "rules", "CC", "library"]
   , "name": ["file_root"]
   , "hdrs": ["file_root.hpp"]
+  , "srcs": ["file_root.cpp"]
   , "deps":
     [ "file_system_manager"
     , "git_cas"
     , "git_tree"
     , "object_type"
     , "precomputed_root"
+    , "file_type"
     , ["@", "fmt", "", "fmt"]
     , ["@", "gsl", "", "gsl"]
     , ["@", "json", "", "json"]
@@ -192,10 +200,12 @@
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/logging", "log_level"]
     , ["src/buildtool/logging", "logging"]
+    , ["src/buildtool/multithreading", "atomic_value"]
     , ["src/utils/cpp", "concepts"]
     , ["src/utils/cpp", "expected"]
     , ["src/utils/cpp", "json"]
     ]
+  , "private-deps": [["@", "justlang", "", "preprocessor"]]
   , "stage": ["src", "buildtool", "file_system"]
   }
 , "precomputed_root":

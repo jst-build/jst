@@ -38,16 +38,23 @@
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
+#include "src/buildtool/file_system/file_type.hpp"
 #include "src/buildtool/file_system/git_cas.hpp"
 #include "src/buildtool/file_system/git_tree.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/file_system/precomputed_root.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
+#include "src/buildtool/multithreading/atomic_value.hpp"
 #include "src/utils/cpp/concepts.hpp"
 #include "src/utils/cpp/expected.hpp"
 // Keep it to ensure fmt::format works on JSON objects
 #include "src/utils/cpp/json.hpp"  // IWYU pragma: keep
+
+namespace Frontend {
+class Processor;
+using ProcessorPtr = std::shared_ptr<Processor>;
+}  // namespace Frontend
 
 /// FilteredIterator is an helper class to allow for iteration over
 /// directory-only or file-only entries stored inside the class
@@ -552,6 +559,13 @@ class FileRoot {
         return DirectoryEntries{DirectoryEntries::pairs_t{}};
     }
 
+    /// \brief Read Justlang file
+    [[nodiscard]] auto ReadJustlang(std::string const& global_repo_name,
+                                    std::filesystem::path const& file_path,
+                                    std::string file_content,
+                                    JustFileType file_type) const noexcept
+        -> std::optional<nlohmann::json>;
+
     [[nodiscard]] auto BlobType(std::filesystem::path const& file_path)
         const noexcept -> std::optional<ObjectType> {
         if (std::holds_alternative<RootGit>(root_)) {
@@ -803,6 +817,7 @@ class FileRoot {
     // directories instead of erroring out. This means implicitly also that
     // there are no more fast tree lookups, i.e., tree traversal is a must.
     bool ignore_special_{};
+    mutable AtomicValue<Frontend::ProcessorPtr> file_proc_{};
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_FILE_SYSTEM_FILE_ROOT_HPP
