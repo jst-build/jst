@@ -1,31 +1,31 @@
-% JUST-MR(1) | General Commands Manual
+% JST(1) | General Commands Manual
 
 NAME
 ====
 
-just-mr - multi-repository configuration tool and launcher for the build tool
+jst - multi-repository configuration tool and launcher for the build tool
 
 SYNOPSIS
 ========
 
-**`just-mr`** \[*`OPTION`*\]... **`mrversion`**  
-**`just-mr`** \[*`OPTION`*\]... {**`setup`**|**`setup-env`**} \[**`--all`**\] \[*`main-repo`*\]  
-**`just-mr`** \[*`OPTION`*\]... **`fetch`** \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
-**`just-mr`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
-**`just-mr`** \[*`OPTION`*\]... **`do`** \[*`JUST_ARG`*\]...  
-**`just-mr`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**} \[*`JUST_ARG`*\]...  
+**`jst`** \[*`OPTION`*\]... **`version`**  
+**`jst`** \[*`OPTION`*\]... {**`setup`**|**`setup-env`**} \[**`--all`**\] \[*`main-repo`*\]  
+**`jst`** \[*`OPTION`*\]... **`fetch`** \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
+**`jst`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
+**`jst`** \[*`OPTION`*\]... **`backend`** \[*`JST_BACKEND_ARG`*\]...  
+**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**} \[*`JST_BACKEND_ARG`*\]...  
 
 DESCRIPTION
 ===========
 
-Just-MR is a configuration tool for the multi-repository Just build
+**`jst`** is a configuration tool for the multi-repository Just build
 system. It can be used both standalone and as a launcher for
-**`just`**(1).
+**`jst_backend`**(1).
 
 The tool performs specific operations, based on the invoked subcommand,
 on repositories described in a configuration file. All subcommands
 operate at the level of *workspace roots* deduced from the given
-repository descriptions. See **`just-mr-repository-config`**(5) for more
+repository descriptions. See **`jst-repo-config`**(5) for more
 details on the input format.
 
 OPTIONS
@@ -39,18 +39,18 @@ Output a usage message and exit.
 
 **`-C`**, **`--repository-config`** *`PATH`*  
 Path to the multi-repository configuration file. See
-**`just-mr-repository-config`**(5) for more details. If no configuration
-file is specified, **`just-mr`** will look for one in the following
+**`jst-repo-config`**(5) for more details. If no configuration
+file is specified, **`jst`** will look for one in the following
 order:
 
- - *`$WORKSPACE_ROOT/repos.json`* (workspace of the **`just-mr`** invocation)
- - *`$WORKSPACE_ROOT/etc/repos.json`* (workspace of the **`just-mr`**
+ - *`$WORKSPACE_ROOT/repos.json`* (workspace of the **`jst`** invocation)
+ - *`$WORKSPACE_ROOT/etc/repos.json`* (workspace of the **`jst`**
    invocation)
  - *`$HOME/.just-repos.json`*
  - *`/etc/just-repos.json`*
 
-The default configuration lookup order can be adjusted in the just-mrrc
-file. See **`just-mrrc`**(5) for more details.
+The default configuration lookup order can be adjusted in the jstrc
+file. See **`jstrc`**(5) for more details.
 
 **`--absent`** *`PATH`*  
 Path to a file specifying which repositories are to be considered
@@ -60,7 +60,7 @@ of those repository names to be considered absent.
 
 **`-D`**, **`--defines`** *`JSON`*  
 Defines, via an in-line JSON object, an overlay configuration for
-**`just`**(1); if used as a launcher for a subcommand known to support
+**`jst_backend`**(1); if used as a launcher for a subcommand known to support
 **`--defines`**, this defines value is forwarded, otherwise it is
 ignored. If **`-D`** is given several times, the **`-D`** options
 overlay (in the sense of *`map_union`*) in the order they are given on
@@ -69,7 +69,7 @@ the command line.
 **`--local-build-root`** *`PATH`*  
 Root for local CAS, cache, and build directories. The path will be
 created if it does not exist already. This option overwrites any values
-set in the **`just-mrrc`**(5) file.  
+set in the **`jstrc`**(5) file.  
 Default: path *`".cache/just"`* in user's home directory.
 
 **`--checkout-locations`** *`PATH`*  
@@ -90,7 +90,7 @@ This file contains a JSON object with several known keys:
    with hostnames in the given list are preferred (in the order given)
    over URLs with other hostnames.
 
-This options overwrites any values set in the **`just-mrrc`**(5) file.  
+This options overwrites any values set in the **`jstrc`**(5) file.  
 Default: file path *`".just-local.json"`* in user's home directory.
 
 **`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
@@ -104,14 +104,14 @@ the first place distfiles are looked for. This option can be given
 multiple times to specify a list of distribution directories that are
 used for lookup in the order they appear on the command line.
 Directories specified via this option will be appended to the ones set
-in the **`just-mrrc`**(5) file.  
+in the **`jstrc`**(5) file.  
 Default: the single file path *`".distfiles"`* in user's home directory.
 
 **`--main`** *`NAME`*  
 The repository to take the target from.
 
 **`-f`**, **`--log-file`** *`PATH`*  
-Path to local log file. **`just-mr`** will store the information printed on
+Path to local log file. **`jst`** will store the information printed on
 stderr in the log file along with the thread id and timestamp when the
 output has been generated.
 
@@ -142,7 +142,7 @@ Address of a remote execution service. This is used as an intermediary fetch
 location for archives, between local CAS (or distdirs) and the network.
 
 **`-R`**, **`--remote-serve-address`** *`NAME`*:*`PORT`*  
-Address of a **`just`** **`serve`** service. This is used as intermediary fetch
+Address of a **`jst_backend`** **`serve`** service. This is used as intermediary fetch
 location for Git commits, between local CAS and the network.
 
 **`--max-attempts`** *`NUM`*  
@@ -168,14 +168,18 @@ At increased computational effort, be compatible with the original remote build
 execution protocol. If a remote execution service address is provided, this 
 option can be used to match the artifacts expected by the remote endpoint.
 
+**`--backend`** *`PATH`*  
+Name of the backend binary in *`PATH`* or path to the backend binary.  
+Default: *`"jst_backend"`*.
+
 **`--just`** *`PATH`*  
-Name of the just binary in *`PATH`* or path to the just binary.  
-Default: *`"just"`*.
+Legacy option to specify the backend binary, same as **`--backend`**.
 
 **`--rc`** *`PATH`*  
-Path to the just-mrrc file to use. See **`just-mrrc`**(5) for more
+Path to the jstrc file to use. See **`jstrc`**(5) for more
 details.  
-Default: file path *`".just-mrrc"`* in the user's home directory.
+Default: file path *`".jstrc"`* in the user's home directory, with fallback to
+*`".just-mrrc"`* if not found.
 
 **`--dump-rc`** *`PATH`*  
 Dump the effective rc, i.e., the rc after overlaying all applicable auxiliary
@@ -189,13 +193,13 @@ the rare instances when shelling out to git is needed.
 Default: *`"git"`*.
 
 **`--norc`**  
-Option to prevent reading any **`just-mrrc`**(5) file.
+Option to prevent reading any **`jstrc`**(5) file.
 
 Authentication options
 ----------------------
 
 Only TLS and mutual TLS (mTLS) are supported.
-They mirror the **`just`**(1) options.
+They mirror the **`jst_backend`**(1) options.
 
 **`--tls-ca-cert`** *`PATH`*  
 Path to a TLS CA certificate that is trusted to sign the server
@@ -212,21 +216,20 @@ conjunction with **`--tls-client-cert`** and **`--tls-ca-cert`**.
 SUBCOMMANDS
 ===========
 
-**`mrversion`**
+**`version`**
 ---------------
 
 Print on stdout a JSON object providing version information for this
-tool itself; the **`version`** subcommand calls the **`version`** subcommand of
-just. The version information for just-mr is in the same format that
-also **`just`** uses.
+tool itself. The version information for jst is in the same format that
+also **`jst_backend`** uses.
 
 **`setup`**|**`setup-env`**
 ---------------------------
 
 These subcommands fetch all required repositories and generate an
-appropriate multi-repository **`just`** configuration file. The resulting
+appropriate multi-repository **`jst_backend`** configuration file. The resulting
 file is stored in CAS and its path is printed to stdout. See
-**`just-repository-config`**(5) for more details on the resulting
+**`jst_backend-repo-config`**(5) for more details on the resulting
 configuration file format.
 
 If a main repository is provided in the input configuration or on
@@ -239,7 +242,7 @@ from the input configuration file, use the **`--all`** flag.
 The behavior of the two subcommands differs only with respect to the
 main repository. In the case of **`setup-env`**, the workspace root of the
 main repository is left out, such that it can be deduced from the
-working directory when **`just`** is invoked. In this way, working on a
+working directory when **`jst_backend`** is invoked. In this way, working on a
 checkout of that repository is possible, while having all of its
 dependencies properly set up. In the case of **`setup`**, the workspace root
 of the main repository is taken as-is into the output configuration
@@ -252,7 +255,7 @@ This subcommand prepares all archive-type and **`"git tree"`** workspace roots
 for an offline build by fetching all their required source files from the
 specified locations given in the input configuration file or ensuring the 
 specified tree is present in the Git cache, respectively. Any subsequent
-**`just-mr`** or **`just`** invocations containing fetched archive or 
+**`jst`** or **`jst_backend`** invocations containing fetched archive or 
 **`"git tree"`** workspace roots will thus need no further network connections.
 
 If a main repository is provided in the input configuration or on
@@ -279,7 +282,7 @@ update
 This subcommand updates the specified repositories (possibly none) and
 prints the resulting updated configuration file to stdout.
 
-Currently, **`just-mr`** can only update Git repositories and it will fail
+Currently, **`jst`** can only update Git repositories and it will fail
 if a different repository type is given. The tool also fails if any of
 the given repository names are not found in the configuration file.
 
@@ -289,45 +292,45 @@ remote repository in the specified branch. The output configuration file
 will otherwise remain the same at the JSON level with the input
 configuration file.
 
-do
+backend
 --
 
-This subcommand is used as the canonical way of specifying just
-arguments and calling **`just`** via **`execvp`**(2). Any subsequent argument
-is unconditionally forwarded to **`just`**. For *known* subcommands
+This subcommand is used as the canonical way of specifying just backend
+arguments and calling **`jst_backend`** via **`execvp`**(2). Any subsequent argument
+is unconditionally forwarded to **`jst_backend`**. For *known* subcommands
 (**`version`**, **`describe`**, **`analyse`**, **`build`**, **`install`**, 
 **`install-cas`**, **`add-to-cas`**, **`rebuild`**, **`gc`**), the
-**`just-mr setup`** step is performed first for those commands accepting a
+**`jst setup`** step is performed first for those commands accepting a
 configuration and the produced configuration is prefixed to the provided
 arguments. The main repository for the **`setup`** step can be provided in
 the configuration or on the command line. If no main repository is
 provided, the lexicographical first repository from the configuration is
 used.
 
-All logging arguments given to **`just-mr`** are passed to **`just`** as early
+All logging arguments given to **`jst`** are passed to **`jst_backend`** as early
 arguments. If log files are provided, an unconditional
 **`--log-append`** argument is passed as well, which ensures no log
 messages will get overwritten.
 
-The **`--local-launcher`** argument is passed to **`just`** as early
+The **`--local-launcher`** argument is passed to **`jst_backend`** as early
 argument for those *known* subcommands that accept it (build, install,
 rebuild).
 
 The **`--remote-execution-address`**, **`--compatible`**, and 
-**`--remote-serve-address`** arguments are passed to **`just`** as early
+**`--remote-serve-address`** arguments are passed to **`jst_backend`** as early
 arguments for those *known* subcommands that accept them
 (analyse, build, install-cas, add-to-cas, install, rebuild, traverse).
 
-The *authentication options* given to **`just-mr`** are passed to **`just`** as
+The *authentication options* given to **`jst`** are passed to **`jst_backend`** as
 early arguments for those *known* subcommands that accept them, according to
-**`just`**(1).
+**`jst_backend`**(1).
 
 **`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**
 ------------------------------------------------------------------------------------------------------------------------------
 
 This subcommand is the explicit way of specifying *known* just
-subcommands and calling **`just`** via **`execvp`**(2). The same description
-as for the **`do`** subcommand applies.
+subcommands and calling **`jst_backend`** via **`execvp`**(2). The same description
+as for the **`backend`** subcommand applies.
 
 **`gc-repo`**
 -------------
@@ -340,11 +343,11 @@ and the corresponding disk space reclaimed.
 EXIT STATUS
 ===========
 
-The exit status of **`just-mr`** is one of the following values:
+The exit status of **`jst`** is one of the following values:
 
  - 0: the command completed successfully
  - 64: setup succeeded, but exec failed
- - 65: any unspecified error occurred in just-mr
+ - 65: any unspecified error occurred in jst
  - 66: unknown subcommand
  - 67: error parsing the command-line arguments
  - 68: error parsing the configuration
@@ -353,12 +356,12 @@ The exit status of **`just-mr`** is one of the following values:
  - 71: error during setup
 
 Any other exit code that does not have bit 64 set is a status value from
-**`just`**, if **`just-mr`** is used as a launcher. See **`just`**(1) for more
+**`jst_backend`**, if **`jst`** is used as a launcher. See **`jst_backend`**(1) for more
 details.
 
 See also
 ========
 
-**`just-mr-repository-config`**(5),
-**`just-repository-config`**(5),
-**`just`**(1)
+**`jst-repo-config`**(5),
+**`jst_backend-repo-config`**(5),
+**`jst_backend`**(1)

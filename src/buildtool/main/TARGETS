@@ -1,7 +1,7 @@
-{ "just":
+{ "jst_backend":
   { "type": ["@", "rules", "CC", "binary"]
   , "arguments_config": ["FINAL_LDFLAGS"]
-  , "name": ["just"]
+  , "name": ["jst_backend"]
   , "srcs": ["main.cpp"]
   , "private-deps":
     [ "add_to_cas"

@@ -1,10 +1,10 @@
-% JUST SERVE CONFIG(5) | File Formats Manual
+% JST_BACKEND SERVE CONFIG(5) | File Formats Manual
 
 NAME
 ====
 
-just-serve-config - The format of the configuration used by the **`serve`**
-subcommand of **`just`**(1)
+jst_backend-serve-config - The format of the configuration used by the **`serve`**
+subcommand of **`jst_backend`**(1)
 
 DESCRIPTION
 ===========
@@ -18,11 +18,11 @@ Location objects
 ----------------
 
 The general syntax and semantics of a location object are described in 
-**`just-mrrc`**(5). Here we use a restricted form where the value for key
+**`jstrc`**(5). Here we use a restricted form where the value for key
 *`"root"`* can only be either *`"home"`* or *`"system"`*. This is because
-`just serve` is not aware of the concept of workspaces.
+`jst_backend serve` is not aware of the concept of workspaces.
 
-The just-serve configuration format
+The jst_backend-serve configuration format
 -----------------------------------
 
 The configuration file is given by a JSON object.
@@ -32,7 +32,7 @@ The configuration file is given by a JSON object.
    directories. The path will be created if it does not exist already.
 
  - The value for the key *`"repositories"`* is a list of location objects,
-   specifying paths to Git repositories for **`just`** **`serve`** to use as
+   specifying paths to Git repositories for **`jst_backend`** **`serve`** to use as
    additional object lookup locations. The paths are to be used in the order
    given and only if requested objects are not found in the local build root.
 
@@ -50,7 +50,7 @@ The configuration file is given by a JSON object.
    file instead of overwriting existing.
 
   - The value for the key *`"authentication"`* is a JSON object specifying
-   client-side authentication options for **`just`** **`serve`** when
+   client-side authentication options for **`jst_backend`** **`serve`** when
    communicating with the remote execution endpoint.  
    For subkey *`"ca cert"`* the value is a single location object, specifying
    the path to a TLS CA certificate.  
@@ -60,7 +60,7 @@ The configuration file is given by a JSON object.
    specifying the path to a TLS client key.  
 
  - The value for the key *`"remote service"`* is a JSON object specifying the
-   server arguments for running **`just`** **`serve`** as a service.  
+   server arguments for running **`jst_backend`** **`serve`** as a service.  
    For subkey *`"interface"`* the value specifies the interface of the service.
    If unset, the loopback device is used.  
    For subkey *`"port"`* the value specifies the port to which the service is to
@@ -78,7 +78,7 @@ The configuration file is given by a JSON object.
    specifying the path to a TLS server key.  
 
  - The value for the key *`"execution endpoint"`* is a JSON object specifying
-   the arguments of a remote execution endpoint to be used by **`just`**
+   the arguments of a remote execution endpoint to be used by **`jst_backend`**
    **`serve`**.  
    For subkey *`"address"`* the value is a string specifying the remote
    execution address in a NAME:PORT format.  
@@ -101,7 +101,7 @@ The configuration file is given by a JSON object.
    unset, the number of available cores is used.  
 
  - The value for the key *`"build"`* is a JSON object specifying arguments used
-   by **`just`** **`serve`** to orchestrate remote builds.  
+   by **`jst_backend`** **`serve`** to orchestrate remote builds.  
    For subkey *`"build jobs"`* the value specifies the number of jobs to run
    during a remote build. If unset, the same value as for outer key *`"jobs"`*
    is used.  
@@ -168,4 +168,4 @@ An example serve configuration file could look as follows.
 See also
 ========
 
-**`just`**(1), **`just-mrrc`**(5)
+**`jst_backend`**(1), **`jstrc`**(5)

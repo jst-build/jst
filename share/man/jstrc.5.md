@@ -1,9 +1,9 @@
-% JUST-MRRC(5) | File Formats Manual
+% JSTRC(5) | File Formats Manual
 
 NAME
 ====
 
-just-mrrc - The format of the configuration used by **`just-mr`**(1)
+jstrc - The format of the configuration used by **`jst`**(1)
 
 DESCRIPTION
 ===========
@@ -23,8 +23,8 @@ The value for key *`"root"`* is either *`"workspace"`*, *`"home"`*, or
 *`"system"`*, which have the following meanings:
 
  - *`"workspace"`* refers to the root of the workspace in which the
-   `just-mr` invocation was issued (not the workspace of the requested
-   main repository). This location root is ignored if **`just-mr`** was not
+   `jst` invocation was issued (not the workspace of the requested
+   main repository). This location root is ignored if **`jst`** was not
    invoked from inside a workspace.
 
  - *`"home"`* refers to the user's home directory.
@@ -39,14 +39,14 @@ root. This path is only relevant for locations of config files. If such
 a config file contains relative paths, those will be resolved relative
 to the specified base. If omitted, the default value *`"."`* is used.
 
-The just-mrrc format
+The jstrc format
 --------------------
 
-The just-mrrc is given by a JSON object.
+The jstrc is given by a JSON object.
 
  - The value for the key *`"config lookup order"`* is a JSON list of
    location objects, specifying where to look for multi-repository
-   configurations (see **`just-mr-repository-config`**(5) for more
+   configurations (see **`jst-repo-config`**(5) for more
    detail). The lookup is performed in the same order the location
    objects appear in the list.
 
@@ -56,28 +56,28 @@ The just-mrrc is given by a JSON object.
 
  - The value for the key *`"local build root"`* is a single location
    object, specifying the path to use as the local build root. For more
-   details, see **`just-mr`**(1).
+   details, see **`jst`**(1).
 
  - The value for the key *`"checkout locations"`* is a single location
    object, specifying the path to the file describing checkout locations
-   and additional mirror locations. For more details, see **`just-mr`**(1).
+   and additional mirror locations. For more details, see **`jst`**(1).
 
  - The value for the key *`"distdirs"`* is a JSON list of location
    objects, specifying where to look for distribution files (usually
    collected via the subcommand **`fetch`**). The lookup is performed in
    the same order the location objects appear in the list. For more
-   details, see **`just-mr`**(1).
+   details, see **`jst`**(1).
 
  - The value for the key *`"just"`* is a single location object,
-   specifying the path to the **`just`** binary to use for execution, if
-   **`just-mr`** is used as a launcher.
+   specifying the path to the **`jst_backend`** binary to use for execution, if
+   **`jst`** is used as a launcher.
 
  - The value for the key *`"git"`* is a single location object,
    specifying the path to the git binary to use in the instances when
-   **`just-mr`** needs to shell out.
+   **`jst`** needs to shell out.
 
  - The value for the key *`"local launcher"`*, if given, is list of
-   strings setting the default for local launcher for **`just-mr`**;
+   strings setting the default for local launcher for **`jst`**;
    command-line arguments take precedence over the value in the
    configuration file. If the key *`"local launcher"`* is absent, the
    default *`["env", "--"]`* is assumed.
@@ -95,7 +95,7 @@ The just-mrrc is given by a JSON object.
    on the command line.
 
  - The value for the key *`"remote execution"`* is a JSON object specifying the
-   remote execution options for **`just-mr`**.  
+   remote execution options for **`jst`**.  
    For subkey *`"address"`* the value is a string specifying the remote
    execution address in a NAME:PORT format.  
    For subkey *`"compatible"`* the value is a flag which specifies whether the
@@ -104,14 +104,14 @@ The just-mrrc is given by a JSON object.
    argument.
 
  - The value for the key *`"remote serve"`* is a JSON object specifying the
-   remote serve options for **`just-mr`**.  
+   remote serve options for **`jst`**.  
    For subkey *`"address"`* the value is a string specifying the remote
    serve address in a NAME:PORT format.  
    Each subkey value can be overwritten by its corresponding command-line
    argument.
 
  - The value for the key *`"authentication"`* is a JSON object specifying
-   client-side authentication options for **`just-mr`**.  
+   client-side authentication options for **`jst`**.  
    For subkey *`"ca cert"`* the value is a single location object
    specifying the path to a TLS CA certificate.
    For subkey *`"client cert"`* the value is a single location object specifying
@@ -124,7 +124,7 @@ The just-mrrc is given by a JSON object.
  - The value for the key *`"remote-execution properties"`*, if
    provided, has to be a list of strings. Each entry is forwarded
    as `--remote-execution-property` to the invocation of the build
-   tool, if **`just-mr`** is used as a launcher.
+   tool, if **`jst`** is used as a launcher.
 
  - The value for the key *`"max attempts"`*, if provided, has
    to be a number. If a remote procedure call (rpc) returns
@@ -142,18 +142,18 @@ The just-mrrc is given by a JSON object.
    attempts of an rpc, not counting the jitter.
 
  - The value for the key *`"just files"`* is a JSON object. The keys correspond
-   to options that some **`just`** subcommands accept and require a file as
+   to options that some **`jst_backend`** subcommands accept and require a file as
    argument. For each key, the value is a list of location objects. When
-   **`just-mr`** is used as a launcher and the invoked subcommand is known to
-   support this option, this option is set in the **`just`** invocation with
+   **`jst`** is used as a launcher and the invoked subcommand is known to
+   support this option, this option is set in the **`jst_backend`** invocation with
    the first matching entry, if any. The supported options are *`"config"`*
    and *`endpoint-configuration`*.
 
  - The value for the key *`"just args"`* is a JSON object. Its keys are
-   **`just`** subcommands and its value is a JSON list of strings. For the
-   corresponding subcommand, these strings are prefixed to the **`just`**
+   **`jst_backend`** subcommands and its value is a JSON list of strings. For the
+   corresponding subcommand, these strings are prefixed to the **`jst_backend`**
    argument vector (after all other options provided through the rc file),
-   if **`just-mr`** is used as a launcher.
+   if **`jst`** is used as a launcher.
 
  - The value for the key *`"rc files"`*, if given, is a list of
    location objects. For those location objects that refer to
@@ -169,7 +169,7 @@ The just-mrrc is given by a JSON object.
 EXAMPLE
 =======
 
-An example just-mrrc file could look like the following:
+An example jstrc file could look like the following:
 
 ``` jsonc
 { "rc files":
@@ -214,5 +214,5 @@ An example just-mrrc file could look like the following:
 See also
 ========
 
-**`just-mr`**(1),
-**`just-mr-repository-config`**(5)
+**`jst`**(1),
+**`jst-repo-config`**(5)

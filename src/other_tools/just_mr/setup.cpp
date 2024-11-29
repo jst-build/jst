@@ -388,7 +388,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         common_args.jobs,
         multi_repo_tool_name,
         common_args.just_path ? common_args.just_path->string()
-                              : kDefaultJustPath);
+                              : kDefaultBackendPath);
 
     auto distdir_git_map = CreateDistdirGitMap(
         &content_cas_map,

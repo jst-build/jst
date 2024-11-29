@@ -1,7 +1,7 @@
 { "":
   { "type": "export"
-  , "target": "installed just"
-  , "doc": ["The just binary."]
+  , "target": "installed jst_backend"
+  , "doc": ["The jst_backend binary."]
   , "flexible_config":
     [ "ADD_CFLAGS"
     , "ADD_CXXFLAGS"
@@ -66,11 +66,13 @@
       ]
     }
   }
-, "installed just":
-  {"type": ["@", "rules", "CC", "install-with-deps"], "targets": ["just"]}
-, "exported-just":
+, "installed jst_backend":
+  { "type": ["@", "rules", "CC", "install-with-deps"]
+  , "targets": ["jst_backend"]
+  }
+, "exported-jst_backend":
   { "type": "export"
-  , "target": ["src/buildtool/main", "just"]
+  , "target": ["src/buildtool/main", "jst_backend"]
   , "flexible_config":
     [ "OS"
     , "ARCH"
@@ -90,10 +92,10 @@
     , "PKG_CONFIG_ARGS"
     ]
   }
-, "just":
+, "jst_backend":
   { "type": "configure"
   , "arguments_config": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]
-  , "target": "exported-just"
+  , "target": "exported-jst_backend"
   , "config":
     { "type": "let*"
     , "bindings":
@@ -116,11 +118,11 @@
       {"type": "env", "vars": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]}
     }
   }
-, "installed just-mr":
-  {"type": ["@", "rules", "CC", "install-with-deps"], "targets": ["just-mr"]}
-, "exported-just-mr":
+, "installed jst":
+  {"type": ["@", "rules", "CC", "install-with-deps"], "targets": ["jst"]}
+, "exported-jst":
   { "type": "export"
-  , "target": ["src/other_tools/just_mr", "just-mr"]
+  , "target": ["src/other_tools/just_mr", "jst"]
   , "flexible_config":
     [ "OS"
     , "ARCH"
@@ -139,10 +141,10 @@
     , "VERSION_EXTRA_SUFFIX"
     ]
   }
-, "just-mr":
+, "jst":
   { "type": "configure"
   , "arguments_config": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]
-  , "target": "exported-just-mr"
+  , "target": "exported-jst"
   , "config":
     { "type": "let*"
     , "bindings":

@@ -64,7 +64,7 @@ PATH = subprocess.run(
 ).stdout.decode('utf-8')
 
 remote_cmd = [
-    "./staged/bin/just",
+    "./staged/bin/tool-under-test",
     "execute",
     "-L",
     json.dumps(["env", "PATH=" + PATH]),

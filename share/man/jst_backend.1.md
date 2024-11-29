@@ -1,29 +1,29 @@
-% JUST(1) | General Commands Manual
+% JST_BACKEND(1) | General Commands Manual
 
 NAME
 ====
 
-just - a generic build tool
+jst_backend - backend for generic build tool **`jst`**(1)
 
 SYNOPSIS
 ========
 
-**`just`** **`version`**  
-**`just`** {**`analyse`**|**`build`**} \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
-**`just`** **`install`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* \[\[*`module`*\] *`target`*\]  
-**`just`** **`install-cas`** \[*`OPTION`*\]... *`OBJECT_ID`*  
-**`just`** **`add-to-cas`** \[*`OPTION`*\]... *`PATH`*  
-**`just`** **`describe`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
-**`just`** **`rebuild`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
-**`just`** **`traverse`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* **`-g`** *`GRAPH_FILE`*  
-**`just`** **`gc`** \[*`OPTION`*\]...  
-**`just`** **`execute`** \[*`OPTION`*\]...  
-**`just`** **`serve`** *`SERVE_CONFIG_FILE`*
+**`jst_backend`** **`version`**  
+**`jst_backend`** {**`analyse`**|**`build`**} \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
+**`jst_backend`** **`install`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* \[\[*`module`*\] *`target`*\]  
+**`jst_backend`** **`install-cas`** \[*`OPTION`*\]... *`OBJECT_ID`*  
+**`jst_backend`** **`add-to-cas`** \[*`OPTION`*\]... *`PATH`*  
+**`jst_backend`** **`describe`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
+**`jst_backend`** **`rebuild`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
+**`jst_backend`** **`traverse`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* **`-g`** *`GRAPH_FILE`*  
+**`jst_backend`** **`gc`** \[*`OPTION`*\]...  
+**`jst_backend`** **`execute`** \[*`OPTION`*\]...  
+**`jst_backend`** **`serve`** *`SERVE_CONFIG_FILE`*
 
 DESCRIPTION
 ===========
 
-Just is a generic multi-repository build system; language-specific
+**`jst_backend`** is a generic multi-repository build system; language-specific
 knowledge is described in separate rule files. For every build action,
 the relative location of the inputs is independent of their physical
 location. This staging allows taking sources from different locations
@@ -39,7 +39,7 @@ the empty string. Specifying the correct repository, target root,
 module, and target name allows to process that target independently of
 the current working directory.
 
-If the module is not specified on the command line, **`just`** sets the
+If the module is not specified on the command line, **`jst_backend`** sets the
 module corresponding to the current working directory.
 
 If a target is not specified, the lexicographically-first target,
@@ -47,7 +47,7 @@ according to native byte order, is used. So, a target named with an
 empty string will always be the default target for that module.
 
 If a target depends on other targets defined in other modules or
-repositories, **`just`** will recursively visit all and only the required
+repositories, **`jst_backend`** will recursively visit all and only the required
 modules.
 
 The main repository is the repository containing the target specified on
@@ -63,8 +63,8 @@ file is used as main.
 The *`workspace_root`* of the main repository is then defined as
 follows. If the option **`--workspace-root`** is provided, then
 *`workspace_root`* is set accordingly. If the option is not provided,
-**`just`** checks if it is specified within the multi-repository
-configuration file. If it is, then it is set accordingly. If not, **`just`**
+**`jst_backend`** checks if it is specified within the multi-repository
+configuration file. If it is, then it is set accordingly. If not, **`jst_backend`**
 starts looking for a marker in the current directory first, then in all
 the parent directories until it finds one. The supported markers are
 
@@ -73,7 +73,7 @@ the parent directories until it finds one. The supported markers are
  - *`.git`* (can be either a file - empty or not, content is ignored -
    or the famous directory)
 
-If it fails, **`just`** errors out.
+If it fails, **`jst_backend`** errors out.
 
 For non-main repositories, the *`workspace_root`* entry must be declared
 in the multi-repository configuration file.
@@ -157,7 +157,7 @@ described in the *`TARGETS`* file. Since artifacts are only stored in
 the CAS, the user has to use either the **`install`** or **`install-cas`**
 subcommand to get them.
 
-**`just`** allows for both local (i.e., on the same machine where **`just`** is
+**`jst_backend`** allows for both local (i.e., on the same machine where **`jst_backend`** is
 used) and remote compilation (i.e., by sending requests over a TCP
 connection, e.g., to a different machine, cluster or cloud
 infrastructure). In case of a remote compilation, artifacts are compiled
@@ -264,7 +264,7 @@ a foreign version-control system twice.
 --------------
 
 It allows for the building and staging of requested artifacts from a
-well-defined *`GRAPH_FILE`*. See **`just-graph-file`**(5) for more
+well-defined *`GRAPH_FILE`*. See **`jst_backend-graph-file`**(5) for more
 details.
 
 **`gc`**
@@ -278,7 +278,7 @@ not referenced since the last call to **`gc`** is purged and the
 corresponding disk space reclaimed.
 
 Additionally, and before doing generation rotation,
- - left-over temporary directories (e.g., from interrupted `just`
+ - left-over temporary directories (e.g., from interrupted `jst_backend`
    invocations) are removed, and
  - large files are split and only the chunks and the information
    how to assemble the file from the chunks are kept; in this way
@@ -303,7 +303,7 @@ honor the original remote build execution protocol.
 This subcommand starts a service that provides target dependencies needed for a
 remote execution build. It expects as its only and mandatory argument the path
 to a configuration file, following the format described in
-**`just-serve-config`**(5).
+**`jst_backend-serve-config`**(5).
 
 OPTIONS
 =======
@@ -339,7 +339,7 @@ Supported by: analyse|build|describe|install|rebuild.
 
 **`-C`**, **`--repository-config`** *`PATH`*  
 Path to configuration file for multi-repository builds. See
-**`just-repository-config`**(5) for more details.  
+**`stt_backend-repo-config`**(5) for more details.  
 Supported by: analyse|build|describe|install|rebuild|traverse.
 
 **`-D`**, **`--defines`** *`JSON`*  
@@ -436,16 +436,16 @@ Supported by: build|install|rebuild|traverse.
 
 **`--dump-graph`** *`PATH`*  
 File path for writing the action graph description to. See
-**`just-graph-file`**(5) for more details.  
+**`jst_backend-graph-file`**(5) for more details.  
 Supported by: analyse|build|install|rebuild.
 
 **`--dump-plain-graph`** *`PATH`*  
 File path for writing the action graph description to, however without
-the additional `"origins"` key. See **`just-graph-file`**(5) for more details.  
+the additional `"origins"` key. See **`jst_backend-graph-file`**(5) for more details.  
 Supported by: analyse|build|install|rebuild.
 
 **`-f`**, **`--log-file`** *`PATH`*  
-Path to local log file. **`just`** will store the information printed on
+Path to local log file. **`jst_backend`** will store the information printed on
 stderr in the log file along with the thread id and timestamp when the
 output has been generated.  
 Supported by:
@@ -480,7 +480,7 @@ number of characters (default: 320).
 Supported by: analyse|build|install.
 
 **`--serve-errors-log`** *`PATH`*  
-Path to local file in which **`just`** will write, in machine
+Path to local file in which **`jst_backend`** will write, in machine
 readable form, the references to all errors that occurred on the
 serve side. More precisely, the value will be a JSON array with one
 element per failure, where the element is a pair (array of length
@@ -765,7 +765,7 @@ description (as JSON object as well).
 
 **`-g`**, **`--graph-file`** *`TEXT`* *`[[REQUIRED]]`*  
 Path of the file containing the description of the actions. See
-**`just-graph-file`**(5) for more details.
+**`jst_backend-graph-file`**(5) for more details.
 
 **`--git-cas`** *`TEXT`*  
 Path to a Git repository, containing blobs of potentially missing
@@ -821,7 +821,7 @@ out clean up tasks that do not affect what is stored in the cache.
 EXIT STATUS
 ===========
 
-The exit status of **`just`** is one of the following values:
+The exit status of **`jst_backend`** is one of the following values:
 
  - 0: the command completed successfully
  - 1: the command could not complete due to some errors (e.g.,
@@ -833,6 +833,6 @@ The exit status of **`just`** is one of the following values:
 See also
 ========
 
-**`just-repository-config`**(5),
-**`just-serve-config`**(5),
-**`just-mr`**(1)
+**`stt_backend-repo-config`**(5),
+**`jst_backend-serve-config`**(5),
+**`jst`**(1)

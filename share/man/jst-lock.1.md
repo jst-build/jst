@@ -1,38 +1,38 @@
-% JUST-LOCK(1) | General Commands Manual
+% JST-LOCK(1) | General Commands Manual
 
 NAME
 ====
 
-just-lock - generate and maintain a multi-repository configuration file
+jst-lock - generate and maintain a multi-repository configuration file
 
 SYNOPSIS
 ========
 
-**`just-lock`** \[*`OPTION`*\]...
+**`jst-lock`** \[*`OPTION`*\]...
 
 DESCRIPTION
 ===========
 
-Just-Lock is a tool that encompasses several functionalities related to
-generating and maintaining the **`just-mr-repository-config`**(5) of a Just
+Jst-Lock is a tool that encompasses several functionalities related to
+generating and maintaining the **`jst-repo-config`**(5) of a Just
 project.
 
 The main functionality of the tool is to import declared dependencies from
 other Just projects and generate a repository configuration which can directly
-be used by **`just-mr`**(1). The imported repositories are renamed in a way that
+be used by **`jst`**(1). The imported repositories are renamed in a way that
 no conflicts arise and in a way to remind for which repositories they come as a
 dependency. This extends thus the capabilities of existing tools such as
-**`just-import-git`**(1) by implicitly allowing multiple imports to take place
+**`jst-import-git`**(1) by implicitly allowing multiple imports to take place
 and import sources other than Git repositories.
 
 By default, the final configuration has the repositories deduplicated, by
 merging indistinguishable repositories, other than the `"main"` repository and
 explicitly stated ones, to a single repository. This mirrors the capability
-available standalone in **`just-deduplicate-repos`**(1).
+available standalone in **`jst-deduplicate-repos`**(1).
 
-The tool performs these operations based on a provided **`just-lock-config`**(5)
+The tool performs these operations based on a provided **`jst-lock-config`**(5)
 input file and outputs the resulting configuration file at either a given
-provided location or at a location expected by **`just-mr`**(5).
+provided location or at a location expected by **`jst`**(5).
 
 OPTIONS
 =======
@@ -41,14 +41,14 @@ OPTIONS
 Output a usage message and exit.
 
 **`-C`** *`CONFIGFILE`*  
-Use the specified file as the input **`just-lock-config`**(5) file.
+Use the specified file as the input **`jst-lock-config`**(5) file.
 If not specified, a file with filename `repos.in.json` is searched for in the
-same _directories_ as **`just-mr`** does when invoked with **`--norc`** when
+same _directories_ as **`jst`** does when invoked with **`--norc`** when
 searching for its configuration file.
 
 **`-o`** *`CONFIGFILE`*  
-Use the specified file as the output **`just-mr-repository-config`**(5) file.
-If not specified, a file is searched for in the same way **`just-mr`** does
+Use the specified file as the output **`jst-repo-config`**(5) file.
+If not specified, a file is searched for in the same way **`jst`** does
 when invoked with **`--norc`**. If none found, it is a file with filename
 `repos.json` in the parent directory of the input configuration file.
 
@@ -71,8 +71,8 @@ See also
 ========
 
 **`git`**(1),
-**`just-lock-config`**(5),
-**`just-import-git`**(1),
-**`just-deduplicate-repos`**(1),
-**`just-mr-repository-config`**(5),
-**`just-mr`**(1)
+**`jst-lock-config`**(5),
+**`jst-import-git`**(1),
+**`jst-deduplicate-repos`**(1),
+**`jst-repo-config`**(5),
+**`jst`**(1)

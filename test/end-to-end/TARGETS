@@ -1,18 +1,18 @@
 { "git-import-under-test":
   { "type": "install"
   , "files":
-    {"bin/git-import-under-test": ["@", "src", "", "bin/just-import-git.py"]}
+    {"bin/git-import-under-test": ["@", "src", "", "bin/jst-import-git.py"]}
   }
 , "deduplicate-tool-under-test":
   { "type": "install"
   , "files":
     { "bin/deduplicate-tool-under-test":
-      ["@", "src", "", "bin/just-deduplicate-repos.py"]
+      ["@", "src", "", "bin/jst-deduplicate-repos.py"]
     }
   }
 , "lock-tool-under-test":
   { "type": "install"
-  , "files": {"bin/lock-tool-under-test": ["@", "src", "", "bin/just-lock.py"]}
+  , "files": {"bin/lock-tool-under-test": ["@", "src", "", "bin/jst-lock.py"]}
   }
 , "remote tests (unconfigured)":
   { "type": ["@", "rules", "test", "suite"]

@@ -113,7 +113,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
                             "Failed to setup config for calling \"{} {}\"",
                             common_args.just_path
                                 ? common_args.just_path->string()
-                                : kDefaultJustPath,
+                                : kDefaultBackendPath,
                             *subcommand);
                 return kExitSetupError;
             }

@@ -178,11 +178,7 @@ auto SetupServeServiceCommandArguments(
 
 }  // namespace
 
-auto ParseCommandLineArguments(int argc, char const* const* argv)
-    -> CommandLineArguments {
-    CLI::App app("just, a generic build tool");
-    app.option_defaults()->take_last();
-
+void CreateBackendSubcommands(CLI::App& app) {
     auto* cmd_version = app.add_subcommand(
         "version", "Print version information in JSON format.");
     auto* cmd_describe = app.add_subcommand(
@@ -209,6 +205,42 @@ auto ParseCommandLineArguments(int argc, char const* const* argv)
             ->add_subcommand("traverse",
                              "Build and stage artifacts from graph file.");
     app.require_subcommand(1);
+
+    // make compiler happy (keep above lines unchanged to upstream)
+    std::ignore = cmd_version;
+    std::ignore = cmd_describe;
+    std::ignore = cmd_analyse;
+    std::ignore = cmd_build;
+    std::ignore = cmd_install;
+    std::ignore = cmd_rebuild;
+    std::ignore = cmd_install_cas;
+    std::ignore = cmd_add_to_cas;
+    std::ignore = cmd_gc;
+    std::ignore = cmd_execution;
+    std::ignore = cmd_serve;
+    std::ignore = cmd_eval;
+    std::ignore = cmd_traverse;
+}
+
+auto ParseCommandLineArguments(int argc, char const* const* argv)
+    -> CommandLineArguments {
+    CLI::App app("jst_backend, backend for generic build tool jst");
+    app.option_defaults()->take_last();
+
+    CreateBackendSubcommands(app);
+    auto* cmd_version = app.get_subcommand("version");
+    auto* cmd_describe = app.get_subcommand("describe");
+    auto* cmd_analyse = app.get_subcommand("analyse");
+    auto* cmd_build = app.get_subcommand("build");
+    auto* cmd_install = app.get_subcommand("install");
+    auto* cmd_rebuild = app.get_subcommand("rebuild");
+    auto* cmd_install_cas = app.get_subcommand("install-cas");
+    auto* cmd_add_to_cas = app.get_subcommand("add-to-cas");
+    auto* cmd_gc = app.get_subcommand("gc");
+    auto* cmd_execution = app.get_subcommand("execute");
+    auto* cmd_serve = app.get_subcommand("serve");
+    auto* cmd_eval = app.get_subcommand("eval");
+    auto* cmd_traverse = app.get_subcommand("traverse");
 
     CommandLineArguments clargs;
     SetupDescribeCommandArguments(cmd_describe, &clargs);

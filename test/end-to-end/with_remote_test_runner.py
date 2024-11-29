@@ -84,7 +84,7 @@ if not custom_remote:
     ).stdout.decode('utf-8')
 
     remote_cmd = [
-        "./staged/bin/just",
+        "./staged/bin/tool-under-test",
         "execute",
         "-L",
         json.dumps(

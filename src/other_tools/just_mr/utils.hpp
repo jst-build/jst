@@ -34,9 +34,10 @@
 
 /* Paths and constants required by just-mr */
 
-auto const kDefaultJustPath = "just";
+auto const kDefaultBackendPath = "jst_backend";
 auto const kDefaultGitPath = "git";
-auto const kDefaultRCPath = FileSystemManager::GetUserHome() / ".just-mrrc";
+auto const kDefaultRCPath = FileSystemManager::GetUserHome() / ".jstrc";
+auto const kFallbackRCPath = FileSystemManager::GetUserHome() / ".just-mrrc";
 auto const kDefaultBuildRoot = StorageConfig::kDefaultBuildRoot;
 auto const kDefaultCheckoutLocationsFile =
     FileSystemManager::GetUserHome() / ".just-local.json";
@@ -60,15 +61,15 @@ struct JustSubCmdFlags {
 
 // ordered, so that we have replicability
 std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
-    {"version",
-     {.config = false,
-      .build_root = false,
-      .launch = false,
-      .defines = false,
-      .remote = false,
-      .remote_props = false,
-      .serve = false,
-      .dispatch = false}},
+    //{"version",
+    // {.config = false,
+    //  .build_root = false,
+    //  .launch = false,
+    //  .defines = false,
+    //  .remote = false,
+    //  .remote_props = false,
+    //  .serve = false,
+    //  .dispatch = false}},
     {"describe",
      {.config = true,
       .build_root = true,

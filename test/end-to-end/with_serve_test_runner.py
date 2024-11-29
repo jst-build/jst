@@ -98,7 +98,7 @@ if not standalone_serve:
         os.remove(REMOTE_INFO)
 
     remote_cmd = [
-        "./staged/bin/just",
+        "./staged/bin/tool-under-test",
         "execute",
         "-L",
         json.dumps(["env", "PATH=" + PATH]),
@@ -250,7 +250,7 @@ with open(SERVE_CONFIG_FILE, "w") as f:
 servestdout = open("servestdout", "w")
 servestderr = open("servestderr", "w")
 serve_proc = subprocess.Popen(
-    ["./staged/bin/just", "serve", SERVE_CONFIG_FILE],
+    ["./staged/bin/tool-under-test", "serve", SERVE_CONFIG_FILE],
     stdout=servestdout,
     stderr=servestderr,
 )

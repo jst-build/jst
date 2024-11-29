@@ -20,6 +20,10 @@
 #include "src/buildtool/common/cli.hpp"
 #include "src/buildtool/common/retry_cli.hpp"
 
+void CreateBackendSubcommands(CLI::App& app);
+
+#ifndef NO_BACKEND_CLI_DECL
+
 enum class SubCommand : std::uint8_t {
     kUnknown,
     kVersion,
@@ -63,5 +67,7 @@ struct CommandLineArguments {
 
 auto ParseCommandLineArguments(int argc,
                                char const* const* argv) -> CommandLineArguments;
+
+#endif
 
 #endif  // INCLUDED_SRC_BUILDTOOL_MAIN_CLI

@@ -105,6 +105,10 @@ namespace {
         if (not rc_path) {
             rc_path = std::filesystem::weakly_canonical(
                 std::filesystem::absolute(kDefaultRCPath));
+            if (not FileSystemManager::IsFile(*rc_path)) {
+                rc_path = std::filesystem::weakly_canonical(
+                    std::filesystem::absolute(kFallbackRCPath));
+            }
         }
         else {
             if (not FileSystemManager::IsFile(*rc_path)) {

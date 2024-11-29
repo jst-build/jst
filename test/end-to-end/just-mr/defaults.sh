@@ -167,7 +167,7 @@ test "$(cat "${PARSE_DIR}/launcher")" = 'null'
 
 # ignored on non-build commands
 "${JUST_MR}" --norc --local-build-root "${LBR}" --just "${PARSE}" \
-             -D 'this is not json' version "${PARSE_DIR}" 2>&1
+             -D 'this is not json' backend version "${PARSE_DIR}" 2>&1
 test $(jq '. == [] ' "${PARSE_DIR}/defines") = "true"
 
 # not forwarded, if empty

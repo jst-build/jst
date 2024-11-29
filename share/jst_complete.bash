@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-########################### just completion
+########################### jst_backend completion
 
-_just_subcommand_options(){
+_jst_backend_subcommand_options(){
     local cmd=$1
-    for w in $(just $cmd --help)
+    for w in $(jst_backend $cmd --help)
     do
         [[ $w =~ ^-. ]] &&  printf "%s\n" ${w//,/" "}
     done
 }
 
-_just_targets(){
+_jst_backend_targets(){
     command -v python3 &>/dev/null || return
     python3 - <<EOF
 from json import load
@@ -77,7 +77,7 @@ main('$1', '$2', '$3')
 EOF
 }
 
-_just_completion(){
+_jst_backend_completion(){
     local readonly SUBCOMMANDS=(build analyse describe install-cas install rebuild gc execute -h --help version add-to-cas serve)
     local word=${COMP_WORDS[$COMP_CWORD]}
     local prev=${COMP_WORDS[$((COMP_CWORD-1))]}
@@ -91,12 +91,12 @@ _just_completion(){
         COMPREPLY=($(compgen -W "${SUBCOMMANDS[*]}" -- $word))
     elif [[ $cmd =~ ^(install-cas|execute|gc) ]]
     then
-        local _opts=($(_just_subcommand_options $cmd))
+        local _opts=($(_jst_backend_subcommand_options $cmd))
         COMPREPLY=($(compgen -f -W "${_opts[*]}" -- $word ))
         compopt -o plusdirs -o bashdefault -o default
     elif [[ $cmd =~ ^(build|analyse|describe|install|rebuild) ]]
     then
-        local _opts=($(_just_subcommand_options $cmd))
+        local _opts=($(_jst_backend_subcommand_options $cmd))
         # look for -C and --main
         for i in "${!COMP_WORDS[@]}"
         do
@@ -109,11 +109,11 @@ _just_completion(){
                 conf="${COMP_WORDS[$((++i))]}"
             fi
         done
-        # if $conf is empty and this function is invoked by just-mr
+        # if $conf is empty and this function is invoked by jst
         # we use the auto-generated conf file
-        if [ -z "$conf" ]; then conf="${justmrconf}";
+        if [ -z "$conf" ]; then conf="${jstmrconf}";
         fi
-        local _targets=($(_just_targets "$conf" "$main" "$prev" 2>/dev/null))
+        local _targets=($(_jst_backend_targets "$conf" "$main" "$prev" 2>/dev/null))
         COMPREPLY=($(compgen -f -W "${_opts[*]} ${_targets[*]}" -- $word ))
         compopt -o plusdirs -o bashdefault -o default
     else
@@ -121,10 +121,10 @@ _just_completion(){
     fi
 }
 
-complete -F _just_completion just
+complete -F _jst_backend_completion jst_backend
 
-########################### just-mr completion
-_just-mr_options(){
+########################### jst completion
+_jst_options(){
     local cmd=$1
     for w in $($cmd --help 2>/dev/null)
     do
@@ -132,9 +132,9 @@ _just-mr_options(){
     done
 }
 
-_just-mr_parse_subcommand() {
-    local readonly FLAGS=("--help\n-h\n--norc\ndo") # treat 'do' as flag
-    local readonly OPTIONS=("--distdir\n--just\n--local-build-root\n--main\n--rc\n-C\n-L")
+_jst_parse_subcommand() {
+    local readonly FLAGS=("--help\n-h\n--norc\nbackend") # treat 'backend' as flag
+    local readonly OPTIONS=("--distdir\n--backend\n--just\n--local-build-root\n--main\n--rc\n-C\n-L")
     shift
     while [ -n "$1" ]; do
         if echo -e "$FLAGS" | grep -q -- "^$1$"; then shift; continue; fi
@@ -145,9 +145,9 @@ _just-mr_parse_subcommand() {
     echo "$1"
 }
 
-_just-mr_repos(){
+_jst_repos(){
     command -v python3 &>/dev/null || return
-    local CONF=$(just-mr setup --all 2>/dev/null)
+    local CONF=$(jst setup --all 2>/dev/null)
     if [ ! -f "$CONF" ]; then return; fi
     python3 - <<EOF
 from json import load
@@ -161,11 +161,11 @@ if path.exists("$CONF"):
 EOF
 }
 
-_just-mr_completion(){
-    local readonly SUBCOMMANDS=(mrversion setup setup-env fetch update "do" gc-repo add-to-cas analyse build describe gc install install-cas rebuild version -h --help)
+_jst_completion(){
+    local readonly SUBCOMMANDS=(version setup setup-env fetch update backend gc-repo add-to-cas analyse build describe gc install install-cas rebuild version -h --help)
     local word=${COMP_WORDS[$COMP_CWORD]}
     local prev=${COMP_WORDS[$((COMP_CWORD-1))]}
-    local cmd=$(_just-mr_parse_subcommand "${COMP_WORDS[@]}")
+    local cmd=$(_jst_parse_subcommand "${COMP_WORDS[@]}")
     # first check if the current word matches a subcommand
     # if we check directly with cmd, we fail to autocomplete setup to setup-env and install to install-cas
     if [[ $word =~ ^(setup|setup-env|install-cas|install) ]]
@@ -173,28 +173,28 @@ _just-mr_completion(){
         COMPREPLY=($(compgen -W "${SUBCOMMANDS[*]}" -- $word))
     elif [ "$prev" = "--main" ]
     then
-        local _repos=($(_just-mr_repos $prev))
+        local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -W "${_repos[*]}}" -- $word))
-    elif [ "$prev" = "--distdir" ] || [ "$prev" = "--just" ] || [ "$prev" = "--local-build-root" ] || [ "$prev" = "--rc" ] || [ "$prev" = "-C" ] || [ "$prev" = "-L" ]
+    elif [ "$prev" = "--distdir" ] || [ "$prev" = "--backend" ] || [ "$prev" = "--just" ] || [ "$prev" = "--local-build-root" ] || [ "$prev" = "--rc" ] || [ "$prev" = "-C" ] || [ "$prev" = "-L" ]
     then
         compopt -o bashdefault -o default
     elif [[ "$cmd" =~ ^(setup|setup-env|fetch|update) ]]
     then
-        # just-mr subcommand options and repository names
-        local _opts=($(_just-mr_options "just-mr $cmd"))
-        local _repos=($(_just-mr_repos $prev))
+        # jst subcommand options and repository names
+        local _opts=($(_jst_options "jst $cmd"))
+        local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -f -W "${_opts[*]} ${_repos[*]}" -- $word ))
     elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|execute) ]]
     then
-        # just subcommand options and modules/targets eventually using the
+        # jst_backend subcommand options and modules/targets eventually using the
         # auto-generated configuration
-        local justmrconf=$(just-mr setup --all 2>/dev/null)
-        _just_completion
+        local jstmrconf=$(jst setup --all 2>/dev/null)
+        _jst_backend_completion
     else
-        # just-mr top-level options
-        local _opts=($(_just-mr_options "just-mr"))
+        # jst top-level options
+        local _opts=($(_jst_options "jst"))
         COMPREPLY=($(compgen -W "${_opts[*]} ${SUBCOMMANDS[*]}" -- $word))
     fi
 }
 
-complete -F _just-mr_completion just-mr
+complete -F _jst_completion jst

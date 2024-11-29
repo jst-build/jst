@@ -202,10 +202,11 @@ static inline void SetupMultiRepoCommonArguments(
            "CA certificate bundle to use for SSL verification when fetching "
            "archives from remote.")
         ->type_name("CA_BUNDLE");
-    app->add_option("--just",
-                    clargs->just_path,
-                    fmt::format("The build tool to be launched (default: {}).",
-                                kDefaultJustPath))
+    app->add_option(
+           "--backend,--just",
+           clargs->just_path,
+           fmt::format("The build tool backend to be launched (default: {}).",
+                       kDefaultBackendPath))
         ->type_name("PATH");
     app->add_option("--main",
                     clargs->main,
@@ -217,7 +218,7 @@ static inline void SetupMultiRepoCommonArguments(
                clargs->rc_path = std::filesystem::weakly_canonical(
                    std::filesystem::absolute(rc_path_raw));
            },
-           "Use just-mrrc file from custom path.")
+           "Use jstrc file from custom path.")
         ->type_name("RCFILE");
     app->add_option("--git",
                     clargs->git_path,
@@ -227,7 +228,7 @@ static inline void SetupMultiRepoCommonArguments(
     app->add_option(
            "--dump-rc", clargs->dump_rc, "Dump the effective rc value.")
         ->type_name("PATH");
-    app->add_flag("--norc", clargs->norc, "Do not use any just-mrrc file.");
+    app->add_flag("--norc", clargs->norc, "Do not use any jstrc file.");
     app->add_option("-j, --jobs",
                     clargs->jobs,
                     "Number of jobs to run (Default: Number of cores).")

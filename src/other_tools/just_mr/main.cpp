@@ -55,6 +55,11 @@
 #include "src/other_tools/just_mr/utils.hpp"
 #include "src/utils/cpp/expected.hpp"
 
+#ifndef NO_BACKEND_CLI_DECL
+#define NO_BACKEND_CLI_DECL
+#endif
+#include "src/buildtool/main/cli.hpp"
+
 namespace {
 
 /// \brief Setup arguments for just-mr itself, common to all subcommands.
@@ -93,11 +98,11 @@ void SetupSetupCommandArguments(
 [[nodiscard]] auto ParseCommandLineArguments(int argc, char const* const* argv)
     -> CommandLineArguments {
     CLI::App app(
-        "just-mr, a multi-repository configuration tool and launcher for the "
+        "jst, a multi-repository configuration tool and launcher for the "
         "build tool");
     app.option_defaults()->take_last();
     auto* cmd_mrversion = app.add_subcommand(
-        "mrversion", "Print version information in JSON format of this tool.");
+        "version", "Print version information in JSON format of this tool.");
     auto* cmd_setup = app.add_subcommand(
         "setup", "Setup and generate configuration for the build tool");
     auto* cmd_setup_env = app.add_subcommand(
@@ -106,20 +111,24 @@ void SetupSetupCommandArguments(
         app.add_subcommand("fetch", "Fetch and store distribution files.");
     auto* cmd_update = app.add_subcommand(
         "update",
-        "Advance Git commit IDs and print updated just-mr configuration.");
-    auto* cmd_do = app.add_subcommand(
-        "do", "Canonical way of specifying subcommands to be launched.");
+        "Advance Git commit IDs and print updated jst configuration.");
+    auto* cmd_do =
+        app.add_subcommand("backend",
+                           "Canonical way of specifying backend subcommands.")
+            ->alias("do");
     auto* cmd_gc_repo = app.add_subcommand(
         "gc-repo", "Perform garbage collection on the repository roots.");
     cmd_do->set_help_flag();  // disable help flag
     // define just subcommands
+    CLI::App app_backend_subcommands("jst_backend subcommands.");
+    CreateBackendSubcommands(app_backend_subcommands);
     std::vector<CLI::App*> cmd_just_subcmds{};
     cmd_just_subcmds.reserve(kKnownJustSubcommands.size());
     for (auto const& known_subcmd : kKnownJustSubcommands) {
-        auto* subcmd =
-            app.add_subcommand(known_subcmd.first,
-                               "Run setup and launch the \"" +
-                                   known_subcmd.first + "\" subcommand.");
+        auto* subcmd = app.add_subcommand(
+            known_subcmd.first,
+            app_backend_subcommands.get_subcommand(known_subcmd.first)
+                ->get_description());
         subcmd->set_help_flag();  // disable help flag
         cmd_just_subcmds.emplace_back(subcmd);
     }
@@ -268,7 +277,7 @@ auto main(int argc, char* argv[]) -> int {
         // if optional args were not read from just-mrrc or given by user, use
         // the defaults
         if (not arguments.common.just_path) {
-            arguments.common.just_path = kDefaultJustPath;
+            arguments.common.just_path = kDefaultBackendPath;
         }
         if (not arguments.common.git_path) {
             arguments.common.git_path = kDefaultGitPath;

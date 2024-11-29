@@ -1,7 +1,7 @@
-{ "just-mr":
+{ "jst":
   { "type": ["@", "rules", "CC", "binary"]
   , "arguments_config": ["FINAL_LDFLAGS"]
-  , "name": ["just-mr"]
+  , "name": ["jst"]
   , "srcs": ["main.cpp"]
   , "private-deps":
     [ "cli"
@@ -26,6 +26,7 @@
     , ["src/buildtool/logging", "log_level"]
     , ["src/buildtool/logging", "logging"]
     , ["src/buildtool/main", "version"]
+    , ["src/buildtool/main", "cli"]
     , ["src/buildtool/storage", "config"]
     , ["src/buildtool/storage", "garbage_collector"]
     , ["src/buildtool/storage", "repository_garbage_collector"]

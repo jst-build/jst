@@ -1,16 +1,16 @@
-% JUST-MR REPOSITORY CONFIG(5) | File Formats Manual
+% JST REPO CONFIG(5) | File Formats Manual
 
 NAME
 ====
 
-just-mr-repository-config - The format of the repository config used by
-**`just-mr`**(1)
+jst-repo-config - The format of the repository config used by
+**`jst`**(1)
 
 DESCRIPTION
 ===========
 
-In order for the **`just-mr`**(1) tool to generate a repository
-configuration file usable by the **`just`**(1) multi-repository build
+In order for the **`jst`**(1) tool to generate a repository
+configuration file usable by the **`jst_backend`**(1) multi-repository build
 system, it requires a configuration file describing repositories and
 their dependencies.
 
@@ -117,15 +117,15 @@ The following fields are supported:
    files. This entry is optional. If missing, the root directory of the
    Git repository is used.
 
- - *`"inherit env"`* provides a list of variables. When `just-mr`
+ - *`"inherit env"`* provides a list of variables. When `jst`
    shells out to `git`, those variables are inherited from the
-   environment `just-mr` is called within, if set there.
+   environment `jst` is called within, if set there.
 
 ### *`"git tree"`*
 
 It defines as workspace root as a fixed `git` tree, given by the
 corresponding tree identifier. If that tree is not known already to
-`just-mr`, a specified command will be executed in a fresh directory
+`jst`, a specified command will be executed in a fresh directory
 that is expected to produce the given tree somewhere below the
 working directory.
 
@@ -157,13 +157,13 @@ The following fields are supported:
    command.
 
  - *`"inherit env"`* provides a list of variables to be inherited from the
-   environment `just-mr` is called within, if set there.
+   environment `jst` is called within, if set there.
 
 ### *`"distdir"`*
 
 It defines as workspace root a directory with the distribution archives
 of the specified repositories. Usually this root is realized as a Git
-tree in the Git repository in **`just`**'s local build root.
+tree in the Git repository in **`jst_backend`**'s local build root.
 
 The following fields are supported:
 
@@ -215,7 +215,7 @@ supported. If its value is *`true`* then it indicates that the workspace
 root should be returned as a Git tree. If the root directory is already
 part of a Git repository, its Git tree identifier is used; otherwise,
 the workspace root will be realized as a Git tree in the Git repository
-in **`just`**'s local build root.
+in **`jst_backend`**'s local build root.
 
 For all workspace roots except *`"distdir"`*, *`"computed"`*,
 and *`"tree structure"`*, the pragma key *`"special"`* is
@@ -276,7 +276,7 @@ following fields are supported:
  - *`"main"`* contains a JSON string that determines which of the
    provided repositories is considered the main repository. This entry
    is optional, and if omitted, it will be omitted in the generated
-   **`just-repository-config`**.
+   **`jst_backend-repo-config`**.
 
  - *`"repositories"`* contains a JSON object, where each key is the
    global name of a repository and its corresponding value is the
@@ -286,13 +286,13 @@ Additional keys
 ---------------
 
 Any JSON object described in this format might have additional keys
-besides the ones mentioned. The current strategy of **`just-mr`**(1) is
+besides the ones mentioned. The current strategy of **`jst`**(1) is
 to accept and ignore them. Users should be aware that future versions of
 this format might give specific meanings to these extra keys.
 
 See also
 ========
 
-**`just`**(1),
-**`just-mr`**(1),
-**`just-repository-config`**(5)
+**`jst_backend`**(1),
+**`jst`**(1),
+**`jst_backend-repo-config`**(5)

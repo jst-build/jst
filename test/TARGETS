@@ -1,17 +1,17 @@
-{ "tested just":
+{ "tested jst_backend":
   { "type": ["@", "rules", "CC", "install-with-deps"]
   , "skip-debug-stage": ["yes"]
-  , "targets": [["@", "src", "", "just"]]
+  , "targets": [["@", "src", "", "jst_backend"]]
   }
 , "tool-under-test":
   { "type": "install"
-  , "dirs": [["tested just", "."]]
-  , "files": {"bin/tool-under-test": ["@", "src", "", "just"]}
+  , "dirs": [["tested jst_backend", "."]]
+  , "files": {"bin/tool-under-test": ["@", "src", "", "jst_backend"]}
   }
-, "tested just-mr":
+, "tested jst":
   { "type": ["@", "rules", "CC", "install-with-deps"]
   , "skip-debug-stage": ["yes"]
-  , "targets": [["@", "src", "", "just-mr"]]
+  , "targets": [["@", "src", "", "jst"]]
   }
 , "mr-tool-under-test":
   { "type": "install"
@@ -20,14 +20,14 @@
     { "type": "if"
     , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
     , "then": []
-    , "else": [["tested just-mr", "."]]
+    , "else": [["tested jst", "."]]
     }
   , "files":
     { "bin/mr-tool-under-test":
       { "type": "if"
       , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
       , "then": ["@", "src", "", "bin/just-mr.py"]
-      , "else": ["@", "src", "", "just-mr"]
+      , "else": ["@", "src", "", "jst"]
       }
     }
   }

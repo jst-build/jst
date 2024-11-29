@@ -1,20 +1,20 @@
-% JUST-IMPORT-GIT(1) | General Commands Manual
+% JST-IMPORT-GIT(1) | General Commands Manual
 
 NAME
 ====
 
-just-import-git - import one Git repository to a multi-repository
+jst-import-git - import one Git repository to a multi-repository
 configuration
 
 SYNOPSIS
 ========
 
-**`just-import-git`** \[*`OPTION`*\]... *`URL`* \[*`foreign repository name`*\]  
+**`jst-import-git`** \[*`OPTION`*\]... *`URL`* \[*`foreign repository name`*\]  
 
 DESCRIPTION
 ===========
 
-Extend an existing **`just-mr-repository-config`**(5) by adding one Git
+Extend an existing **`jst-repo-config`**(5) by adding one Git
 repository. In doing so, the dependencies declared in the imported
 repository are added as well and *`"file"`* repositories are transformed
 to *`"subdir"`* parts of the imported repository. This solves the
@@ -54,7 +54,7 @@ recorded as the branch to follow. Defaults to *`"master"`*.
 Use the specified file as the configuration to import into. The string
 *`-`* is treated as a request to take the config from stdin; so a file
 called *`-`* has to be described as *`.`*/*`-`*, or similar. If not
-specified, a config file is searched for in the same way as **`just-mr`**
+specified, a config file is searched for in the same way as **`jst`**
 does when invoked with **`--norc`**.
 
 **`-h`**, **`--help`**  
@@ -70,7 +70,7 @@ compatible repository already exists in the configuration.
 **`-R`** *`RELPATH`*  
 Use the file, specified by path relative to the repository root, as
 multi-repository specification in the imported repository. If not
-specified, for a config file is searched in the same way as **`just-mr`**
+specified, for a config file is searched in the same way as **`jst`**
 does, when invoked with **`--no-rc`**, however leaving out searches
 relative to global roots (*`"home"`* and *`"system"`*). In other words,
 *`repos.json`* and *`etc/repos.json`* are tried if this option is not
@@ -91,7 +91,7 @@ Specifying this option multiple times will accumulate URLs in the order
 they appear on the command line. These URLs will not be used during the
 import, but instead will be recorded as the value of the `"mirrors"` key
 in the resulting configuration of the imported repository.
-See **`just-mr-repository-config`**(5).
+See **`jst-repo-config`**(5).
 
 **`--inherit-env`** *`VAR`*  
 Specify, for the imported repository, environment variables to
@@ -100,12 +100,12 @@ variables will not be taken into account during the import (where
 the whole environment is inherited), but instead will be recorded as
 the value for the `"inherit env"` key in the resulting configuration
 of the imported repository.
-See **`just-mr-repository-config`**(5).
+See **`jst-repo-config`**(5).
 
 See also
 ========
 
 **`git`**(1),
-**`just-deduplicate-repos`**(1),
-**`just-mr-repository-config`**(5),
-**`just-mr`**(1)
+**`jst-deduplicate-repos`**(1),
+**`jst-repo-config`**(5),
+**`jst`**(1)
