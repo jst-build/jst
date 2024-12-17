@@ -15,6 +15,7 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_TASK_TRACKER_HPP
 #define INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_TASK_TRACKER_HPP
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -73,6 +74,50 @@ class TaskTracker {
             }
         }
         return result;
+    }
+
+    [[nodiscard]] auto Sample(int n) noexcept -> std::vector<std::string> {
+        std::unique_lock lock(m_);
+
+        // Determine the n most long-running tasks (the n tasks with the
+        // smallest prio values). A max heap of size n is used to store the n
+        // tasks with the smallest prio values.
+        std::vector<std::string> tasks{};
+        tasks.reserve(n);
+
+        // Fill the heap.
+        auto it = running_.cbegin();
+        for (int i{}; i < n && it != running_.cend(); ++i, ++it) {
+            tasks.push_back(it->first);
+        }
+
+        // Establish max heap property. The default behavior of the
+        // std::make_heap function is to create a max heap if the comparison
+        // function returns true if the left argument is smaller than the right
+        // argument ('less than' comparison function). The first element of the
+        // heap will contain the task with the largest prio value.
+        auto cmp = [&running = running_](std::string const& a,
+                                         std::string const& b) {
+            return running[a] <= running[b];
+        };
+        std::make_heap(tasks.begin(), tasks.end(), cmp);
+
+        // Scan the remaining tasks for tasks with smaller prio values than the
+        // max value in the heap and replace them with the max value from the
+        // heap.
+        for (; it != running_.cend(); ++it) {
+            auto const& task = tasks.front();
+            if (it->second < running_[task]) {
+                std::pop_heap(tasks.begin(), tasks.end(), cmp);
+                tasks.back() = it->first;
+                std::push_heap(tasks.begin(), tasks.end(), cmp);
+            }
+        }
+
+        // Sort heap vector, results in increasing order with a 'less than'
+        // comparison function.
+        std::sort_heap(tasks.begin(), tasks.end(), cmp);
+        return tasks;
     }
 
     [[nodiscard]] auto Active() noexcept -> std::size_t {
