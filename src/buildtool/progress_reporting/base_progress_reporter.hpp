@@ -46,7 +46,11 @@ using progress_reporter_t =
 class BaseProgressReporter {
   public:
     [[nodiscard]] static auto Reporter(
-        std::function<void(void)> report) noexcept -> progress_reporter_t;
+        std::function<void(void)> report,
+        std::int64_t start_delay = kStartDelayMillis,
+        double backoff_factor =
+            static_cast<double>(kDelayScalingFactorNumerator) /
+            kDelayScalingFactorDenominator) noexcept -> progress_reporter_t;
 
   private:
     constexpr static std::int64_t kStartDelayMillis = 3000;

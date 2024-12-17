@@ -23,13 +23,15 @@
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 
-auto BaseProgressReporter::Reporter(std::function<void(void)> report) noexcept
+auto BaseProgressReporter::Reporter(std::function<void(void)> report,
+                                    std::int64_t start_delay,
+                                    double backoff_factor) noexcept
     -> progress_reporter_t {
-    return [report = std::move(report)](std::atomic<bool>* done,
-                                        std::condition_variable* cv) {
+    return [report = std::move(report), start_delay, backoff_factor](
+               std::atomic<bool>* done, std::condition_variable* cv) {
         std::mutex m;
         std::unique_lock<std::mutex> lock(m);
-        std::int64_t delay = kStartDelayMillis;
+        std::int64_t delay = start_delay;
         while (not *done) {
             cv->wait_for(lock, std::chrono::milliseconds(delay));
             if (not *done) {
@@ -43,8 +45,8 @@ auto BaseProgressReporter::Reporter(std::function<void(void)> report) noexcept
                     // continue with progress reporting
                 }
             }
-            delay = delay * kDelayScalingFactorNumerator /
-                    kDelayScalingFactorDenominator;
+            delay = static_cast<std::int64_t>(static_cast<double>(delay) *
+                                              backoff_factor);
         }
     };
 }
