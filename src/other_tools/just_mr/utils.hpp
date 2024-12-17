@@ -141,6 +141,15 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .remote = false,
       .remote_props = false,
       .serve = false,
+      .dispatch = false}},
+    {"eval",
+     {.config = false,
+      .build_root = false,
+      .launch = false,
+      .defines = true,
+      .remote = false,
+      .remote_props = false,
+      .serve = false,
       .dispatch = false}}};
 
 nlohmann::json const kDefaultConfigLocations = nlohmann::json::array(

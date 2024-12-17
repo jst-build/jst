@@ -176,6 +176,14 @@ auto SetupServeServiceCommandArguments(
     SetupServeArguments(app, &clargs->serve);
 }
 
+/// \brief Eval arguments for sub command "just eval".
+auto SetupEvalCommandArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<CommandLineArguments*> const& clargs) {
+    // all other arguments will be read from config file
+    SetupEvalArguments(app, &clargs->eval);
+}
+
 }  // namespace
 
 void CreateBackendSubcommands(CLI::App& app) {
@@ -200,6 +208,7 @@ void CreateBackendSubcommands(CLI::App& app) {
         "execute", "Start single node execution service on this machine.");
     auto* cmd_serve =
         app.add_subcommand("serve", "Provide target dependencies for a build.");
+    auto* cmd_eval = app.add_subcommand("eval", "Evaluate Justlang code.");
     auto* cmd_traverse =
         app.group("")  // group for creating hidden options
             ->add_subcommand("traverse",
@@ -254,6 +263,7 @@ auto ParseCommandLineArguments(int argc, char const* const* argv)
     SetupGcCommandArguments(cmd_gc, &clargs);
     SetupExecutionServiceCommandArguments(cmd_execution, &clargs);
     SetupServeServiceCommandArguments(cmd_serve, &clargs);
+    SetupEvalCommandArguments(cmd_eval, &clargs);
     try {
         app.parse(argc, argv);
     } catch (CLI::Error& e) {
@@ -298,6 +308,9 @@ auto ParseCommandLineArguments(int argc, char const* const* argv)
     }
     else if (*cmd_serve) {
         clargs.cmd = SubCommand::kServe;
+    }
+    else if (*cmd_eval) {
+        clargs.cmd = SubCommand::kEval;
     }
 
     return clargs;

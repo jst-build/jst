@@ -37,7 +37,8 @@ enum class SubCommand : std::uint8_t {
     kTraverse,
     kGc,
     kExecute,
-    kServe
+    kServe,
+    kEval
 };
 
 struct CommandLineArguments {
@@ -58,6 +59,7 @@ struct CommandLineArguments {
     ServerAuthArguments sauth;
     ServiceArguments service;
     ServeArguments serve;
+    EvalArguments eval;
     RetryArguments retry;
     GcArguments gc;
     ToAddArguments to_add;

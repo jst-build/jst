@@ -13,7 +13,7 @@ SYNOPSIS
 **`jst`** \[*`OPTION`*\]... **`fetch`** \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
 **`jst`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
 **`jst`** \[*`OPTION`*\]... **`backend`** \[*`JST_BACKEND_ARG`*\]...  
-**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**} \[*`JST_BACKEND_ARG`*\]...  
+**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**} \[*`JST_BACKEND_ARG`*\]...  
 
 DESCRIPTION
 ===========
@@ -325,7 +325,7 @@ The *authentication options* given to **`jst`** are passed to **`jst_backend`** 
 early arguments for those *known* subcommands that accept them, according to
 **`jst_backend`**(1).
 
-**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**
+**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**
 ------------------------------------------------------------------------------------------------------------------------------
 
 This subcommand is the explicit way of specifying *known* just

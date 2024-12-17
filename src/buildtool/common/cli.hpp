@@ -35,6 +35,7 @@
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/common/clidefaults.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
+#include "src/buildtool/file_system/file_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/build_utils.hpp"
@@ -198,6 +199,15 @@ struct ToAddArguments {
 
 struct ProtocolArguments final {
     HashFunction::Type hash_type = HashFunction::Type::GitSHA1;
+};
+
+struct EvalArguments final {
+    std::string file_path;
+    std::string root_path;
+    JustFileType type{JustFileType::kPlain};
+    std::vector<std::string> defines;
+    std::filesystem::path config_file;
+    bool show_ir{false};
 };
 
 static inline auto SetupCommonArguments(
@@ -810,6 +820,47 @@ static inline void SetupGcArguments(gsl::not_null<CLI::App*> const& app,
                   args->no_rotate,
                   "Do not rotate cache generations, only clean up what can be "
                   "done without losing cache.");
+}
+
+static inline auto SetupEvalArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<EvalArguments*> const& clargs) {
+    app->add_option("file",
+                    clargs->file_path,
+                    "Path of the file to evaluate (use '-' for stdin).")
+        ->type_name("PATH")
+        ->required();
+    app->add_option(
+           "--root", clargs->root_path, "Path of the file's root directory.")
+        ->type_name("PATH");
+    app->add_option_function<std::string>(
+           "-D,--defines",
+           [clargs](auto const& d) { clargs->defines.emplace_back(d); },
+           "Define an overlay configuration via an in-line JSON object."
+           " Multiple options overlay.")
+        ->type_name("JSON")
+        ->trigger_on_parse();  // run callback on all instances while parsing,
+                               // not after all parsing is done
+    app->add_option(
+           "-c,--config", clargs->config_file, "Path to configuration file.")
+        ->type_name("PATH");
+    app->add_flag("--ir",
+                  clargs->show_ir,
+                  "Only generate just IR (JSON) instead of evaluating it.");
+    app->add_flag_function(
+        "--targets",
+        [clargs](auto /*unused*/) { clargs->type = JustFileType::kTargets; },
+        "Generate targets file (implies --ir).");
+    app->add_flag_function(
+        "--rules",
+        [clargs](auto /*unused*/) { clargs->type = JustFileType::kRules; },
+        "Generate rules file (implies --ir).");
+    app->add_flag_function(
+        "--expressions",
+        [clargs](auto /*unused*/) {
+            clargs->type = JustFileType::kExpressions;
+        },
+        "Generate expressions file (implies --ir).");
 }
 
 #endif  // INCLUDED_SRC_BUILDTOOL_COMMON_CLI_HPP

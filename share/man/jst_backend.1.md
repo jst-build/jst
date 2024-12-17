@@ -17,6 +17,7 @@ SYNOPSIS
 **`jst_backend`** **`rebuild`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
 **`jst_backend`** **`traverse`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* **`-g`** *`GRAPH_FILE`*  
 **`jst_backend`** **`gc`** \[*`OPTION`*\]...  
+**`jst_backend`** **`eval`** \[*`OPTION`*\]...  
 **`jst_backend`** **`execute`** \[*`OPTION`*\]...  
 **`jst_backend`** **`serve`** *`SERVE_CONFIG_FILE`*
 
@@ -287,6 +288,18 @@ Additionally, and before doing generation rotation,
 As the non-rotating tasks can be useful in their own right, the
 `--no-rotate` option can be used to request only the clean-up tasks
 that do not lose information.
+
+**`eval`**
+--------
+
+The **`eval`** subcommand evaluates Justlang code from file (use `-`
+for evaluating code from stdin). Runtime data can injected via options
+**`--config`** and **`--defines`**. To stop the evaluation after
+preprocessing and print only the generated low-level JSON code, use the
+option **`--ir`**. By default, no special restrictions on the file type
+are applied during preprocessing. Restrictions can be enabled by
+specifying **`--targets`**, **`--rules`**, or **`--expressions`** (all
+of them implying **`--ir`**).
 
 **`execute`**
 -------------

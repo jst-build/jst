@@ -78,7 +78,7 @@ EOF
 }
 
 _jst_backend_completion(){
-    local readonly SUBCOMMANDS=(build analyse describe install-cas install rebuild gc execute -h --help version add-to-cas serve)
+    local readonly SUBCOMMANDS=(build analyse describe install-cas install rebuild gc eval execute -h --help version add-to-cas serve)
     local word=${COMP_WORDS[$COMP_CWORD]}
     local prev=${COMP_WORDS[$((COMP_CWORD-1))]}
     local cmd=${COMP_WORDS[1]}
@@ -86,10 +86,10 @@ _jst_backend_completion(){
     local conf
     # first check if the current word matches a subcommand
     # if we check directly with cmd, we fail to autocomplete install to install-cas
-    if [[ $word =~ ^(build|analyse|describe|install-cas|install|rebuild|gc|execute) ]]
+    if [[ $word =~ ^(build|analyse|describe|install-cas|install|rebuild|gc|eval|execute) ]]
     then
         COMPREPLY=($(compgen -W "${SUBCOMMANDS[*]}" -- $word))
-    elif [[ $cmd =~ ^(install-cas|execute|gc) ]]
+    elif [[ $cmd =~ ^(install-cas|execute|gc|eval) ]]
     then
         local _opts=($(_jst_backend_subcommand_options $cmd))
         COMPREPLY=($(compgen -f -W "${_opts[*]}" -- $word ))
@@ -162,7 +162,7 @@ EOF
 }
 
 _jst_completion(){
-    local readonly SUBCOMMANDS=(version setup setup-env fetch update backend gc-repo add-to-cas analyse build describe gc install install-cas rebuild version -h --help)
+    local readonly SUBCOMMANDS=(version setup setup-env fetch update backend gc-repo add-to-cas analyse build describe gc eval install install-cas rebuild version -h --help)
     local word=${COMP_WORDS[$COMP_CWORD]}
     local prev=${COMP_WORDS[$((COMP_CWORD-1))]}
     local cmd=$(_jst_parse_subcommand "${COMP_WORDS[@]}")
@@ -184,7 +184,7 @@ _jst_completion(){
         local _opts=($(_jst_options "jst $cmd"))
         local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -f -W "${_opts[*]} ${_repos[*]}" -- $word ))
-    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|execute) ]]
+    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|eval|execute) ]]
     then
         # jst_backend subcommand options and modules/targets eventually using the
         # auto-generated configuration

@@ -746,6 +746,69 @@ auto main(int argc, char* argv[]) -> int {
         if (arguments.cmd == SubCommand::kServe) {
             ReadJustServeConfig(&arguments);
         }
+
+        if (arguments.cmd == SubCommand::kEval) {
+            auto& eval_args = arguments.eval;
+            auto root_path = eval_args.root_path.empty()
+                                 ? std::filesystem::current_path()
+                                 : std::filesystem::path{eval_args.root_path};
+            auto root = FileRoot{root_path};
+
+            auto content = std::string{};
+            if (eval_args.file_path == "-") {
+                eval_args.file_path = "<stdin>";
+                auto oss = std::ostringstream{};
+                std::string line;
+                while (std::cin.good()) {
+                    std::getline(std::cin, line);
+                    oss << line << "\n";
+                }
+                content = oss.str();
+            }
+            else {
+                auto file_content = root.ReadContent(eval_args.file_path);
+                if (not file_content) {
+                    Logger::Log(LogLevel::Error,
+                                "Cannot read file {} in root {}.",
+                                eval_args.file_path,
+                                root_path.string());
+                    return kExitFailure;
+                }
+                content = std::move(*file_content);
+            }
+
+            auto json = root.ReadJustlang(
+                "", eval_args.file_path, std::move(content), eval_args.type);
+
+            if (not json) {
+                return kExitFailure;
+            }
+
+            if (eval_args.type == JustFileType::kPlain and
+                not eval_args.show_ir) {
+                auto analysis_args = AnalysisArguments{};
+                analysis_args.defines = std::move(eval_args.defines);
+                analysis_args.config_file = std::move(eval_args.config_file);
+                auto expr = Evaluator::EvaluateExpression(
+                    Expression::FromJson(*json),
+                    ReadConfiguration(analysis_args),
+                    FunctionMap::Ptr{nullptr},
+                    [](std::string const& error) {
+                        Logger::Log(LogLevel::Error, error);
+                    },
+                    [](ExpressionPtr const& p) -> std::string {
+                        return p->ToString();
+                    },
+                    []() {});
+                if (not expr) {
+                    return kExitFailure;
+                }
+                *json = expr->ToJson();
+            }
+
+            std::cout << json->dump(2) << std::endl;
+            return kExitSuccess;
+        }
 #endif  // BOOTSTRAP_BUILD_TOOL
 
         SetupLogging(arguments.log);
