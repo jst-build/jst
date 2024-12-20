@@ -144,7 +144,7 @@ echo
 
 cat "${OUT}/log"
 echo
-grep 'Export target \["@","tree_structure_1","",""\] registered for caching' \
+grep 'Export target '\''tree_structure_1//:""'\'' registered for caching' \
       "${OUT}/log"
 
 echo "Building tree_structure_2 (expected to be taken from cache):"
@@ -156,7 +156,7 @@ echo
 
 cat "${OUT}/log2"
 echo
-grep 'Export target \["@","tree_structure_2","",""\] taken from cache' \
+grep 'Export target '\''tree_structure_2//:""'\'' taken from cache' \
       "${OUT}/log2"
 
 echo OK

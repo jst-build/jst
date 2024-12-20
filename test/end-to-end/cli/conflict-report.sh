@@ -146,10 +146,10 @@ echo
 # We expect, in the error message, to see the full-qualified target names
 # containing the conflicting artifacts, but not the target not containing
 # this artifact.
-grep '\["@","","","world"\]' log
-grep '\["@","","","another world"\]' log
-grep '\["@","","","universe"\]' log
-grep '\["@","","","unrelated"\]' log && exit 1 || :
+grep \''""//:world'\' log
+grep \''""//:another world'\' log
+grep \''""//:universe'\' log
+grep \''""//:unrelated'\' log && exit 1 || :
 echo
 echo
 
@@ -157,20 +157,20 @@ echo
 "${JUST}" build --local-build-root "${LBR}" rule-conflict \
           -f log --log-limit 0 2>&1 && exit 1 || :
 echo
-grep '\["@","","","world"\]' log
-grep '\["@","","","another world"\]' log
-grep '\["@","","","universe"\]' log
-grep '\["@","","","unrelated"\]' log && exit 1 || :
+grep \''""//:world'\' log
+grep \''""//:another world'\' log
+grep \''""//:universe'\' log
+grep \''""//:unrelated'\' log && exit 1 || :
 echo
 echo
 
 "${JUST}" build --local-build-root "${LBR}" provided-conflict \
           -f log --log-limit 0 2>&1 && exit 1 || :
 echo
-grep '\["@","","","provided world"\]' log
-grep '\["@","","","another provided world"\]' log
-grep '\["@","","","provided universe"\]' log
-grep '\["@","","","provided unrelated"\]' log && exit 1 || :
+grep \''""//:provided world'\' log
+grep \''""//:another provided world'\' log
+grep \''""//:provided universe'\' log
+grep \''""//:provided unrelated'\' log && exit 1 || :
 
 # Also verify that the non-null part of the effective configuration is
 # reported.
@@ -178,10 +178,10 @@ grep '\["@","","","provided unrelated"\]' log && exit 1 || :
           -f log --log-limit 0 2>&1 -D '{"FOO": "bar", "NAME": "World"}' \
     && exit 1 || :
 echo
-grep -F '[["@","","","world"],{}]' log
-grep -F '[["@","","","universe"],{}]' log
-grep -F '[["@","","","greeting.txt"],{"NAME":"World"}]' log
-grep -F '["@","","","unrelated"]' log && exit 1 || :
+grep -F \''""//:world'\'',{}]' log
+grep -F \''""//:universe'\'',{}]' log
+grep -F \''""//:greeting.txt'\'',{"NAME":"World"}]' log
+grep -F \''""//:unrelated'\' log && exit 1 || :
 echo
 echo
 
@@ -189,9 +189,9 @@ echo
           -f log --log-limit 0 2>&1 -D '{"FOO": "bar", "NAME": null}' \
     && exit 1 || :
 echo
-grep -F '[["@","","","universe"],{}]' log
-grep -F '[["@","","","greeting.txt"],{}]' log
-grep -F '["@","","","unrelated"]' log && exit 1 || :
+grep -F \''""//:universe'\'',{}]' log
+grep -F \''""//:greeting.txt'\'',{}]' log
+grep -F \''""//:unrelated'\''' log && exit 1 || :
 echo
 echo
 
