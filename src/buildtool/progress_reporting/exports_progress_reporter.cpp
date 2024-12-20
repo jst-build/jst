@@ -50,6 +50,6 @@ auto ExportsProgressReporter::Reporter(gsl::not_null<Statistics*> const& stats,
                 msg = fmt::format(
                     "{} ({}{})", msg, sample, active > 1 ? ", ..." : "");
             }
-            Logger::Log(logger, LogLevel::Progress, "{}", msg);
+            Logger::Log(logger, LogLevel::Verbose, "{}", msg);
         });
 }

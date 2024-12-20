@@ -29,6 +29,7 @@ enum class LogLevel : std::uint8_t {
     Info,     ///< Informative messages, such as reporting status or statistics
     Progress,     ///< Information about the current progress of the build
     Performance,  ///< Information about performance issues
+    Verbose,      ///< Verbose information for advanced users
     Debug,        ///< Debug messages, such as details from internal processes
     Trace         ///< Trace messages, verbose details such as function calls
 };
@@ -72,6 +73,8 @@ constexpr auto kLastLogLevel = LogLevel::Trace;
             return "PROG";
         case LogLevel::Performance:
             return "PERF";
+        case LogLevel::Verbose:
+            return "VERB";
         case LogLevel::Debug:
             return "DEBUG";
         case LogLevel::Trace:

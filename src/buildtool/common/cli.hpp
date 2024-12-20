@@ -258,6 +258,12 @@ static inline auto SetupLogArguments(
                        static_cast<int>(kLastLogLevel),
                        static_cast<int>(kDefaultLogLevel)))
         ->type_name("NUM");
+    app->add_flag_function(
+        "-v,--verbose",
+        [clargs](auto /*unused*/) { clargs->log_limit = LogLevel::Verbose; },
+        fmt::format(
+            "Enable verbose command line output (shortcut for --log-limit={})",
+            static_cast<int>(LogLevel::Verbose)));
     app->add_option_function<std::underlying_type_t<LogLevel>>(
            "--restrict-stderr-log-limit",
            [clargs](auto const& limit) {

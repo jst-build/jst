@@ -139,6 +139,7 @@ EOF
 rm -f file.log console.log
 "${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" -f file.log \
           -L '["env", "PATH='"${PATH}"'"]' \
+          --verbose \
           --restrict-stderr-log-limit 1 build 2>console.log || :
 echo
 echo Console
@@ -150,7 +151,7 @@ cat file.log
 echo
 echo verifying log limits ...
 echo
-# The information of the launch invocation is logged at INFO level, hence should
+# The information of the launch invocation is logged at VERB level, hence should
 # be visible in the file log, but not in the console log
 grep tool-under-test file.log
 echo
@@ -185,7 +186,7 @@ cat > rc.json <<EOF
 EOF
 cat rc.json
 rm -f file.log console.log
-"${JUST_MR}" --rc rc.json -f file.log build 2>console.log || :
+"${JUST_MR}" --verbose --rc rc.json -f file.log build 2>console.log || :
 echo
 echo Console
 cat console.log
@@ -197,7 +198,7 @@ cat file.log
 echo
 echo verifying log limits ...
 echo
-# The information of the launch invocation is logged at INFO level, hence should
+# The information of the launch invocation is logged at VERB level, hence should
 # be visible in the file log, but not in the console log
 grep tool-under-test file.log
 echo

@@ -133,6 +133,7 @@ class LogSinkCmdLine final : public ILogSink {
                     style = fg(fmt::color::orange);
                     break;
                 case LogLevel::Info:
+                case LogLevel::Verbose:
                     style = fg(fmt::color::lime_green);
                     break;
                 case LogLevel::Progress:

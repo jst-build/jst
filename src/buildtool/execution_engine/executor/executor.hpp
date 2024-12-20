@@ -714,7 +714,7 @@ class ExecutorImpl {
             }
             return message;
         };
-        logger.Emit((has_err or has_out) ? LogLevel::Info : LogLevel::Debug,
+        logger.Emit((has_err or has_out) ? LogLevel::Info : LogLevel::Verbose,
                     std::move(build_message));
     }
 

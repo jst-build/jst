@@ -84,7 +84,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                     std::string const& multi_repo_tool_name)
     -> std::optional<std::filesystem::path> {
     // provide report
-    Logger::Log(LogLevel::Info, "Performing repositories setup");
+    Logger::Log(LogLevel::Verbose, "Performing repositories setup");
     // set anchor dir to setup_root; current dir will be reverted when anchor
     // goes out of scope
     auto cwd_anchor = FileSystemManager::ChangeDirectory(

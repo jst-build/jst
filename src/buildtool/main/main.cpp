@@ -569,6 +569,9 @@ auto DetermineRoots(gsl::not_null<RepositoryConfig*> const& repository_config,
             // in the config file
             if (cargs.workspace_root) {
                 main_ws_root = *cargs.workspace_root;
+                Logger::Log(LogLevel::Verbose,
+                            "Using workspace root {}",
+                            main_ws_root->string());
             }
             else if (not ws_root) {
                 main_ws_root = DetermineWorkspaceRootByLookingForMarkers();
@@ -667,7 +670,8 @@ auto DetermineRoots(gsl::not_null<RepositoryConfig*> const& repository_config,
     return {main_repo, main_ws_root};
 }
 
-void ReportTaintedness(const AnalysisResult& result) {
+void ReportTaintedness(const AnalysisResult& result,
+                       LogLevel level = LogLevel::Info) {
     if (result.target->Tainted().empty()) {
         // Never report untainted targets
         return;
@@ -678,7 +682,7 @@ void ReportTaintedness(const AnalysisResult& result) {
     for (auto const& s : result.target->Tainted()) {
         tainted.push_back(s);
     }
-    Logger::Log(LogLevel::Info, "Target tainted {}.", tainted.dump());
+    Logger::Log(level, "Target tainted {}.", tainted.dump());
 }
 
 auto DetermineNonExplicitTarget(
@@ -1135,7 +1139,7 @@ auto main(int argc, char* argv[]) -> int {
             os << serve_errors.dump() << std::endl;
         }
         if (analyse_result) {
-            Logger::Log(LogLevel::Info,
+            Logger::Log(LogLevel::Verbose,
                         "Analysed target {}",
                         analyse_result->id.ToShortString(
                             Evaluator::GetExpressionLogLimit()));
@@ -1200,7 +1204,7 @@ auto main(int argc, char* argv[]) -> int {
             }
 
             Logger::Log(
-                LogLevel::Info,
+                LogLevel::Verbose,
                 "{}ing{} {}.",
                 arguments.cmd == SubCommand::kRebuild ? "Rebuild" : "Build",
                 analyse_result->modified
@@ -1231,7 +1235,7 @@ auto main(int argc, char* argv[]) -> int {
 
                 // Repeat taintedness message to make the user aware that
                 // the artifacts are not for production use.
-                ReportTaintedness(*analyse_result);
+                ReportTaintedness(*analyse_result, LogLevel::Verbose);
                 if (build_result->failed_artifacts) {
                     Logger::Log(LogLevel::Warning,
                                 "Build result contains failed artifacts.");

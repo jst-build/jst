@@ -626,7 +626,7 @@ class GraphTraverser {
         std::vector<DependencyGraph::ArtifactNode const*> const& artifact_nodes,
         std::map<std::string, ArtifactDescription> const& runfiles) const {
         std::string msg_dbg{"Artifact ids:"};
-        std::string msg_failed{"Failed artifacts:"};
+        std::string msg_failed{"Build result contains failed artifacts:"};
         bool failed{false};
         nlohmann::json json{};
         for (std::size_t pos = 0; pos < paths.size(); ++pos) {
@@ -667,7 +667,7 @@ class GraphTraverser {
         Logger::Log(logger_, LogLevel::Info, "{}", message);
         Logger::Log(logger_, LogLevel::Debug, "{}", msg_dbg);
         if (failed) {
-            Logger::Log(logger_, LogLevel::Info, "{}", msg_failed);
+            Logger::Log(logger_, LogLevel::Warning, "{}", msg_failed);
         }
 
         if (clargs_.build.dump_artifacts) {
@@ -722,7 +722,7 @@ class GraphTraverser {
                 if ((not relpath.empty()) and *relpath.begin() != "..") {
                     Logger::Log(
                         logger_,
-                        LogLevel::Info,
+                        LogLevel::Verbose,
                         "'{}' not a direct logical path of the specified "
                         "target; will take subobject '{}' of '{}'",
                         *(clargs_.build.print_to_stdout),

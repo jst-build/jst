@@ -266,6 +266,12 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         SetupLogging(arguments.log);
+        if (arguments.common.just_mr_paths->workspace_root) {
+            Logger::Log(
+                LogLevel::Verbose,
+                "Using setup root {}",
+                arguments.common.just_mr_paths->workspace_root->string());
+        }
         auto config_file = ReadJustMRRC(&arguments);
         // As the rc file can contain logging parameters, reset the logging
         // configuration

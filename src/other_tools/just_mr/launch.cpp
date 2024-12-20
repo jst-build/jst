@@ -261,8 +261,9 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
         cmd.emplace_back(*it);
     }
 
-    Logger::Log(
-        LogLevel::Info, "Setup finished, exec {}", nlohmann::json(cmd).dump());
+    Logger::Log(LogLevel::Verbose,
+                "Setup finished, exec {}",
+                nlohmann::json(cmd).dump());
 
     // create argv
     std::vector<char*> argv{};
