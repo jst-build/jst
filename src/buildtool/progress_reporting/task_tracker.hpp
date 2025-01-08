@@ -26,6 +26,23 @@
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 
+/// \brief The task tracker class keeps track of the currently running action
+/// executions of a build. Actions are registered at the task tracker when they
+/// are started and deregistered when they are finished (called by execution
+/// threads). Futhermore, the task tracker allows to query the oldest still
+/// running sample from this transient collection of tasks, which is then used
+/// in progress reporting (called by progress reporter thread).
+///
+/// Implementation considerations: since we want to avoid putting unnecessary
+/// processing effort to the action execution threads, a hashmap-based approach
+/// is used, where adding and removing a task is cheap. Determining the oldest
+/// still running task is offloaded to the progress reporter thread, which is
+/// not performance critical.
+///
+/// Each task gets assigned a prio value, which is basically the current counter
+/// value of all registered tasks so far. It is incremented each time a new task
+/// is registered. This means, to find the oldest still running task one needs
+/// to determine the task with the smallest prio value.
 class TaskTracker {
   public:
     auto Start(const std::string& id) noexcept -> void {

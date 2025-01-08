@@ -25,6 +25,15 @@
 #include "src/buildtool/build_engine/target_map/configured_target.hpp"
 #include "src/buildtool/progress_reporting/task_tracker.hpp"
 
+/// \brief The progress class is a wrapper for the task tracker and the origin
+/// map. The task tracker is used to get dynamic information about the currently
+/// running actions during the execution phase. The origin map contains static
+/// information about the origins of the actions (e.g., the targets and the
+/// action number within these targets) and is populated after the analysis
+/// phase and before the execution phase. Progress reporting uses the dynamic
+/// information from the task tracker to get a snapshot of the currently running
+/// actions and uses the static information from the origin map to supplement
+/// action information with target information.
 class Progress {
   public:
     [[nodiscard]] auto TaskTracker() noexcept -> TaskTracker& {

@@ -26,6 +26,23 @@
 using progress_reporter_t =
     std::function<void(std::atomic<bool>*, std::condition_variable*)>;
 
+/// \brief The base progress reporter class provides the central progress
+/// reporter loop with an externally-controlled exit condition (atomic bool) and
+/// activation (condition variable). Default behavior is periodic activation
+/// with exponential back-off. At each activation a user-defined report function
+/// is called.
+///
+/// The class provides a static function, which requires a user-defined report
+/// function as input parameter and returns the periodically activated progress
+/// reporter function. Calling this progress reporter function requires control
+/// variables for termination and activation as input parameters.
+///
+/// Progress reporting requires a dedicated thread concurrently running besides
+/// the actual worker threads executing the actions of a build. Typically, the
+/// main thread creates and starts this thread (providing the progress reporter
+/// function) as well as the control variables for termination and activation.
+/// After finishing the regular computations, it terminates the progress
+/// reporter thread using the control variables.
 class BaseProgressReporter {
   public:
     [[nodiscard]] static auto Reporter(
