@@ -69,4 +69,19 @@
     , ["src/buildtool/logging", "log_level"]
     ]
   }
+, "dynamic_progress_reporter":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["dynamic_progress_reporter"]
+  , "hdrs": ["dynamic_progress_reporter.hpp"]
+  , "srcs": ["dynamic_progress_reporter.cpp"]
+  , "stage": ["src", "buildtool", "progress_reporting"]
+  , "deps":
+    [ "progress"
+    , "base_progress_reporter"
+    , ["@", "gsl", "", "gsl"]
+    , ["src/buildtool/common", "common"]
+    , ["src/buildtool/logging", "logging"]
+    ]
+  , "private-deps": [["@", "fmt", "", "fmt"]]
+  }
 }

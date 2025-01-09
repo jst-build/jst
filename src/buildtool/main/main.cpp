@@ -92,6 +92,7 @@
 #include "src/buildtool/main/describe.hpp"
 #include "src/buildtool/main/retry.hpp"
 #include "src/buildtool/main/serve.hpp"
+#include "src/buildtool/progress_reporting/dynamic_progress_reporter.hpp"
 #include "src/buildtool/progress_reporting/progress_reporter.hpp"
 #include "src/buildtool/serve_api/remote/config.hpp"
 #include "src/buildtool/serve_api/serve_service/serve_server_implementation.hpp"
@@ -996,10 +997,12 @@ auto main(int argc, char* argv[]) -> int {
             std::move(stage_args),
             std::move(rebuild_args)};
 
+        auto dynamic = not arguments.log.plain_log;
         GraphTraverser const traverser{
             traverse_args,
             &exec_context,
-            ProgressReporter::Reporter(&stats, &progress)};
+            dynamic ? DynamicProgressReporter::Reporter(&stats, &progress)
+                    : ProgressReporter::Reporter(&stats, &progress)};
 
         if (arguments.cmd == SubCommand::kInstallCas) {
             if (not repo_config.SetGitCAS(storage_config->GitRoot(),
