@@ -97,7 +97,9 @@ class LogSinkFile final : public ILogSink {
     /// every canonical file path shared across all instances of this class.
     void Emit(Logger const* logger,
               LogLevel level,
-              std::string const& msg) const noexcept final {
+              std::string const& msg,
+              bool clear) const noexcept final {
+        std::ignore = clear;
 #ifdef __unix__  // support nanoseconds for timestamp
         timespec ts{};
         clock_gettime(CLOCK_REALTIME, &ts);

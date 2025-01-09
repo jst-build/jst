@@ -30,6 +30,14 @@
 #include "src/buildtool/logging/log_sink.hpp"
 #include "src/buildtool/logging/logger.hpp"
 
+// Escape-code sequence to clear previous line on a VT100 terminal
+//  - \033[A moves cursor up one line
+//  - \r brings cursor to the beginning of the line
+//  - \033[K clears line from cursor to the end
+#ifdef __unix__
+constexpr auto kClearLineCmd = "\033[A\r\033[K";
+#endif
+
 class LogSinkCmdLine final : public ILogSink {
   public:
     static auto CreateFactory(bool colored = true,
@@ -52,7 +60,8 @@ class LogSinkCmdLine final : public ILogSink {
     /// \brief Thread-safe emitting of log messages to stderr.
     void Emit(Logger const* logger,
               LogLevel level,
-              std::string const& msg) const noexcept final {
+              std::string const& msg,
+              bool clear) const noexcept final {
         static std::mutex mutex{};
 
         if (restrict_level_ and
@@ -70,21 +79,38 @@ class LogSinkCmdLine final : public ILogSink {
         auto cont_prefix = std::string(prefix.size(), ' ');
         prefix = FormatPrefix(level, prefix);
         bool msg_on_continuation{false};
-        if (logger != nullptr and msg.find('\n') != std::string::npos) {
+        auto num_lines = static_cast<std::size_t>(
+            1 + std::count(msg.begin(), msg.end(), '\n'));
+        if (logger != nullptr and num_lines > 1) {
             cont_prefix = "    ";
             msg_on_continuation = true;
         }
 
         {
             std::lock_guard lock{mutex};
-            if (msg_on_continuation) {
+#ifdef __unix__
+            static std::size_t num_clear_lines{};
+            if (num_clear_lines > 0) {
+                std::string clear_str{};
+                clear_str.reserve(num_clear_lines * std::strlen(kClearLineCmd));
+                for (std::size_t i{}; i < num_clear_lines; ++i) {
+                    clear_str.append(kClearLineCmd);
+                }
+                fmt::print(stderr, "{}", clear_str);
+            }
+            num_clear_lines = clear ? num_lines : 0;
+#endif
+            if (msg_on_continuation and not clear) {
                 fmt::print(stderr, "{}\n", prefix);
                 prefix = cont_prefix;
             }
             using it = std::istream_iterator<ILogSink::Line>;
             std::istringstream iss{msg};
             for_each(it{iss}, it{}, [&](auto const& line) {
-                fmt::print(stderr, "{} {}\n", prefix, line);
+                if (not clear) {
+                    fmt::print(stderr, "{} ", prefix);
+                }
+                fmt::print(stderr, "{}\n", line);
                 prefix = cont_prefix;
             });
             std::fflush(stderr);

@@ -37,9 +37,12 @@ class ILogSink {
 
     /// \brief Thread-safe emitting of log messages.
     /// Logger might be 'nullptr' if called from the global context.
+    /// \param clear    Message will be emitted unmodified and cleared by next
+    ///                 log message.
     virtual void Emit(Logger const* logger,
                       LogLevel level,
-                      std::string const& msg) const noexcept = 0;
+                      std::string const& msg,
+                      bool clear) const noexcept = 0;
 
   protected:
     /// \brief Helper class for line iteration with std::istream_iterator.

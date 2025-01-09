@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/logging/logger.hpp"
-
 #include <atomic>
 #include <memory>
 #include <string>
@@ -24,6 +22,7 @@
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/log_sink.hpp"
+#include "src/buildtool/logging/logger.hpp"
 
 // Stores prints from test sink instances
 class TestPrints {
@@ -66,7 +65,8 @@ class LogSinkTest : public ILogSink {
 
     void Emit(Logger const* logger,
               LogLevel level,
-              std::string const& msg) const noexcept final {
+              std::string const& msg,
+              bool /*unused*/) const noexcept final {
         auto prefix = LogLevelToString(level);
 
         if (logger != nullptr) {

@@ -73,8 +73,12 @@ class Logger {
               std::string const& msg,
               TArgs&&... args) const noexcept {
         if (static_cast<int>(level) <= static_cast<int>(log_limit_)) {
-            FormatAndForward(
-                this, sinks_, level, msg, std::forward<TArgs>(args)...);
+            FormatAndForward(this,
+                             sinks_,
+                             level,
+                             msg,
+                             /*clear=*/false,
+                             std::forward<TArgs>(args)...);
         }
     }
 
@@ -82,7 +86,11 @@ class Logger {
     void Emit(LogLevel level,
               MessageCreateFunc const& msg_creator) const noexcept {
         if (static_cast<int>(level) <= static_cast<int>(log_limit_)) {
-            FormatAndForward(this, sinks_, level, msg_creator());
+            FormatAndForward(this,
+                             sinks_,
+                             level,
+                             msg_creator(),
+                             /*clear=*/false);
         }
     }
 
@@ -97,6 +105,24 @@ class Logger {
                              LogConfig::Sinks(),
                              level,
                              msg,
+                             /*clear=*/false,
+                             std::forward<TArgs>(args)...);
+        }
+    }
+
+    /// \brief Log message that will be overwritten by the next log message.
+    /// Not all sinks support overwrite.
+    template <class... TArgs>
+    static void LogVolatile(LogLevel level,
+                            std::string const& msg,
+                            TArgs&&... args) noexcept {
+        if (static_cast<int>(level) <=
+            static_cast<int>(LogConfig::LogLimit())) {
+            FormatAndForward(nullptr,
+                             LogConfig::Sinks(),
+                             level,
+                             msg,
+                             /*clear=*/true,
                              std::forward<TArgs>(args)...);
         }
     }
@@ -106,7 +132,11 @@ class Logger {
                     MessageCreateFunc const& msg_creator) noexcept {
         if (static_cast<int>(level) <=
             static_cast<int>(LogConfig::LogLimit())) {
-            FormatAndForward(nullptr, LogConfig::Sinks(), level, msg_creator());
+            FormatAndForward(nullptr,
+                             LogConfig::Sinks(),
+                             level,
+                             msg_creator(),
+                             /*clear=*/false);
         }
     }
 
@@ -126,7 +156,29 @@ class Logger {
                 logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
                 level,
                 msg,
+                /*clear=*/false,
                 std::forward<TArgs>(args)...);
+        }
+    }
+
+    /// \brief Generic logging method with log message that will be overwritten
+    /// by the next log message. Provides a common interface between the global
+    /// logger and named instances, hidden from the outside caller.
+    /// For named instances no global configuration is used.
+    template <class... TArgs>
+    static void LogVolatile(Logger const* logger,
+                            LogLevel level,
+                            std::string const& msg,
+                            TArgs&&... args) noexcept {
+        if (static_cast<int>(level) <=
+            static_cast<int>(logger != nullptr ? logger->log_limit_
+                                               : LogConfig::LogLimit())) {
+            FormatAndForward(logger,
+                             LogConfig::Sinks(),
+                             level,
+                             msg,
+                             /*clear=*/true,
+                             std::forward<TArgs>(args)...);
         }
     }
 
@@ -144,7 +196,8 @@ class Logger {
                 logger,
                 logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
                 level,
-                msg_creator());
+                msg_creator(),
+                /*clear=*/false);
         }
     }
 
@@ -160,19 +213,20 @@ class Logger {
         std::vector<ILogSink::Ptr> const& sinks,
         LogLevel level,
         std::string const& msg,
+        bool clear,
         // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
         TArgs&&... args) noexcept {
         if constexpr (sizeof...(TArgs) == 0) {
             // forward to sinks
             std::for_each(sinks.cbegin(), sinks.cend(), [&](auto& sink) {
-                sink->Emit(logger, level, msg);
+                sink->Emit(logger, level, msg, clear);
             });
         }
         else {
             // format the message
             auto fmsg = fmt::vformat(msg, fmt::make_format_args(args...));
             // recursive call without format arguments
-            FormatAndForward(logger, sinks, level, fmsg);
+            FormatAndForward(logger, sinks, level, fmsg, clear);
         }
     }
 };
