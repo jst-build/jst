@@ -84,19 +84,17 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
     // find fetch dir
     auto fetch_dir = fetch_args.fetch_dir;
     if (not fetch_dir) {
-        for (auto const& d : common_args.just_mr_paths->distdirs) {
-            if (FileSystemManager::IsDirectory(d)) {
-                fetch_dir = std::filesystem::weakly_canonical(
-                    std::filesystem::absolute(d));
-                break;
-            }
+        if (common_args.just_mr_paths->distdirs.empty()) {
+            Logger::Log(LogLevel::Error,
+                        "No fetch or distribution directory specified");
+            return kExitFetchError;
         }
+        fetch_dir = common_args.just_mr_paths->distdirs.front();
     }
-    if (not fetch_dir) {
-        auto considered = nlohmann::json(common_args.just_mr_paths->distdirs);
-        Logger::Log(LogLevel::Error,
-                    "No directory found to fetch to, considered {}",
-                    considered.dump());
+    if (not FileSystemManager::IsDirectory(*fetch_dir) and
+        not FileSystemManager::CreateDirectory(*fetch_dir)) {
+        Logger::Log(
+            LogLevel::Error, "Cannot create directory {}", fetch_dir->string());
         return kExitFetchError;
     }
 

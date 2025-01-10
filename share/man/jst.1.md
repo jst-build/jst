@@ -265,9 +265,8 @@ from the configuration is used. To perform the fetch for all
 repositories from the input configuration file, use the **`--all`**
 flag.
 
-By default the first existing distribution directory is used as the
-output directory for writing the fetched archives on disk. If no
-existing distribution directory can be found an error is produced. To
+By default the first distribution directory is used as the
+output directory for writing the fetched archives on disk. To
 define an output directory that is independent of the given distribution
 directories, use the **`-o`** option.
 
