@@ -414,6 +414,10 @@ auto main(int argc, char* argv[]) -> int {
         // The remaining options all need the config file
         auto config = JustMR::Utils::ReadConfiguration(
             config_file, arguments.common.absent_repository_file);
+        if (not config) {
+            Logger::Log(LogLevel::Error,
+                        "Cannot find repository configuration.");
+        }
 
         // Run subcommand `setup` or `setup-env`
         if (arguments.cmd == SubCommand::kSetup or

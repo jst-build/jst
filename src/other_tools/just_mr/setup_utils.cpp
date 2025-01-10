@@ -169,8 +169,7 @@ auto ReadConfiguration(
     std::optional<std::filesystem::path> const& absent_file_opt)
     -> std::shared_ptr<Configuration> {
     if (not config_file_opt) {
-        Logger::Log(LogLevel::Error, "Cannot find repository configuration.");
-        std::exit(kExitConfigError);
+        return nullptr;
     }
     auto const& config_file = *config_file_opt;
 

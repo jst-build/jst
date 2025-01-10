@@ -82,7 +82,12 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     std::optional<std::filesystem::path> mr_config_path{std::nullopt};
 
     std::optional<LockFile> lock{};
-    if (subcommand and kKnownJustSubcommands.contains(*subcommand)) {
+    auto last_arg = just_cmd_args.additional_just_args.empty()
+                        ? std::string{}
+                        : *just_cmd_args.additional_just_args.rbegin();
+    if (subcommand and kKnownJustSubcommands.contains(*subcommand) and
+        // do not setup the mr-config for printing the help dialog
+        last_arg != "-h" and last_arg != "--help") {
         // Read the config file if needed
         if (kKnownJustSubcommands.at(*subcommand).config) {
             auto repo_lock =
@@ -94,28 +99,29 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
             if (not lock) {
                 return kExitGenericFailure;
             }
-            auto config = JustMR::Utils::ReadConfiguration(
-                config_file, common_args.absent_repository_file);
+            if (auto config = JustMR::Utils::ReadConfiguration(
+                    config_file, common_args.absent_repository_file)) {
 
-            use_config = true;
-            mr_config_path = MultiRepoSetup(config,
-                                            common_args,
-                                            setup_args,
-                                            just_cmd_args,
-                                            auth_args,
-                                            retry_args,
-                                            storage_config,
-                                            storage,
-                                            /*interactive=*/false,
-                                            multi_repo_tool_name);
-            if (not mr_config_path) {
-                Logger::Log(LogLevel::Error,
-                            "Failed to setup config for calling \"{} {}\"",
-                            common_args.just_path
-                                ? common_args.just_path->string()
-                                : kDefaultBackendPath,
-                            *subcommand);
-                return kExitSetupError;
+                use_config = true;
+                mr_config_path = MultiRepoSetup(config,
+                                                common_args,
+                                                setup_args,
+                                                just_cmd_args,
+                                                auth_args,
+                                                retry_args,
+                                                storage_config,
+                                                storage,
+                                                /*interactive=*/false,
+                                                multi_repo_tool_name);
+                if (not mr_config_path) {
+                    Logger::Log(LogLevel::Error,
+                                "Failed to setup config for calling \"{} {}\"",
+                                common_args.just_path
+                                    ? common_args.just_path->string()
+                                    : kDefaultBackendPath,
+                                *subcommand);
+                    return kExitSetupError;
+                }
             }
         }
         use_build_root = kKnownJustSubcommands.at(*subcommand).build_root;
@@ -132,7 +138,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     if (subcommand) {
         cmd.emplace_back(*subcommand);
     }
-    if (use_config) {
+    if (use_config and mr_config_path) {
         cmd.emplace_back("-C");
         cmd.emplace_back(mr_config_path->string());
     }
