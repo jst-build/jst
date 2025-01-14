@@ -788,6 +788,15 @@
                     , ["-o", {"type": "var", "name": "work out"}]
                     ]
                   }
+                , "label":
+                  { "type": "join"
+                  , "$1":
+                    [ "Compiling "
+                    , { "type": "basename"
+                      , "$1": {"type": "var", "name": "src_name"}
+                      }
+                    ]
+                  }
                 }
               ]
             , [ "staged output artifact"
@@ -1378,6 +1387,15 @@
                         }
                       ]
                     }
+                  , "label":
+                    { "type": "join"
+                    , "$1":
+                      [ "Archiving "
+                      , { "type": "basename"
+                        , "$1": {"type": "var", "name": "libpath"}
+                        }
+                      ]
+                    }
                   }
                 ]
               , [ "lib artifact"
@@ -1759,6 +1777,13 @@
             }
           , "cmd": {"type": "var", "name": "cmd"}
           , "cwd": "work"
+          , "label":
+            { "type": "join"
+            , "$1":
+              [ "Linking "
+              , {"type": "basename", "$1": {"type": "var", "name": "binpath"}}
+              ]
+            }
           , "env": {"type": "var", "name": "ENV"}
           }
         ]

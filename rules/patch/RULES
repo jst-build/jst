@@ -328,6 +328,32 @@
           , "inputs": {"type": "var", "name": "inputs"}
           , "outs": ["patched"]
           , "cmd": [{"type": "var", "name": "sh"}, "./run_patch.sh"]
+          , "label":
+            { "type": "join"
+            , "$1":
+              [ "Patching file "
+              , { "type": "basename"
+                , "$1":
+                  { "type": "join"
+                  , "$1":
+                    { "type": "keys"
+                    , "$1":
+                      { "type": "map_union"
+                      , "$1":
+                        { "type": "foreach"
+                        , "var": "dep"
+                        , "range": {"type": "FIELD", "name": "src"}
+                        , "body":
+                          { "type": "DEP_ARTIFACTS"
+                          , "dep": {"type": "var", "name": "dep"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
           , "env": {"type": "var", "name": "ENV"}
           }
         ]

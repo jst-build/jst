@@ -669,6 +669,10 @@
                   , {"type": "var", "name": "def"}
                   , {"type": "var", "name": "val"}
                   ]
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -721,6 +725,10 @@
                   , {"type": "var", "name": "def"}
                   , {"type": "var", "name": "val"}
                   ]
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -773,6 +781,10 @@
                   , {"type": "var", "name": "def"}
                   , {"type": "var", "name": "type"}
                   ]
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -825,6 +837,10 @@
                   , {"type": "var", "name": "def"}
                   , {"type": "var", "name": "type"}
                   ]
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -894,6 +910,10 @@
                     , {"type": "var", "name": "hdrs"}
                     ]
                   }
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -962,6 +982,10 @@
                       ]
                     , {"type": "var", "name": "hdrs"}
                     ]
+                  }
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
                   }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
@@ -1039,6 +1063,10 @@
                       }
                     ]
                   }
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -1115,6 +1143,10 @@
                       }
                     ]
                   }
+                , "label":
+                  { "type": "join"
+                  , "$1": ["Auto-config ", {"type": "var", "name": "def"}]
+                  }
                 , "env": {"type": "var", "name": "ENV"}
                 , "outs": ["out.def"]
                 }
@@ -1173,6 +1205,11 @@
                 ]
               }
             ]
+          , "label":
+            { "type": "join"
+            , "$1":
+              ["Auto-config generate ", {"type": "var", "name": "name"}]
+            }
           , "outs": ["out"]
           , "env": {"type": "var", "name": "ENV"}
           }
@@ -1333,6 +1370,12 @@
           , "else": {"type": "empty_map"}
           }
         ]
+      , [ "outname"
+        , { "type": "join"
+          , "separator": "/"
+          , "$1": {"type": "FIELD", "name": "output"}
+          }
+        ]
       , [ "outfile"
         , { "type": "ACTION"
           , "inputs":
@@ -1350,17 +1393,20 @@
             , {"type": "var", "name": "magic_string"}
             , {"type": "var", "name": "@only"}
             ]
+          , "label":
+            { "type": "join"
+            , "$1":
+              [ "Generating config "
+              , {"type": "basename", "$1": {"type": "var", "name": "outname"}}
+              ]
+            }
           , "env": {"type": "var", "name": "ENV"}
           , "outs": ["out"]
           }
         ]
       , [ "outfile"
         , { "type": "singleton_map"
-          , "key":
-            { "type": "join"
-            , "separator": "/"
-            , "$1": {"type": "FIELD", "name": "output"}
-            }
+          , "key": {"type": "var", "name": "outname"}
           , "value":
             { "type": "lookup"
             , "key": "out"

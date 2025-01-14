@@ -288,6 +288,7 @@
               , "outs":
                 ["stdout", "stderr", "result", "time-start", "time-stop"]
               , "cmd": ["./summarizer"]
+              , "label": "Summarize shell test reports"
               , "execution properties":
                 { "type": "var"
                 , "name": "TEST_SUMMARY_EXECUTION_PROPERTIES"

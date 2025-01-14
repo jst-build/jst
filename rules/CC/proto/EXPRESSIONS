@@ -343,6 +343,10 @@
             }
           , "outs": {"type": "var", "name": "outs"}
           , "cmd": {"type": "var", "name": "cmd"}
+          , "label":
+            { "type": "join"
+            , "$1": ["Generating protos ", {"type": "var", "name": "name"}]
+            }
           , "env": {"type": "var", "name": "protoc-ENV"}
           }
         ]

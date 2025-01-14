@@ -195,6 +195,11 @@
             }
           }
         ]
+      , [ "action_label",
+          { "type": "join"
+          , "$1": ["Running shell test ", {"type": "var", "name": "name"}]
+          }
+        ]
       , [ "inputs"
         , { "type": "map_union"
           , "$1":
@@ -224,6 +229,7 @@
         , "out_dirs": {"type": "var", "name": "out_dirs"}
         , "inputs": {"type": "var", "name": "inputs"}
         , "cmd": {"type": "var", "name": "cmd"}
+        , "label": {"type": "var", "name": "action_label"}
         , "env": {"type": "var", "name": "test_env"}
         , "may_fail": ["test"]
         , "fail_message":
@@ -240,6 +246,7 @@
         , "out_dirs": {"type": "var", "name": "out_dirs"}
         , "inputs": {"type": "var", "name": "inputs"}
         , "cmd": {"type": "var", "name": "cmd"}
+        , "label": {"type": "var", "name": "action_label"}
         , "env": {"type": "var", "name": "test_env"}
         , "may_fail": ["test"]
         , "no_cache": ["test"]

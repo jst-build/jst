@@ -203,6 +203,13 @@
                     , {"type": "var", "name": "cmd"}
                     ]
                   }
+                , "label":
+                  { "type": "join"
+                  , "$1":
+                    [ "Linting "
+                    , {"type": "basename", "$1": {"type": "var", "name": "src"}}
+                    ]
+                  }
                 , "env": {"type": "env", "vars": ["PATH"]}
                 , "outs": ["stdout", "stderr", "result"]
                 , "out_dirs": ["out"]
@@ -254,6 +261,7 @@
               ]
             }
           , "cmd": ["./runner"]
+          , "label": "Summarizing lint results"
           , "outs": ["report", "result"]
           , "out_dirs": ["out"]
           }
