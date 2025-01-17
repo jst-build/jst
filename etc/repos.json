@@ -1,0 +1,144 @@
+{
+  "main": "justlang",
+  "repositories": {
+    "defaults": {
+      "repository": {
+        "type": "file",
+        "path": "etc/defaults"
+      }
+    },
+    "externals": {
+      "repository": {
+        "type": "file",
+        "path": "etc/externals"
+      }
+    },
+    "rules-justlang": {
+      "repository": "rules",
+      "target_root": "defaults",
+      "rule_root": "rules",
+      "bindings": {
+        "toolchain": "toolchain"
+      }
+    },
+    "justlang": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "json": "json",
+        "jsonnet": "jsonnet"
+      }
+    },
+    "tests": {
+      "repository": {
+        "type": "file",
+        "path": "test"
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "json": "json",
+        "catch2": "catch2",
+        "justlang": "justlang"
+      }
+    },
+    "jsonnet": {
+      "repository": {
+        "type": "archive",
+        "content": "273ba750b381e3f4d70ffbfd93eeef32d82d7939",
+        "fetch": "https://github.com/google/jsonnet/archive/refs/tags/v0.20.0.tar.gz",
+        "sha256": "77bd269073807731f6b11ff8d7c03e9065aafb8e4d038935deb388325e52511b",
+        "sha512": "d46d2521d4389d05f91a16ecd9f181be1853f674a9264e9fac23e413f1084dee947e80682af59603e15e443061a0beb50a30c14c858853e10ed1ae7187d09730",
+        "subdir": "jsonnet-0.20.0"
+      },
+      "target_root": "externals",
+      "target_file_name": "jsonnet.TARGETS",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "rules": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/rules-cc",
+        "branch": "master",
+        "commit": "457b1f9dda7366fbb4e6ac4664750bb2bab48e42",
+        "subdir": "rules"
+      }
+    },
+    "toolchain": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "master",
+        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "subdir": "rules"
+      },
+      "target_root": "json/defaults",
+      "rule_root": "toolchain",
+      "bindings": {
+        "toolchain": "json/toolchain"
+      }
+    },
+    "json": {
+      "repository": {
+        "type": "zip",
+        "content": "733571f96614cc01fcebf76c8359f52706677c61",
+        "fetch": "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip",
+        "sha256": "a22461d13119ac5c78f205d3df1db13403e58ce1bb1794edc9313677313f4a9d",
+        "sha512": "8d923e2586acf736fc1886bf1839ca0126444ec60ce93a4bd18c21eef4475dff6f608203e42bf4968878dc50727a8c20c517dd8c1ac5c6b0bb6a95f2dce5546e",
+        "subdir": "include/nlohmann"
+      },
+      "target_root": "json/import targets",
+      "target_file_name": "TARGETS.json",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "json/toolchain": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "master",
+        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "subdir": "etc/toolchain"
+      },
+      "rule_root": "toolchain"
+    },
+    "json/defaults": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "master",
+        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "subdir": "etc/defaults"
+      }
+    },
+    "json/import targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "master",
+        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "subdir": "etc/import"
+      }
+    },
+    "catch2": {
+      "repository": {
+        "type": "archive",
+        "content": "5af653af0c54ad580176a8cadb5a1cef8c880372",
+        "fetch": "https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.3.tar.gz",
+        "sha256": "8d723b0535c94860ef8cf6231580fa47d67a3416757ecb10639e40d748ab6c71",
+        "sha512": "57c996f679cbad212cb0fde39e506bade37bd559c0e93e20f407f2a2f029e98b78661e10257f9c8e4cb5fd7d52d0ea1eae3d4a1f989c6d66fcb281e32e1688f6",
+        "subdir": "Catch2-3.5.3"
+      },
+      "target_root": "json/import targets",
+      "target_file_name": "TARGETS.catch2",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    }
+  }
+}

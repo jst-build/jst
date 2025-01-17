@@ -1,0 +1,9 @@
+{ "third_party_headers":
+  { "type": "install"
+  , "files": {"md5.h": "md5/md5.h", "json.hpp": "json/json.hpp"}
+  , "deps":
+    [ ["./", "rapidyaml/rapidyaml/src", "rapidyaml_headers"]
+    , ["./", "rapidyaml/rapidyaml/ext/c4core/src", "rapidyaml_ext_headers"]
+    ]
+  }
+}

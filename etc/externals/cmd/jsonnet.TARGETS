@@ -1,0 +1,19 @@
+{ "jsonnet":
+  { "type": ["@", "rules", "CC", "binary"]
+  , "name": ["jsonnet"]
+  , "srcs": ["jsonnet.cpp"]
+  , "private-deps": [["", "libjsonnet"], "utils"]
+  }
+, "jsonnetfmt":
+  { "type": ["@", "rules", "CC", "binary"]
+  , "name": ["jsonnetfmt"]
+  , "srcs": ["jsonnetfmt.cpp"]
+  , "private-deps": [["", "libjsonnet"], "utils"]
+  }
+, "utils":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["utils"]
+  , "hdrs": ["utils.h"]
+  , "srcs": ["utils.cpp"]
+  }
+}

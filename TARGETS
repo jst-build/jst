@@ -1,0 +1,61 @@
+{ "ALL":
+  { "type": ["@", "rules", "CC", "install-with-deps"]
+  , "targets": ["justlangc", "ref", "preprocessor"]
+  }
+, "justlangc":
+  { "type": "export"
+  , "target": ["src", "justlangc"]
+  , "flexible_config":
+    [ "OS"
+    , "ARCH"
+    , "TARGET_ARCH"
+    , "TOOLCHAIN_CONFIG"
+    , "DEBUG"
+    , "CXX"
+    , "CXXFLAGS"
+    , "ADD_CXXFLAGS"
+    , "AR"
+    , "ENV"
+    ]
+  }
+, "ref":
+  { "type": "export"
+  , "target": ["src/justlang", "ref"]
+  , "flexible_config":
+    [ "OS"
+    , "ARCH"
+    , "TARGET_ARCH"
+    , "TOOLCHAIN_CONFIG"
+    , "DEBUG"
+    , "CXX"
+    , "CXXFLAGS"
+    , "ADD_CXXFLAGS"
+    , "AR"
+    , "ENV"
+    ]
+  }
+, "preprocessor":
+  { "type": "export"
+  , "target": ["src/justlang", "preprocessor"]
+  , "flexible_config":
+    [ "OS"
+    , "ARCH"
+    , "TARGET_ARCH"
+    , "TOOLCHAIN_CONFIG"
+    , "DEBUG"
+    , "CXX"
+    , "CXXFLAGS"
+    , "ADD_CXXFLAGS"
+    , "AR"
+    , "ENV"
+    ]
+  }
+, "DEV":
+  { "type": ["@", "rules", "CC", "install-with-deps"]
+  , "hdrs-only": ["yes"]
+  , "targets":
+    [ ["@", "json", "", "json"]
+    , ["@", "jsonnet", "", "libjsonnet_internals"]
+    ]
+  }
+}

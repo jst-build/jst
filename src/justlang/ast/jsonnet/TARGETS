@@ -1,0 +1,27 @@
+{ "parser":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["parser"]
+  , "srcs": ["parser.cpp"]
+  , "deps": [["src/justlang/ast", "parser"]]
+  , "private-deps":
+    [ "translate"
+    , ["src/justlang", "json_string"]
+    , ["src/justlang/ast", "builtins"]
+    , ["@", "jsonnet", "", "libjsonnet_internals"]
+    ]
+  , "stage": ["justlang/ast/jsonnet"]
+  }
+, "translate":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["jsonnet_translate"]
+  , "hdrs": ["translate.hpp"]
+  , "srcs": ["translate.cpp"]
+  , "deps":
+    [ ["src/justlang", "file_data"]
+    , ["src/justlang/ast", "ast"]
+    , ["@", "jsonnet", "", "libjsonnet_internals"]
+    ]
+  , "private-deps": [["src/justlang", "json_string"]]
+  , "stage": ["justlang/ast/jsonnet"]
+  }
+}

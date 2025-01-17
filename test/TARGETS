@@ -1,0 +1,44 @@
+{ "ALL":
+  { "type": ["@", "rules", "test", "suite"]
+  , "deps": ["inline", "preprocessor", "ref"]
+  }
+, "inline":
+  { "type": ["@", "rules", "CC/test", "test"]
+  , "name": ["inline"]
+  , "srcs": ["inline.test.cpp"]
+  , "private-deps":
+    [ ["@", "justlang", "src/justlang/ast", "inline"]
+    , ["@", "justlang", "src/justlang/ast", "builtins"]
+    , ["@", "justlang", "src/justlang/ast", "to_json_visitor"]
+    , ["@", "justlang", "src/justlang/ast/jsonnet", "parser"]
+    , ["@", "catch2", "", "catch2"]
+    , ["@", "catch2", "", "catch2-main"]
+    ]
+  }
+, "preprocessor":
+  { "type": ["@", "rules", "CC/test", "test"]
+  , "name": ["preprocessor"]
+  , "srcs": ["preprocessor.test.cpp"]
+  , "private-deps":
+    [ ["@", "justlang", "", "preprocessor"]
+    , ["@", "json", "", "json"]
+    , ["@", "catch2", "", "catch2"]
+    , ["@", "catch2", "", "catch2-main"]
+    ]
+  }
+, "ref":
+  { "type": ["@", "rules", "CC/test", "test"]
+  , "name": ["ref"]
+  , "srcs": ["ref.test.cpp"]
+  , "private-deps":
+    [ ["@", "justlang", "", "ref"]
+    , ["@", "catch2", "", "catch2"]
+    , ["@", "catch2", "", "catch2-main"]
+    ]
+  }
+, "DEV":
+  { "type": ["@", "rules", "CC", "install-with-deps"]
+  , "hdrs-only": ["yes"]
+  , "targets": [["@", "json", "", "json"], ["@", "catch2", "", "catch2"]]
+  }
+}

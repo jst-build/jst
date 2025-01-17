@@ -1,0 +1,13 @@
+FormatStyle: Google
+Checks: >-
+  *,-abseil-*,-altera-*,-android-*,-boost-*,-cert-*,-darwin-*,-fuchsia-*,-linuxkernel-*,-llvm-*,-llvmlibc-*,-mpi-*,-objc-*,-zircon-*,
+  -misc-no-recursion,
+  -concurrency-mt-unsafe,
+  -readability-redundant-member-init
+WarningsAsErrors: '*'
+CheckOptions: [
+  {
+    key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic,
+    value: '1'
+  }
+]

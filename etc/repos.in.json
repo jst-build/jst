@@ -1,0 +1,55 @@
+{ "main": "justlang"
+, "imports":
+  [ { "source": "git"
+    , "branch": "master"
+    , "url": "https://github.com/just-buildsystem/rules-cc"
+    , "repos": [{"repo": "rules"}]
+    }
+  , { "source": "git"
+    , "branch": "master"
+    , "url": "https://github.com/just-buildsystem/justbuild"
+    , "repos":
+      [ {"repo": "rules", "alias": "toolchain"}
+      , {"repo": "json"}
+      , {"repo": "catch2"}
+      ]
+    }
+  ]
+, "repositories":
+  { "defaults": {"repository": {"type": "file", "path": "etc/defaults"}}
+  , "externals": {"repository": {"type": "file", "path": "etc/externals"}}
+  , "rules-justlang":
+    { "repository": "rules"
+    , "target_root": "defaults"
+    , "rule_root": "rules"
+    , "bindings": {"toolchain": "toolchain"}
+    }
+  , "justlang":
+    { "repository": {"type": "file", "path": "."}
+    , "bindings":
+      {"rules": "rules-justlang", "json": "json", "jsonnet": "jsonnet"}
+    }
+  , "tests":
+    { "repository": {"type": "file", "path": "test"}
+    , "bindings":
+      { "rules": "rules-justlang"
+      , "json": "json"
+      , "catch2": "catch2"
+      , "justlang": "justlang"
+      }
+    }
+  , "jsonnet":
+    { "repository":
+      { "type": "archive"
+      , "content": "273ba750b381e3f4d70ffbfd93eeef32d82d7939"
+      , "fetch": "https://github.com/google/jsonnet/archive/refs/tags/v0.20.0.tar.gz"
+      , "sha256": "77bd269073807731f6b11ff8d7c03e9065aafb8e4d038935deb388325e52511b"
+      , "sha512": "d46d2521d4389d05f91a16ecd9f181be1853f674a9264e9fac23e413f1084dee947e80682af59603e15e443061a0beb50a30c14c858853e10ed1ae7187d09730"
+      , "subdir": "jsonnet-0.20.0"
+      }
+    , "target_root": "externals"
+    , "target_file_name": "jsonnet.TARGETS"
+    , "bindings": {"rules": "toolchain"}
+    }
+  }
+}
