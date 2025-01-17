@@ -22,6 +22,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "src/buildtool/logging/log_level.hpp"
@@ -45,32 +46,34 @@
 /// is registered. This means, to find the oldest still running task one needs
 /// to determine the task with the smallest prio value.
 class TaskTracker {
+  private:
+    enum class TaskState : std::uint8_t { kExecuting, kUploading };
+    struct TaskData {
+        std::uint64_t prio{};
+        TaskState state{};
+    };
+
   public:
     auto Start(const std::string& id) noexcept -> void {
-        std::unique_lock lock(m_);
-        ++prio_;
-        try {
-            running_.emplace(id, prio_);
-        } catch (...) {
-            Logger::Log(LogLevel::Warning,
-                        "Internal error in progress tracking; progress reports "
-                        "might be incorrect.");
-        }
+        StartTask(id, TaskState::kExecuting);
     }
 
-    auto Stop(const std::string& id) noexcept -> void {
-        std::unique_lock lock(m_);
-        running_.erase(id);
+    auto Stop(const std::string& id) noexcept -> void { StopTask(id); }
+
+    auto StartUploading(const std::string& id) noexcept -> void {
+        StartTask(id, TaskState::kUploading);
     }
+
+    auto StopUploading(const std::string& id) noexcept -> void { StopTask(id); }
 
     [[nodiscard]] auto Sample() noexcept -> std::string {
         std::unique_lock lock(m_);
         std::string result{};
         std::uint64_t started = prio_ + 1;
-        for (auto const& it : running_) {
-            if (it.second < started) {
-                result = it.first;
-                started = it.second;
+        for (auto const& id : running_) {
+            if (task_data_[id].prio < started) {
+                result = id;
+                started = task_data_[id].prio;
             }
         }
         return result;
@@ -83,12 +86,12 @@ class TaskTracker {
         // smallest prio values). A max heap of size n is used to store the n
         // tasks with the smallest prio values.
         std::vector<std::string> tasks{};
-        tasks.reserve(n);
+        tasks.reserve(static_cast<std::size_t>(n));
 
         // Fill the heap.
         auto it = running_.cbegin();
         for (int i{}; i < n && it != running_.cend(); ++i, ++it) {
-            tasks.push_back(it->first);
+            tasks.push_back(*it);
         }
 
         // Establish max heap property. The default behavior of the
@@ -96,9 +99,9 @@ class TaskTracker {
         // function returns true if the left argument is smaller than the right
         // argument ('less than' comparison function). The first element of the
         // heap will contain the task with the largest prio value.
-        auto cmp = [&running = running_](std::string const& a,
-                                         std::string const& b) {
-            return running[a] <= running[b];
+        auto cmp = [&task_data = task_data_](std::string const& a,
+                                             std::string const& b) {
+            return task_data[a].prio <= task_data[b].prio;
         };
         std::make_heap(tasks.begin(), tasks.end(), cmp);
 
@@ -107,9 +110,9 @@ class TaskTracker {
         // heap.
         for (; it != running_.cend(); ++it) {
             auto const& task = tasks.front();
-            if (it->second < running_[task]) {
+            if (task_data_[*it].prio < task_data_[task].prio) {
                 std::pop_heap(tasks.begin(), tasks.end(), cmp);
-                tasks.back() = it->first;
+                tasks.back() = *it;
                 std::push_heap(tasks.begin(), tasks.end(), cmp);
             }
         }
@@ -125,10 +128,42 @@ class TaskTracker {
         return running_.size();
     }
 
+    [[nodiscard]] auto IsUploading(std::string const& sample) noexcept -> bool {
+        std::unique_lock lock(m_);
+        if (running_.contains(sample)) {
+            return task_data_[sample].state == TaskState::kUploading;
+        }
+        return false;
+    }
+
   private:
     std::uint64_t prio_{};
     std::mutex m_;
-    std::unordered_map<std::string, std::uint64_t> running_;
+    std::unordered_map<std::string, TaskData> task_data_;
+    std::unordered_set<std::string> running_;
+
+    auto StartTask(std::string const& id, TaskState state) noexcept -> void {
+        std::unique_lock lock(m_);
+        try {
+            if (task_data_.contains(id)) {
+                task_data_[id].state = state;
+            }
+            else {
+                ++prio_;
+                task_data_.emplace(id, TaskData{prio_, state});
+            }
+            running_.emplace(id);
+        } catch (...) {
+            Logger::Log(LogLevel::Warning,
+                        "Internal error in progress tracking; progress reports "
+                        "might be incorrect.");
+        }
+    }
+
+    auto StopTask(std::string const& id) noexcept -> void {
+        std::unique_lock lock(m_);
+        running_.erase(id);
+    }
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_TASK_TRACKER_HPP

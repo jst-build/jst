@@ -76,10 +76,10 @@ class DynamicProgressReporterImpl {
             auto size = state_.samples.size();
             for (std::size_t i{0}; i < size; ++i) {
                 auto const& sample = state_.samples[i];
-                progress_message +=
-                    fmt::format("{} {}\n",
-                                Blue(fmt::format("{:>12}", "Executing")),
-                                GetOriginString(sample));
+                progress_message += fmt::format(
+                    "{} {}\n",
+                    Blue(fmt::format("{:>12}", GetLabelString(sample))),
+                    GetOriginString(sample));
             }
             if (active > size) {
                 progress_message +=
@@ -118,6 +118,18 @@ class DynamicProgressReporterImpl {
                 "{}#{}", origin.first.target.ToString(), origin.second);
         }
         return sample;
+    }
+
+    [[nodiscard]] auto GetLabelString(std::string const& sample)
+        -> std::string {
+        std::string label_string{};
+        if (progress_->TaskTracker().IsUploading(sample)) {
+            label_string = "Uploading";
+        }
+        else {
+            label_string = "Executing";
+        }
+        return label_string;
     }
 
     [[nodiscard]] static auto ProgressBar(int done,

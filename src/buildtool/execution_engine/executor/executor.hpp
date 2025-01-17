@@ -107,12 +107,14 @@ class ExecutorImpl {
             return oss.str();
         });
 
+        progress->TaskTracker().StartUploading(action->Content().Id());
         auto const root_digest = CreateRootDigest(api, inputs);
         if (not root_digest) {
             Logger::Log(LogLevel::Error,
                         "failed to create root digest for input artifacts.");
             return nullptr;
         }
+        progress->TaskTracker().StopUploading(action->Content().Id());
 
         if (tree_action) {
             auto const& tree_artifact = action->OutputDirs()[0].node->Content();
