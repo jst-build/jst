@@ -65,37 +65,21 @@ class DynamicProgressReporterImpl {
 
         // determine progress parameters
         auto total = gsl::narrow<int>(progress_->OriginMap().size());
+        auto num_samples = gsl::narrow<int>(state_.samples.size());
         auto done = state_.run + state_.cached;
-        auto active = static_cast<std::size_t>(state_.queued - state_.run -
-                                               state_.cached);
+        auto active = state_.queued - state_.run - state_.cached;
 
         // print a line for each currently running task
         std::string progress_message{};
-        if (active > 0 and not state_.samples.empty()) {
-            auto size = state_.samples.size();
-            for (std::size_t i{0}; i < size; ++i) {
-                auto const& sample = state_.samples[i];
-                progress_message += fmt::format(
-                    "{} {}\n",
-                    Blue(fmt::format("{:>12}", GetLabelString(sample))),
-                    GetOriginString(sample));
-            }
-            if (active > size) {
-                progress_message +=
-                    fmt::format("{}\n", fmt::format("{:>12}", "... "));
-            }
+        for (auto const& sample : state_.samples) {
+            progress_message += TaskString(sample) + "\n";
+        }
+        if (num_samples > 0 and active > num_samples) {
+            progress_message += TaskContinuationString() + "\n";
         }
 
         // print bottom line
-        progress_message +=
-            fmt::format("{} {} {}.",
-                        Green(fmt::format("{:>12}", "Building")),
-                        ProgressBar(done, total),
-                        fmt::format("{}/{} done, {} cached, {} processing",
-                                    done,
-                                    total,
-                                    state_.cached,
-                                    active));
+        progress_message += BottomLineString(done, total, active);
 
         Logger::LogVolatile(logger_, LogLevel::Progress, progress_message);
     }
@@ -107,8 +91,7 @@ class DynamicProgressReporterImpl {
     int count_{};
     State state_{};
 
-    [[nodiscard]] auto GetOriginString(std::string const& sample)
-        -> std::string {
+    [[nodiscard]] auto OriginString(std::string const& sample) -> std::string {
         auto const& origin_map = progress_->OriginMap();
         auto origins = origin_map.find(sample);
         if (origins != origin_map.end() and not origins->second.empty()) {
@@ -119,8 +102,7 @@ class DynamicProgressReporterImpl {
         return sample;
     }
 
-    [[nodiscard]] auto GetLabelString(std::string const& sample)
-        -> std::string {
+    [[nodiscard]] auto LabelString(std::string const& sample) -> std::string {
         std::string label_string{};
         if (progress_->TaskTracker().IsUploading(sample)) {
             label_string = "Uploading";
@@ -129,6 +111,29 @@ class DynamicProgressReporterImpl {
             label_string = "Executing";
         }
         return label_string;
+    }
+
+    [[nodiscard]] auto TaskString(std::string const& sample) -> std::string {
+        return fmt::format("{} {}",
+                           Blue(fmt::format("{:>12}", LabelString(sample))),
+                           OriginString(sample));
+    }
+
+    [[nodiscard]] static auto TaskContinuationString() -> std::string {
+        return fmt::format("{}", fmt::format("{:>12}", "... "));
+    }
+
+    [[nodiscard]] auto BottomLineString(int done,
+                                        int total,
+                                        int active) -> std::string {
+        return fmt::format("{} {} {}.",
+                           Green(fmt::format("{:>12}", "Building")),
+                           ProgressBar(done, total),
+                           fmt::format("{}/{} done, {} cached, {} processing",
+                                       done,
+                                       total,
+                                       state_.cached,
+                                       active));
     }
 
     [[nodiscard]] static auto ProgressBar(int done,
