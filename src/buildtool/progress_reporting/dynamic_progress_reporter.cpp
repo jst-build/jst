@@ -14,9 +14,14 @@
 
 #include "src/buildtool/progress_reporting/dynamic_progress_reporter.hpp"
 
-#include <cmath>
+#include <algorithm>
+#include <climits>
+#include <optional>
 #include <string>
 #include <vector>
+
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "fmt/color.h"
 #include "fmt/core.h"
@@ -27,9 +32,13 @@ class DynamicProgressReporterImpl {
   private:
     static auto constexpr kMaxTasks = 8;
     static auto constexpr kMaxCount = 10;
-    static auto constexpr kProgressBarWidth = 20;
+    static auto constexpr kDefaultMaxWidth = 80U;
+    static auto constexpr kTaskLabelFrac = 38.0 / (kDefaultMaxWidth - 3);
+    static auto constexpr kDescriptionFrac = 12.0 / (kDefaultMaxWidth - 2);
+    static auto constexpr kProgressBarFrac = 22.0 / (kDefaultMaxWidth - 2);
     static auto constexpr kColorGreen = fg(fmt::color::lime_green);
     static auto constexpr kColorBlue = fg(fmt::color::light_blue);
+    static const std::string kThreeDots;
 
     struct State {
         int cached;
@@ -69,17 +78,23 @@ class DynamicProgressReporterImpl {
         auto done = state_.run + state_.cached;
         auto active = state_.queued - state_.run - state_.cached;
 
+        // determine terminal width
+        auto width = TerminalWidth();
+        if (not width) {
+            width = UINT_MAX;
+        }
+
         // print a line for each currently running task
         std::string progress_message{};
         for (auto const& sample : state_.samples) {
-            progress_message += TaskString(sample) + "\n";
+            progress_message += TaskString(sample, *width) + "\n";
         }
         if (num_samples > 0 and active > num_samples) {
-            progress_message += TaskContinuationString() + "\n";
+            progress_message += TaskContinuationString(*width) + "\n";
         }
 
         // print bottom line
-        progress_message += BottomLineString(done, total, active);
+        progress_message += BottomLineString(done, total, active, *width);
 
         Logger::LogVolatile(logger_, LogLevel::Progress, progress_message);
     }
@@ -91,84 +106,136 @@ class DynamicProgressReporterImpl {
     int count_{};
     State state_{};
 
-    [[nodiscard]] auto OriginString(std::string const& sample) -> std::string {
+    [[nodiscard]] auto OriginString(std::string const& sample,
+                                    unsigned int max_width) -> std::string {
+        std::string result{};
         auto const& origin_map = progress_->OriginMap();
         auto origins = origin_map.find(sample);
         if (origins != origin_map.end() and not origins->second.empty()) {
             auto const& origin = origins->second[0];
-            return fmt::format(
+            result = fmt::format(
                 "{}#{}", origin.first.target.ToString(), origin.second);
         }
-        return sample;
+        else {
+            result = sample;
+        }
+        if (result.size() > max_width) {
+            std::string mark{};
+            switch (result[0]) {
+                case '[':
+                    mark = "[";
+                    break;
+                case '\'':
+                    mark = "'";
+                    break;
+                default:
+                    break;
+            }
+            result = mark + kThreeDots +
+                     result.substr(result.size() - max_width + mark.size() +
+                                   kThreeDots.size());
+        }
+        return result;
     }
 
     [[nodiscard]] auto LabelString(std::string const& sample,
                                    unsigned int max_width) -> std::string {
-        std::string label_string{};
+        std::string result{};
         if (progress_->TaskTracker().IsUploading(sample)) {
-            label_string = "Uploading";
+            result = "Uploading";
         }
         else {
             auto const& label_map = progress_->LabelMap();
             auto label = label_map.find(sample);
             if (label != label_map.end()) {
-                label_string = label->second;
+                result = label->second;
             }
             else {
-                label_string = "Executing";
+                result = "Executing";
             }
         }
-        if (label_string.size() >= max_width) {
-            label_string = label_string.substr(0, max_width);
-        }
-        else {
-            label_string += " ";
-        }
-        return label_string;
+        return result.substr(0, max_width);
     }
 
-    [[nodiscard]] auto TaskString(std::string const& sample) -> std::string {
+    [[nodiscard]] auto TaskString(std::string const& sample,
+                                  unsigned int max_width) -> std::string {
+        auto label_width = static_cast<unsigned int>(
+            (std::min(max_width, kDefaultMaxWidth) - 3) * kTaskLabelFrac);
+        auto origin_width = max_width - label_width - 3;
         return fmt::format(
-            "{} {}",
-            Blue(fmt::format("  {:.<38}", LabelString(sample, 38))),
-            OriginString(sample));
+            "  {} {}",
+            Blue(fmt::format("{:.<{}}",
+                             LabelString(sample, label_width - 1) + " ",
+                             label_width)),
+            OriginString(sample, origin_width));
     }
 
-    [[nodiscard]] static auto TaskContinuationString() -> std::string {
-        return fmt::format("{}", fmt::format("{:>12}", "... "));
+    [[nodiscard]] static auto TaskContinuationString(unsigned int max_width)
+        -> std::string {
+        auto desc_width = static_cast<unsigned int>(
+            (std::min(max_width, kDefaultMaxWidth) - 2) * kDescriptionFrac);
+        return fmt::format(
+            "{:>{}}", (kThreeDots + " ").substr(0, desc_width), desc_width);
+    }
+
+    [[nodiscard]] auto SummaryString(int done,
+                                     int total,
+                                     int active,
+                                     unsigned int max_width) -> std::string {
+        return fmt::format("{}/{} done, {} cached, {} processing.",
+                           done,
+                           total,
+                           state_.cached,
+                           active)
+            .substr(0, max_width);
     }
 
     [[nodiscard]] auto BottomLineString(int done,
                                         int total,
-                                        int active) -> std::string {
-        return fmt::format("{} {} {}.",
-                           Green(fmt::format("{:>12}", "Building")),
-                           ProgressBar(done, total),
-                           fmt::format("{}/{} done, {} cached, {} processing",
-                                       done,
-                                       total,
-                                       state_.cached,
-                                       active));
+                                        int active,
+                                        unsigned int max_width) -> std::string {
+        auto desc_width = static_cast<unsigned int>(
+            (std::min(max_width, kDefaultMaxWidth) - 2) * kDescriptionFrac);
+        auto bar_width = static_cast<unsigned int>(
+            (std::min(max_width, kDefaultMaxWidth) - 2) * kProgressBarFrac);
+        auto summary_width = max_width - desc_width - bar_width - 2;
+        return fmt::format(
+            "{} {} {}",
+            Green(fmt::format("{:>{}}",
+                              std::string{"Building"}.substr(0, desc_width),
+                              desc_width)),
+            ProgressBar(done, total, bar_width),
+            SummaryString(done, total, active, summary_width));
     }
 
     [[nodiscard]] static auto ProgressBar(int done,
                                           int total,
+                                          unsigned int max_width,
                                           char body = '=',
                                           char tip = '>',
                                           char empty = ' ') -> std::string {
-        std::string progress_bar{};
-        auto done_bar_width = static_cast<std::size_t>(
-            std::round(static_cast<double>(done) / total * kProgressBarWidth));
-        progress_bar += "[";
+        std::string result{};
+        auto done_bar_width = static_cast<unsigned int>(
+            static_cast<double>(done) / total * (max_width - 2));
+        result += "[";
         if (done_bar_width > 1) {
-            progress_bar += std::string(done_bar_width - 1, body);
+            result += std::string(done_bar_width - 1, body);
         }
         if (done_bar_width > 0) {
-            progress_bar += std::string(1, tip);
+            result += std::string{tip};
         }
-        progress_bar += std::string(kProgressBarWidth - done_bar_width, empty);
-        progress_bar += "]";
-        return progress_bar;
+        result += std::string((max_width - 2) - done_bar_width, empty);
+        result += "]";
+        return result;
+    }
+
+    [[nodiscard]] static auto TerminalWidth() -> std::optional<unsigned int> {
+        struct winsize ws {};
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
+        if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) == -1) {
+            return std::nullopt;
+        }
+        return ws.ws_col;
     }
 
     [[nodiscard]] static auto Green(std::string msg) -> std::string {
@@ -179,6 +246,8 @@ class DynamicProgressReporterImpl {
         return fmt::format(kColorBlue, "{}", msg);
     }
 };
+
+const std::string DynamicProgressReporterImpl::kThreeDots{"..."};
 
 }  // namespace
 
