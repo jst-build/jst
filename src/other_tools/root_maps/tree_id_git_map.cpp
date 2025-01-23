@@ -30,7 +30,6 @@
 #include "src/buildtool/multithreading/task_system.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
-#include "src/other_tools/root_maps/root_utils.hpp"
 #include "src/utils/cpp/tmp_dir.hpp"
 
 namespace {
@@ -74,24 +73,18 @@ void UploadToServeAndSetRoot(
         return;
     }
     // tell serve to set up the root from the remote CAS tree;
-    // upload can be skipped
-    if (EnsureAbsentRootOnServe(serve,
-                                tree_id,
-                                /*repo_path=*/"",
-                                native_storage_config,
-                                /*compat_storage_config=*/nullptr,
-                                /*local_api=*/nullptr,
-                                /*remote_api=*/nullptr,
-                                logger,
-                                /*no_sync_is_fatal=*/true)) {
-        // set workspace root as absent
-        auto root = nlohmann::json::array(
-            {ignore_special ? FileRoot::kGitTreeIgnoreSpecialMarker
-                            : FileRoot::kGitTreeMarker,
-             tree_id});
-        (*setter)(std::pair(std::move(root), /*is_cache_hit=*/false));
+    if (not serve.GetTreeFromRemote(digest)) {
+        (*logger)(
+            fmt::format("Serve endpoint failed to sync root tree {}.", tree_id),
+            /*fatal=*/true);
         return;
     }
+    // set workspace root as absent
+    auto root = nlohmann::json::array(
+        {ignore_special ? FileRoot::kGitTreeIgnoreSpecialMarker
+                        : FileRoot::kGitTreeMarker,
+         tree_id});
+    (*setter)(std::pair(std::move(root), /*is_cache_hit=*/false));
 }
 
 /// \brief Guarantees it terminates by either calling the setter or calling the
@@ -204,9 +197,14 @@ auto CreateTreeIdGitMap(
         if (key.absent and not fetch_absent) {
             if (serve != nullptr) {
                 // check serve endpoint
-                auto has_tree = CheckServeHasAbsentRoot(
-                    *serve, key.tree_info.tree_hash.Hash(), logger);
+                auto const has_tree =
+                    serve->CheckRootTree(key.tree_info.tree_hash.Hash());
                 if (not has_tree) {
+                    (*logger)(fmt::format(
+                                  "Checking that the serve endpoint knows tree "
+                                  "{} failed.",
+                                  key.tree_info.tree_hash.Hash()),
+                              /*fatal=*/true);
                     return;
                 }
                 if (*has_tree) {
@@ -233,17 +231,7 @@ auto CreateTreeIdGitMap(
                 auto const digest = ArtifactDigest{key.tree_info.tree_hash, 0};
                 if (remote_api->IsAvailable({digest})) {
                     // tell serve to set up the root from the remote CAS tree;
-                    // upload can be skipped
-                    if (EnsureAbsentRootOnServe(
-                            *serve,
-                            key.tree_info.tree_hash.Hash(),
-                            /*repo_path=*/"",
-                            native_storage_config,
-                            /*compat_storage_config=*/nullptr,
-                            /*local_api=*/nullptr,
-                            /*remote_api=*/nullptr,
-                            logger,
-                            /*no_sync_is_fatal=*/true)) {
+                    if (serve->GetTreeFromRemote(digest)) {
                         // set workspace root as absent
                         auto root = nlohmann::json::array(
                             {key.ignore_special

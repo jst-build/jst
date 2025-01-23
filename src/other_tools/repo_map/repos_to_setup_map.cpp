@@ -670,17 +670,28 @@ void PrecomputedRootCheckout(ExpressionPtr const& repo_desc,
             auto& ws_root = cfg["workspace_root"];
             SetReposTakeOver(&cfg, repos, repo_name);
 
+            bool absent = false;
             if (auto computed = result.AsComputed()) {
                 ws_root.push_back(ComputedRoot::kMarker);
                 ws_root.push_back(computed->repository);
                 ws_root.push_back(computed->target_module);
                 ws_root.push_back(computed->target_name);
                 ws_root.push_back(computed->config);
+                absent = computed->absent;
             }
             else if (auto tree_structure = result.AsTreeStructure()) {
                 ws_root.push_back(TreeStructureRoot::kMarker);
                 ws_root.push_back(tree_structure->repository);
+
+                absent = tree_structure->absent;
             }
+
+            if (absent) {
+                auto pragma = nlohmann::json::object();
+                pragma["absent"] = true;
+                ws_root.push_back(pragma);
+            }
+
             std::invoke(*setter, std::move(cfg));
         },
         logger);

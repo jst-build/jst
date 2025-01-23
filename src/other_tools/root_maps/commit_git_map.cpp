@@ -22,6 +22,8 @@
 #include "fmt/core.h"
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
+#include "src/buildtool/common/artifact_digest_factory.hpp"
+#include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/file_system/file_root.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_cas.hpp"
@@ -33,7 +35,6 @@
 #include "src/buildtool/storage/fs_utils.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
-#include "src/other_tools/root_maps/root_utils.hpp"
 #include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/path.hpp"
 #include "src/utils/cpp/tmp_dir.hpp"
@@ -68,22 +69,21 @@ namespace {
 /// root if it was marked absent.
 /// It guarantees the logger is called exactly once with fatal on failure, and
 /// the setter on success.
-void EnsureRootAsAbsent(
-    std::string const& tree_id,
-    std::filesystem::path const& repo_root,
-    GitRepoInfo const& repo_info,
-    ServeApi const* serve,
-    gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
-    gsl::not_null<IExecutionApi const*> const& local_api,
-    IExecutionApi const* remote_api,
-    CommitGitMap::SetterPtr const& ws_setter,
-    CommitGitMap::LoggerPtr const& logger) {
+void EnsureRootAsAbsent(std::string const& tree_id,
+                        std::filesystem::path const& repo_root,
+                        GitRepoInfo const& repo_info,
+                        ServeApi const* serve,
+                        CommitGitMap::SetterPtr const& ws_setter,
+                        CommitGitMap::LoggerPtr const& logger) {
     // this is an absent root
     if (serve != nullptr) {
         // check if the serve endpoint has this root
-        auto has_tree = CheckServeHasAbsentRoot(*serve, tree_id, logger);
+        auto const has_tree = serve->CheckRootTree(tree_id);
         if (not has_tree) {
+            (*logger)(fmt::format("Checking that the serve endpoint knows tree "
+                                  "{} failed.",
+                                  tree_id),
+                      /*fatal=*/true);
             return;
         }
         if (not *has_tree) {
@@ -115,26 +115,23 @@ void EnsureRootAsAbsent(
                               /*fatal=*/true);
                     return;
                 }
-                if (remote_api == nullptr) {
-                    (*logger)(
-                        fmt::format("Missing or incompatible remote-execution "
-                                    "endpoint needed to sync workspace root {} "
-                                    "with the serve endpoint.",
-                                    tree_id),
-                        /*fatal=*/true);
+
+                auto digest =
+                    ArtifactDigestFactory::Create(HashFunction::Type::GitSHA1,
+                                                  tree_id,
+                                                  /*size_unknown=*/0,
+                                                  /*is_tree=*/true);
+                if (not digest.has_value()) {
+                    (*logger)(std::move(digest).error(), /*fatal=*/true);
                     return;
                 }
+
                 // the tree is known locally, so we can upload it to remote CAS
                 // for the serve endpoint to retrieve it and set up the root
-                if (not EnsureAbsentRootOnServe(*serve,
-                                                tree_id,
-                                                repo_root,
-                                                native_storage_config,
-                                                compat_storage_config,
-                                                &*local_api,
-                                                remote_api,
-                                                logger,
-                                                true /*no_sync_is_fatal*/)) {
+                auto uploaded = serve->UploadTree(*digest, repo_root);
+                if (not uploaded.has_value()) {
+                    (*logger)(std::move(uploaded).error().Message(),
+                              /*fatal=*/true);
                     return;
                 }
             }
@@ -533,7 +530,6 @@ void EnsureCommit(
     std::vector<std::string> const& launcher,
     ServeApi const* serve,
     gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
     gsl::not_null<IExecutionApi const*> const& local_api,
     IExecutionApi const* remote_api,
     bool fetch_absent,
@@ -615,10 +611,6 @@ void EnsureCommit(
                     native_storage_config->GitRoot(), /*repo_root*/
                     repo_info,
                     serve,
-                    native_storage_config,
-                    compat_storage_config,
-                    local_api,
-                    remote_api,
                     ws_setter,
                     logger);
             }
@@ -1065,16 +1057,8 @@ void EnsureCommit(
         // set the workspace root
         if (repo_info.absent and not fetch_absent) {
             // try by all available means to generate and set the absent root
-            EnsureRootAsAbsent(subtree,
-                               repo_root,
-                               repo_info,
-                               serve,
-                               native_storage_config,
-                               compat_storage_config,
-                               local_api,
-                               remote_api,
-                               ws_setter,
-                               logger);
+            EnsureRootAsAbsent(
+                subtree, repo_root, repo_info, serve, ws_setter, logger);
         }
         else {
             // set root as present
@@ -1102,7 +1086,6 @@ auto CreateCommitGitMap(
     std::vector<std::string> const& launcher,
     ServeApi const* serve,
     gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
     gsl::not_null<IExecutionApi const*> const& local_api,
     IExecutionApi const* remote_api,
     bool fetch_absent,
@@ -1116,7 +1099,6 @@ auto CreateCommitGitMap(
                           launcher,
                           serve,
                           native_storage_config,
-                          compat_storage_config,
                           local_api,
                           remote_api,
                           fetch_absent,
@@ -1160,7 +1142,6 @@ auto CreateCommitGitMap(
              launcher,
              serve,
              native_storage_config,
-             compat_storage_config,
              local_api,
              remote_api,
              fetch_absent,
@@ -1196,7 +1177,6 @@ auto CreateCommitGitMap(
                              launcher,
                              serve,
                              native_storage_config,
-                             compat_storage_config,
                              local_api,
                              remote_api,
                              fetch_absent,

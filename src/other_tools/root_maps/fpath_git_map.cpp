@@ -19,6 +19,8 @@
 #include <vector>
 
 #include "fmt/core.h"
+#include "src/buildtool/common/artifact_digest_factory.hpp"
+#include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/file_system/file_root.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_cas.hpp"
@@ -26,7 +28,7 @@
 #include "src/buildtool/storage/fs_utils.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
-#include "src/other_tools/root_maps/root_utils.hpp"
+#include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/tmp_dir.hpp"
 
 namespace {
@@ -34,49 +36,42 @@ namespace {
 /// \brief Does the serve endpoint checks and sets the workspace root.
 /// It guarantees the logger is called exactly once with fatal on failure, and
 /// the setter on success.
-void CheckServeAndSetRoot(
-    std::string const& tree_id,
-    std::string const& repo_root,
-    bool absent,
-    ServeApi const* serve,
-    gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
-    IExecutionApi const* local_api,
-    IExecutionApi const* remote_api,
-    FilePathGitMap::SetterPtr const& ws_setter,
-    FilePathGitMap::LoggerPtr const& logger) {
+void CheckServeAndSetRoot(std::string const& tree_id,
+                          std::string const& repo_root,
+                          bool absent,
+                          ServeApi const* serve,
+                          FilePathGitMap::SetterPtr const& ws_setter,
+                          FilePathGitMap::LoggerPtr const& logger) {
     // if serve endpoint is given, try to ensure it has this tree available to
     // be able to build against it. If root is not absent, do not fail if we
     // don't have a suitable remote endpoint, but warn user nonetheless.
     if (serve != nullptr) {
-        auto has_tree = CheckServeHasAbsentRoot(*serve, tree_id, logger);
+        auto const has_tree = serve->CheckRootTree(tree_id);
         if (not has_tree) {
-            return;  // fatal
+            (*logger)(fmt::format("Checking that the serve endpoint knows tree "
+                                  "{} failed.",
+                                  tree_id),
+                      /*fatal=*/true);
+            return;
         }
         if (not *has_tree) {
-            // only enforce root setup on the serve endpoint if root is absent
-            if (remote_api == nullptr) {
-                (*logger)(
-                    fmt::format("Missing or incompatible remote-execution "
-                                "endpoint needed to sync workspace root {} "
-                                "with the serve endpoint.",
-                                tree_id),
-                    /*fatal=*/absent);
-                if (absent) {
-                    return;
-                }
+            auto digest =
+                ArtifactDigestFactory::Create(HashFunction::Type::GitSHA1,
+                                              tree_id,
+                                              /*size_unknown=*/0,
+                                              /*is_tree=*/true);
+            if (not digest) {
+                (*logger)(std::move(digest).error(), /*fatal=*/true);
+                return;
             }
-            else {
-                if (not EnsureAbsentRootOnServe(*serve,
-                                                tree_id,
-                                                repo_root,
-                                                native_storage_config,
-                                                compat_storage_config,
-                                                local_api,
-                                                remote_api,
-                                                logger,
-                                                /*no_sync_is_fatal=*/absent)) {
-                    return;  // fatal
+
+            auto uploaded = serve->UploadTree(*digest, repo_root);
+            // only enforce root setup on the serve endpoint if root is absent
+            if (not uploaded.has_value()) {
+                bool const fatal = absent or not uploaded.error().IsSyncError();
+                (*logger)(std::move(uploaded).error().Message(), fatal);
+                if (fatal) {
+                    return;
                 }
             }
         }
@@ -110,9 +105,6 @@ void ResolveFilePathTree(
     gsl::not_null<ResolveSymlinksMap*> const& resolve_symlinks_map,
     ServeApi const* serve,
     gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
-    IExecutionApi const* local_api,
-    IExecutionApi const* remote_api,
     gsl::not_null<TaskSystem*> const& ts,
     FilePathGitMap::SetterPtr const& ws_setter,
     FilePathGitMap::LoggerPtr const& logger) {
@@ -137,10 +129,6 @@ void ResolveFilePathTree(
                                  native_storage_config->GitRoot().string(),
                                  absent,
                                  serve,
-                                 native_storage_config,
-                                 compat_storage_config,
-                                 local_api,
-                                 remote_api,
                                  ws_setter,
                                  logger);
         }
@@ -160,9 +148,6 @@ void ResolveFilePathTree(
                  absent,
                  serve,
                  native_storage_config,
-                 compat_storage_config,
-                 local_api,
-                 remote_api,
                  ts,
                  ws_setter,
                  logger](auto const& hashes) {
@@ -185,9 +170,6 @@ void ResolveFilePathTree(
                          absent,
                          serve,
                          native_storage_config,
-                         compat_storage_config,
-                         local_api,
-                         remote_api,
                          ws_setter,
                          logger](auto const& values) {
                             GitOpValue op_result = *values[0];
@@ -215,10 +197,6 @@ void ResolveFilePathTree(
                                 native_storage_config->GitRoot().string(),
                                 absent,
                                 serve,
-                                native_storage_config,
-                                compat_storage_config,
-                                local_api,
-                                remote_api,
                                 ws_setter,
                                 logger);
                         },
@@ -246,16 +224,8 @@ void ResolveFilePathTree(
         // tree needs no further processing;
         // if serve endpoint is given, try to ensure it has this tree available
         // to be able to build against it
-        CheckServeAndSetRoot(tree_hash,
-                             repo_root,
-                             absent,
-                             serve,
-                             native_storage_config,
-                             compat_storage_config,
-                             local_api,
-                             remote_api,
-                             ws_setter,
-                             logger);
+        CheckServeAndSetRoot(
+            tree_hash, repo_root, absent, serve, ws_setter, logger);
     }
 }
 
@@ -268,9 +238,6 @@ auto CreateFilePathGitMap(
     gsl::not_null<ResolveSymlinksMap*> const& resolve_symlinks_map,
     ServeApi const* serve,
     gsl::not_null<StorageConfig const*> const& native_storage_config,
-    StorageConfig const* compat_storage_config,
-    IExecutionApi const* local_api,
-    IExecutionApi const* remote_api,
     std::size_t jobs,
     std::string const& multi_repo_tool_name,
     std::string const& build_tool_name) -> FilePathGitMap {
@@ -280,9 +247,6 @@ auto CreateFilePathGitMap(
                        resolve_symlinks_map,
                        serve,
                        native_storage_config,
-                       compat_storage_config,
-                       local_api,
-                       remote_api,
                        multi_repo_tool_name,
                        build_tool_name](auto ts,
                                         auto setter,
@@ -321,9 +285,6 @@ auto CreateFilePathGitMap(
                  resolve_symlinks_map,
                  serve,
                  native_storage_config,
-                 compat_storage_config,
-                 local_api,
-                 remote_api,
                  ts,
                  setter,
                  logger](auto const& values) {
@@ -384,9 +345,6 @@ auto CreateFilePathGitMap(
                          resolve_symlinks_map,
                          serve,
                          native_storage_config,
-                         compat_storage_config,
-                         local_api,
-                         remote_api,
                          ts,
                          setter,
                          logger](auto const& values) {
@@ -409,9 +367,6 @@ auto CreateFilePathGitMap(
                                 resolve_symlinks_map,
                                 serve,
                                 native_storage_config,
-                                compat_storage_config,
-                                local_api,
-                                remote_api,
                                 ts,
                                 setter,
                                 logger);
@@ -480,9 +435,6 @@ auto CreateFilePathGitMap(
                  resolve_symlinks_map,
                  serve,
                  native_storage_config,
-                 compat_storage_config,
-                 local_api,
-                 remote_api,
                  ts,
                  setter,
                  logger](auto const& values) {
@@ -508,9 +460,6 @@ auto CreateFilePathGitMap(
                         resolve_symlinks_map,
                         serve,
                         native_storage_config,
-                        compat_storage_config,
-                        local_api,
-                        remote_api,
                         ts,
                         setter,
                         logger);

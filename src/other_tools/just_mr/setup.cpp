@@ -332,39 +332,34 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
 
     auto resolve_symlinks_map = CreateResolveSymlinksMap();
 
-    auto commit_git_map = CreateCommitGitMap(
-        &critical_git_op_map,
-        &import_to_git_map,
-        common_args.just_mr_paths,
-        common_args.alternative_mirrors,
-        common_args.git_path->string(),
-        *common_args.local_launcher,
-        serve ? &*serve : nullptr,
-        &native_storage_config,
-        compat_storage_config != nullptr ? &*compat_storage_config : nullptr,
-        &(*apis.local),
-        has_remote_api ? &*apis.remote : nullptr,
-        common_args.fetch_absent,
-        &progress,
-        common_args.jobs);
+    auto commit_git_map =
+        CreateCommitGitMap(&critical_git_op_map,
+                           &import_to_git_map,
+                           common_args.just_mr_paths,
+                           common_args.alternative_mirrors,
+                           common_args.git_path->string(),
+                           *common_args.local_launcher,
+                           serve ? &*serve : nullptr,
+                           &native_storage_config,
+                           &(*apis.local),
+                           has_remote_api ? &*apis.remote : nullptr,
+                           common_args.fetch_absent,
+                           &progress,
+                           common_args.jobs);
 
-    auto content_git_map = CreateContentGitMap(
-        &content_cas_map,
-        &import_to_git_map,
-        common_args.just_mr_paths,
-        common_args.alternative_mirrors,
-        common_args.ca_info,
-        &resolve_symlinks_map,
-        &critical_git_op_map,
-        serve ? &*serve : nullptr,
-        &native_storage_config,
-        compat_storage_config != nullptr ? &*compat_storage_config : nullptr,
-        &native_storage,
-        has_remote_api ? &*apis.local : nullptr,  // only needed if remote given
-        has_remote_api ? &*apis.remote : nullptr,
-        common_args.fetch_absent,
-        &progress,
-        common_args.jobs);
+    auto content_git_map = CreateContentGitMap(&content_cas_map,
+                                               &import_to_git_map,
+                                               common_args.just_mr_paths,
+                                               common_args.alternative_mirrors,
+                                               common_args.ca_info,
+                                               &resolve_symlinks_map,
+                                               &critical_git_op_map,
+                                               serve ? &*serve : nullptr,
+                                               &native_storage_config,
+                                               &native_storage,
+                                               common_args.fetch_absent,
+                                               &progress,
+                                               common_args.jobs);
 
     auto foreign_file_git_map =
         CreateForeignFileGitMap(&content_cas_map,
@@ -382,25 +377,21 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         &resolve_symlinks_map,
         serve ? &*serve : nullptr,
         &native_storage_config,
-        compat_storage_config != nullptr ? &*compat_storage_config : nullptr,
-        has_remote_api ? &*apis.local : nullptr,  // only needed if remote given
-        has_remote_api ? &*apis.remote : nullptr,
         common_args.jobs,
         multi_repo_tool_name,
         common_args.just_path ? common_args.just_path->string()
                               : kDefaultBackendPath);
 
-    auto distdir_git_map = CreateDistdirGitMap(
-        &content_cas_map,
-        &import_to_git_map,
-        &critical_git_op_map,
-        serve ? &*serve : nullptr,
-        &native_storage_config,
-        compat_storage_config != nullptr ? &*compat_storage_config : nullptr,
-        &native_storage,
-        &(*apis.local),
-        has_remote_api ? &*apis.remote : nullptr,
-        common_args.jobs);
+    auto distdir_git_map =
+        CreateDistdirGitMap(&content_cas_map,
+                            &import_to_git_map,
+                            &critical_git_op_map,
+                            serve ? &*serve : nullptr,
+                            &native_storage_config,
+                            &native_storage,
+                            &(*apis.local),
+                            has_remote_api ? &*apis.remote : nullptr,
+                            common_args.jobs);
 
     auto tree_id_git_map = CreateTreeIdGitMap(
         &git_tree_fetch_map,

@@ -82,11 +82,34 @@
   , "deps": [["", "tool-under-test"]]
   , "repos": ["absent base of root (data)"]
   }
+, "absent target root (data)":
+  { "type": "install"
+  , "files":
+    { "TARGETS": "targets.absent-targets"
+    , "data/TARGETS": "targets.absent-targets-data"
+    }
+  }
+, "absent computed root":
+  { "type": ["end-to-end", "with serve"]
+  , "name": ["absent-computed"]
+  , "test": ["absent-computed.sh"]
+  , "deps": [["", "tool-under-test"]]
+  , "repos": ["absent base of root (data)", "absent target root (data)"]
+  , "keep": ["out/build.log"]
+  }
+, "progress":
+  { "type": ["@", "rules", "shell/test", "script"]
+  , "name": ["progress"]
+  , "test": ["progress.sh"]
+  , "deps": [["", "tool-under-test"]]
+  , "keep": ["out/log"]
+  }
 , "TESTS":
   { "type": ["@", "rules", "test", "suite"]
   , "stage": ["computed-roots"]
   , "deps":
     [ "absent base of root"
+    , "absent computed root"
     , "artifacts-only"
     , "basic"
     , "basic remote build"
@@ -95,6 +118,7 @@
     , "error-reporting"
     , "mr_computed_setup"
     , "mr_take_over"
+    , "progress"
     , "remote sharding"
     ]
   }

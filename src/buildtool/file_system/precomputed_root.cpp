@@ -51,10 +51,12 @@ template <typename T>
 template <>
 [[nodiscard]] auto ParseImpl<ComputedRoot>(nlohmann::json const& root)
     -> expected<ComputedRoot, std::string> {
-    if (root.size() != ComputedRoot::kSchemeLength) {
+    if ((root.size() != ComputedRoot::kSchemeLength) and
+        (root.size() != ComputedRoot::kSchemeLength + 1)) {
         return unexpected{fmt::format(
             "The root has a wrong number of arguments: {}\nThe scheme requires "
-            "[<scheme>, <root>, <module>, <name>, <config>]",
+            "[<scheme>, <root>, <module>, <name>, <config>] optionally "
+            "followed by a pragma object",
             root.dump())};
     }
 
@@ -77,23 +79,48 @@ template <>
     if (not root[4].is_object()) {
         return unexpected{
             fmt::format("The root has a wrong type of <config>. Expected a "
-                        "plain json, got {}",
+                        "plain json object, got {}",
                         root[4].dump())};
+    }
+
+    auto absent = false;
+
+    if (root.size() > ComputedRoot::kSchemeLength) {
+        if (not root[ComputedRoot::kSchemeLength].is_object()) {
+            return unexpected{
+                fmt::format("The root has a wrong type of optional pragma "
+                            "argument. Expected a "
+                            "plain json object, got {}",
+                            root[ComputedRoot::kSchemeLength].dump())};
+        }
+        if (root[ComputedRoot::kSchemeLength].contains("absent")) {
+            auto absent_entry = root[ComputedRoot::kSchemeLength]["absent"];
+            if (not absent_entry.is_boolean()) {
+                return unexpected{
+                    fmt::format("Expected pragma entry \"absent\" to be "
+                                "boolean, but found {}",
+                                absent_entry.dump())};
+            }
+            absent = absent_entry;
+        }
     }
 
     return ComputedRoot{.repository = std::string{root[1]},
                         .target_module = std::string{root[2]},
                         .target_name = std::string{root[3]},
-                        .config = root[4]};
+                        .config = root[4],
+                        .absent = absent};
 }
 
 template <>
 [[nodiscard]] auto ParseImpl<TreeStructureRoot>(nlohmann::json const& root)
     -> expected<TreeStructureRoot, std::string> {
-    if (root.size() != TreeStructureRoot::kSchemeLength) {
+    if (root.size() != TreeStructureRoot::kSchemeLength and
+        root.size() != TreeStructureRoot::kSchemePragmaLength) {
         return unexpected{
             fmt::format("The root has a wrong number of arguments: {}\nThe "
-                        "scheme requires [<scheme>, <root>]",
+                        "scheme requires [<scheme>, <root>] optionally "
+                        "followed by a pragma object",
                         root.dump())};
     }
 
@@ -103,7 +130,29 @@ template <>
             root[1].dump())};
     }
 
-    return TreeStructureRoot{.repository = std::string{root[1]}};
+    bool absent = false;
+    if (root.size() == TreeStructureRoot::kSchemePragmaLength) {
+        if (not root[2].is_object()) {
+            return unexpected{
+                fmt::format("The root has a wrong type of optional pragma "
+                            "argument. Expected a plain json object, got {}",
+                            root[2].dump())};
+        }
+        if (root[2].contains("absent")) {
+            auto const& absent_entry = root[2].at("absent");
+            if (not absent_entry.is_null() and not absent_entry.is_boolean()) {
+                return unexpected{
+                    fmt::format("Expected pragma entry \"absent\" to be "
+                                "boolean, but found {}",
+                                absent_entry.dump())};
+            }
+            absent =
+                absent_entry.is_boolean() and absent_entry.template get<bool>();
+        }
+    }
+
+    return TreeStructureRoot{.repository = root[1].template get<std::string>(),
+                             .absent = absent};
 }
 }  // namespace
 
@@ -111,7 +160,8 @@ auto ComputedRoot::operator==(ComputedRoot const& other) const noexcept
     -> bool {
     return repository == other.repository and
            target_module == other.target_module and
-           target_name == other.target_name and config == other.config;
+           target_name == other.target_name and config == other.config and
+           absent == other.absent;
 }
 
 auto ComputedRoot::operator<(ComputedRoot const& other) const noexcept -> bool {
@@ -124,14 +174,18 @@ auto ComputedRoot::operator<(ComputedRoot const& other) const noexcept -> bool {
     if (auto const res = target_name <=> other.target_name; res != 0) {
         return res < 0;
     }
+    if (absent != other.absent) {
+        return absent;
+    }
     return config < other.config;
 }
 
 auto ComputedRoot::ToString() const -> std::string {
-    return fmt::format("([\"@\", {}, {}, {}], {})",
+    return fmt::format("([\"@\", {}, {}, {}{}], {})",
                        nlohmann::json(repository).dump(),
                        nlohmann::json(target_module).dump(),
                        nlohmann::json(target_name).dump(),
+                       absent ? ", {\"absent\": true}" : "",
                        config.dump());
 }
 
@@ -141,28 +195,35 @@ auto ComputedRoot::ComputeHash() const -> std::size_t {
     hash_combine<std::string>(&seed, repository);
     hash_combine<std::string>(&seed, target_module);
     hash_combine<std::string>(&seed, target_name);
+    hash_combine<bool>(&seed, absent);
     hash_combine<nlohmann::json>(&seed, config);
     return seed;
 }
 
 auto TreeStructureRoot::operator==(
     TreeStructureRoot const& other) const noexcept -> bool {
-    return repository == other.repository;
+    return absent == other.absent and repository == other.repository;
 }
 
 auto TreeStructureRoot::operator<(TreeStructureRoot const& other) const noexcept
     -> bool {
+    if (absent != other.absent) {
+        return absent;
+    }
     return repository < other.repository;
 }
 
 auto TreeStructureRoot::ToString() const -> std::string {
-    return fmt::format("[\"tree structure\", {}]",
-                       nlohmann::json(repository).dump());
+    return fmt::format("[\"tree structure\", {}{}]",
+                       nlohmann::json(repository).dump(),
+                       absent ? ", {\"absent\": true}" : "");
 }
+
 auto TreeStructureRoot::ComputeHash() const -> std::size_t {
     std::size_t seed{};
     hash_combine<std::string>(&seed, kMarker);
     hash_combine<std::string>(&seed, repository);
+    hash_combine<bool>(&seed, absent);
     return seed;
 }
 
