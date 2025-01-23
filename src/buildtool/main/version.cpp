@@ -18,25 +18,44 @@
 #include <functional>
 #include <unordered_map>
 
+#include "fmt/core.h"
 #include "nlohmann/json.hpp"
 #include "src/utils/cpp/json.hpp"
+
+namespace upstream {
 
 auto version() -> std::string {
     static const std::size_t kMajor = 1;
     static const std::size_t kMinor = 5;
     static const std::size_t kRevision = 0;
     std::string suffix = "~alpha";
+
+    return fmt::format(
+        "justbuild-{}.{}.{}{}", kMajor, kMinor, kRevision, suffix);
+}
+
+}  // namespace upstream
+
+auto version() -> std::string {
+    static const std::size_t kJstMajor = 1;
+    static const std::size_t kJstMinor = 5;
+    static const std::size_t kJstRevision = 0;
+    std::string version_suffix = "~alpha";
+
 #ifdef VERSION_EXTRA_SUFFIX
-    suffix += VERSION_EXTRA_SUFFIX;
+    version_suffix += VERSION_EXTRA_SUFFIX;
 #endif
 
-    nlohmann::json version_info = {{"version", {kMajor, kMinor, kRevision}},
-                                   {"suffix", suffix}};
+    nlohmann::json version_info = {
+        {"version", {kJstMajor, kJstMinor, kJstRevision}},
+        {"upstream", upstream::version()}};
+
+    if (not version_suffix.empty()) {
+        version_info["version_suffix"] = version_suffix;
+    }
 
 #ifdef SOURCE_DATE_EPOCH
     version_info["SOURCE_DATE_EPOCH"] = (std::size_t)SOURCE_DATE_EPOCH;
-#else
-    version_info["SOURCE_DATE_EPOCH"] = nullptr;
 #endif
 
     return IndentOnlyUntilDepth(version_info, 2, 1, {});
