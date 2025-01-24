@@ -652,7 +652,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "81d48ad2561f2da922b2228fbf53f795ae27f68e",
+        "commit": "2f55ffaeb5a00d14bbeb19a4db9ce0d7a40ef047",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ]
@@ -691,7 +691,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "81d48ad2561f2da922b2228fbf53f795ae27f68e",
+        "commit": "2f55ffaeb5a00d14bbeb19a4db9ce0d7a40ef047",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
@@ -703,7 +703,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "81d48ad2561f2da922b2228fbf53f795ae27f68e",
+        "commit": "2f55ffaeb5a00d14bbeb19a4db9ce0d7a40ef047",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
@@ -724,7 +724,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "81d48ad2561f2da922b2228fbf53f795ae27f68e",
+        "commit": "2f55ffaeb5a00d14bbeb19a4db9ce0d7a40ef047",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
