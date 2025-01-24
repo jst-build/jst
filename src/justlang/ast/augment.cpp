@@ -32,7 +32,13 @@ auto const kUnevaluatedTargetFields =
         {"", {"type", "arguments_config"}},
         // export target
         {"export",
-         {"type", "arguments_config", "fixed_config", "doc", "config_doc"}}};
+         {"type", "arguments_config", "fixed_config", "doc", "config_doc"}},
+        // install target
+        {"install", {"type", "arguments_config", "files"}},
+        // generic target
+        {"install", {"type", "arguments_config", "env"}},
+        // configure target
+        {"install", {"type", "arguments_config", "config"}}};
 
 [[nodiscard]] auto JustAugmentTarget(justlang::MapNode const* target)
     -> justlang::ASTNodePtr {
