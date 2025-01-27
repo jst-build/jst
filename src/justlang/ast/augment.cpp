@@ -18,7 +18,6 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -26,19 +25,24 @@
 
 namespace {
 
+constexpr auto kFlat = justlang::VerbatimType::Flat;
+constexpr auto kFull = justlang::VerbatimType::Full;
+
 auto const kUnevaluatedTargetFields =
-    std::unordered_map<std::string, std::unordered_set<std::string>>{
+    std::unordered_map<std::string,
+                       std::unordered_map<std::string, justlang::VerbatimType>>{
         // default
-        {"", {"type", "arguments_config"}},
+        {"", {{"type", kFull}, {"arguments_config", kFull}}},
         // export target
         {"export",
-         {"type", "arguments_config", "fixed_config", "doc", "config_doc"}},
+         {{"type", kFull},
+          {"arguments_config", kFull},
+          {"fixed_config", kFull},
+          {"doc", kFull},
+          {"config_doc", kFull}}},
         // install target
-        {"install", {"type", "arguments_config", "files"}},
-        // generic target
-        {"install", {"type", "arguments_config", "env"}},
-        // configure target
-        {"install", {"type", "arguments_config", "config"}}};
+        {"install",
+         {{"type", kFull}, {"arguments_config", kFull}, {"files", kFlat}}}};
 
 [[nodiscard]] auto JustAugmentTarget(justlang::MapNode const* target)
     -> justlang::ASTNodePtr {
@@ -79,9 +83,11 @@ auto const kUnevaluatedTargetFields =
     std::size_t pos{};
     for (auto& field : fields) {
         auto const& name = *field_names[pos++];
-        if (uneval_fields.contains(name)) {
+        if (auto field_it = uneval_fields.find(name);
+            field_it != uneval_fields.end()) {
+            auto vtype = field_it->second;
             field.second = std::make_shared<justlang::VerbatimNode>(
-                field.second->GetLocation(), field.second, VerbatimType::Full);
+                field.second->GetLocation(), field.second, vtype);
         }
     }
     return std::make_shared<justlang::VerbatimNode>(
