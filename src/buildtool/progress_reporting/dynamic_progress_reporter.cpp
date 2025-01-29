@@ -20,7 +20,6 @@
 
 #include "fmt/color.h"
 #include "fmt/core.h"
-#include "gsl/gsl"
 
 namespace {
 
@@ -52,10 +51,10 @@ class DynamicProgressReporterImpl {
 
     auto operator()() -> void {
         // Note: order matters; queued has to be queried last
-        State state = {stats_->ActionsCachedCounter(),
-                       stats_->ActionsExecutedCounter(),
-                       stats_->ActionsQueuedCounter(),
-                       progress_->TaskTracker().Sample(kMaxTasks)};
+        State state = {.cached = stats_->ActionsCachedCounter(),
+                       .run = stats_->ActionsExecutedCounter(),
+                       .queued = stats_->ActionsQueuedCounter(),
+                       .samples = progress_->TaskTracker().Sample(kMaxTasks)};
 
         if (state_ == state and count_++ < kMaxCount) {
             // only update on change, but honor max count to force redraw
