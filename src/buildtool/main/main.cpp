@@ -746,7 +746,11 @@ auto main(int argc, char* argv[]) -> int {
         if (arguments.cmd == SubCommand::kServe) {
             ReadJustServeConfig(&arguments);
         }
+#endif  // BOOTSTRAP_BUILD_TOOL
 
+        SetupLogging(arguments.log);
+
+#ifndef BOOTSTRAP_BUILD_TOOL
         if (arguments.cmd == SubCommand::kEval) {
             auto& eval_args = arguments.eval;
             auto root_path = eval_args.root_path.empty()
@@ -811,7 +815,6 @@ auto main(int argc, char* argv[]) -> int {
         }
 #endif  // BOOTSTRAP_BUILD_TOOL
 
-        SetupLogging(arguments.log);
         if (arguments.analysis.expression_log_limit) {
             Evaluator::SetExpressionLogLimit(
                 *arguments.analysis.expression_log_limit);

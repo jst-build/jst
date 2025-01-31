@@ -181,6 +181,7 @@ auto SetupEvalCommandArguments(
     gsl::not_null<CLI::App*> const& app,
     gsl::not_null<CommandLineArguments*> const& clargs) {
     // all other arguments will be read from config file
+    SetupLogArguments(app, &clargs->log);
     SetupEvalArguments(app, &clargs->eval);
 }
 
