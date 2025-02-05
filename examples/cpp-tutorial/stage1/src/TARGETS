@@ -1,0 +1,10 @@
+{
+  // Target 'helloworld'
+  // - uses rule '//CC:binary' from binding 'rules'
+  // - binary name 'helloworld'
+  helloworld: {
+    type: @'rules//CC:binary',
+    name: ['helloworld'],
+    srcs: ['helloworld.cpp'],
+  },
+}

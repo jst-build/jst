@@ -1,0 +1,54 @@
+{
+  "main": "stage4",
+  "imports": [
+    {
+      "source": "git",
+      "branch": "master",
+      "url": "https://gitee.com/justbuild/toolchains-cc.git",
+      "mirrors": ["https://github.com/just-buildsystem/toolchains-cc.git"],
+      "repos": [{"repo": "system_toolchain", "alias": "toolchain"}]
+    },
+    {
+      "source": "git",
+      "branch": "v1.4.2",
+      "url": "https://github.com/just-buildsystem/justbuild.git",
+      "mirrors": ["https://gitee.com/justbuild/justbuild.git"],
+      "repos": [
+        {"repo": "fmt", "alias": "fmtlib", "map": {"rules": "toolchain"}}
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "v1.14.0",
+      "url": "https://github.com/google/googletest.git",
+      "mirrors": ["ssh://git@github.com:google/googletest.git"],
+      "as_plain": true,
+      "repos": [{"alias": "gtest_sources"}]
+    }
+  ],
+  "repositories": {
+    "etc/settings": {
+      "repository": {"type": "file", "path": "etc/settings"}
+    },
+    "settings": {
+      "repository": "toolchain",
+      "target_root": "etc/settings",
+      "rule_root": "toolchain",
+      "bindings": {"base": "toolchain"}
+    },
+    "gtest": {
+      "repository": "gtest_sources",
+      "target_root": "stage4",
+      "target_file_name": "gtest.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "stage4": {
+      "repository": {"type": "file", "path": "."},
+      "bindings": {
+        "rules": "settings",
+        "fmtlib": "fmtlib",
+        "gtest": "gtest"
+      }
+    }
+  }
+}

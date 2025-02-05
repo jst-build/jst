@@ -1,0 +1,32 @@
+{
+  // Target 'helloworld'
+  // - uses rule '//CC:binary' from binding 'rules'
+  // - binary name 'helloworld'
+  // - depends on exported top-level target 'libgreet'
+  helloworld: {
+    type: @'rules//CC:binary',
+    name: ['helloworld'],
+    srcs: ['helloworld.cpp'],
+    'private-deps': [@'//:libgreet'],
+  },
+
+  // Target 'libgreet'
+  // - uses rule '//CC:library' from binding 'rules'
+  // - reads variables 'BUILD_SHARED' and 'USE_FMTLIB'
+  //   - if 'BUILD_SHARED' is set: create shared library
+  //   - if 'USE_FMTLIB' is set: add private cflags and dependencies
+  // - public headers: 'greet.hpp'
+  // - stage 'greet', prefix used for library artifacts and its public headers
+  //   (consumers include this library via '#include "greet/greet.h"')
+  libgreet: {
+    type: @'rules//CC:library',
+    arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
+    name: ['greet'],    // produces libgreet.[a|so]
+    shared: if jst.env('BUILD_SHARED') then ['yes'],
+    'private-cflags': if jst.env('USE_FMTLIB') then ['-DUSE_FMTLIB'],
+    'private-deps':   if jst.env('USE_FMTLIB') then [@'fmtlib//:fmt-lib'],
+    hdrs: ['greet.hpp'],
+    srcs: ['greet.cpp'],
+    stage: ['greet'],   // prefix used for public headers
+  },
+}

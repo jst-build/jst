@@ -1,0 +1,15 @@
+// Project flags, common for C and C++
+local common_flags = ['-Wall', '-Werror', '-pedantic'];
+
+// Target definitions
+{
+  // 'defaults' is the default target for defining project settings
+  // - uses the rule '//CC:defaults'
+  // - inherits CC defaults from base (toolchain)
+  defaults: {
+    type: @'//CC:defaults',
+    base: [@'base//CC:defaults'],
+    ADD_CFLAGS: ['-std=c11'] + common_flags,
+    ADD_CXXFLAGS: ['-std=c++14'] + common_flags,
+  },
+}

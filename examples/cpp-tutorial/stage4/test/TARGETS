@@ -1,0 +1,64 @@
+// Target definitions
+{
+  // Test suite for collecting and combining all test reports
+  // - uses rule '//test:suite'
+  // - depends on 'test_libgreet' and 'test_helloworld'
+  // - staged to directory 'test'
+  ALL: {
+    type: @'rules//test:suite',
+    deps: [
+      @':test_libgreet',
+      @':test_helloworld',
+    ],
+    stage: ['test'],
+  },
+
+  // Binary test for the 'libgreet' library
+  // - uses rule '//CC/test:test'
+  // - test name 'libgreet'
+  // - depends on exported public top-level targets 'libgreet' and 'gtest_main'
+  test_libgreet: {
+    type: @'rules//CC/test:test',
+    name: ['libgreet'],
+    srcs: ['test_libgreet.cpp'],
+    'private-deps': [
+      @'//:libgreet',
+      @'gtest//:gtest_main',
+    ],
+  },
+
+  // Shell test for the 'helloworld' binary
+  // - uses rule '//shell/test:script'
+  // - test name 'helloworld'
+  // - test script 'test_helloworld.sh' (see below)
+  // - depends on exported public top-level target 'helloworld'
+  test_helloworld: {
+    type: @'rules//shell/test:script',
+    name: ['helloworld'],
+    test: ['test_helloworld.sh'],
+    deps: [
+      @'//:helloworld',
+    ],
+  },
+
+  // Script used for shell test 'test_helloworld' above
+  'test_helloworld.sh': {
+    type: 'file_gen',
+    name: 'test_helloworld.sh',
+    data: |||
+      #!/bin/sh
+
+      set -eu
+
+      readonly EXPECT="Hello World!"
+      readonly OUTPUT="$(./helloworld)"
+
+      if [ "$OUTPUT" != "$EXPECT" ]; then
+        echo "FAILURE: Expected output '$EXPECT', but got '$OUTPUT'"
+        exit 1
+      fi
+
+      echo "SUCCESS: Got expected output '$OUTPUT'"
+    |||,
+  },
+}

@@ -1,0 +1,23 @@
+// Target definitions
+{
+  // Foreign CMake target 'gtest_main'
+  // - uses rule '//CC/foreign/cmake:library' from binding 'rules'
+  // - reads the entire workspace directory '.' (contains CMakeLists.txt files)
+  // - collects libraries 'libgtest_main.a' and 'libgtest.a' (order matters)
+  // - collects header directory 'gtest'
+  // - collects pkg-config file 'gtest.pc' to infer public cflags
+  gtest_main: {
+    type: @'rules//CC/foreign/cmake:library',
+    arguments_config: ['DEBUG'],
+    name: ['gtest_main'],
+    project: [jst.tree('.')],
+    defines: [
+      'BUILD_GMOCK=OFF',
+      'gtest_force_shared_crt=OFF',
+      'CMAKE_BUILD_TYPE=' + if jst.env('DEBUG') then 'Debug' else 'Release',
+    ],
+    out_libs: ['libgtest_main.a', 'libgtest.a'],
+    out_hdr_dirs: ['gtest'],
+    'pkg-config': ['gtest.pc'],
+  },
+}

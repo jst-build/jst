@@ -1,0 +1,16 @@
+{
+  "main": "stage1",
+  "imports": [{
+    "source": "git",
+    "branch": "master",
+    "url": "https://gitee.com/justbuild/toolchains-cc.git",
+    "mirrors": ["https://github.com/just-buildsystem/toolchains-cc.git"],
+    "repos": [{"repo": "system_toolchain", "alias": "toolchain"}]
+  }],
+  "repositories": {
+    "stage1": {
+      "repository": {"type": "file", "path": "."},
+      "bindings": {"rules": "toolchain"}
+    }
+  }
+}

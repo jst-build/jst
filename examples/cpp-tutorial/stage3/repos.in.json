@@ -1,0 +1,27 @@
+{
+  "main": "stage3",
+  "imports": [
+    {
+      "source": "git",
+      "branch": "master",
+      "url": "https://gitee.com/justbuild/toolchains-cc.git",
+      "mirrors": ["https://github.com/just-buildsystem/toolchains-cc.git"],
+      "repos": [{"repo": "system_toolchain", "alias": "toolchain"}]
+    }
+  ],
+  "repositories": {
+    "etc/settings": {
+      "repository": {"type": "file", "path": "etc/settings"}
+    },
+    "settings": {
+      "repository": "toolchain",
+      "target_root": "etc/settings",
+      "rule_root": "toolchain",
+      "bindings": {"base": "toolchain"}
+    },
+    "stage3": {
+      "repository": {"type": "file", "path": "."},
+      "bindings": {"rules": "settings"}
+    }
+  }
+}

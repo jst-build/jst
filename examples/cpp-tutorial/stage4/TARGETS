@@ -1,0 +1,90 @@
+// Variables supported by this project (with documentation)
+local config_doc = {
+  // Variables used to parameterize the system toolchain,
+  // see https://gitee.com/justbuild/toolchains-cc#general-configuration
+  DEBUG: ['Build in debug mode (default: false)'],
+  ARCH: ['General architecture for build (default: "x86_64")'],
+  HOST_ARCH: ['Host architecture for build (default: ARCH)'],
+  TARGET_ARCH: ['Target architecture for build (default: ARCH)'],
+  TOOLCHAIN_CONFIG: [|||
+    Toolchain configuration map (default: {"FAMILY":"generic"}).
+        Set key "FAMILY" to either "gnu", "clang", or "generic"
+  |||],
+
+  // Variables used by this project
+  USE_FMTLIB: ['Use fmtlib for string format (default: false)'],
+  BUILD_SHARED: ['Build shared libraries (default: false)'],
+};
+
+// Create variable list from config_doc map
+local config_vars = jst.keys(config_doc);
+
+
+// Public targets of this project (typically 'export' or 'install' targets).
+// When importing projects, ensure to only use their public (exported) targets!
+{
+  // Exported 'helloworld' binary
+  // - uses built-in rule 'export'
+  // - flexible_config is the list of variables forwared to the target
+  // - target is the 'helloworld' binary from module 'src'
+  helloworld: {
+    type: 'export',
+    doc: ['Exported helloworld binary'],
+    flexible_config: config_vars,
+    config_doc: config_doc,
+    target: @'//src:helloworld',
+  },
+
+  // Exported 'libgreet' library
+  // - uses built-in rule 'export'
+  // - flexible_config is the list of variables forwared to the target
+  // - target is the 'libgreet' library from module 'src'
+  libgreet: {
+    type: 'export',
+    doc: ['Exported libgreet library'],
+    flexible_config: config_vars,
+    config_doc: config_doc,
+    target: @'//src:libgreet',
+  },
+
+  // Installation directory for applications (helloworld)
+  // - uses rule '//CC:install-with-deps'
+  //   creates the folders 'bin' and 'lib' for shared libraries
+  // - installs public export target 'helloworld'
+  APPS: {
+    type: @'rules//CC:install-with-deps',
+    targets: ['helloworld'],
+  },
+
+  // Installation directory for public libraries (libgreet)
+  // - uses rule '//CC:install-with-deps'
+  //   creates the folders 'lib' and 'include' for public headers
+  // - installs public export target 'libgreet'
+  LIBS: {
+    type: @'rules//CC:install-with-deps',
+    targets: ['libgreet'],
+  },
+
+  // Install target for collecting and combining all test reports
+  // - uses built-in rule 'install'
+  // - tainted with 'test', required for depending on test targets
+  // - depends on target 'ALL' from submodule 'test'
+  TESTS: {
+    type: 'install',
+    tainted: ['test'],
+    deps: [
+      @'//test:ALL',
+    ],
+  },
+
+  // Installation directory with external library headers (fmtlib, gtest)
+  // (useful for local development or static analysis of the local IDE)
+  DEV: {
+    type: @'rules//CC:install-with-deps',
+    'hdrs-only': ['yes'],
+    targets: [
+      @'fmtlib//:fmt-lib',
+      @'gtest//:gtest_main',
+    ],
+  },
+}

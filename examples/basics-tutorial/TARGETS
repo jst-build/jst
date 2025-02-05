@@ -1,0 +1,54 @@
+{
+  // Generic target 'plain_greeter'
+  //  - produces file 'out.txt'
+  plain_greeter: {
+    type: 'generic',
+    cmds: ['echo "Hello World" > out.txt'],
+    outs: ['out.txt'],
+  },
+
+  // Generic target 'file_greeter'
+  //  - depends on local file 'name.txt'
+  //  - produces file 'out.txt'
+  file_greeter: {
+    type: 'generic',
+    deps: ['name.txt'],
+    cmds: [
+      'echo -n "Hello " > out.txt',
+      'cat name.txt >> out.txt',
+    ],
+    outs: ['out.txt'],
+  },
+
+  // Generic target 'to_upper'
+  //  - depends on output from target 'file_greeter'
+  //  - produces file 'OUT.txt'
+  to_upper: {
+    type: 'generic',
+    deps: ['file_greeter'],
+    cmds: ['cat out.txt | tr "a-z" "A-Z" > OUT.txt'],
+    outs: ['OUT.txt'],
+  },
+
+  // File-gen target 'generated'
+  //  - reads variable 'GREETEE'
+  //  - produces file 'out.txt'
+  //  - containing string from field 'data' (using variable 'GREETEE')
+  generated: {
+    type: 'file_gen',
+    arguments_config: ['GREETEE'],
+    name: 'out.txt',
+    data: 'Hello ' + jst.env('GREETEE', default='Universe') + '\n',
+  },
+
+  // Install target 'ALL'
+  //  - stages outputs from targets to specified file paths
+  ALL: {
+    type: 'install',
+    files: {
+      'out/plain.txt': 'plain_greeter',
+      'out/file.txt': 'file_greeter',
+      'out/gen.txt': 'generated',
+    },
+  },
+}
