@@ -1,10 +1,10 @@
 Built-in rules
 ==============
 
-Targets are defined in `TARGETS` files. Each target file is a single
-`JSON` object. If the target name is contained as a key in that object,
+Targets are defined in `TARGETS` files. Each target file contains a single
+object. If the target name is contained as a key in that object,
 the corresponding value defines the target; otherwise it is implicitly
-considered a source file. The target definition itself is a `JSON`
+considered a source file. The target definition itself is a single
 object as well. The mandatory key `"type"` specifies the rule defining
 the target; the meaning of the remaining keys depends on the rule
 defining the target.
@@ -46,6 +46,19 @@ can be determined cheaply). This eligibility is also the reason why it
 is good practice to only depend on `"export"` targets of other
 repositories.
 
+Example:
+
+``` jsonnet
+{
+  foo: {
+    type: 'export',
+    flexible_config: ['DEBUG', 'TOOLCHAIN_CONFIG'],
+    fixed_config: {OS: 'linux', ARCH: 'x86_64'},
+    target: @'//src:foo',
+  },
+}
+```
+
 `"install"`
 -----------
 
@@ -71,6 +84,25 @@ second argument a string, taken as directory name. For each entry, both,
 runfiles and artifacts of the specified target are staged to the
 specified directory. It is an error if a conflict with the stage
 constructed so far occurs.
+
+Example:
+
+``` jsonnet
+{
+  localbase: {
+    type: 'install',
+    files: {
+      'bin/foo': @'//src:foo',
+      'bin/bar': @'//src:bar',
+    },
+    dirs: [
+      [@'//src:pub_hdrs', 'include'],
+      [@'//doc:man_pages', 'share/man'],
+    ],
+    deps: [@'//misc:data']
+  },
+}
+```
 
 Both, runfiles and artifacts of the `"install"` target are the stage
 just described. An `"install"` target always has an empty provides map.
@@ -114,6 +146,23 @@ and command of the action is the result of evaluating the field
 `[]`) extended by this string; the command is executed in the
 subdirectory of the execution root specified by `"cwd"`.
 
+Example:
+
+``` jsonnet
+{
+  foobar: {
+    type: 'generic',
+    deps: ['//src:foo']
+    cmds: [
+      './foo > foo.txt',
+      'echo bar > bar/bar.txt',
+    ],
+    outs: ['foo.txt'],
+    out_dirs: ['bar'],
+  },
+}
+```
+
 The artifacts of this target are the outputs (as declared by
 `"out_dirs"` and `"outs"`) of this action. Runfiles and provider map are
 empty.
@@ -129,6 +178,24 @@ runfiles of a target specified in `"deps"` can be accessed through the
 functions `"outs"` and `"runfiles"`, respectively, during the evaluation
 of the arguments `"name"` and `"data"` which have to evaluate to a
 single string.
+
+Example:
+
+``` jsonnet
+{
+  script: {
+    type: 'file_gen',
+    name: 'example.sh',
+    data: |||
+      #!/bin/sh
+
+      set -e
+
+      echo "Hello World!"
+    |||,
+  },
+}
+```
 
 Artifacts and runfiles of a `"file_gen"` target are a singleton map with
 key the result of evaluating `"name"` and value a (non-executable) file
@@ -148,6 +215,18 @@ of the `"tree"` target are a singleton map with the key the result of
 evaluating `"name"` (which has to evaluate to a single string) and value
 that tree.
 
+Example:
+
+``` jsonnet
+{
+  foobar_tree: {
+    type: 'tree',
+    name: 'foobar',
+    deps: [@'//src:foo', @'//src:bar'],
+  },
+}
+```
+
 `"symlink"`
 ------------
 
@@ -159,6 +238,18 @@ artifacts and runfiles of a target specified in `"deps"` can be accessed
 through the functions `"outs"` and `"runfiles"`, respectively, during the
 evaluation of the arguments `"name"` and `"data"` which have to evaluate to
 a single string.
+
+Example:
+
+``` jsonnet
+{
+  gcc_symlink: {
+    type: 'symlink',
+    name: 'gcc',
+    data: './gcc-14',
+  },
+}
+```
 
 Artifacts and runfiles of a `"symlink"` target are a singleton map with
 key the result of evaluating `"name"` and value a non-upwards symbolic link
@@ -195,3 +286,19 @@ depending on a library). Even if a non-internal target depended upon is
 not visible in the `"configure"` target itself, requesting it in a
 modified configuration causes additional overhead by increasing the
 target graph and potentially the action graph.
+
+Example:
+
+``` jsonnet
+{
+  foo_with_defaults: {
+    type: 'configure',
+    arguments_config: ['OS', 'ARCH']
+    config: {
+      OS: jst.env('OS', default='linux'),
+      ARCH: jst.env('ARCH', default='x86_64'),
+    },
+    target: @'//src:foo',
+  },
+}
+```

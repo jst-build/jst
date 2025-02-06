@@ -21,7 +21,7 @@ For example, a root could be specified as follows.
 ```
 
 It should be noted that the `git` tree identifier alone already
-specifies the content of the full tree. However, `just` needs access to
+specifies the content of the full tree. However, `jst` needs access to
 some repository containing the tree in order to know what the tree looks
 like.
 
@@ -235,18 +235,33 @@ choice would violate that projection property we rely upon.
 Consider the following target file (on a content-fixed root) as
 example.
 
-```
-{ "generated":
-  {"type": "generic", "outs": ["out.txt"], "cmds": ["echo Hello > out.txt"]}
-, "export": {"type": "export", "target": "generated"}
-, "use":
-  {"type": "install", "dirs": [["generated", "."], ["generated", "other-use"]]}
-, "": {"type": "export", "target": "use"}
+``` jsonnet
+{
+  generated: {
+    type: 'generic',
+    outs: ['out.txt'],
+    cmds: ['echo Hello > out.txt'],
+  },
+  export: {
+    type: 'export',
+    target: 'generated',
+  },
+  use: {
+    type: 'install',
+    dirs: [
+      ['generated', '.'],
+      ['generated', 'other-use'],
+    ],
+  },
+  '': {
+    type: 'export',
+    target: 'use',
+  },
 }
 ```
 
 Upon initial analysis (on an empty local build root) of the default
-target `""`, the output artifact `out.txt` is an action artifact, more
+target `''`, the output artifact `out.txt` is an action artifact, more
 precisely the same one that is output of the target `"generated"`;
 the target `"export"` also has the same artifact on output. After
 building the default target, a target-cache entry will be written

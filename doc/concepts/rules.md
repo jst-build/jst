@@ -15,7 +15,7 @@ rules, the same naming scheme as for targets applies. However, built-in
 rules (always named by a single string) take precedence in naming; to
 explicitly refer to a rule defined in the current module, the module has
 to be specified, possibly by a relative path, e.g.,
-`["./", ".", "install"]`.
+`./:install`.
 
 Basic components of a rule
 --------------------------
@@ -458,12 +458,13 @@ them depends on the output of another one of them.
 A typical invocation of that rule would be a target file like the
 following.
 
-``` jsonc
-{ "input.txt":
-  { "type": "ed patch"
-  , "script": ["%g/world/s//user/g", "%g/World/s//USER/g"]
-  , "srcs": [["FILE", null, "input.txt"]]
-  }
+``` jsonnet
+{
+  'input.txt': {
+    type: 'ed patch',
+    script: ['%g/world/s//user/g', '%g/World/s//USER/g'],
+    srcs: [jst.file('input.txt')],
+  },
 }
 ```
 
@@ -546,7 +547,7 @@ As the latter, however, typically are a target of the same family
 (authored by the same group), this usually is not a problem.
 
 A typical example of computing a provided value is the `"link-args"` in
-the rules used by `just` itself. They are defined by the following
+the rules used by `jst` itself. They are defined by the following
 expression.
 
 ``` jsonc

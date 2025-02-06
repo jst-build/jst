@@ -21,7 +21,7 @@ optional and the default is that the repository worked on has no
 external dependencies. Typically (but not necessarily), this
 repository-configuration file is located outside the referenced
 repositories and versioned separately or generated from such a file via
-`just-mr`. It serves as meta-data for a group of repositories
+`jst`. It serves as meta-data for a group of repositories
 belonging together.
 
 This file contains one JSON object. For the key `"repositories"` the
@@ -104,7 +104,7 @@ taken from the working directory (unless `-w` is specified). In this
 way, it provides an environment for developing applications based on
 `foo` and `bar`.
 
-For example, the invocation `just build -C /etc/just/repos.conf
+For example, the invocation `jst backend build -C /etc/just/repos.conf
 baz` tells our tool to build the target `baz` from the module the
 working directory is located in. `foo` will refer to the repository
 found at `/opt/foobar/repo` (using rules from `/etc/just/rules`,
@@ -118,13 +118,13 @@ Naming of targets
 
 In addition to the normal target references (string for a target in the
 name module, module-target pair for a target in same repository,
-`["./", relpath, target]` relative addressing, `["FILE", null,
-name]` explicit file reference in the same module), references of the
-form `["@", repo, module, target]` can be specified, where `repo` is
+`./relpath:target` relative addressing, `jst.file(name)`
+explicit file reference in the same module), references of the
+form `repo//module:target` can be specified, where `repo` is
 string referring to an open name. That open repository name is resolved
 to the global name by the `"bindings"` parameter of the repository the
 target reference is made in. Within the repository the resolved name
-refers to, the target `[module, target]` is taken.
+refers to, the target `//module:target` is taken.
 
 ### Expression language: names as abstract values
 
@@ -162,7 +162,7 @@ names in their provided data are eligible to be used in `export` rules.
 File layout in actions
 ----------------------
 
-As `just` does full staging for actions, no special considerations are
+As `jst` does full staging for actions, no special considerations are
 needed when combining targets of different repositories. Each target
 brings its staging of artifacts as usual. In particular, no repository
 names (neither local nor global ones) will ever be visible in any

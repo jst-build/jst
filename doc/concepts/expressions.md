@@ -1,7 +1,7 @@
 Expression language
 ===================
 
-At various places, in particular in order to define a rule, we need a
+In order to define a rule, we need a
 restricted form of functional computation. This is achieved by our
 expression language.
 

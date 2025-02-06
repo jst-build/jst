@@ -67,28 +67,16 @@ with values unset in the original configuration set to `null`).
 For example, a library where the debug version has an additional
 dependency could look as follows.
 
-``` jsonc
-{ "libfoo":
-  { "type": ["@", "rules", "CC", "library"]
-  , "arguments_config": ["DEBUG"]
-  , "name": ["foo"]
-  , "hdrs": ["foo.hpp"]
-  , "srcs": ["foo.cpp"]
-  , "local defines":
-    { "type": "if"
-    , "cond": {"type": "var", "name": "DEBUG"}
-    , "then": ["DEBUG"]
-    }
-  , "deps":
-    { "type": "++"
-    , "$1":
-      [ ["libbar", "libbaz"]
-      , { "type": "if"
-        , "cond": {"type": "var", "name": "DEBUG"}
-        , "then": ["libdebuglog"]
-        }
-      ]
-    }
+``` jsonnet
+{
+  libfoo: {
+    type: @'rules//CC:library',
+    arguments_config: ['DEBUG'],
+    name: ['foo'],
+    hdrs: ['foo.hpp'],
+    srcs: ['foo.cpp'],
+    defines: if jst.env('DEBUG') then ['DEBUG'],
+    deps: ['libbar', 'libbaz'] + if jst.env('DEBUG') then ['libdebuglog'],
   }
 }
 ```

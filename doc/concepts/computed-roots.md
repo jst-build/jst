@@ -31,8 +31,8 @@ value is easily cacheable.
 
 Rules can share computation through expressions. However, the interface,
 deliberately has to be explicit, including the documentation strings
-that are used by `just describe`. While this allows easy and efficient
-implementation of `just describe`, there is some redundancy involved, as
+that are used by `jst describe`. While this allows easy and efficient
+implementation of `jst describe`, there is some redundancy involved, as
 often fields are only there to be used by a common expression, but this
 have to be documented in a redundant way (causing additional maintenance
 burden).
@@ -61,7 +61,7 @@ describe the targets in a way to have proper incrementality.
 
 ### Root type `"computed"`
 
-The `just` multi-repository configuration allows a type of root,
+The `jst_backend` multi-repository configuration allows a type of root,
 called `"computed"`. A `"computed"` root is given by
 
  - the (global) name of a repository
@@ -122,14 +122,14 @@ target, the provided serve endpoint (if any) is consulted first.
 Only if it is not aware of the root, a local evaluation is carried
 out. This strategy is also applied for tree-stucture roots.
 
-### `just-mr` support for computed roots
+### `jst` support for computed roots
 
-To allow simply setting up a `just` configuration using computed
-roots, `just-mr` allows a repository type `"computed"` with the same
+To allow simply setting up a `jst_backend` configuration using computed
+roots, `jst` allows a repository type `"computed"` with the same
 parameters as a computed root, as well as a repository type `"tree
 structure"` with another root as parameter. These repositories can
-be used as roots, like any other `just-mr` repository type. When
-generating the `just` multi-repository configuration, the definition
+be used as roots, like any other `jst` repository type. When
+generating the `jst_backend` multi-repository configuration, the definition
 of a `"computed"` repository is just forwarded as computed root.
 
 ### Computed roots and `just serve`
@@ -150,16 +150,16 @@ dependencies without having them locally.
 #### Sytnax for absent computed roots
 
 As for other roots, we let the user specify which roots are to be
-absent. Tools like `just-import-git` will extend their marking of absent
-dependencies (e.g., by the option `--absent` of `just-import-git`)
+absent. Tools like `jst-import-git` will extend their marking of absent
+dependencies (e.g., by the option `--absent` of `jst-import-git`)
 to computed roots as well.
 
-In a `just-mr` repository config, `"pragma": {"absent": true}` can
-be used for computed roots as well. Also `just-mr` will also honor
+In a `jst` repository config, `"pragma": {"absent": true}` can
+be used for computed roots as well. Also `jst` will also honor
 the passed absent specification (via `--absent` or implicitly via
 the rc file) for computed roots the same way as for other roots.
 
-In a `just` repository config, computed roots are given by the
+In a `jst_backend` repository config, computed roots are given by the
 tuple `["computed", <repository>, <module>, <target>, <config>]`.
 Optionally, an additional entry can be added; that entry has to be
 an object. A computed root is absent if that additional argument

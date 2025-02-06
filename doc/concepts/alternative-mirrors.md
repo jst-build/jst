@@ -4,15 +4,15 @@ Alternative Mirrors
 Background
 ----------
 
-The repository fetch tool `just-mr` reads a repository-configuration
+The repository fetch tool `jst` reads a repository-configuration
 file that describes `git` repositories and repositories given by
 archives in a content-addressable way: by the `git` commit id, or
 the blob identifier of the archive, respectively. Hence it does
 not matter where these resources are fetched form; nevertheless,
-a location to fetch from is needed for `just-mr` to be able to set
+a location to fetch from is needed for `jst` to be able to set
 up those repositories. Typically the main upstream URL is given.
 
-While `just-mr` fetches each archive or commit only once and keeps
+While `jst` fetches each archive or commit only once and keeps
 a local copy, large organizations still tend to set up a local mirror.
 In this way, not every person working on the project has to fetch
 from upstream (thus reducing load there) and there is a central
@@ -20,22 +20,22 @@ place archiving all the dependencies. Such an archive is needed
 anyway, for audit and compliance reasons, as well as to be able
 to continue the project independent of the dependencies' upstream.
 
-It is therefore desirable that `just-mr` support this workflow while
+It is therefore desirable that `jst` support this workflow while
 still clearly pointing out the upstream location, e.g., for updating.
 
 Implementation
 --------------
 
 We have introduced the following, backwards-compatible, extensions to
-`just-mr`.
+`jst`.
 
-### Mirrors field in `just-mr` repository config
+### Mirrors field in `jst` repository config
 
 In the multi-repository configuration, in the definition of an
 `"archive"`, `"zip"` or `"git"` repository, an addition field
 `"mirrors"` was added. If given, this field has to be a list
 of URLs that provide additional places where the respective
-repository can be fetched from. `just-mr` will only consider a fetch
+repository can be fetched from. `jst` will only consider a fetch
 failed if the repository cannot be fetched neither from the main
 location (described in `"fetch"` field for `"archive"` and `"zip"`
 repositories, and `"repository"` field for `"git"` repositories),
@@ -59,10 +59,10 @@ keys in its JSON object.
   given) over URLs with other host names.
 
 
-### `just-import-git` to support mirror specifications
+### `jst-import-git` to support mirror specifications
 
 As multi-repository specifications are often generated from a
-description of the local repositories by a chain of `just-import-git`
+description of the local repositories by a chain of `jst-import-git`
 invocations, this tool needs to be able to also insert a `"mirrors"`
 field for the repository imported. Therefore, this tool was
 extended by an option `--mirror` where multiple occurrences accumulate

@@ -123,45 +123,49 @@ identical will behave in the same way.
 
 Consider the following target file.
 
-```jsonc
-{ "foo":
-  { "type": "generic"
-  , "outs": ["out.txt"]
-  , "cmds": ["echo Hello World > out.txt"]
-  }
-, "bar":
-  { "type": "generic"
-  , "outs": ["out.txt"]
-  , "cmds": ["echo Hello World > out.txt"]
-  }
-, "baz":
-  { "type": "generic"
-  , "outs": ["out.txt"]
-  , "cmds": ["echo -n Hello > out.txt && echo ' World' >> out.txt"]
-  }
-, "foo upper":
-  { "type": "generic"
-  , "deps": ["foo"]
-  , "outs": ["upper.txt"]
-  , "cmds": ["cat out.txt | tr a-z A-Z > upper.txt"]
-  }
-, "bar upper":
-  { "type": "generic"
-  , "deps": ["bar"]
-  , "outs": ["upper.txt"]
-  , "cmds": ["cat out.txt | tr a-z A-Z > upper.txt"]
-  }
-, "baz upper":
-  { "type": "generic"
-  , "deps": ["baz"]
-  , "outs": ["upper.txt"]
-  , "cmds": ["cat out.txt | tr a-z A-Z > upper.txt"]
-  }
-, "ALL":
-  { "type": "install"
-  , "files":
-    {"foo.txt": "foo upper", "bar.txt": "bar upper", "baz.txt": "baz upper"}
-  }
+```jsonnet
+{
+  foo: {
+    type: 'generic',
+    outs: ['out.txt'],
+    cmds: ['echo Hello World > out.txt'],
+  },
+  bar: {
+    type: 'generic',
+    outs: ['out.txt'],
+    cmds: ['echo Hello World > out.txt'],
+  },
+  baz: {
+    type: 'generic',
+    outs: ['out.txt'],
+    cmds: ['echo -n Hello > out.txt && echo " World" >> out.txt'],
+  },
+  'foo upper': {
+    type: 'generic',
+    deps: ['foo'],
+    outs: ['upper.txt'],
+    cmds: ['cat out.txt | tr a-z A-Z > upper.txt'],
+  },
+  'bar upper': {
+    type: 'generic',
+    deps: ['bar'],
+    outs: ['upper.txt'],
+    cmds: ['cat out.txt | tr a-z A-Z > upper.txt'],
+  },
+  'baz upper': {
+    type: 'generic',
+    deps: ['baz'],
+    outs: ['upper.txt'],
+    cmds: ['cat out.txt | tr a-z A-Z > upper.txt'],
+  },
+  ALL: {
+    type: 'install',
+    files: {
+      'foo.txt': 'foo upper',
+      'bar.txt': 'bar upper',
+      'baz.txt': 'baz upper',
+    },
+  },
 }
 ```
 

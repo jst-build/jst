@@ -117,14 +117,14 @@ expression is expected, they use the same naming scheme.
 
  - A single string refers to the target with this name in the same
    module.
- - A pair `[module, name]` refers to the target `name` in the module
+ - A pair `//module:name` refers to the target `name` in the module
    `module` of the same repository. There are no module names with a
    distinguished meaning. The naming scheme is unambiguous, as all
    other names given by lists have length at least 3.
- - A list `["./", relative-module-path, name]` refers to a target with
+ - A list `./relative-module-path:name` refers to a target with
    the given name in the module that has the specified path relative to
    the current module (in the current repository).
- - A list `["@", repository, module, name]` refers to the target with
+ - A list `repository//module:name` refers to the target with
    the specified name in the specified module of the specified
    repository.
 
@@ -132,23 +132,16 @@ Additionally, there are special targets that can also be referred to in
 target files.
 
  - An explicit reference of a source-file target in the same module,
-   specified as `["FILE", null, name]`. The explicit `null` at the
-   second position (where normally the module would be) is necessary to
-   ensure the name has length more than 2 to distinguish it from a
-   reference to the module `"FILE"`.
+   specified as `jst.file(name)`.
  - An explicit reference of a non-upwards symlink target in the same module,
-   specified as `["SYMLINK", null, name]`. The explicit `null` at the
-   second position is required for the same reason as in the explicit
-   file reference. It is the user's responsibility to ensure the symlink
+   specified as `jst.symlink(name)`.
+   It is the user's responsibility to ensure the symlink
    pointed to is non-upwards.
  - A reference to an collection, given by a shell pattern, of explicit
    source files in the top-level directory of the same module,
-   specified as `["GLOB", null, pattern]`. The explicit `null` at
-   second position is required for the same reason as in the explicit
-   file reference.
+   specified as `jst.glob(pattern)`.
  - A reference to a tree target in the same module, specified as
-   `["TREE", null, name]`. The explicit `null` at second position is
-   required for the same reason as in the explicit file reference.
+   `jst.tree(name)`.
 
 ### Data of an analyzed target
 

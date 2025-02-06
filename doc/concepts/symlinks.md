@@ -89,7 +89,7 @@ compile-like tasks, the effect of symlinks can be modeled by appropriate
 staging.
 
 As certain entries have to be ignored, source trees can only be obtained
-by traversing the respective tree; in particular, the `TREE` reference
+by traversing the respective tree; in particular, the `jst.tree()` reference
 is no longer constant time on those roots, even if `git`-tree based.
 Nevertheless, for `git`-tree roots, the effective tree is a function of
 the `git`-tree of the root, so `git`-tree-based ignore-special roots are
@@ -140,5 +140,5 @@ For reasons already described, absolute symbolic links are never supported.
 
 As this process acts directly at the repository level, the resulting roots
 remain cacheable and their trees accessible in constant time. Moreover, to
-increase the chances of cache hits in `just-mr`, not only the resulting
+increase the chances of cache hits in `jst`, not only the resulting
 resolved trees are stored, but also the original, unresolved ones.

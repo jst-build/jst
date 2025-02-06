@@ -32,7 +32,7 @@ build system and don't change too often (yet often enough to not
 have them part of the build image) are simply put in a single
 action, so that they get built only once, and then stay in cache for
 everyone. This is precisely, what our `rules-cc` rules like
-`["CC/foreign/make", "library"]` and `["CC/foreign/cmake", "library"]` do.
+`//CC/foreign/make:library` and `//CC/foreign/cmake:library` do.
 
 For those compound actions, we of course expect them to run longer
 than normal actions that only consist of a single compiler or linker
@@ -70,7 +70,7 @@ remote-execution properties specified at the invocation of the build
 precedence).
 
 Local execution continues to any execution properties specified.
-However, with the dispatch functionality of `just` described later, such
+However, with the dispatch functionality of `jst_backend` described later, such
 execution properties can also influence a build that is local by
 default.
 
@@ -92,12 +92,12 @@ and `"execution properties"` are taken as additional arguments to
 the underlying action, with the same semantics as the respective
 fields of the `"ACTION"` constructor.
 
-### `just` dispatching based on remote-execution properties
+### `jst_backend` dispatching based on remote-execution properties
 
-In simple setups, like using `just execute`, the remote execution is not
+In simple setups, like using `jst backend execute`, the remote execution is not
 capable of dispatching to different workers based on remote-execution
 properties. To nevertheless have the benefits of using different
-execution environments, `just` allows an optional configuration file
+execution environments, `jst_backend` allows an optional configuration file
 to be passed on the command line via a new option
 `--endpoint-configuration`. This configuration file contains a list
 of pairs of remote-execution properties and remote-execution endpoints.
@@ -108,7 +108,7 @@ used; if no entry matches, the default remote-execution endpoint is
 used. In any case, the remote-execution properties are forwarded to the
 chosen remote-execution endpoint without modification.
 
-When connecting a non-standard remote-execution endpoint, `just` will
+When connecting a non-standard remote-execution endpoint, `jst_backend` will
 ensure that the applicable CAS of that endpoint will have all the needed
 artifacts for that action. It will also transfer all result artifacts
 back to the CAS of the default remote-execution endpoint.

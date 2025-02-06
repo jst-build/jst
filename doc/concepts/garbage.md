@@ -51,7 +51,7 @@ effective cache or CAS upon the next garbage collection.
 
 These generations are stored as separate directories inside the local
 build root. As the local build root is, starting from an empty
-directory, entirely managed by \`just\` and compatible tools,
+directory, entirely managed by `jst` and compatible tools,
 generations are on the same file system. Therefore the adding of old
 entries to the youngest generation can be implemented in an efficient
 way by using hard links.
@@ -146,14 +146,14 @@ splitting of that blob is minimal.
 
 ### Blob splitting uses large-objects CAS as cache
 
-When `just execute` is asked to split an object, first the
+When `jst backend execute` is asked to split an object, first the
 large-objects CAS is inspected. If the entry is present in the
 youngest generation, the answer is directly served from there;
 if found in an older generation, it is served from there after
 appropriate promotion (chunks; parts of the tree, if the object to
 split was a tree; large-objects entry) to the youngest generation.
 
-When `just execute` actually performs a split and the object that
+When `jst backend execute` actually performs a split and the object that
 was to be splitted was larger than the maximal size of a chunk,
 after having added the chunks to the main CAS, it will also write
 a corresponding entry to the large-objects CAS. In this way,
@@ -198,7 +198,7 @@ option is given to `gc`.
 Gargabe Collection for Repository Roots
 ---------------------------------------
 
-The multi-repository tool `just-mr` often has to create roots: the
+The multi-repository tool `jst` often has to create roots: the
 tree for an archive, an explicit `"git tree"` root, etc. All those
 roots are stored in a `git` repository in the local build root.
 They are fixed by a tagged commit to be persistent there. In this
@@ -215,7 +215,7 @@ their set of dependencies frequently, this `git` repository in the
 local build root can grow large.
 
 Therefore, the repository roots follow a similar generation regime.
-The subcommand `gc-repo` of `just-mr` rotates generations and removes
+The subcommand `gc-repo` of `jst` rotates generations and removes
 the oldest one. Whenever an entry is not found in the youngest
 generation of the repository-root storage, older generations are
 inspected first before calling out to the network; entries found
