@@ -623,6 +623,29 @@ auto BuiltIn::file(Location const& loc,
     return std::make_shared<ListNode>(loc, std::move(items));
 }
 
+auto BuiltIn::symlink(Location const& loc,
+                      CallNode::params_t const& args) -> Result {
+    static const std::array kExpected = {
+        ExpectedParameter{"path", {ValueType::String}, true},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("symlink: ") + e.what());
+    }
+
+    auto const path_node = RetrieveAs<StringNode>(named_params, kExpected[0]);
+    if (path_node == nullptr) {
+        throw BuiltInError(loc, "file: Missing mandatory parameter \"path\"");
+    }
+    ListNode::items_t items = {std::make_shared<StringNode>(loc, "SYMLINK"),
+                               std::make_shared<NullNode>(loc),
+                               path_node};
+    return std::make_shared<ListNode>(loc, std::move(items));
+}
+
 auto BuiltIn::tree(Location const& loc,
                    CallNode::params_t const& args) -> Result {
     static const std::array kExpected = {
@@ -2058,6 +2081,7 @@ template <typename T>
     entries.emplace_back(MakeBuiltinObjEntry("fail"));
     entries.emplace_back(MakeBuiltinObjEntry("json_encode"));
     entries.emplace_back(MakeBuiltinObjEntry("file"));
+    entries.emplace_back(MakeBuiltinObjEntry("symlink"));
     entries.emplace_back(MakeBuiltinObjEntry("tree"));
     entries.emplace_back(MakeBuiltinObjEntry("glob"));
     entries.emplace_back(MakeBuiltinObjEntry("at"));

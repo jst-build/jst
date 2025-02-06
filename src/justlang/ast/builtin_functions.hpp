@@ -80,6 +80,9 @@ class BuiltIn final {
     [[nodiscard]] static auto file(Location const&,
                                    CallNode::params_t const&) -> Result;
 
+    [[nodiscard]] static auto symlink(Location const&,
+                                      CallNode::params_t const&) -> Result;
+
     [[nodiscard]] static auto tree(Location const&,
                                    CallNode::params_t const&) -> Result;
 
@@ -164,6 +167,7 @@ auto const kBuiltinFunctions =
         {"fail", BuiltIn::fail},        // fail(msg=<any>)
         {"json_encode", BuiltIn::json_encode},  // json_encode(data=<any>)
         {"file", BuiltIn::file},                // file(path=<string>)
+        {"symlink", BuiltIn::symlink},          // symlink(path=<string>)
         {"tree", BuiltIn::tree},                // tree(path=<string>)
         {"glob", BuiltIn::glob},                // glob(pattern=<string>)
         {"at", BuiltIn::at},    // at(index=<string>,list=<list>,default=<any>)
