@@ -117,14 +117,12 @@ expression is expected, they use the same naming scheme.
 
  - A single string refers to the target with this name in the same
    module.
- - A pair `//module:name` refers to the target `name` in the module
-   `module` of the same repository. There are no module names with a
-   distinguished meaning. The naming scheme is unambiguous, as all
-   other names given by lists have length at least 3.
- - A list `./relative-module-path:name` refers to a target with
+ - A ref-string `@'//module:name'` refers to the target `name` in the module
+   `module` of the same repository.
+ - A ref-string `@'./relative-module-path:name'` refers to a target with
    the given name in the module that has the specified path relative to
    the current module (in the current repository).
- - A list `repository//module:name` refers to the target with
+ - A ref-string `@'repository//module:name'` refers to the target with
    the specified name in the specified module of the specified
    repository.
 

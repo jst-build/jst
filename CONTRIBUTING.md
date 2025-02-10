@@ -11,7 +11,7 @@ be agreed upon and committed to the repository first.
 
 For all changes, remember to also update the documentation and add
 appropriate test coverage. For code to be accepted, all tests must
-pass; the global test suite is `["@", "just tests", "", "ALL"]`.
+pass; the global test suite is `["@", "tests", "", "ALL"]`.
 Code is formatted with `clang-format` and linted with `clang-tidy`;
 the corresponding configuration files can be found in the top-level
 directory of this repository.

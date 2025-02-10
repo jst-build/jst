@@ -14,7 +14,8 @@
     defines: [
       'BUILD_GMOCK=OFF',
       'gtest_force_shared_crt=OFF',
-      'CMAKE_BUILD_TYPE=' + if jst.env('DEBUG') then 'Debug' else 'Release',
+      'CMAKE_BUILD_TYPE=' + (if jst.env('DEBUG')
+                             then 'Debug' else 'Release'),
     ],
     out_libs: ['libgtest_main.a', 'libgtest.a'],
     out_hdr_dirs: ['gtest'],

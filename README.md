@@ -1,21 +1,22 @@
 # Jst Build System
 
-`jst` is a generic build system supporting multi-repository
+`jst` is a generic build system supporting multi-repository and multi-language
 builds. The language-specific information to translate high-level
 concepts (libraries, binaries) into individual compile actions is
 taken from user-defined rules described by functional expressions.
 
+## Why jst?
+
 What sets `jst` apart from other build systems:
 
-- Written in C++ (mostly)
 - Built-in integration of Git, using its object database
 - Support for multi-language builds, via [user-defined rules](doc/concepts/rules.md)
 - Support for true [multi-repository builds](doc/concepts/multi-repo.md)
-- Decoupling files from their local path ("[staging](doc/concepts/overview.md#staging)")
+- Decoupling files from their local path: "[staging](doc/concepts/overview.md#staging)"
 - Action graph pruning, via [target-level caching](doc/concepts/target-cache.md)
 - Building without the sources, via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst_backend-repository-specification)
 - Reduced network traffic, via [blob splitting](doc/concepts/blob-splitting.md)
-- Built-in single-node remote execution server (`jst backend execute`)
+- Built-in single-node remote execution server: `jst backend execute`
 
 ## Getting started
 
@@ -26,7 +27,7 @@ In an empty directory, create a file named `TARGETS` with the following content:
   // Target 'helloworld' based on built-in rule 'generic'
   helloworld: {
     type: 'generic',
-    cmds: ['echo Hello World > helloworld.txt'],
+    cmds: ['echo Hello World! > helloworld.txt'],
     outs: ['helloworld.txt'],
   },
 }
@@ -43,7 +44,7 @@ Print the output file `helloworld.txt`:
 
 ``` sh
 $ cat out/helloworld.txt
-Hello World
+Hello World!
 ```
 
 ## Tutorial

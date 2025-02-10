@@ -43,14 +43,14 @@ projects, declare the public targets as *export targets*, and define convenient
 ### The repos.in.json and TARGETS file
 
 The `repos.in.json` file contains the *multi-repository configuration*. In
-`jst`, most projects are multi-repository projects, as the *rules* and
+`jst`, most projects are multi-repository projects, because the *rules* and
 *toolchains* are typically imported repositories. The general structure of
 the `repo.in.json` file is defined as:
 
 ``` jsonc
 {
   "main": "",           // name of the main repo to build
-  "imports": [],        // list of imported repos (order matters)
+  "imports": [],        // list of repo imports (order matters)
   "repositories": {},   // map of repo name to repo description
 }
 ```
@@ -139,7 +139,7 @@ Git repository [toolchains-cc](https://gitee.com/justbuild/toolchains-cc).
 }
 ```
 
-This repository will includes a suitable [rule set for C/C++](https://github.com/just-buildsystem/rules-cc),
+This repository already includes a suitable [rule set for C/C++](https://github.com/just-buildsystem/rules-cc),
 so it can be directly used as rules for repository `"stage1"`.
 
 Now, the last missing piece is the `repos.json` file. It serves as a
@@ -482,7 +482,7 @@ The test report produced with these rules will contain the artifacts: `result`,
 
 ### Add binary tests
 
-Let's create the binary test for testing the `libgreet` target in `test/TARGETS`.
+Let's create a binary test for the `libgreet` library in `test/TARGETS`.
 
 ``` jsonnet
 { // ...
@@ -508,7 +508,7 @@ Now build the test report and print the `stdout` artifact.
 $ jst build test test_libgreet -P stdout
 ```
 
-From the output you should see that the test was run successful.
+From the output you should see that the test was run successfully.
 
 > Note: you need to create a module in `etc/settings/CC/test/TARGETS` to run
 > the toolchain's test launchers.
@@ -519,7 +519,7 @@ were produced: the test report of a failed test.
 
 ### Add shell tests
 
-Let's create the shell test for the binary target `helloworld` in `test/TARGETS`.
+Let's create the shell test for the `helloworld` binary in `test/TARGETS`.
 
 ``` jsonnet
 { // ...
@@ -548,7 +548,7 @@ Now build the test report and print the `stdout` artifact.
 $ jst build test test_helloworld -P stdout
 ```
 
-From the output you should see that the test was run successful.
+From the output you should see that the test was run successfully.
 
 > Note: you need to create a module in `etc/settings/shell/test/TARGETS` to run
 > the toolchain's test launchers.
@@ -670,9 +670,12 @@ Now the `libgreet` target can access the top-level target `fmt-lib` from
     type: @'rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
-    shared: if jst.env('BUILD_SHARED') then ['yes'],
-    'private-cflags': if jst.env('USE_FMTLIB') then ['-DUSE_FMTLIB'],
-    'private-deps':   if jst.env('USE_FMTLIB') then [@'fmtlib//:fmt-lib'],
+    shared:
+      if jst.env('BUILD_SHARED') then ['yes'],
+    'private-cflags':
+      if jst.env('USE_FMTLIB') then ['-DUSE_FMTLIB'],
+    'private-deps':
+      if jst.env('USE_FMTLIB') then [@'fmtlib//:fmt-lib'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers
@@ -757,7 +760,8 @@ The last missing piece is providing the target description in file
     defines: [
       'BUILD_GMOCK=OFF',
       'gtest_force_shared_crt=OFF',
-      'CMAKE_BUILD_TYPE=' + if jst.env('DEBUG') then 'Debug' else 'Release',
+      'CMAKE_BUILD_TYPE=' + (if jst.env('DEBUG')
+                             then 'Debug' else 'Release'),
     ],
     out_libs: ['libgtest_main.a', 'libgtest.a'],
     out_hdr_dirs: ['gtest'],
@@ -933,7 +937,7 @@ the file `~/.just-local.json` with content analogous to:
 }
 ```
 
-> Note: for more details, please see section [Alternative Mirrors](../../doc/concepts/alternative-mirrors.md).
+> Note: for more details, please see section [Additional mirrors in just local](../../doc/concepts/alternative-mirrors.md#additional-mirrors-in-the-just-local-specification).
 
 To configure redirections for repositories fetched by shelling out to `git`,
 provide a Git config, e.g., `~/.gitconfig` with content analogous to:
