@@ -151,8 +151,11 @@ file by running `jst-lock`:
 $ jst-lock  # generates repos.json lock-file (from repos.in.json)
 ```
 
-> Note: this lock-file is also mandatory if others want to import your project,
-> and therefore should be committed!
+Afterward, the `repos.json` lock-file will appear in the workspace root of
+stage 1.
+
+> Note: this lock-file is not just mandatory for building, but also required if
+> someone wants to import your project, and therefore should be committed!
 
 ### Build and execute the binary
 
@@ -169,7 +172,7 @@ the binary target in the `src/TARGETS` file.
 }
 ```
 
-The target `hellworld` uses the rule [`//CC:binary`](https://github.com/just-buildsystem/rules-cc#rule-cc-binary) from `rules` and
+The target `helloworld` uses the rule [`//CC:binary`](https://github.com/just-buildsystem/rules-cc#rule-cc-binary) from `rules` and
 specifies the binary `name` and the `srcs` to use.
 
 Use subcommand `build` to build the binary:
@@ -212,6 +215,10 @@ $ out/helloworld
 
 This should produce the command line output "`Hello World!`".
 
+Now try to change the `helloworld.cpp` source file and rebuild. Meaningful
+changes will produce a binary with a different hash. Reverting your changes
+should restore the original binary's hash, as everything is taken from cache.
+
 ### Debug builds and cross-compilation
 
 The build can be parameterized by configuration variables. Those can
@@ -243,6 +250,12 @@ $ jst build src helloworld -D'{"TARGET_ARCH":"arm64","TOOLCHAIN_CONFIG":{"FAMILY
 Again, the `-v` flags shows that the executed compile and linker commands are
 now using the cross-compiler `["aarch64-linux-gnu-g++", ...]`.
 
+### Summary: Stage 1
+
+In this tutorial stage, you learned how to set up a C++ project with a toolchain
+and how to build a simple C++ binary. Furthermore, you have understood that the
+build can be parameterized by specifying supported configuration variables.
+
 ## Stage 2: Library dependencies and project settings
 
 This stage extends the previous one by adding a library target as a dependency
@@ -273,7 +286,9 @@ $ cd cpp-tutorial/stage2
 
 ### Add library dependencies
 
-Let's add a new target to the project: the library `libgreet`, which is a dependency of the `helloworld` binary.
+Let's add a new target to the project: the library `libgreet`, which is a
+dependency of the `helloworld` binary. Please have a look at the target
+description in file `src/TARGETS`:
 
 ``` jsonnet
 {
@@ -313,10 +328,14 @@ Of course you can also build the `libgreet` target separately.
 $ jst build src libgreet -s
 ```
 
+> Note: the flag `-s` will also print *runfiles*, e.g., public headers.
+
 You should see that only two actions were processed, all served from cache, as
 they were already implicitly executed when building `helloworld`.
 
-> Note: the flag `-s` will also print *runfiles*, e.g., public headers.
+``` plaintext
+INFO: Processed 2 actions, 2 cache hits.
+```
 
 ### Define project-wide settings
 
@@ -386,9 +405,18 @@ Now build the `helloworld` target again with the verbose flag `-v`.
 $ jst build src helloworld -v
 ```
 
-The produced output reveals that the project flags `[..., "-std=c++14", "-Wall",
-"-Werror", "-pedantic" ,...]` have been correctly added to the C++ compiler
-command line.
+The produced output reveals that the compile flags `[..., "-std=c++14", "-Wall",
+"-Werror", "-pedantic" ,...]` have been correctly added to all C++ compiler
+command lines.
+
+Now try modifying those flags yourself and see if they are
+correctly propagated throughout your build.
+
+### Summary: Stage 2
+
+In the second stage of this tutorial, you learned how to model dependencies
+between C++ targets and how to configure project-wide settings that apply
+equally to all C/C++ targets within the project.
 
 ## Stage 3: Add test targets
 
@@ -485,6 +513,10 @@ From the output you should see that the test was run successful.
 > Note: you need to create a module in `etc/settings/CC/test/TARGETS` to run
 > the toolchain's test launchers.
 
+Now try to change the `test_libgreet.cpp` source file to produce a test failure
+and trigger a rebuild. You should see a warning about *failed artifacts* that
+were produced: the test report of a failed test.
+
 ### Add shell tests
 
 Let's create the shell test for the binary target `helloworld` in `test/TARGETS`.
@@ -554,6 +586,12 @@ failing artifacts were reported, then all tests ran successfully.
 
 Also with the test suite, you can still directly print the `stdout` artifact of
 a test report by specifying its path, e.g., via `-P test/libgreet/stdout`.
+
+### Summary: Stage 3
+
+In this tutorial stage, you learned about the general test concept used by
+`jst`. Furthermore, it was shown how to use the available C/C++ test rules to
+define binary tests, shell tests, and test suites.
 
 ## Stage 4: External, export, and install targets
 
@@ -861,6 +899,15 @@ $ jst build TESTS
 
 You can still directly access the test reports by specifying their path, e.g.,
 `-P test/helloworld/stdout`.
+
+### Summary: Stage 4
+
+In the last stage of this tutorial, you learned about how to import targets from
+other `jst` and non-`jst` projects alike. Furthermore, you learned how to
+prepare your project for being imported by others, by declaring your project's
+public targets as *export targets*. And finally, you now know how to define
+*install targets*, which conveniently install main artifacts of a target
+alongside their required artifacts from transient dependencies.
 
 ## Company setup
 
