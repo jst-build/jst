@@ -55,7 +55,9 @@ Hello World
 
 ## Justlang documentation
 
+- [Getting Started](doc/justlang/getting-started.md)
 - [Standard Library](doc/justlang/stdlib.md)
+- [Troubleshooting](doc/justlang/troubleshoot.md)
 
 ## General documentation
 
