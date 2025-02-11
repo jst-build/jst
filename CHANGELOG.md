@@ -20,6 +20,8 @@ A feature release on top of `1.4.0`, backwards compatible.
 
 ### Fixes
 
+- `just-mr` repository garbage collection now properly removes
+  no longer needed directories.
 - The "generic" rule now properly detects staging conflicts.
 - Fixes ensuring proper pointer life time and access check.
 - A race condition in the use of `libgit2` was fixed that could
@@ -34,6 +36,8 @@ A feature release on top of `1.4.0`, backwards compatible.
   in case of failure.
 - `just-mr` properly enforces that repository `subdir` entries are
   non-upwards relative paths.
+- The local api correctly handles not-found blobs, even in the absence
+  of a local git api.
 - Missing entries in the documentation have been added.
 
 ## Release `1.4.0` (2024-11-04)

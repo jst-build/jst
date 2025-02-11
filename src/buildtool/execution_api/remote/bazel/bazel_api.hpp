@@ -32,7 +32,7 @@
 #include "src/buildtool/common/remote/retry_config.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/bazel_common.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_engine/dag/dag.hpp"
@@ -91,7 +91,7 @@ class BazelApi final : public IExecutionApi {
         std::vector<Artifact::ObjectInfo> const& artifacts_info,
         IExecutionApi const& api) const noexcept -> bool final;
 
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& blobs,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& blobs,
                               bool skip_find_missing) const noexcept
         -> bool final;
 
@@ -102,8 +102,9 @@ class BazelApi final : public IExecutionApi {
     [[nodiscard]] auto IsAvailable(ArtifactDigest const& digest) const noexcept
         -> bool final;
 
-    [[nodiscard]] auto IsAvailable(std::vector<ArtifactDigest> const& digests)
-        const noexcept -> std::vector<ArtifactDigest> final;
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& digests) const noexcept
+        -> std::unordered_set<ArtifactDigest> final;
 
     [[nodiscard]] auto RetrieveToMemory(
         Artifact::ObjectInfo const& artifact_info) const noexcept

@@ -24,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -43,7 +44,7 @@
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/common/statistics.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/common/execution_response.hpp"
@@ -57,7 +58,6 @@
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/progress_reporting/progress.hpp"
 #include "src/utils/cpp/expected.hpp"
-#include "src/utils/cpp/transformed_range.hpp"
 #include "test/utils/executor/test_api_bundle.hpp"
 #include "test/utils/hermeticity/test_hash_function_type.hpp"
 
@@ -220,11 +220,10 @@ class TestApi : public IExecutionApi {
         -> std::optional<std::string> override {
         return std::nullopt;  // not needed by Executor
     }
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& blobs,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& blobs,
                               bool /*unused*/) const noexcept -> bool final {
-        auto blob_range = blobs.Blobs();
         return std::all_of(
-            blob_range.begin(), blob_range.end(), [this](auto const& blob) {
+            blobs.begin(), blobs.end(), [this](auto const& blob) {
                 // for local artifacts
                 auto it1 = config_.artifacts.find(*blob.data);
                 if (it1 != config_.artifacts.end() and it1->second.uploads) {
@@ -248,13 +247,14 @@ class TestApi : public IExecutionApi {
             return false;
         }
     }
-    [[nodiscard]] auto IsAvailable(std::vector<ArtifactDigest> const& digests)
-        const noexcept -> std::vector<ArtifactDigest> final {
-        std::vector<ArtifactDigest> result;
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& digests) const noexcept
+        -> std::unordered_set<ArtifactDigest> final {
+        std::unordered_set<ArtifactDigest> result;
         try {
             for (auto const& digest : digests) {
                 if (not config_.artifacts.at(digest.hash()).available) {
-                    result.push_back(digest);
+                    result.emplace(digest);
                 }
             }
         } catch (std::exception const& /* unused */) {

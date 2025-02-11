@@ -28,6 +28,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -48,7 +49,7 @@
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/bazel_common.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
@@ -65,11 +66,11 @@
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/progress_reporting/progress.hpp"
 #include "src/buildtool/progress_reporting/task_tracker.hpp"
+#include "src/utils/cpp/back_map.hpp"
 #include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/hex_string.hpp"
 #include "src/utils/cpp/path_rebase.hpp"
 #include "src/utils/cpp/prefix.hpp"
-#include "src/utils/cpp/transformed_range.hpp"
 
 /// \brief Implementations for executing actions and uploading artifacts.
 class ExecutorImpl {
@@ -151,10 +152,10 @@ class ExecutorImpl {
         }
 
         auto base = action->Content().Cwd();
-        auto cwd_relative_output_files = RebasePathStringsRelativeTo(
-            base, action->OutputFilePaths().ToVector());
-        auto cwd_relative_output_dirs = RebasePathStringsRelativeTo(
-            base, action->OutputDirPaths().ToVector());
+        auto cwd_relative_output_files =
+            RebasePathStringsRelativeTo(base, action->OutputFilePaths());
+        auto cwd_relative_output_dirs =
+            RebasePathStringsRelativeTo(base, action->OutputDirPaths());
         auto remote_action = (alternative_api ? *alternative_api : api)
                                  .CreateAction(*root_digest,
                                                action->Command(),
@@ -296,26 +297,17 @@ class ExecutorImpl {
                                                  GitTree const& tree) noexcept
         -> bool {
         // create list of digests for batch check of CAS availability
-        std::vector<ArtifactDigest> digests;
-        std::unordered_map<ArtifactDigest, gsl::not_null<GitTreeEntryPtr>>
-            entry_map;
-        for (auto const& [path, entry] : tree) {
-            // Since GitTrees are processed here, HashFunction::Type::GitSHA1 is
-            // used
-            auto digest =
-                ArtifactDigestFactory::Create(HashFunction::Type::GitSHA1,
-                                              entry->Hash(),
-                                              *entry->Size(),
-                                              entry->IsTree());
-            if (not digest) {
-                return false;
-            }
-            digests.emplace_back(*digest);
-            try {
-                entry_map.emplace(*std::move(digest), entry);
-            } catch (...) {
-                return false;
-            }
+        using ElementType = typename GitTree::entries_t::value_type;
+        auto const back_map = BackMap<ArtifactDigest, ElementType>::Make(
+            &tree, [](ElementType const& entry) {
+                return ArtifactDigestFactory::Create(
+                    HashFunction::Type::GitSHA1,
+                    entry.second->Hash(),
+                    *entry.second->Size(),
+                    entry.second->IsTree());
+            });
+        if (not back_map.has_value()) {
+            return false;
         }
 
         Logger::Log(LogLevel::Trace, [&tree]() {
@@ -330,44 +322,42 @@ class ExecutorImpl {
         });
 
         // find missing digests
-        auto missing_digests = api.IsAvailable(digests);
+        auto const missing_digests = api.GetMissingDigests(back_map->GetKeys());
+        auto const missing_entries =
+            back_map->IterateReferences(&missing_digests);
 
         // process missing trees
-        for (auto const& digest : missing_digests) {
-            if (auto it = entry_map.find(digest); it != entry_map.end()) {
-                auto const& entry = it->second;
-                if (entry->IsTree()) {
-                    auto const& tree = entry->Tree();
-                    if (not tree or not VerifyOrUploadTree(api, *tree)) {
-                        return false;
-                    }
+        for (auto const& [_, value] : missing_entries) {
+            auto const entry = value->second;
+            if (entry->IsTree()) {
+                auto const& tree = entry->Tree();
+                if (not tree or not VerifyOrUploadTree(api, *tree)) {
+                    return false;
                 }
             }
         }
 
         // upload missing entries (blobs or trees)
-        ArtifactBlobContainer container;
-        for (auto const& digest : missing_digests) {
-            if (auto it = entry_map.find(digest); it != entry_map.end()) {
-                auto const& entry = it->second;
-                auto content = entry->RawData();
-                if (not content) {
-                    return false;
-                }
-                // store and/or upload blob, taking into account the maximum
-                // transfer size
-                if (not UpdateContainerAndUpload<ArtifactDigest>(
-                        &container,
-                        ArtifactBlob{digest,
-                                     std::move(*content),
-                                     IsExecutableObject(entry->Type())},
-                        /*exception_is_fatal=*/true,
-                        [&api](ArtifactBlobContainer&& blobs) {
-                            return api.Upload(std::move(blobs),
-                                              /*skip_find_missing=*/true);
-                        })) {
-                    return false;
-                }
+        std::unordered_set<ArtifactBlob> container;
+        for (auto const& [digest, value] : missing_entries) {
+            auto const entry = value->second;
+            auto content = entry->RawData();
+            if (not content.has_value()) {
+                return false;
+            }
+            // store and/or upload blob, taking into account the maximum
+            // transfer size
+            if (not UpdateContainerAndUpload(
+                    &container,
+                    ArtifactBlob{*digest,
+                                 std::move(*content),
+                                 IsExecutableObject(entry->Type())},
+                    /*exception_is_fatal=*/true,
+                    [&api](std::unordered_set<ArtifactBlob>&& blobs) {
+                        return api.Upload(std::move(blobs),
+                                          /*skip_find_missing=*/true);
+                    })) {
+                return false;
             }
         }
         // upload remaining blobs
@@ -413,10 +403,9 @@ class ExecutorImpl {
             return false;
         }
 
-        return api.Upload(ArtifactBlobContainer{{ArtifactBlob{
-                              info.digest,
-                              std::move(*content),
-                              IsExecutableObject(info.type)}}},
+        return api.Upload({ArtifactBlob{info.digest,
+                                        std::move(*content),
+                                        IsExecutableObject(info.type)}},
                           /*skip_find_missing=*/true);
     }
 
@@ -505,10 +494,9 @@ class ExecutorImpl {
         }
         auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
             hash_function, *content);
-        if (not api.Upload(ArtifactBlobContainer{
-                {ArtifactBlob{digest,
-                              std::move(*content),
-                              IsExecutableObject(*object_type)}}})) {
+        if (not api.Upload({ArtifactBlob{digest,
+                                         std::move(*content),
+                                         IsExecutableObject(*object_type)}})) {
             return std::nullopt;
         }
         return Artifact::ObjectInfo{.digest = std::move(digest),
@@ -556,7 +544,7 @@ class ExecutorImpl {
     /// are present in the artifacts map
     [[nodiscard]] static auto CheckOutputsExist(
         IExecutionResponse::ArtifactInfos const& artifacts,
-        DependencyGraph::ActionNode::LocalPaths const& outputs,
+        std::vector<Action::LocalPath> const& outputs,
         std::string base) noexcept -> bool {
         return std::all_of(
             outputs.begin(),
@@ -619,13 +607,14 @@ class ExecutorImpl {
             return false;
         }
 
+        auto const output_files = action->OutputFilePaths();
+        auto const output_dirs = action->OutputDirPaths();
+
         if (artifacts.value()->empty() or
-            not CheckOutputsExist(*artifacts.value(),
-                                  action->OutputFilePaths(),
-                                  action->Content().Cwd()) or
-            not CheckOutputsExist(*artifacts.value(),
-                                  action->OutputDirPaths(),
-                                  action->Content().Cwd())) {
+            not CheckOutputsExist(
+                *artifacts.value(), output_files, action->Content().Cwd()) or
+            not CheckOutputsExist(
+                *artifacts.value(), output_dirs, action->Content().Cwd())) {
             logger.Emit(LogLevel::Error, [&]() {
                 std::ostringstream message{};
                 if (action_failed) {
@@ -634,10 +623,10 @@ class ExecutorImpl {
                 }
                 message << "action executed with missing outputs.\nAction "
                            "outputs should be the following artifacts:";
-                for (auto const& output : action->OutputFilePaths()) {
+                for (auto const& output : output_files) {
                     message << "\n  - file: " << output;
                 }
-                for (auto const& output : action->OutputDirPaths()) {
+                for (auto const& output : output_dirs) {
                     message << "\n  - dir: " << output;
                 }
                 return message.str();

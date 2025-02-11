@@ -30,7 +30,6 @@
 #include "google/protobuf/duration.pb.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
-#include "src/buildtool/execution_api/common/content_blob_container.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_repo.hpp"
 #include "src/utils/cpp/hex_string.hpp"
@@ -913,15 +912,10 @@ auto BazelMsgFactory::CreateActionDigestFromCommandLine(
         return std::nullopt;
     }
 
+    auto result = action->digest;
     if (request.store_blob) {
-        std::invoke(*request.store_blob,
-                    BazelBlob{ArtifactDigestFactory::ToBazel(cmd->digest),
-                              cmd->data,
-                              cmd->is_exec});
-        std::invoke(*request.store_blob,
-                    BazelBlob{ArtifactDigestFactory::ToBazel(action->digest),
-                              action->data,
-                              action->is_exec});
+        std::invoke(*request.store_blob, *std::move(cmd));
+        std::invoke(*request.store_blob, *std::move(action));
     }
-    return action->digest;
+    return result;
 }

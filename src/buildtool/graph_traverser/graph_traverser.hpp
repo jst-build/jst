@@ -59,7 +59,7 @@
 #include "src/buildtool/common/tree.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/utils/subobject.hpp"
@@ -311,7 +311,7 @@ class GraphTraverser {
     /// \param[in]  blobs   blobs to be uploaded
     [[nodiscard]] auto UploadBlobs(
         std::vector<std::string> const& blobs) const noexcept -> bool {
-        ArtifactBlobContainer container;
+        std::unordered_set<ArtifactBlob> container;
         for (auto const& blob : blobs) {
             auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
                 context_.apis->hash_function, blob);
@@ -324,12 +324,12 @@ class GraphTraverser {
             });
             // Store and/or upload blob, taking into account the maximum
             // transfer size.
-            if (not UpdateContainerAndUpload<ArtifactDigest>(
+            if (not UpdateContainerAndUpload(
                     &container,
                     ArtifactBlob{std::move(digest), blob, /*is_exec=*/false},
                     /*exception_is_fatal=*/true,
-                    [&api =
-                         context_.apis->remote](ArtifactBlobContainer&& blobs) {
+                    [&api = context_.apis->remote](
+                        std::unordered_set<ArtifactBlob>&& blobs) {
                         return api->Upload(std::move(blobs));
                     },
                     logger_)) {

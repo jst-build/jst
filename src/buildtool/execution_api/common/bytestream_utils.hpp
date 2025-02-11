@@ -16,14 +16,12 @@
 #define INCLUDED_SRC_BUILDTOOL_EXECUTION_API_COMMON_BYTESTREAM_UTILS_HPP
 
 #include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <string>
 
-namespace build::bazel::remote::execution::v2 {
-class Digest;
-}
-namespace bazel_re = build::bazel::remote::execution::v2;
+#include "src/buildtool/common/artifact_digest.hpp"
+#include "src/buildtool/crypto/hash_function.hpp"
+#include "src/utils/cpp/expected.hpp"
 
 class ByteStreamUtils final {
     static constexpr auto* kBlobs = "blobs";
@@ -41,7 +39,7 @@ class ByteStreamUtils final {
     class ReadRequest final {
       public:
         explicit ReadRequest(std::string instance_name,
-                             bazel_re::Digest const& digest) noexcept;
+                             ArtifactDigest const& digest) noexcept;
 
         [[nodiscard]] auto ToString() && noexcept -> std::string;
 
@@ -53,12 +51,13 @@ class ByteStreamUtils final {
             return instance_name_;
         }
 
-        [[nodiscard]] auto GetDigest() const noexcept -> bazel_re::Digest;
+        [[nodiscard]] auto GetDigest(HashFunction::Type hash_type)
+            const noexcept -> expected<ArtifactDigest, std::string>;
 
       private:
         std::string instance_name_;
         std::string hash_;
-        std::int64_t size_ = 0;
+        std::size_t size_ = 0;
 
         ReadRequest() = default;
     };
@@ -72,7 +71,7 @@ class ByteStreamUtils final {
       public:
         explicit WriteRequest(std::string instance_name,
                               std::string uuid,
-                              bazel_re::Digest const& digest) noexcept;
+                              ArtifactDigest const& digest) noexcept;
 
         [[nodiscard]] auto ToString() && noexcept -> std::string;
 
@@ -88,13 +87,14 @@ class ByteStreamUtils final {
             return uuid_;
         }
 
-        [[nodiscard]] auto GetDigest() const noexcept -> bazel_re::Digest;
+        [[nodiscard]] auto GetDigest(HashFunction::Type hash_type)
+            const noexcept -> expected<ArtifactDigest, std::string>;
 
       private:
         std::string instance_name_;
         std::string uuid_;
         std::string hash_;
-        std::int64_t size_ = 0;
+        std::size_t size_ = 0;
 
         WriteRequest() = default;
     };

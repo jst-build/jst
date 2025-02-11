@@ -24,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -35,7 +36,7 @@
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/common/execution_response.hpp"
@@ -253,9 +254,8 @@ using ExecProps = std::map<std::string, std::string>;
     std::string output_path{"output_file"};
 
     auto api = api_factory();
-    CHECK(api->Upload(ArtifactBlobContainer{{ArtifactBlob{
-                          test_digest, test_content, /*is_exec=*/false}}},
-                      false));
+    CHECK(api->Upload(
+        {ArtifactBlob{test_digest, test_content, /*is_exec=*/false}}, false));
 
     auto action =
         api->CreateAction(*api->UploadTree({{input_path, &input_artifact}}),

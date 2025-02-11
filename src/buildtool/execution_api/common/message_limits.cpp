@@ -1,4 +1,4 @@
-// Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_EXECUTION_API_BAZEL_MSG_BAZEL_BLOB_CONTAINER_HPP
-#define INCLUDED_SRC_BUILDTOOL_EXECUTION_API_BAZEL_MSG_BAZEL_BLOB_CONTAINER_HPP
+#include "src/buildtool/execution_api/common/message_limits.hpp"
 
-#include "src/buildtool/common/bazel_types.hpp"
-#include "src/buildtool/execution_api/common/content_blob_container.hpp"
+#include <grpc/grpc.h>
 
-using BazelBlob = ContentBlob<bazel_re::Digest>;
-using BazelBlobContainer = ContentBlobContainer<bazel_re::Digest>;
-
-#endif  // INCLUDED_SRC_BUILDTOOL_EXECUTION_API_BAZEL_MSG_BAZEL_BLOB_CONTAINER_HPP
+static_assert(MessageLimits::kMaxGrpcLength <
+                  GRPC_DEFAULT_MAX_RECV_MESSAGE_LENGTH,
+              "Max batch transfer size too large.");

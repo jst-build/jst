@@ -24,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -34,7 +35,7 @@
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
@@ -213,7 +214,7 @@ class GitApi final : public IExecutionApi {
 
         // Collect blobs of missing artifacts from local CAS. Trees are
         // processed recursively before any blob is uploaded.
-        ArtifactBlobContainer container{};
+        std::unordered_set<ArtifactBlob> container;
         for (auto const& dgst : missing_artifacts_info->digests) {
             auto const& info = missing_artifacts_info->back_map[dgst];
             std::optional<std::string> content;
@@ -224,7 +225,7 @@ class GitApi final : public IExecutionApi {
                 if (not tree) {
                     return false;
                 }
-                ArtifactBlobContainer tree_deps_only_blobs{};
+                std::unordered_set<ArtifactBlob> tree_deps_only_blobs;
                 for (auto const& [path, entry] : *tree) {
                     if (entry->IsTree()) {
                         auto digest = ToArtifactDigest(*entry);
@@ -247,13 +248,14 @@ class GitApi final : public IExecutionApi {
                                 hash_function, *entry_content);
                         // Collect blob and upload to remote CAS if transfer
                         // size reached.
-                        if (not UpdateContainerAndUpload<ArtifactDigest>(
+                        if (not UpdateContainerAndUpload(
                                 &tree_deps_only_blobs,
                                 ArtifactBlob{std::move(digest),
                                              *entry_content,
                                              IsExecutableObject(entry->Type())},
                                 /*exception_is_fatal=*/true,
-                                [&api](ArtifactBlobContainer&& blobs) -> bool {
+                                [&api](std::unordered_set<ArtifactBlob>&& blobs)
+                                    -> bool {
                                     return api.Upload(std::move(blobs));
                                 })) {
                             return false;
@@ -281,13 +283,13 @@ class GitApi final : public IExecutionApi {
                           hash_function, *content);
 
             // Collect blob and upload to remote CAS if transfer size reached.
-            if (not UpdateContainerAndUpload<ArtifactDigest>(
+            if (not UpdateContainerAndUpload(
                     &container,
                     ArtifactBlob{std::move(digest),
                                  std::move(*content),
                                  IsExecutableObject(info.type)},
                     /*exception_is_fatal=*/true,
-                    [&api](ArtifactBlobContainer&& blobs) {
+                    [&api](std::unordered_set<ArtifactBlob>&& blobs) {
                         return api.Upload(std::move(blobs),
                                           /*skip_find_missing=*/true);
                     })) {
@@ -306,7 +308,7 @@ class GitApi final : public IExecutionApi {
     }
 
     /// NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& /*blobs*/,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& /*blobs*/,
                               bool /*skip_find_missing*/ = false) const noexcept
         -> bool override {
         // Upload to git cas not supported
@@ -327,12 +329,14 @@ class GitApi final : public IExecutionApi {
             .has_value();
     }
 
-    [[nodiscard]] auto IsAvailable(std::vector<ArtifactDigest> const& digests)
-        const noexcept -> std::vector<ArtifactDigest> override {
-        std::vector<ArtifactDigest> result;
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& digests) const noexcept
+        -> std::unordered_set<ArtifactDigest> override {
+        std::unordered_set<ArtifactDigest> result;
+        result.reserve(digests.size());
         for (auto const& digest : digests) {
             if (not IsAvailable(digest)) {
-                result.push_back(digest);
+                result.emplace(digest);
             }
         }
         return result;

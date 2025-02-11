@@ -671,7 +671,7 @@ Let's start by defining a new import for fetching the external sources:
       "source": "git",
       "branch": "v1.14.0",
       "url": "https://github.com/google/googletest.git",
-      "as_plain": true,
+      "as plain": true,
       "repos": [{"alias": "gtest_sources"}]
     }
   ],

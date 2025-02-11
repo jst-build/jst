@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -29,8 +30,7 @@
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/directory_tree.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
-#include "src/buildtool/execution_api/common/content_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_engine/dag/dag.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
@@ -116,7 +116,7 @@ TEST_CASE("Bazel internals: MessageFactory", "[execution_api]") {
         {link_blob->digest, link}};
 
     // create blobs via tree
-    ArtifactBlobContainer blobs{};
+    std::unordered_set<ArtifactBlob> blobs{};
     REQUIRE(BazelMsgFactory::CreateDirectoryDigestFromTree(
         *tree,
         [&fake_cas](std::vector<ArtifactDigest> const& digests,
@@ -139,7 +139,7 @@ TEST_CASE("Bazel internals: MessageFactory", "[execution_api]") {
             }
         },
         [&blobs](ArtifactBlob&& blob) {
-            blobs.Emplace(std::move(blob));
+            blobs.emplace(std::move(blob));
             return true;
         }));
 

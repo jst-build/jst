@@ -147,8 +147,6 @@
     [ "cas_utils"
     , ["@", "fmt", "", "fmt"]
     , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
-    , ["src/buildtool/common", "bazel_types"]
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/execution_api/common", "bytestream_utils"]
@@ -175,8 +173,7 @@
     ]
   , "private-deps":
     [ ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
+    , ["src/buildtool/execution_api/common", "message_limits"]
     ]
   }
 , "operation_cache":

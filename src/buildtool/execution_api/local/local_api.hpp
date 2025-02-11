@@ -27,6 +27,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>  // std::move
 #include <vector>
 
@@ -40,7 +41,7 @@
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/directory_tree.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
@@ -59,7 +60,6 @@
 #include "src/buildtool/storage/config.hpp"
 #include "src/buildtool/storage/storage.hpp"
 #include "src/utils/cpp/expected.hpp"
-#include "src/utils/cpp/transformed_range.hpp"
 
 /// \brief API for local execution.
 class LocalApi final : public IExecutionApi {
@@ -136,7 +136,7 @@ class LocalApi final : public IExecutionApi {
             },
             [&git_api = git_api_, &raw_tree](Artifact::ObjectInfo const& info,
                                              int fd) {
-                return not git_api or
+                return git_api and git_api->IsAvailable(info.digest) and
                        git_api->RetrieveToFds({info}, {fd}, raw_tree);
             });
     }
@@ -164,7 +164,7 @@ class LocalApi final : public IExecutionApi {
 
         // Collect blobs of missing artifacts from local CAS. Trees are
         // processed recursively before any blob is uploaded.
-        ArtifactBlobContainer container{};
+        std::unordered_set<ArtifactBlob> container;
         for (auto const& dgst : missing_artifacts_info->digests) {
             auto const& info = missing_artifacts_info->back_map[dgst];
             // Recursively process trees.
@@ -206,13 +206,13 @@ class LocalApi final : public IExecutionApi {
                           *content);
 
             // Collect blob and upload to remote CAS if transfer size reached.
-            if (not UpdateContainerAndUpload<ArtifactDigest>(
+            if (not UpdateContainerAndUpload(
                     &container,
                     ArtifactBlob{std::move(digest),
                                  *content,
                                  IsExecutableObject(info.type)},
                     /*exception_is_fatal=*/true,
-                    [&api](ArtifactBlobContainer&& blobs) {
+                    [&api](std::unordered_set<ArtifactBlob>&& blobs) {
                         return api.Upload(std::move(blobs),
                                           /*skip_find_missing=*/true);
                     })) {
@@ -246,13 +246,12 @@ class LocalApi final : public IExecutionApi {
         return content;
     }
 
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& blobs,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& blobs,
                               bool /*skip_find_missing*/) const noexcept
         -> bool final {
-        auto const range = blobs.Blobs();
         return std::all_of(
-            range.begin(),
-            range.end(),
+            blobs.begin(),
+            blobs.end(),
             [&cas = local_context_.storage->CAS()](ArtifactBlob const& blob) {
                 auto const cas_digest =
                     blob.digest.IsTree()
@@ -311,12 +310,14 @@ class LocalApi final : public IExecutionApi {
         return found;
     }
 
-    [[nodiscard]] auto IsAvailable(std::vector<ArtifactDigest> const& digests)
-        const noexcept -> std::vector<ArtifactDigest> final {
-        std::vector<ArtifactDigest> result;
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& digests) const noexcept
+        -> std::unordered_set<ArtifactDigest> final {
+        std::unordered_set<ArtifactDigest> result;
+        result.reserve(digests.size());
         for (auto const& digest : digests) {
             if (not IsAvailable(digest)) {
-                result.push_back(digest);
+                result.emplace(digest);
             }
         }
         return result;

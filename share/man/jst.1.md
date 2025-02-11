@@ -12,6 +12,7 @@ SYNOPSIS
 **`jst`** \[*`OPTION`*\]... {**`setup`**|**`setup-env`**} \[**`--all`**\] \[*`main-repo`*\]  
 **`jst`** \[*`OPTION`*\]... **`fetch`** \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
 **`jst`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
+**`jst`** \[*`OPTION`*\]... **`gc-repo`** \[**`--drop-only`**\]  
 **`jst`** \[*`OPTION`*\]... **`backend`** \[*`JST_BACKEND_ARG`*\]...  
 **`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**} \[*`JST_BACKEND_ARG`*\]...  
 
@@ -290,6 +291,18 @@ For Git repositories, the subcommand will replace the value for the
 remote repository in the specified branch. The output configuration file
 will otherwise remain the same at the JSON level with the input
 configuration file.
+
+gc-repo
+-------
+
+This subcommand rotates the generations of the repository cache.
+Every root used is added to the youngest generation. Therefore upon
+a call to **`gc-repo`** all roots are cleaned up that were not used
+since the last **`gc-repo`**.
+
+If **`--drop-only`** is given, only the old generations are cleaned up,
+without rotation. In this way, storage can be reclaimed; this might be
+necessary as no perfect sharing happens between the repository generations.
 
 backend
 --

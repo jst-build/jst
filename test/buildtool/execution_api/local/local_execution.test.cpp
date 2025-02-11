@@ -14,11 +14,13 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -30,7 +32,7 @@
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_response.hpp"
 #include "src/buildtool/execution_api/local/config.hpp"
@@ -273,9 +275,8 @@ TEST_CASE("LocalExecution: One input copied to output", "[execution_api]") {
     std::string test_content("test");
     auto test_digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
         storage_config.Get().hash_function, test_content);
-    REQUIRE(api.Upload(ArtifactBlobContainer{{ArtifactBlob{
-                           test_digest, test_content, /*is_exec=*/false}}},
-                       false));
+    REQUIRE(api.Upload(
+        {ArtifactBlob{test_digest, test_content, /*is_exec=*/false}}, false));
 
     std::string input_path{"dir/subdir/input"};
     std::string output_path{"output_file"};

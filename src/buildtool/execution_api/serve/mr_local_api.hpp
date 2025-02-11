@@ -19,12 +19,13 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "gsl/gsl"
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/local/context.hpp"
@@ -102,7 +103,7 @@ class MRLocalApi final : public IExecutionApi {
     /// \note Caller is responsible for passing vectors with artifacts of the
     /// same digest type.
     // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& blobs,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& blobs,
                               bool skip_find_missing = false) const noexcept
         -> bool final;
 
@@ -125,8 +126,9 @@ class MRLocalApi final : public IExecutionApi {
     /// \note The caller is responsible for passing vectors with digests of the
     /// same type. For simplicity, this method takes the first digest of the
     /// vector as representative for figuring out hash function type.
-    [[nodiscard]] auto IsAvailable(std::vector<ArtifactDigest> const& digests)
-        const noexcept -> std::vector<ArtifactDigest> final;
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& digests) const noexcept
+        -> std::unordered_set<ArtifactDigest> final;
 
   private:
     // retain local context references to have direct access to storages

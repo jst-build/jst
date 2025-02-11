@@ -22,7 +22,6 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "gsl/gsl"
@@ -30,9 +29,7 @@
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/bazel_types.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/crypto/hash_info.hpp"
-#include "src/buildtool/execution_api/bazel_msg/bazel_blob_container.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/remote/bazel/bazel_cas_client.hpp"
 #include "src/buildtool/file_system/git_repo.hpp"
 
@@ -74,17 +71,11 @@ class BazelNetworkReader final {
 
     [[nodiscard]] auto IsNativeProtocol() const noexcept -> bool;
 
-    [[nodiscard]] auto ReadSingleBlob(bazel_re::Digest const& digest)
-        const noexcept -> std::optional<ArtifactBlob>;
-
     [[nodiscard]] auto ReadSingleBlob(ArtifactDigest const& digest)
         const noexcept -> std::optional<ArtifactBlob>;
 
     [[nodiscard]] auto ReadIncrementally(
-        std::vector<ArtifactDigest> const& digests) const noexcept
-        -> IncrementalReader;
-
-    [[nodiscard]] auto ReadIncrementally(std::vector<bazel_re::Digest> digests)
+        gsl::not_null<std::vector<ArtifactDigest> const*> const& digests)
         const noexcept -> IncrementalReader;
 
   private:
@@ -101,18 +92,21 @@ class BazelNetworkReader final {
         -> std::optional<DirectoryMap>;
 
     [[nodiscard]] auto BatchReadBlobs(
-        std::vector<bazel_re::Digest> const& blobs) const noexcept
+        std::vector<ArtifactDigest> const& digests) const noexcept
         -> std::vector<ArtifactBlob>;
 
-    [[nodiscard]] auto Validate(BazelBlob const& blob) const noexcept
-        -> std::optional<HashInfo>;
+    [[nodiscard]] auto GetMaxBatchTransferSize() const noexcept -> std::size_t;
+
+    [[nodiscard]] auto Validate(ArtifactBlob const& blob) const noexcept
+        -> bool;
 };
 
 class BazelNetworkReader::IncrementalReader final {
   public:
-    IncrementalReader(BazelNetworkReader const& owner,
-                      std::vector<bazel_re::Digest> digests) noexcept
-        : owner_(owner), digests_(std::move(digests)) {}
+    IncrementalReader(
+        BazelNetworkReader const& owner,
+        gsl::not_null<std::vector<ArtifactDigest> const*> digests) noexcept
+        : owner_(owner), digests_(*digests) {}
 
     class Iterator final {
       public:
@@ -123,8 +117,8 @@ class BazelNetworkReader::IncrementalReader final {
         using iterator_category = std::forward_iterator_tag;
 
         Iterator(BazelNetworkReader const& owner,
-                 std::vector<bazel_re::Digest>::const_iterator begin,
-                 std::vector<bazel_re::Digest>::const_iterator end) noexcept;
+                 std::vector<ArtifactDigest>::const_iterator begin,
+                 std::vector<ArtifactDigest>::const_iterator end) noexcept;
 
         auto operator*() const noexcept -> value_type;
         auto operator++() noexcept -> Iterator&;
@@ -144,9 +138,9 @@ class BazelNetworkReader::IncrementalReader final {
 
       private:
         BazelNetworkReader const& owner_;
-        std::vector<bazel_re::Digest>::const_iterator begin_;
-        std::vector<bazel_re::Digest>::const_iterator end_;
-        std::vector<bazel_re::Digest>::const_iterator current_;
+        std::vector<ArtifactDigest>::const_iterator begin_;
+        std::vector<ArtifactDigest>::const_iterator end_;
+        std::vector<ArtifactDigest>::const_iterator current_;
     };
 
     [[nodiscard]] auto begin() const noexcept {
@@ -159,7 +153,7 @@ class BazelNetworkReader::IncrementalReader final {
 
   private:
     BazelNetworkReader const& owner_;
-    std::vector<bazel_re::Digest> digests_;
+    std::vector<ArtifactDigest> const& digests_;
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_EXECUTION_API_REMOTE_BAZEL_BAZEL_TREE_READER_HPP

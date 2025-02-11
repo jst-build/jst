@@ -29,7 +29,7 @@
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/execution_api/bazel_msg", "bazel_msg_factory"]
     , ["src/buildtool/execution_api/bazel_msg", "directory_tree"]
-    , ["src/buildtool/execution_api/common", "artifact_blob_container"]
+    , ["src/buildtool/execution_api/common", "artifact_blob"]
     , ["src/buildtool/execution_api/common", "common"]
     , ["src/buildtool/execution_api/common", "common_api"]
     , ["src/buildtool/execution_api/execution_service", "cas_utils"]
@@ -44,7 +44,6 @@
     , ["src/utils/cpp", "expected"]
     , ["src/utils/cpp", "path"]
     , ["src/utils/cpp", "tmp_dir"]
-    , ["src/utils/cpp", "transformed_range"]
     ]
   , "stage": ["src", "buildtool", "execution_api", "local"]
   , "private-deps":

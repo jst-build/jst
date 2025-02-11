@@ -14,11 +14,7 @@
     , ["@", "src", "src/buildtool/common", "tree"]
     , ["@", "src", "src/buildtool/common/remote", "retry_config"]
     , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/execution_api/common"
-      , "artifact_blob_container"
-      ]
+    , ["@", "src", "src/buildtool/execution_api/common", "artifact_blob"]
     , ["@", "src", "src/buildtool/execution_api/common", "common"]
     , ["@", "src", "src/buildtool/execution_api/remote", "context"]
     , ["@", "src", "src/buildtool/execution_engine/dag", "dag"]
@@ -50,11 +46,7 @@
     , ["@", "src", "src/buildtool/common/remote", "remote_common"]
     , ["@", "src", "src/buildtool/common/remote", "retry_config"]
     , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/execution_api/common"
-      , "artifact_blob_container"
-      ]
+    , ["@", "src", "src/buildtool/execution_api/common", "artifact_blob"]
     , ["@", "src", "src/buildtool/execution_api/common", "common"]
     , ["@", "src", "src/buildtool/execution_api/remote", "config"]
     , ["@", "src", "src/buildtool/execution_api/remote", "context"]
@@ -67,7 +59,6 @@
     , ["@", "src", "src/buildtool/logging", "logging"]
     , ["@", "src", "src/buildtool/progress_reporting", "progress"]
     , ["@", "src", "src/utils/cpp", "expected"]
-    , ["@", "src", "src/utils/cpp", "transformed_range"]
     , ["", "catch-main"]
     , ["utils", "test_api_bundle"]
     , ["utils", "test_hash_function_type"]

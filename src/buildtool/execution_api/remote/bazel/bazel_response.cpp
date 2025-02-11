@@ -14,12 +14,11 @@
 
 #include "src/buildtool/execution_api/remote/bazel/bazel_response.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <functional>
-#include <iterator>
+#include <unordered_set>
 #include <vector>
 
 #include "fmt/core.h"
@@ -27,13 +26,11 @@
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
-#include "src/buildtool/common/bazel_digest_factory.hpp"
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/bazel_msg/bazel_blob_container.hpp"
 #include "src/buildtool/execution_api/bazel_msg/bazel_msg_factory.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
-#include "src/buildtool/execution_api/common/content_blob_container.hpp"
 #include "src/buildtool/execution_api/remote/bazel/bazel_network_reader.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
@@ -45,7 +42,7 @@ namespace {
 
 auto ProcessDirectoryMessage(HashFunction hash_function,
                              bazel_re::Directory const& dir) noexcept
-    -> expected<BazelBlob, std::string> {
+    -> expected<ArtifactBlob, std::string> {
     // in compatible mode: check validity of all symlinks
     for (auto const& link : dir.symlinks()) {
         if (not PathIsNonUpwards(link.target())) {
@@ -54,20 +51,24 @@ auto ProcessDirectoryMessage(HashFunction hash_function,
         }
     }
     auto data = dir.SerializeAsString();
-    auto digest =
-        BazelDigestFactory::HashDataAs<ObjectType::File>(hash_function, data);
-    return BazelBlob{std::move(digest),
-                     std::move(data),
-                     /*is_exec=*/false};
+    auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
+        hash_function, data);
+    return ArtifactBlob{std::move(digest),
+                        std::move(data),
+                        /*is_exec=*/false};
 }
 
 }  // namespace
 
 auto BazelResponse::ReadStringBlob(bazel_re::Digest const& id) noexcept
     -> std::string {
-    auto reader = network_->CreateReader();
-    if (auto blob = reader.ReadSingleBlob(id)) {
-        return *blob->data;
+    auto digest = ArtifactDigestFactory::FromBazel(
+        network_->GetHashFunction().GetType(), id);
+    if (digest.has_value()) {
+        auto reader = network_->CreateReader();
+        if (auto blob = reader.ReadSingleBlob(*digest)) {
+            return *blob->data;
+        }
     }
     Logger::Log(LogLevel::Warning,
                 "reading digest {} from action response failed",
@@ -220,18 +221,22 @@ auto BazelResponse::Populate() noexcept -> std::optional<std::string> {
     }
 
     // obtain tree digests for output directories
-    std::vector<bazel_re::Digest> tree_digests{};
+    std::vector<ArtifactDigest> tree_digests{};
     tree_digests.reserve(
         gsl::narrow<std::size_t>(action_result.output_directories_size()));
-    std::transform(action_result.output_directories().begin(),
-                   action_result.output_directories().end(),
-                   std::back_inserter(tree_digests),
-                   [](auto dir) { return dir.tree_digest(); });
+    for (auto const& directory : action_result.output_directories()) {
+        auto digest = ArtifactDigestFactory::FromBazel(
+            network_->GetHashFunction().GetType(), directory.tree_digest());
+        if (not digest) {
+            return std::move(digest).error();
+        }
+        tree_digests.push_back(*std::move(digest));
+    }
 
     // collect root digests from trees and store them
     auto reader = network_->CreateReader();
     int pos = 0;
-    for (auto tree_blobs : reader.ReadIncrementally(tree_digests)) {
+    for (auto tree_blobs : reader.ReadIncrementally(&tree_digests)) {
         for (auto const& tree_blob : tree_blobs) {
             try {
                 auto tree = BazelMsgFactory::MessageFromString<bazel_re::Tree>(
@@ -275,11 +280,12 @@ auto BazelResponse::Populate() noexcept -> std::optional<std::string> {
 auto BazelResponse::UploadTreeMessageDirectories(
     bazel_re::Tree const& tree) const -> expected<ArtifactDigest, std::string> {
     auto const upload_callback =
-        [&network = *network_](BazelBlobContainer&& blobs) -> bool {
+        [&network =
+             *network_](std::unordered_set<ArtifactBlob>&& blobs) -> bool {
         return network.UploadBlobs(std::move(blobs));
     };
     auto const hash_function = network_->GetHashFunction();
-    BazelBlobContainer dir_blobs{};
+    std::unordered_set<ArtifactBlob> dir_blobs{};
 
     auto rootdir_blob = ProcessDirectoryMessage(hash_function, tree.root());
     if (not rootdir_blob) {
@@ -287,11 +293,10 @@ auto BazelResponse::UploadTreeMessageDirectories(
     }
     auto const root_digest = rootdir_blob->digest;
     // store or upload rootdir blob, taking maximum transfer size into account
-    if (not UpdateContainerAndUpload<bazel_re::Digest>(
-            &dir_blobs,
-            *std::move(rootdir_blob),
-            /*exception_is_fatal=*/false,
-            upload_callback)) {
+    if (not UpdateContainerAndUpload(&dir_blobs,
+                                     *std::move(rootdir_blob),
+                                     /*exception_is_fatal=*/false,
+                                     upload_callback)) {
         return unexpected{fmt::format(
             "failed to upload Tree with root digest {}", root_digest.hash())};
     }
@@ -303,11 +308,10 @@ auto BazelResponse::UploadTreeMessageDirectories(
             return unexpected{std::move(blob).error()};
         }
         auto const blob_digest = blob->digest;
-        if (not UpdateContainerAndUpload<bazel_re::Digest>(
-                &dir_blobs,
-                *std::move(blob),
-                /*exception_is_fatal=*/false,
-                upload_callback)) {
+        if (not UpdateContainerAndUpload(&dir_blobs,
+                                         *std::move(blob),
+                                         /*exception_is_fatal=*/false,
+                                         upload_callback)) {
             return unexpected{
                 fmt::format("failed to upload Tree subdir with digest {}",
                             blob_digest.hash())};
@@ -320,7 +324,5 @@ auto BazelResponse::UploadTreeMessageDirectories(
             fmt::format("failed to upload blobs for Tree with root digest {}",
                         root_digest.hash())};
     }
-    return ArtifactDigestFactory::FromBazel(hash_function.GetType(),
-                                            root_digest)
-        .value();  // must succeed all the time
+    return root_digest;
 }

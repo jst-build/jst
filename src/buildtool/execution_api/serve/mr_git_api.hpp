@@ -16,16 +16,18 @@
 #define INCLUDED_SRC_BUILDTOOL_EXECUTION_API_SERVE_MR_GIT_API_HPP
 
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "gsl/gsl"
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/repository_config.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob_container.hpp"
+#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_engine/dag/dag.hpp"
@@ -98,7 +100,7 @@ class MRGitApi final : public IExecutionApi {
 
     /// \brief Not supported.
     // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] auto Upload(ArtifactBlobContainer&& /*blobs*/,
+    [[nodiscard]] auto Upload(std::unordered_set<ArtifactBlob>&& /*blobs*/,
                               bool /*skip_find_missing*/ = false) const noexcept
         -> bool final {
         // Upload not suppoorted.
@@ -121,9 +123,9 @@ class MRGitApi final : public IExecutionApi {
     }
 
     /// \brief Not implemented.
-    [[nodiscard]] auto IsAvailable(
-        std::vector<ArtifactDigest> const& /*digests*/) const noexcept
-        -> std::vector<ArtifactDigest> final {
+    [[nodiscard]] auto GetMissingDigests(
+        std::unordered_set<ArtifactDigest> const& /*digests*/) const noexcept
+        -> std::unordered_set<ArtifactDigest> final {
         // Not supported.
         return {};
     }
