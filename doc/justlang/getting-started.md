@@ -102,7 +102,7 @@ keys. Key names that satisfy the requirements of identifiers can use the
 name as string.
 
 ``` jsonnet
-local map = {foo: 'FOO', 'bar bar': 'BAR BAZ'};
+local map = {foo: 'FOO', 'bar baz': 'BAR BAZ'};
 map.foo;        // 'FOO'
 map['bar baz']; // 'BAR BAZ'
 ```
