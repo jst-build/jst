@@ -1987,7 +1987,7 @@ def lock_config(input_file: str) -> Json:
 
 def main():
     parser = ArgumentParser(
-        prog="just-lock",
+        prog="jst-lock",
         description="Generate or update a multi-repository configuration file",
         exit_on_error=False,  # catch parsing errors ourselves
     )
