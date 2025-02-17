@@ -19,9 +19,9 @@
   { "defaults": {"repository": {"type": "file", "path": "etc/defaults"}}
   , "externals": {"repository": {"type": "file", "path": "etc/externals"}}
   , "rules-justlang":
-    { "repository": "rules"
+    { "repository": "toolchain"
     , "target_root": "defaults"
-    , "rule_root": "rules"
+    , "rule_root": "toolchain"
     , "bindings": {"toolchain": "toolchain"}
     }
   , "justlang":

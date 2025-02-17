@@ -14,9 +14,9 @@
       }
     },
     "rules-justlang": {
-      "repository": "rules",
+      "repository": "toolchain",
       "target_root": "defaults",
-      "rule_root": "rules",
+      "rule_root": "toolchain",
       "bindings": {
         "toolchain": "toolchain"
       }
@@ -64,7 +64,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/rules-cc",
         "branch": "master",
-        "commit": "457b1f9dda7366fbb4e6ac4664750bb2bab48e42",
+        "commit": "c9ebda47ea13b78e796b4b0c87ce5eb7549f8406",
         "subdir": "rules"
       }
     },
@@ -73,7 +73,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
         "branch": "master",
-        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
         "subdir": "rules"
       },
       "target_root": "json/defaults",
@@ -102,7 +102,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
         "branch": "master",
-        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
         "subdir": "etc/toolchain"
       },
       "rule_root": "toolchain"
@@ -112,7 +112,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
         "branch": "master",
-        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
         "subdir": "etc/defaults"
       }
     },
@@ -121,7 +121,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
         "branch": "master",
-        "commit": "54d45dcdb23ef86731f751c874e862c4751dc0c8",
+        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
         "subdir": "etc/import"
       }
     },
