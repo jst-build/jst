@@ -18,12 +18,13 @@ dependencies locally (neither as source nor as binary).
 What sets `jst` apart from other build systems:
 
 - Built-in integration of Git, using its object database
-- Support for multi-language builds, via [user-defined rules](doc/concepts/rules.md)
-- Support for true [multi-repository builds](doc/concepts/multi-repo.md)
-- Decoupling files from their local path: "[staging](doc/concepts/overview.md#staging)"
-- Action graph pruning, via [target-level caching](doc/concepts/target-cache.md)
-- Building without the sources, via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst_backend-repository-specification)
-- Reduced network traffic, via [blob splitting](doc/concepts/blob-splitting.md)
+- Support for multi-language builds via [user-defined rules](doc/concepts/rules.md)
+- Support for conflict-free [multi-repository builds](doc/concepts/multi-repo.md)
+- Decoupling files from their local path: ["staging"](doc/concepts/overview.md#staging)
+- Action graph pruning via [target-level caching](doc/concepts/target-cache.md)
+- Building without the sources via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst_backend-repository-specification)
+- Reduced network traffic via [blob splitting](doc/concepts/blob-splitting.md)
+- Faster communication with [directories as first-class citizens](doc/specification/remote-protocol.md)
 - Built-in single-node remote execution server: `jst backend execute`
 
 ## Getting started
@@ -59,6 +60,7 @@ Hello World!
 
 - [Basics](examples/basics-tutorial/README.md)
 - [C/C++](examples/cpp-tutorial/README.md)
+- Java (*coming soon*)
 - Rust (*coming soon*)
 - Cangjie (*coming soon*)
 
