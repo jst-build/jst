@@ -33,7 +33,7 @@
 #include "src/buildtool/common/remote/remote_common.hpp"
 #include "src/buildtool/common/user_structs.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/bazel_msg/bazel_common.hpp"
+#include "src/buildtool/execution_api/bazel_msg/execution_config.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/local/context.hpp"
@@ -43,7 +43,7 @@
 #include "src/buildtool/execution_api/remote/context.hpp"
 #include "src/buildtool/execution_api/serve/mr_local_api.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
-#include "src/buildtool/file_system/symlinks_map/resolve_symlinks_map.hpp"
+#include "src/buildtool/file_system/symlinks/resolve_symlinks_map.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/retry.hpp"
@@ -321,6 +321,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         &import_to_git_map,
         common_args.git_path->string(),
         *common_args.local_launcher,
+        common_args.alternative_mirrors,
         serve ? &*serve : nullptr,
         &native_storage_config,
         compat_storage_config != nullptr ? &*compat_storage_config : nullptr,

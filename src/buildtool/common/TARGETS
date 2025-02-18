@@ -25,6 +25,7 @@
     , ["src/buildtool/build_engine/expression", "expression"]
     , ["src/buildtool/file_system", "file_type"]
     , ["src/buildtool/crypto", "hash_function"]
+    , ["src/buildtool/file_system/symlinks", "resolve_special"]
     , ["src/buildtool/logging", "log_level"]
     , ["src/buildtool/logging", "logging"]
     , ["src/buildtool/main", "build_utils"]

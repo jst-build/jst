@@ -195,7 +195,7 @@ auto BazelNetworkReader::BatchReadBlobs(
     auto const back_map = BackMap<ArtifactDigest, ArtifactBlob>::Make(
         &batched_blobs, [](ArtifactBlob const& blob) { return blob.digest; });
 
-    if (not back_map.has_value()) {
+    if (back_map == nullptr) {
         return {};
     }
 
@@ -223,11 +223,8 @@ auto BazelNetworkReader::BatchReadBlobs(
             continue;
         }
 
-        ArtifactBlob artifact_blob{
-            digest, value.value()->data, value.value()->is_exec};
-
-        if (Validate(artifact_blob)) {
-            validated[hash] = &artifacts.emplace_back(std::move(artifact_blob));
+        if (Validate(*value.value())) {
+            validated[hash] = &artifacts.emplace_back(*value.value());
         }
         else {
             validated[hash] = nullptr;

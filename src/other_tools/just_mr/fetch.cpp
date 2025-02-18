@@ -34,7 +34,7 @@
 #include "src/buildtool/common/remote/remote_common.hpp"
 #include "src/buildtool/common/user_structs.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/bazel_msg/bazel_common.hpp"
+#include "src/buildtool/execution_api/bazel_msg/execution_config.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/local/context.hpp"
@@ -521,6 +521,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
         &import_to_git_map,
         common_args.git_path->string(),
         *common_args.local_launcher,
+        common_args.alternative_mirrors,
         serve ? &*serve : nullptr,
         &native_storage_config,
         compat_storage_config != nullptr ? &*compat_storage_config : nullptr,
