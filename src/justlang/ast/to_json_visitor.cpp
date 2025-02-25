@@ -14,6 +14,7 @@
 
 #include "justlang/ast/to_json_visitor.hpp"
 
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <variant>
@@ -23,6 +24,29 @@
 
 #include "justlang/ast/ast.hpp"
 #include "justlang/ref.hpp"
+
+namespace {
+
+auto const kEmptyMap = nlohmann::json({{"type", "empty_map"}});
+
+// Create singleton_map expression, returns nullopt if field value is a FuncNode
+[[nodiscard]] auto CreateSingletonMap(justlang::ASTToJsonVisitor const* visitor,
+                                      justlang::MapNode::entry_t const& field)
+    -> std::optional<nlohmann::json> {
+    auto const& [key, value] = field;
+    if (justlang::ASTNode::Cast<justlang::FuncNode const*>(value.get()) !=
+        nullptr) {
+        // skip serialization of func nodes
+        return std::nullopt;
+    }
+    auto jmap = nlohmann::json::object();
+    jmap["type"] = "singleton_map";
+    jmap["key"] = visitor->ToJson(*key);
+    jmap["value"] = visitor->ToJson(*value);
+    return jmap;
+}
+
+}  // namespace
 
 namespace justlang {
 
@@ -53,39 +77,36 @@ auto ASTToJsonVisitor::operator()(ListNode const* node) const
 }
 
 auto ASTToJsonVisitor::operator()(MapNode const* node) const -> nlohmann::json {
-    auto root = nlohmann::json::object();
-
     if (not json_only_ and vtype_ == VerbatimType::None) {
         auto num_fields = node->GetFields().size();
 
         if (num_fields == 0) {
-            root["type"] = "empty_map";
-            return root;
+            return kEmptyMap;
         }
 
         if (num_fields == 1) {
-            auto const& [key, value] = node->GetFields().front();
-            root["type"] = "singleton_map";
-            root["key"] = ToJson(*key);
-            root["value"] = ToJson(*value);
-            return root;
+            if (auto jmap =
+                    CreateSingletonMap(this, node->GetFields().front())) {
+                return *jmap;
+            }
+            return kEmptyMap;
         }
 
         auto jlist = nlohmann::json::array();
-        for (auto const& [key, value] : node->GetFields()) {
-            auto jmap = nlohmann::json::object();
-            jmap["type"] = "singleton_map";
-            jmap["key"] = ToJson(*key);
-            jmap["value"] = ToJson(*value);
-            jlist.push_back(std::move(jmap));
+        for (auto const& field : node->GetFields()) {
+            if (auto jmap = CreateSingletonMap(this, field)) {
+                jlist.push_back(std::move(*jmap));
+            }
         }
 
+        auto root = nlohmann::json::object();
         root["type"] = "map_union";
         root["$1"] = std::move(jlist);
         return root;
     }
 
     // serialize to literal map
+    auto root = nlohmann::json::object();
     for (auto const& [key, value] : node->GetFields()) {
         auto const* field_name = ASTNode::Cast<StringNode const*>(key.get());
         if (field_name == nullptr) {
