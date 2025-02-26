@@ -7,14 +7,12 @@
     [ ["@", "gsl", "", "gsl"]
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/common", "config"]
-    , ["src/buildtool/execution_api/common", "artifact_blob"]
     , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
     , ["src/buildtool/storage", "config"]
     ]
   , "stage": ["src", "buildtool", "execution_api", "serve"]
   , "private-deps":
-    [ ["src/buildtool/execution_api/git", "git"]
+    [ ["src/buildtool/execution_api/git", "git_api"]
     , ["src/buildtool/execution_api/utils", "rehash_utils"]
     , ["src/buildtool/logging", "log_level"]
     , ["src/buildtool/logging", "logging"]
@@ -29,6 +27,7 @@
   , "deps":
     [ ["@", "gsl", "", "gsl"]
     , ["src/buildtool/common", "common"]
+    , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/execution_api/common", "artifact_blob"]
     , ["src/buildtool/execution_api/common", "common"]
     , ["src/buildtool/execution_api/local", "context"]

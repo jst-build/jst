@@ -11,7 +11,7 @@
   , "hdrs": ["file_storage.hpp"]
   , "deps":
     [ "object_type"
-    , ["src/buildtool/execution_api/common", "common"]
+    , ["src/buildtool/execution_api/common", "ids"]
     , ["src/buildtool/file_system", "file_system_manager"]
     , ["src/buildtool/logging", "log_level"]
     , ["src/buildtool/logging", "logging"]
@@ -48,6 +48,7 @@
     , ["src/buildtool/logging", "logging"]
     , ["src/buildtool/system", "system"]
     , ["src/utils/cpp", "expected"]
+    , ["src/utils/cpp", "incremental_reader"]
     , ["src/utils/cpp", "path"]
     ]
   , "stage": ["src", "buildtool", "file_system"]

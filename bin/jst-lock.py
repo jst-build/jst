@@ -18,13 +18,14 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 import time
 import zlib
 
-from argparse import ArgumentParser, ArgumentError
+from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
 from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional, Set, TextIO, Tuple, Union, cast
 from enum import Enum
@@ -39,8 +40,13 @@ Json = Dict[str, Any]
 
 MARKERS: List[str] = [".git", "ROOT", "WORKSPACE"]
 SYSTEM_ROOT: str = os.path.abspath(os.sep)
+
 ALT_DIRS: List[str] = ["target_root", "rule_root", "expression_root"]
 REPO_ROOTS: List[str] = ["repository"] + ALT_DIRS
+REPO_KEYS_TO_KEEP: List[str] = [
+    "target_file_name", "rule_file_name", "expression_file_name", "bindings"
+] + ALT_DIRS
+
 DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/just")
 DEFAULT_GIT_BIN: str = "git"  # to be taken from PATH
 DEFAULT_LAUNCHER: List[str] = ["env", "--"]
@@ -51,6 +57,7 @@ DEFAULT_INPUT_CONFIG_NAME: str = "repos.in.json"
 DEFAULT_JUSTMR_CONFIG_NAME: str = "repos.json"
 DEFAULT_CONFIG_DIRS: List[str] = [".", "./etc"]
 """Directories where to look for configuration file inside a root"""
+DEFAULT_JUST: str = "just"
 
 GIT_NOBODY_ENV: Dict[str, str] = {
     "GIT_AUTHOR_DATE": "1970-01-01T00:00Z",
@@ -63,6 +70,12 @@ GIT_NOBODY_ENV: Dict[str, str] = {
     "GIT_CONFIG_SYSTEM": "/dev/null",
 }
 
+SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP: Dict[str, str] = {
+    "ignore": "ignore",
+    "resolve-partially": "tree-upwards",
+    "resolve-completely": "tree-all"
+}
+
 
 class ObjectType(Enum):
     FILE = 1
@@ -71,16 +84,26 @@ class ObjectType(Enum):
     DIR = 4
 
 
+SUPPORTED_BLOB_TYPES: List[ObjectType] = [
+    ObjectType.FILE, ObjectType.EXEC, ObjectType.LINK
+]
+
+SHA1_SIZE_BYTES: int = 20
+
 ###
 # Global vars
 ##
 
 g_ROOT: str = DEFAULT_BUILD_ROOT
 """The configured local build root"""
+g_JUST: str = DEFAULT_JUST
+"""The path to the 'just' binary"""
 g_GIT: str = DEFAULT_GIT_BIN
 """Git binary to use"""
 g_LAUNCHER: List[str] = DEFAULT_LAUNCHER
 """Local launcher to use for commands provided in imports"""
+g_CLONE_MAP: Dict[str, Tuple[str, List[str]]] = {}
+"""Mapping from local path to pair of repository name and bindings chain for cloning"""
 
 ###
 # System utils
@@ -116,6 +139,7 @@ def run_cmd(
     env: Optional[Any] = None,
     stdout: Optional[Any] = subprocess.DEVNULL,
     stdin: Optional[Any] = None,
+    input: Optional[bytes] = None,
     cwd: str,
     attempts: int = 1,
     fail_context: Optional[str] = None,
@@ -129,7 +153,8 @@ def run_cmd(
                                 cwd=cwd,
                                 env=env,
                                 stdout=stdout,
-                                stdin=stdin)
+                                stdin=stdin,
+                                input=input)
         if result.returncode == 0:
             return result.stdout, result.returncode  # return successful result
     if fail_context is not None:
@@ -329,6 +354,19 @@ def type_to_perm(obj_type: ObjectType) -> str:
     fail("Unexpected object type %r" % (obj_type, ))
 
 
+def type_to_string(obj_type: ObjectType) -> str:
+    """Mapping from Git object type to human-readable string."""
+    if obj_type == ObjectType.DIR:
+        return "DIR"
+    elif obj_type == ObjectType.LINK:
+        return "LINK"
+    elif obj_type == ObjectType.EXEC:
+        return "EXEC"
+    elif obj_type == ObjectType.FILE:
+        return "FILE"
+    fail("Unexpected object type %r" % (obj_type, ))
+
+
 def write_data_to_repo(repo_root: str, data: bytes, *, as_type: str) -> bytes:
     """Write content of an object of certain type into given repository.
     Returns the raw id of the written object."""
@@ -378,6 +416,20 @@ def path_to_type(fpath: str) -> ObjectType:
         else:
             return ObjectType.FILE
     fail("Found unsupported filesystem entry %s" % (fpath, ))
+
+
+def git_to_type(perm: str) -> ObjectType:
+    """Get type of given Git entry from permission mode."""
+    if perm == "40000":
+        return ObjectType.DIR
+    elif perm == "120000":
+        return ObjectType.LINK
+    elif perm == "100755":
+        return ObjectType.EXEC
+    elif perm == "100644":
+        return ObjectType.FILE
+    fail("Cannot assign object type for entry with permission code %s" %
+         (perm, ))
 
 
 def get_tree_raw_id(source_dir: str, repo_root: str) -> bytes:
@@ -455,10 +507,26 @@ def import_to_git(target: str, *, repo_type: str, content_id: str,
     return tree_id
 
 
+def git_tree(*, commit: str, subdir: str, upstream: Optional[str],
+             fail_context: str) -> str:
+    """Get Git-tree identifier based on commit. Fails if the commit is not part
+    of the repository. It is a user error if the referenced Git repository does
+    not exist."""
+    tree = run_cmd(["git", "log", "-n", "1", "--format=%T", commit],
+                   stdout=subprocess.PIPE,
+                   cwd=git_root(upstream=upstream),
+                   fail_context=fail_context)[0].decode('utf-8').strip()
+    return git_subtree(tree=tree,
+                       subdir=subdir,
+                       upstream=upstream,
+                       fail_context=fail_context)
+
+
 def git_subtree(*, tree: str, subdir: str, upstream: Optional[str],
                 fail_context: str) -> str:
-    """Get Git-tree identifier in a Git tree by subdirectory path. It is a user
-    error if the referenced Git repository does not exist."""
+    """Get Git-tree identifier in a Git tree by subdirectory path. Fails if the
+    tree is not part of the repository. It is a user error if the referenced Git
+    repository does not exist."""
     if os.path.normpath(subdir) == ".":
         return tree
     return run_cmd(
@@ -485,6 +553,44 @@ def try_read_object_from_repo(obj_id: str, obj_type: str, *,
                      cwd=root,
                      fail_context=None)
     return result[0] if result[1] == 0 else None
+
+
+def read_git_tree(tree_id: str, *, upstream: Optional[str],
+                  fail_context: str) -> Dict[str, Tuple[bytes, ObjectType]]:
+    """Reads a Git tree and returns a list of its entries. Tree entries have as
+    key their filename and as value a tuple of raw id and object type. Method
+    fails if the given tree is not part of the repository. It is a user error if
+    the referenced Git repository does not exist."""
+    raw_tree_content = try_read_object_from_repo(tree_id,
+                                                 "tree",
+                                                 upstream=upstream)
+    if raw_tree_content is None:
+        fail(fail_context + "Failed to read Git tree %s from %s" %
+             (tree_id, git_root(upstream=upstream)))
+
+    # Parse the raw content; the Git tree format is:
+    # "<perm> <filename>\0<binary_hash>[next entries...]"
+    # The hash size for SHA1 is 20 bytes
+    entries: Dict[str, Tuple[bytes, ObjectType]] = {}
+    curr_index = 0
+    while curr_index < len(raw_tree_content):
+        # get permission
+        perm_step = raw_tree_content[curr_index:].find(b' ')
+        perm: str = raw_tree_content[curr_index:curr_index +
+                                     perm_step].decode('utf-8')
+        curr_index += perm_step + 1
+        # get filename
+        name_step = raw_tree_content[curr_index:].find(b'\0')
+        filename: str = raw_tree_content[curr_index:curr_index +
+                                         name_step].decode('utf-8')
+        curr_index += name_step + 1
+        # get raw id
+        raw_id: bytes = raw_tree_content[curr_index:curr_index +
+                                         SHA1_SIZE_BYTES].hex().encode('utf-8')
+        curr_index += SHA1_SIZE_BYTES
+        # store current entry
+        entries[filename] = (raw_id, git_to_type(perm))
+    return entries
 
 
 ###
@@ -547,6 +653,80 @@ def cas_path(h: str) -> str:
 def is_in_cas(h: str) -> bool:
     """Check if content is in local file CAS."""
     return os.path.exists(cas_path(h))
+
+
+###
+# Staging utils
+##
+
+
+def stage_git_entry(*, fpath: str, obj_id: str, obj_type: ObjectType,
+                    upstream: Optional[str], fail_context: str) -> None:
+    """Stage specified Git entry, identified by id and object type, to a given
+    location. It is a user error if the referenced Git repository does not
+    exist."""
+    curr_fail_context = fail_context + "While staging entry %r:\n" % (
+        json.dumps({fpath: (obj_id, type_to_string(obj_type))}), )
+    # Trees need to get traversed
+    if obj_type == ObjectType.DIR:
+        os.makedirs(fpath)
+        entries = read_git_tree(obj_id,
+                                upstream=upstream,
+                                fail_context=curr_fail_context)
+        for key, val in entries.items():
+            stage_git_entry(
+                fpath=os.path.join(fpath, key),
+                obj_id=val[0].decode('utf-8'),
+                obj_type=val[1],
+                upstream=upstream,
+                fail_context=fail_context,  # limit log verbosity
+            )
+    # Blobs are read as-is; only do work for supported blob types
+    elif obj_type in SUPPORTED_BLOB_TYPES:
+        content = try_read_object_from_repo(obj_id, "blob", upstream=upstream)
+        if content is None:
+            fail(curr_fail_context + "Failed to read Git entry!")
+        try:
+            if obj_type == ObjectType.LINK:
+                os.symlink(src=content.decode('utf-8'), dst=fpath)
+            else:
+                with open(fpath, "wb") as f:
+                    fstat = os.stat(f.fileno())
+                    f.write(content)
+                    f.flush()
+                    if obj_type == ObjectType.EXEC:
+                        os.chmod(f.fileno(), fstat.st_mode | stat.S_IEXEC)
+                        os.fsync(f.fileno())
+        except OSError:
+            fail(curr_fail_context + "Failed to write entry")
+        except Exception as ex:
+            fail(curr_fail_context + "Writing entry failed with:\n%r" % (ex, ))
+    else:
+        # Warn if any unsupported entries were found
+        warn(curr_fail_context +
+             "Skipped staging of entry with unsupported type")
+    return
+
+
+def stage_git_commit(commit: str, *, upstream: Optional[str], stage_to: str,
+                     fail_context: str) -> None:
+    """Stage into a given directory the tree of a commit from given repository.
+    Fails if the commit is not part of the repository. It is a user error if the
+    referenced Git repository does not exist."""
+    fail_context += "While trying to stage commit %s\n" % (commit, )
+    # Stage underlying Git tree
+    tree = git_tree(commit=commit,
+                    subdir=".",
+                    upstream=upstream,
+                    fail_context=fail_context)
+    entries = read_git_tree(tree, upstream=upstream, fail_context=fail_context)
+    os.makedirs(stage_to, exist_ok=True)  # root dir can already exist
+    for key, val in entries.items():
+        stage_git_entry(fpath=os.path.join(stage_to, key),
+                        obj_id=val[0].decode('utf-8'),
+                        obj_type=val[1],
+                        upstream=upstream,
+                        fail_context=fail_context)
 
 
 ###
@@ -669,6 +849,14 @@ def rewrite_file_repo(repo: Json, remote_type: str, remote_stub: Dict[str, Any],
         subdir: str = os.path.normpath(repo.get("path", "."))
         if subdir != ".":
             changes["subdir"] = subdir
+        # keep ignore special and absent pragmas
+        pragma = {}
+        if repo.get("pragma", {}).get("special", None) == "ignore":
+            pragma["special"] = "ignore"
+        if repo.get("pragma", {}).get("absent", False):
+            pragma["absent"] = True
+        if pragma:
+            changes["pragma"] = pragma
         return dict(remote_stub, **changes)
     elif remote_type == "file":
         # for imports from local checkouts, file repos remain type 'file'; only
@@ -690,6 +878,15 @@ def rewrite_file_repo(repo: Json, remote_type: str, remote_stub: Dict[str, Any],
             if existing != ".":
                 subdir = os.path.join(existing, subdir)
             changes["subdir"] = subdir
+        # keep special and absent pragmas
+        pragma = {}
+        special: Json = repo.get("pragma", {}).get("special", None)
+        if special:
+            pragma["special"] = special
+        if repo.get("pragma", {}).get("absent", False):
+            pragma["absent"] = True
+        if pragma:
+            changes["pragma"] = pragma
         return dict(remote_stub, **changes)
     elif remote_type == "git tree":
         # for imports from git-trees, file repos become 'git tree' types; the
@@ -716,13 +913,49 @@ def rewrite_file_repo(repo: Json, remote_type: str, remote_stub: Dict[str, Any],
                                             subdir=subdir,
                                             upstream=None,
                                             fail_context=fail_context)
+        # keep ignore special and absent pragmas
+        pragma = {}
+        if repo.get("pragma", {}).get("special", None) == "ignore":
+            pragma["special"] = "ignore"
+        if repo.get("pragma", {}).get("absent", False):
+            pragma["absent"] = True
+        if pragma:
+            remote_desc["pragma"] = pragma
         return remote_desc
     fail("Unsupported remote type!")
 
 
+def update_pragmas(repo: Json, import_pragma: Json,
+                   pragma_special: Optional[str]) -> Json:
+    """Update the description with any input-provided pragmas:
+    - for all repositories, merge with import-level "absent" pragma
+    - for "file"-type repositories, merge with import-level "to_git" pragma
+    - for all repositories, overwrite with source-level "special" pragma."""
+    existing: Json = dict(repo.get("pragma", {}))  # operate on copy
+    # all repos support "absent pragma"
+    absent: bool = existing.get("absent", False) or import_pragma.get(
+        "absent", False)
+    if absent:
+        existing["absent"] = True
+    # support "to_git" pragma for "file"-type repos
+    if repo.get("type") == "file":
+        to_git = existing.get("to_git", False) or import_pragma.get(
+            "to_git", False)
+        if to_git:
+            existing["to_git"] = True
+    # all repos get the "special" pragma overwritten, if provided
+    if pragma_special is not None:
+        existing["special"] = pragma_special
+    # all other pragmas as kept; if no pragma was set, do not set any
+    if existing:
+        repo = dict(repo, **{"pragma": existing})
+    return repo
+
+
 def rewrite_repo(repo_spec: Json, *, remote_type: str,
-                 remote_stub: Dict[str, Any], assign: Json, absent: bool,
-                 as_layer: bool, fail_context: str) -> Json:
+                 remote_stub: Dict[str, Any], assign: Json, import_pragma: Json,
+                 pragma_special: Optional[str], as_layer: bool,
+                 fail_context: str) -> Json:
     """Rewrite description of imported repositories."""
     new_spec: Json = {}
     repo = repo_spec.get("repository", {})
@@ -741,8 +974,9 @@ def rewrite_repo(repo_spec: Json, *, remote_type: str,
     elif repo.get("type") in ["computed", "tree structure"]:
         target: str = repo.get("repo", None)
         repo = dict(repo, **{"repo": assign[target]})
-    if absent and isinstance(repo, dict):
-        repo["pragma"] = dict(repo.get("pragma", {}), **{"absent": True})
+    # update pragmas, as needed
+    if isinstance(repo, dict):
+        repo = update_pragmas(repo, import_pragma, pragma_special)
     new_spec["repository"] = repo
     # rewrite other roots and bindings, if actually needed to be imported
     if not as_layer:
@@ -764,8 +998,8 @@ def rewrite_repo(repo_spec: Json, *, remote_type: str,
 
 
 def handle_import(remote_type: str, remote_stub: Dict[str, Any],
-                  repo_desc: Json, core_repos: Json, foreign_config: Json, *,
-                  fail_context: str) -> Json:
+                  repo_desc: Json, core_repos: Json, foreign_config: Json,
+                  pragma_special: Optional[str], *, fail_context: str) -> Json:
     """General handling of repository import from a foreign config."""
     fail_context += "While handling import from remote type \"%s\"\n" % (
         remote_type, )
@@ -798,19 +1032,13 @@ def handle_import(remote_type: str, remote_stub: Dict[str, Any],
             % (json.dumps(import_map, indent=2), ))
 
     pragma: Json = repo_desc.get("pragma", None)
-    if pragma is not None and not isinstance(pragma, dict):
+    if pragma is None:
+        pragma = {}
+    elif not isinstance(pragma, dict):
         fail(
             fail_context +
             "Expected \"repos\" entry subfield \"pragma\" to be a map, but found:\n%r"
             % (json.dumps(pragma, indent=2), ))
-    absent: bool = False if pragma is None else pragma.get("absent", False)
-    if absent is None:
-        absent = False
-    elif not isinstance(absent, bool):
-        fail(
-            fail_context +
-            "Expected \"repos\" entry pragma \"absent\" to be a bool, but found:\n%r"
-            % (json.dumps(absent, indent=2), ))
 
     # Handle import with renaming
     foreign_repos: Json = foreign_config.get("repositories", {})
@@ -839,24 +1067,27 @@ def handle_import(remote_type: str, remote_stub: Dict[str, Any],
     report(None)  # adds newline
 
     total_assign = dict(assign, **import_map)
+    new_repos = dict(core_repos)  # avoid side-effects
     for repo in ordered_imports:
-        core_repos[assign[repo]] = rewrite_repo(foreign_repos[repo],
-                                                remote_type=remote_type,
-                                                remote_stub=remote_stub,
-                                                assign=total_assign,
-                                                absent=absent,
-                                                as_layer=False,
-                                                fail_context=fail_context)
+        new_repos[assign[repo]] = rewrite_repo(foreign_repos[repo],
+                                               remote_type=remote_type,
+                                               remote_stub=remote_stub,
+                                               assign=total_assign,
+                                               import_pragma=pragma,
+                                               pragma_special=pragma_special,
+                                               as_layer=False,
+                                               fail_context=fail_context)
     for repo in extra_imports:
-        core_repos[assign[repo]] = rewrite_repo(foreign_repos[repo],
-                                                remote_type=remote_type,
-                                                remote_stub=remote_stub,
-                                                assign=total_assign,
-                                                absent=absent,
-                                                as_layer=True,
-                                                fail_context=fail_context)
+        new_repos[assign[repo]] = rewrite_repo(foreign_repos[repo],
+                                               remote_type=remote_type,
+                                               remote_stub=remote_stub,
+                                               assign=total_assign,
+                                               import_pragma=pragma,
+                                               pragma_special=pragma_special,
+                                               as_layer=True,
+                                               fail_context=fail_context)
 
-    return core_repos
+    return new_repos
 
 
 ###
@@ -982,14 +1213,14 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"commit\" to be a string, but found:\n%r" %
              (json.dumps(commit, indent=2), ))
 
-    mirrors: Optional[List[str]] = imports_entry.get("mirrors", [])
-    if mirrors is not None and not isinstance(mirrors, list):
+    mirrors: List[str] = imports_entry.get("mirrors", [])
+    if not isinstance(mirrors, list):
         fail(fail_context +
              "Expected field \"mirrors\" to be a list, but found:\n%r" %
              (json.dumps(mirrors, indent=2), ))
 
-    inherit_env: Optional[List[str]] = imports_entry.get("inherit env", [])
-    if inherit_env is not None and not isinstance(inherit_env, list):
+    inherit_env: List[str] = imports_entry.get("inherit env", [])
+    if not isinstance(inherit_env, list):
         fail(fail_context +
              "Expected field \"inherit env\" to be a list, but found:\n%r" %
              (json.dumps(inherit_env, indent=2), ))
@@ -1006,6 +1237,16 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
         fail(fail_context +
              "Expected field \"config\" to be a string, but found:\n%r" %
              (json.dumps(foreign_config_file, indent=2), ))
+
+    pragma_special: Optional[str] = imports_entry.get("pragma",
+                                                      {}).get("special", None)
+    if pragma_special is not None and not isinstance(pragma_special, str):
+        fail(fail_context +
+             "Expected pragma \"special\" to be a string, but found:\n%r" %
+             (json.dumps(pragma_special, indent=2), ))
+    if not as_plain:
+        # only enabled if as_plain is true
+        pragma_special = None
 
     # Fetch the source Git repository
     srcdir, remote_stub, to_clean_up = git_checkout(url,
@@ -1040,6 +1281,7 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
                  "Failed to find the repository configuration file!")
 
     # Process the imported repositories, in order
+    new_repos = dict(core_repos)  # avoid side-effects
     for repo_entry in repos:
         if not isinstance(repo_entry, dict):
             fail(fail_context +
@@ -1047,16 +1289,17 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
                  (json.dumps(repo_entry, indent=2), ))
         repo_entry = cast(Json, repo_entry)
 
-        core_repos = handle_import("git",
-                                   remote_stub,
-                                   repo_entry,
-                                   core_repos,
-                                   foreign_config,
-                                   fail_context=fail_context)
+        new_repos = handle_import("git",
+                                  remote_stub,
+                                  repo_entry,
+                                  new_repos,
+                                  foreign_config,
+                                  pragma_special,
+                                  fail_context=fail_context)
 
     # Clean up local fetch
     try_rmtree(to_clean_up)
-    return core_repos
+    return new_repos
 
 
 ###
@@ -1100,6 +1343,16 @@ def import_from_file(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"config\" to be a string, but found:\n%r" %
              (json.dumps(foreign_config_file, indent=2), ))
 
+    pragma_special: Optional[str] = imports_entry.get("pragma",
+                                                      {}).get("special", None)
+    if pragma_special is not None and not isinstance(pragma_special, str):
+        fail(fail_context +
+             "Expected pragma \"special\" to be a string, but found:\n%r" %
+             (json.dumps(pragma_special, indent=2), ))
+    if not as_plain:
+        # only enabled if as_plain is true
+        pragma_special = None
+
     # Read in the foreign config file
     if foreign_config_file:
         foreign_config_file = os.path.join(path, foreign_config_file)
@@ -1131,6 +1384,7 @@ def import_from_file(core_repos: Json, imports_entry: Json) -> Json:
     }
 
     # Process the imported repositories, in order
+    new_repos = dict(core_repos)  # avoid side-effects
     for repo_entry in repos:
         if not isinstance(repo_entry, dict):
             fail(fail_context +
@@ -1138,14 +1392,15 @@ def import_from_file(core_repos: Json, imports_entry: Json) -> Json:
                  (json.dumps(repo_entry, indent=2), ))
         repo_entry = cast(Json, repo_entry)
 
-        core_repos = handle_import("file",
-                                   remote_stub,
-                                   repo_entry,
-                                   core_repos,
-                                   foreign_config,
-                                   fail_context=fail_context)
+        new_repos = handle_import("file",
+                                  remote_stub,
+                                  repo_entry,
+                                  new_repos,
+                                  foreign_config,
+                                  pragma_special,
+                                  fail_context=fail_context)
 
-    return core_repos
+    return new_repos
 
 
 ###
@@ -1202,6 +1457,44 @@ def archive_fetch(locations: List[str],
                  ("\n".join(["\t%s" % (x, ) for x in locations]), ))
 
     return cast(str, content)
+
+
+def archive_fetch_with_parse(repository: Json, *, fail_context: str) -> str:
+    """Utility on top of archive_fetch that does its own parsing. Returns the
+    Git identifier of the fetched content."""
+    # Parse fields
+    fetch: str = repository.get("fetch", None)
+    if not isinstance(fetch, str):
+        fail(fail_context +
+             "Expected field \"fetch\" to be a string, but found:\n%r" %
+             (json.dumps(fetch, indent=2), ))
+    content: str = repository.get("content", None)
+    if not isinstance(content, str):
+        fail(fail_context +
+             "Expected field \"content\" to be a string, but found:\n%r" %
+             (json.dumps(content, indent=2), ))
+    mirrors: List[str] = repository.get("mirrors", [])
+    if not isinstance(mirrors, list):
+        fail(fail_context +
+             "Expected field \"mirrors\" to be a list, but found:\n%r" %
+             (json.dumps(mirrors, indent=2), ))
+    sha256: Optional[str] = repository.get("sha256", None)
+    if sha256 is not None and not isinstance(sha256, str):
+        fail(fail_context +
+             "Expected field \"sha256\" to be a string, but found:\n%r" %
+             (json.dumps(sha256, indent=2), ))
+    sha512: Optional[str] = repository.get("sha512", None)
+    if sha512 is not None and not isinstance(sha512, str):
+        fail(fail_context +
+             "Expected field \"sha512\" to be a string, but found:\n%r" %
+             (json.dumps(sha512, indent=2), ))
+    # Fetch the archive to local CAS
+    archive_fetch(mirrors + [fetch],
+                  content=content,
+                  sha256=sha256,
+                  sha512=sha512,
+                  fail_context=fail_context)
+    return content
 
 
 def unpack_archive(content_id: str, *, archive_type: str, unpack_to: str,
@@ -1331,8 +1624,8 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"content\" to be a string, but found:\n%r" %
              (json.dumps(content, indent=2), ))
 
-    mirrors: Optional[List[str]] = imports_entry.get("mirrors", [])
-    if mirrors is not None and not isinstance(mirrors, list):
+    mirrors: List[str] = imports_entry.get("mirrors", [])
+    if not isinstance(mirrors, list):
         fail(fail_context +
              "Expected field \"mirrors\" to be a list, but found:\n%r" %
              (json.dumps(mirrors, indent=2), ))
@@ -1377,6 +1670,16 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"config\" to be a string, but found:\n%r" %
              (json.dumps(foreign_config_file, indent=2), ))
 
+    pragma_special: Optional[str] = imports_entry.get("pragma",
+                                                      {}).get("special", None)
+    if pragma_special is not None and not isinstance(pragma_special, str):
+        fail(fail_context +
+             "Expected pragma \"special\" to be a string, but found:\n%r" %
+             (json.dumps(pragma_special, indent=2), ))
+    if not as_plain:
+        # only enabled if as_plain is true
+        pragma_special = None
+
     # Fetch archive to local CAS and unpack
     srcdir, remote_stub, to_clean_up = archive_checkout(
         fetch,
@@ -1413,6 +1716,7 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
                  "Failed to find the repository configuration file!")
 
     # Process the imported repositories, in order
+    new_repos = dict(core_repos)  # avoid side-effects
     for repo_entry in repos:
         if not isinstance(repo_entry, dict):
             fail(fail_context +
@@ -1420,16 +1724,17 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
                  (json.dumps(repo_entry, indent=2), ))
         repo_entry = cast(Json, repo_entry)
 
-        core_repos = handle_import(archive_type,
-                                   remote_stub,
-                                   repo_entry,
-                                   core_repos,
-                                   foreign_config,
-                                   fail_context=fail_context)
+        new_repos = handle_import(archive_type,
+                                  remote_stub,
+                                  repo_entry,
+                                  new_repos,
+                                  foreign_config,
+                                  pragma_special,
+                                  fail_context=fail_context)
 
     # Clean up local fetch
     try_rmtree(to_clean_up)
-    return core_repos
+    return new_repos
 
 
 ###
@@ -1454,7 +1759,7 @@ def git_tree_checkout(command: List[str], do_generate: bool, *,
     for envar in inherit_env:
         if envar in curr_env:
             new_envs[envar] = curr_env[envar]
-    command_env = dict(command_env, **new_envs)
+    cmd_env = dict(command_env, **new_envs)
 
     # Generate the command to be run, if needed
     if do_generate:
@@ -1462,7 +1767,7 @@ def git_tree_checkout(command: List[str], do_generate: bool, *,
             type="cmd-gen")  # to avoid polluting the current dir
         data, _ = run_cmd(g_LAUNCHER + command,
                           cwd=tmpdir,
-                          env=command_env,
+                          env=cmd_env,
                           stdout=subprocess.PIPE,
                           fail_context=fail_context)
         command = json.loads(data)
@@ -1472,7 +1777,7 @@ def git_tree_checkout(command: List[str], do_generate: bool, *,
     workdir: str = create_tmp_dir(type="git-tree-checkout")
     run_cmd(g_LAUNCHER + command,
             cwd=workdir,
-            env=command_env,
+            env=cmd_env,
             fail_context=fail_context)
 
     # Import root tree to Git cache; as we do not have the tree hash, identify
@@ -1490,7 +1795,7 @@ def git_tree_checkout(command: List[str], do_generate: bool, *,
     repo_stub: Dict[str, Any] = {
         "type": "git tree",
         "cmd": command,
-        "env": command_env,
+        "env": command_env,  # original env
         "id": tree_id,  # the root tree id
     }
     if inherit_env:
@@ -1549,14 +1854,14 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
         if subdir == ".":
             subdir = None  # treat as if missing
 
-    command_env: Optional[Json] = imports_entry.get("env", {})
-    if command_env is not None and not isinstance(command_env, dict):
+    command_env: Json = imports_entry.get("env", {})
+    if not isinstance(command_env, dict):
         fail(fail_context +
              "Expected field \"env\" to be a map, but found:\n%r" %
              (json.dumps(command_env, indent=2), ))
 
-    inherit_env: Optional[List[str]] = imports_entry.get("inherit env", [])
-    if inherit_env is not None and not isinstance(inherit_env, list):
+    inherit_env: List[str] = imports_entry.get("inherit env", [])
+    if not isinstance(inherit_env, list):
         fail(fail_context +
              "Expected field \"inherit env\" to be a list, but found:\n%r" %
              (json.dumps(inherit_env, indent=2), ))
@@ -1573,6 +1878,16 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
         fail(fail_context +
              "Expected field \"config\" to be a string, but found:\n%r" %
              (json.dumps(foreign_config_file, indent=2), ))
+
+    pragma_special: Optional[str] = imports_entry.get("pragma",
+                                                      {}).get("special", None)
+    if pragma_special is not None and not isinstance(pragma_special, str):
+        fail(fail_context +
+             "Expected pragma \"special\" to be a string, but found:\n%r" %
+             (json.dumps(pragma_special, indent=2), ))
+    if not as_plain:
+        # only enabled if as_plain is true
+        pragma_special = None
 
     # Fetch the Git tree
     srcdir, remote_stub, to_clean_up = git_tree_checkout(
@@ -1608,6 +1923,7 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
                  "Failed to find the repository configuration file!")
 
     # Process the imported repositories, in order
+    new_repos = dict(core_repos)  # avoid side-effects
     for repo_entry in repos:
         if not isinstance(repo_entry, dict):
             fail(fail_context +
@@ -1615,16 +1931,592 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
                  (json.dumps(repo_entry, indent=2), ))
         repo_entry = cast(Json, repo_entry)
 
-        core_repos = handle_import("git tree",
-                                   remote_stub,
-                                   repo_entry,
-                                   core_repos,
-                                   foreign_config,
-                                   fail_context=fail_context)
+        new_repos = handle_import("git tree",
+                                  remote_stub,
+                                  repo_entry,
+                                  new_repos,
+                                  foreign_config,
+                                  pragma_special,
+                                  fail_context=fail_context)
 
     # Clean up local fetch
     try_rmtree(to_clean_up)
-    return core_repos
+    return new_repos
+
+
+###
+# Import from generic source
+##
+
+
+def import_generic(core_config: Json, imports_entry: Json) -> Json:
+    """Handles generic imports done via a user-defined command."""
+    # Set granular logging message
+    fail_context: str = "While importing from source \"generic\":\n"
+
+    # Parse source config fields
+    command: List[str] = imports_entry.get("cmd", None)
+    if not isinstance(command, list):
+        fail(fail_context +
+             "Expected field \"cmd\" to be a list, but found:\n%r" %
+             (json.dumps(command, indent=2), ))
+
+    command_env: Json = imports_entry.get("env", {})
+    if not isinstance(command_env, dict):
+        fail(fail_context +
+             "Expected field \"env\" to be a map, but found:\n%r" %
+             (json.dumps(command_env, indent=2), ))
+
+    inherit_env: List[str] = imports_entry.get("inherit env", [])
+    if not isinstance(inherit_env, list):
+        fail(fail_context +
+             "Expected field \"inherit env\" to be a list, but found:\n%r" %
+             (json.dumps(inherit_env, indent=2), ))
+
+    command_cwd: str = imports_entry.get("cwd", os.getcwd())
+    if not isinstance(command_cwd, str):
+        fail(fail_context +
+             "Expected field \"cwd\" to be a string, but found:\n%r" %
+             (json.dumps(command_cwd, indent=2), ))
+    if not os.path.isabs(command_cwd):
+        command_cwd = os.path.join(os.getcwd(), command_cwd)
+
+    # Set the command environment
+    curr_env = os.environ.copy()
+    new_envs = {}
+    for envar in inherit_env:
+        if envar in curr_env:
+            new_envs[envar] = curr_env[envar]
+    command_env.update(new_envs)
+
+    # Run the command
+    command_output = run_cmd(
+        g_LAUNCHER + command,
+        env=command_env,
+        stdout=subprocess.PIPE,
+        input=json.dumps(core_config).encode('utf-8'),
+        cwd=command_cwd,
+        fail_context=fail_context)[0].decode('utf-8').strip()
+
+    # Parse output as JSON and do minimal validation
+    parsed_output: Json = {}
+    try:
+        parsed_output = json.loads(command_output)
+    except Exception as ex:
+        fail(fail_context +
+             "Parsing output of command as JSON failed with:\n%r" % (ex, ))
+
+    # Perform minimal validation and restrict keys to those expected
+    if "repositories" not in parsed_output.keys():
+        fail(fail_context +
+             "Output configuration is missing mandatory key \"repositories\"")
+    new_config: Json = {"repositories": parsed_output["repositories"]}
+    main: str = parsed_output.get("main", None)
+    if main is not None:
+        if not isinstance(main, str):
+            fail(
+                fail_context +
+                "Output configuration has malformed value %s for key \"main\"" %
+                (main, ))
+        new_config["main"] = main
+
+    return new_config
+
+
+###
+# Cloning logic
+##
+
+
+def rewrite_cloned_repo(repos: Json, *, clone_to: str, target_repo: str,
+                        ws_root_repo: str) -> Json:
+    """Rewrite description of a locally-cloned repository."""
+    # For Git repositories, the clone always contains the whole root tree,
+    # so the path will need to point to any given subdir; no validation of
+    # fields is needed, as it was already done pre-cloning
+    ws_root_desc: Json = repos[ws_root_repo]
+    if ws_root_desc["repository"]["type"] == "git":
+        subdir: Optional[str] = ws_root_desc["repository"].get("subdir", None)
+        if subdir is not None and os.path.normpath(subdir) != ".":
+            clone_to = os.path.join(clone_to, subdir)
+
+    # Set workspace root description
+    new_spec: Json = {
+        "repository": {
+            "type": "file",
+            "path": os.path.abspath(clone_to)
+        }
+    }
+
+    # Keep relevant pragmas from the workspace root repository
+    pragma: Json = {}
+    existing: Json = repos[ws_root_repo]["repository"].get("pragma", {})
+    if ws_root_desc["repository"]["type"] not in ["archive", "zip"]:
+        special = existing.get("special", None)
+        if special:
+            pragma["special"] = special
+    to_git = existing.get("to_git", False)
+    if to_git:
+        pragma["to_git"] = True
+    if pragma:
+        new_spec["repository"]["pragma"] = pragma
+
+    # Keep bindings, roots, and root files from the target repository to be able
+    # to build against it
+    layer_desc: Json = repos[target_repo]
+    for key in REPO_KEYS_TO_KEEP:
+        if key in layer_desc:
+            new_spec[key] = layer_desc[key]
+
+    return new_spec
+
+
+def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
+               clone_to: str) -> Optional[Tuple[str, str]]:
+    """Clone the workspace root of a Git repository into a given directory path.
+    The repository is described by a dependency chain from a given start
+    repository. Returns the names of the target repository and of the repository
+    providing its workspace root (which can be the same) on success, None if no
+    cloning can be done."""
+    # Set granular logging message
+    fail_context: str = "While processing clone entry %r:\n" % (json.dumps(
+        {clone_to: [known_repo, deps_chain]}), )
+
+    # Check cloning path
+    clone_to = os.path.abspath(clone_to)
+    if os.path.exists(clone_to):
+        if not os.path.isdir(clone_to):
+            fail(fail_context + "Clone path %r exists and is not a directory!" %
+                 (json.dumps(clone_to), ))
+        if os.listdir(clone_to):
+            warn(fail_context +
+                 "Clone directory %r exists and is not empty! Skipping" %
+                 (json.dumps(clone_to), ))
+            return None
+
+    ## Helper functions
+
+    def process_file(repository: Json, *, clone_to: str,
+                     fail_context: str) -> str:
+        """Process a file repository and return its path."""
+        # Parse fields
+        fpath: str = repository.get("path", None)
+        if not isinstance(fpath, str):
+            fail(fail_context +
+                 "Expected field \"path\" to be a string, but found:\n%r" %
+                 (json.dumps(fpath, indent=2), ))
+        # Simply copy directory tree in the new location
+        try:
+            shutil.copytree(fpath, clone_to, symlinks=True, dirs_exist_ok=True)
+        except Exception as ex:
+            fail(fail_context + "Copying file path %s failed with:\n%r" %
+                 (fpath, ex))
+        return fpath
+
+    def process_git(repository: Json, *, clone_to: str,
+                    fail_context: str) -> str:
+        """Process a Git repository and return its commit id."""
+        # Parse fields
+        commit: str = repository.get("commit", None)
+        if not isinstance(commit, str):
+            fail(fail_context +
+                 "Expected field \"commit\" to be a string, but found:\n%r" %
+                 (json.dumps(commit, indent=2), ))
+        # If commit in Git cache, stage it and return
+        if git_commit_present(commit, upstream=None):
+            stage_git_commit(commit,
+                             upstream=None,
+                             stage_to=clone_to,
+                             fail_context=fail_context)
+            return commit
+        # Parse fields needed for
+        url: str = repository.get("repository", None)
+        if not isinstance(url, str):
+            fail(fail_context +
+                 "Expected field \"url\" to be a string, but found:\n%r" %
+                 (json.dumps(url, indent=2), ))
+        branch: str = repository.get("branch", None)
+        if not isinstance(branch, str):
+            fail(fail_context +
+                 "Expected field \"branch\" to be a string, but found:\n%r" %
+                 (json.dumps(branch, indent=2), ))
+        mirrors: List[str] = repository.get("mirrors", [])
+        if not isinstance(mirrors, list):
+            fail(fail_context +
+                 "Expected field \"mirrors\" to be a list, but found:\n%r" %
+                 (json.dumps(mirrors, indent=2), ))
+        # Clone the branch fully and reset to specific commit; in this case, we
+        # are interested also in the Git history, so a simple commit checkout is
+        # not enough; try mirrors first, as they are closer
+        cloned: bool = False
+        sources = mirrors + [url]
+        for source in sources:
+            if (run_cmd(g_LAUNCHER +
+                        [g_GIT, "clone", "-b", branch, source, clone_to],
+                        cwd=os.getcwd(),
+                        fail_context=None)[1] == 0
+                    and run_cmd(g_LAUNCHER + [g_GIT, "reset", "--hard", commit],
+                                cwd=clone_to,
+                                fail_context=None)[1] == 0):
+                cloned = True
+                break
+        if not cloned:
+            fail(fail_context +
+                 "Failed to clone Git repository.\nTried locations:\n%s" %
+                 ("\n".join(["\t%s" % (x, ) for x in sources]), ))
+        return commit
+
+    def process_archive(repository: Json, repo_type: str, *, clone_to: str,
+                        fail_context: str) -> str:
+        """Process an archive-like repository and return its content id."""
+        # Parse entries not covered in fetch method to check for early fail
+        subdir: Optional[str] = repository.get("subdir", None)
+        if subdir is not None:
+            if not isinstance(subdir, str):
+                fail(
+                    fail_context +
+                    "Expected field \"subdir\" to be a string, but found:\n%r" %
+                    (json.dumps(subdir, indent=2), ))
+            subdir = os.path.normpath(subdir)
+            if os.path.isabs(subdir) or subdir.startswith(".."):
+                fail(
+                    fail_context +
+                    "Expected field \"subdir\" to be a relative non-upward path, but found:\n%r"
+                    % (json.dumps(subdir, indent=2), ))
+            if subdir == ".":
+                subdir = None  # treat as if missing
+        # Fetch the archive
+        content = archive_fetch_with_parse(repository,
+                                           fail_context=fail_context)
+        # Stage the content; first resolve special entries, if needed, then keep
+        # the relevant subdir, if given
+        special_pragma: Optional[str] = repository.get("pragma",
+                                                       {}).get("special", None)
+
+        if (special_pragma not in SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP.keys()
+                and subdir is None):
+            # Unpack directly to clone location
+            unpack_archive(content,
+                           archive_type=repo_type,
+                           unpack_to=clone_to,
+                           fail_context=fail_context)
+        else:
+            # Unpack to a temporary dir
+            workdir: str = create_tmp_dir(type="archive-unpack")
+            srcdir: str = os.path.join(workdir, "src")
+            unpack_archive(content,
+                           archive_type=repo_type,
+                           unpack_to=srcdir,
+                           fail_context=fail_context)
+
+            move_from_dir: str = srcdir
+            if (special_pragma is not None and special_pragma
+                    in SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP.keys()):
+                # Resolve the tree according to the pragma
+                resolve_special_arg = SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP[
+                    special_pragma]
+                resolved_tree = run_cmd(
+                    g_LAUNCHER + [
+                        g_JUST, "add-to-cas", "--local-build-root", g_ROOT,
+                        "--resolve-special=%s" % resolve_special_arg, srcdir
+                    ],
+                    cwd=workdir,
+                    stdout=subprocess.PIPE,
+                    fail_context=fail_context)[0].decode('utf-8').strip()
+                # Stage the resolved tree
+                resolved_dir: str = os.path.join(workdir, "resolved")
+                subdir_args: List[str] = []
+                if subdir is not None:
+                    subdir_args = ["-P", subdir]
+                run_cmd(g_LAUNCHER + [
+                    g_JUST, "install-cas", "--local-build-root", g_ROOT,
+                    "%s::t" % resolved_tree, "-o", resolved_dir
+                ] + subdir_args,
+                        cwd=workdir,
+                        fail_context=fail_context)
+                move_from_dir = resolved_dir
+            else:
+                # Subdir is not None, so keep only that subdirectory
+                move_from_dir = os.path.join(move_from_dir, cast(str, subdir))
+
+            # Do the move into clone directory
+            os.makedirs(clone_to, exist_ok=True)
+            for entry in os.listdir(move_from_dir):
+                # shutil.move uses os.rename if on same filesystem or
+                # shutil.copy2 otherwise, which preserves file metadata
+                # and uses hardlinks if supported by the OS
+                try:
+                    shutil.move(os.path.join(move_from_dir, entry), clone_to)
+                except Exception as ex:
+                    fail(fail_context + "Moving file path %s failed with:\n%r" %
+                         (os.path.join(move_from_dir, entry), ex))
+
+            # Clean up tmp dir
+            try_rmtree(workdir)
+
+        return content
+
+    def process_foreign_file(repository: Json, *, clone_to: str,
+                             fail_context: str) -> str:
+        """Process a foreign-file repository and return its content id."""
+        # Parse fields not in common with archive-type repositories
+        name: str = repository.get("name", None)
+        if not isinstance(name, str):
+            fail(fail_context +
+                 "Expected field \"name\" to be a string, but found:\n%r" %
+                 (json.dumps(name, indent=2), ))
+        exec: Optional[bool] = repository.get("executable", None)
+        if exec is not None and not isinstance(exec, bool):
+            fail(fail_context +
+                 "Expected field \"exec\" to be a boolean, but found:\n%r" %
+                 (json.dumps(exec, indent=2), ))
+        # Fetch the foreign file to local CAS
+        content = archive_fetch_with_parse(repository,
+                                           fail_context=fail_context)
+        # stage the file under the provided name in the clone directory
+        os.makedirs(clone_to, exist_ok=True)
+        abs_name = os.path.join(clone_to, name)
+        shutil.copyfile(cas_path(content), abs_name)
+        if exec == True:
+            os.chmod(abs_name, os.stat(abs_name).st_mode | stat.S_IEXEC)
+        return content
+
+    def process_distdir(repository: Json, repos: Json, *, clone_to: str,
+                        fail_context: str) -> str:
+        """Process a distdir repository and return its content tree id."""
+
+        # Helper method
+        def get_distfile(desc: Json, *, fail_context: str) -> str:
+            distfile: str = desc.get("distfile", None)
+            if distfile is None:
+                fetch: str = desc.get("fetch", None)
+                if not isinstance(fetch, str):
+                    fail(
+                        fail_context +
+                        "Expected field \"fetch\" to be a string, but found:\n%r"
+                        % (json.dumps(fetch, indent=2), ))
+                distfile = os.path.basename(cast(str, desc.get("fetch")))
+            return distfile
+
+        # Parse fields
+        distdir_list: List[str] = repository.get("repositories", None)
+        if not isinstance(distdir_list, list):
+            fail(
+                fail_context +
+                "Expected field \"repositories\" to be a list, but found:\n%r" %
+                (json.dumps(distdir_list, indent=2), ))
+        # Gather the distdirs
+        content: Dict[str, str] = {}
+        to_fetch: List[str] = []
+        for repo in distdir_list:
+            repo_fail_context: str = fail_context + (
+                "While processing distdir entry \"%s\"" % (repo, ))
+            # If repo does not exist, fail
+            if repo not in repos:
+                fail(repo_fail_context + "Distdir repository not found")
+            repo_desc: Json = repos[repo].get("repository", {})
+            repo_desc_type = repo_desc.get("type")
+            # Only do work for archived types
+            if repo_desc_type in ["archive", "zip"]:
+                content_id: str = repo_desc.get("content", None)
+                if not isinstance(content_id, str):
+                    fail(
+                        repo_fail_context +
+                        "Expected field \"content\" to be a list, but found:\n%r"
+                        % (json.dumps(content_id, indent=2), ))
+                # Store distfile-to-content map and witnessing repository entry
+                content[get_distfile(
+                    repo_desc, fail_context=repo_fail_context)] = content_id
+                to_fetch.append(repo)
+        # Ensure distfiles are in CAS
+        for repo in to_fetch:
+            repo_fail_context: str = fail_context + (
+                "While processing distdir entry \"%s\"" % (repo, ))
+            repo_desc: Json = repos[repo].get("repository", {})
+            archive_fetch_with_parse(repo_desc, fail_context=repo_fail_context)
+        # Stage the distfiles
+        os.makedirs(clone_to, exist_ok=True)
+        for name, content_id in content.items():
+            abs_name = os.path.join(clone_to, name)
+            shutil.copyfile(cas_path(content_id), abs_name)
+        # Hash the content map as unique id for the distdir repo entry
+        distdir_tree_id, _ = git_hash(
+            json.dumps(content, sort_keys=True,
+                       separators=(',', ':')).encode('utf-8'))
+        return distdir_tree_id
+
+    def process_git_tree(repository: Json, *, clone_to: str,
+                         fail_context: str) -> str:
+        """Process a git tree repository and return the tree id."""
+        # Parse tree id
+        tree_id: str = repository.get("id", None)
+        if not isinstance(tree_id, str):
+            fail(fail_context +
+                 "Expected field \"id\" to be a string, but found:\n%r" %
+                 (json.dumps(tree_id, indent=2), ))
+        # If tree is in Git cache, stage it from there
+        if (try_read_object_from_repo(tree_id, "tree", upstream=None)
+                is not None):
+            os.makedirs(clone_to, exist_ok=True)
+            stage_git_entry(fpath=clone_to,
+                            obj_id=tree_id,
+                            obj_type=ObjectType.DIR,
+                            upstream=None,
+                            fail_context=fail_context)
+            return tree_id
+        # Parse the other needed fields
+        command: List[str] = repository.get("cmd", None)
+        if not isinstance(command, list):
+            fail(fail_context +
+                 "Expected field \"cmd\" to be a list, but found:\n%r" %
+                 (json.dumps(command, indent=2), ))
+        command_env: Json = repository.get("env", {})
+        if not isinstance(command_env, dict):
+            fail(fail_context +
+                 "Expected field \"env\" to be a map, but found:\n%r" %
+                 (json.dumps(command_env, indent=2), ))
+        inherit_env: List[str] = repository.get("inherit env", [])
+        if not isinstance(inherit_env, list):
+            fail(fail_context +
+                 "Expected field \"inherit env\" to be a list, but found:\n%r" %
+                 (json.dumps(inherit_env, indent=2), ))
+        # Get the actual command environment
+        curr_env = os.environ
+        new_envs = {}
+        for envar in inherit_env:
+            if envar in curr_env:
+                new_envs[envar] = curr_env[envar]
+        command_env = dict(command_env, **new_envs)
+        # Generate the content
+        os.makedirs(clone_to, exist_ok=True)
+        run_cmd(g_LAUNCHER + command,
+                cwd=clone_to,
+                env=command_env,
+                fail_context=fail_context)
+        # Cache the content; to not pollute the clone folder, do it via a
+        # temporary location
+        workdir: str = create_tmp_dir(type="git-tree-checkout")
+        try:
+            shutil.copytree(clone_to,
+                            workdir,
+                            symlinks=True,
+                            dirs_exist_ok=True)
+        except Exception as ex:
+            report("Copying file path %s failed with:\n%r" % (clone_to, ex))
+        imported_tree_id = import_to_git(workdir,
+                                         repo_type="git-tree",
+                                         content_id=tree_id,
+                                         fail_context=fail_context)
+        if imported_tree_id != tree_id:
+            # Allow, but give warning
+            warn(
+                fail_context +
+                "Tree mismatch in \"git tree\" repository: expected %s, got %s\n"
+                % (tree_id, imported_tree_id))
+        try_rmtree(workdir)
+        # Always report the id of the actual content
+        return imported_tree_id
+
+    def follow_binding(repos: Json, *, repo_name: str, dep_name: str,
+                       fail_context: str) -> str:
+        """Follow a named binding."""
+        if repo_name not in repos.keys():
+            fail(fail_context + "Failed to find repository %r" %
+                 (json.dumps(repo_name), ))
+        if "bindings" not in repos[repo_name].keys():
+            fail(fail_context + "Repository %r does not have bindings!" %
+                 (json.dumps(repo_name), ))
+        if dep_name not in repos[repo_name]["bindings"].keys():
+            fail(fail_context + "Repository %r does not have binding %r" %
+                 (json.dumps(repo_name), json.dumps(dep_name)))
+        return repos[repo_name]["bindings"][dep_name]
+
+    ## Main logic
+
+    # Follow the bindings
+    target_repo: str = known_repo
+    for dep in deps_chain:
+        target_repo = follow_binding(repos,
+                                     repo_name=target_repo,
+                                     dep_name=dep,
+                                     fail_context=fail_context)
+
+    if target_repo not in repos.keys():
+        fail(fail_context + "Failed to find repository %r" %
+             (json.dumps(target_repo), ))
+
+    # Get the workspace root of the target repository
+    repo_to_clone: str = target_repo
+    while isinstance(repos[repo_to_clone].get("repository", None), str):
+        repo_to_clone = repos[repo_to_clone]["repository"]
+        if repo_to_clone not in repos.keys():
+            fail(fail_context + "Failed to find repository %r" %
+                 (json.dumps(repo_to_clone), ))
+    repo_desc: Json = repos[repo_to_clone]
+    repository: Json = repo_desc["repository"]
+    repo_type: str = repository.get("type", None)
+    if not isinstance(repo_type, str):
+        fail(fail_context +
+             "Expected field \"type\" to be a string, but found:\n%r" %
+             (json.dumps(repo_type, indent=2), ))
+
+    # Clone the repository locally, based on type; lock exclusively for writing
+    lockfile = lock_acquire(os.path.join(Path(clone_to).parent, "clone.lock"))
+    report("Cloning workspace root of repository %r to %s" %
+           (json.dumps(target_repo), clone_to))
+
+    result: Optional[Tuple[str, str]] = (target_repo, repo_to_clone)
+    if repo_type == "file":
+        fpath = process_file(repository,
+                             clone_to=clone_to,
+                             fail_context=fail_context)
+        report("\tCloned file path %s to %s" % (fpath, clone_to))
+
+    elif repo_type == "git":
+        commit = process_git(repository,
+                             clone_to=clone_to,
+                             fail_context=fail_context)
+        report("\tCloned Git commit %s to %s" % (commit, clone_to))
+
+    elif repo_type in ["archive", "zip"]:
+        content = process_archive(repository,
+                                  repo_type,
+                                  clone_to=clone_to,
+                                  fail_context=fail_context)
+        report("\tCloned archive-like content %s to %s" % (content, clone_to))
+
+    elif repo_type == "foreign file":
+        content_id = process_foreign_file(repository,
+                                          clone_to=clone_to,
+                                          fail_context=fail_context)
+        report("\tCloned foreign file %s to %s" % (content_id, clone_to))
+
+    elif repo_type == "distdir":
+        content_id = process_distdir(repository,
+                                     repos,
+                                     clone_to=clone_to,
+                                     fail_context=fail_context)
+        report("\tCloned distdir %s to %s" % (content_id, clone_to))
+
+    elif repo_type == "git tree":
+        tree_id = process_git_tree(repository,
+                                   clone_to=clone_to,
+                                   fail_context=fail_context)
+        report("\tCloned git tree %s to %s" % (tree_id, clone_to))
+
+    elif repo_type in ["computed", "tree structure"]:
+        warn(fail_context + "Cloning not supported for type %r. Skipping" %
+             (json.dumps(repo_type), ))
+        result = None
+
+    else:
+        warn(fail_context + "Found unknown type %r. Skipping" %
+             (json.dumps(repo_type), ))
+        result = None
+
+    # Release lock and return keep list
+    lock_release(lockfile)
+    return result
 
 
 ###
@@ -1929,7 +2821,7 @@ def lock_config(input_file: str) -> Json:
         fail("Expected field \"imports\" to be a list, but found:\n%r" %
              (json.dumps(imports, indent=2), ))
 
-    keep: List[Any] = input_config.get("keep", [])
+    keep: List[str] = input_config.get("keep", [])
     if not isinstance(keep, list):
         fail("Expected field \"keep\" to be a list, but found:\n%r" %
              (json.dumps(keep, indent=2), ))
@@ -1937,8 +2829,8 @@ def lock_config(input_file: str) -> Json:
     # Initialize the core config, which will be extended with imports
     core_config: Json = {}
     if main is not None:
-        core_config = dict(core_config, **{"main": main})
-    core_config = dict(core_config, **{"repositories": repositories})
+        core_config["main"] = main
+    core_config["repositories"] = repositories
 
     # Acquire garbage collector locks
     git_gc_lock = gc_repo_lock_acquire(is_shared=True)
@@ -1969,11 +2861,29 @@ def lock_config(input_file: str) -> Json:
             core_config["repositories"] = import_from_git_tree(
                 core_config["repositories"], entry)
         elif source == "generic":
-            # TODO(psarbu): Implement source "generic"
-            warn("Import from source \"generic\" not yet implemented!")
+            core_config = import_generic(core_config, entry)
         else:
             fail("Unknown source for import entry \n%r" %
                  (json.dumps(entry, indent=2), ))
+
+    # Clone specified Git repositories locally
+    rewritten_repos: Json = {}
+    for clone_to, (known_repo, deps_chain) in g_CLONE_MAP.items():
+        # Find target repository and clone its workspace root
+        result = clone_repo(core_config["repositories"], known_repo, deps_chain,
+                            clone_to)
+        if result is not None:
+            target_repo, cloned_repo = result
+            # Rewrite description of target repo to point to clone location
+            rewritten_repos[target_repo] = rewrite_cloned_repo(
+                core_config["repositories"],
+                clone_to=clone_to,
+                target_repo=target_repo,
+                ws_root_repo=cloned_repo)
+            # Add start and target repos to 'keep' list
+            keep += [known_repo, target_repo]
+
+    core_config["repositories"].update(rewritten_repos)
 
     # Release garbage collector locks
     lock_release(storage_gc_lock)
@@ -1988,6 +2898,7 @@ def lock_config(input_file: str) -> Json:
 def main():
     parser = ArgumentParser(
         prog="jst-lock",
+        formatter_class=RawTextHelpFormatter,
         description="Generate or update a multi-repository configuration file",
         exit_on_error=False,  # catch parsing errors ourselves
     )
@@ -2003,6 +2914,10 @@ def main():
                         dest="local_build_root",
                         help="Root for CAS, repository space, etc",
                         metavar="PATH")
+    parser.add_argument("--backend", "--just",
+                        dest="just_bin",
+                        help="Path to the 'jst_backend' binary",
+                        metavar="PATH")
     parser.add_argument("--git",
                         dest="git_bin",
                         help="Git binary to use",
@@ -2011,6 +2926,15 @@ def main():
                         dest="launcher",
                         help="Local launcher to use for commands in imports",
                         metavar="JSON")
+    parser.add_argument(
+        "--clone",
+        dest="clone",
+        help="\n".join([
+            "Mapping from filesystem path to pair of repository name and list of bindings.",
+            "Clone at path the workspace root of a repository found by following the bindings from named repository.",
+            "IMPORTANT: The output configuration will point to the cloned repositories!"
+        ]),
+        metavar="JSON")
 
     try:
         args = parser.parse_args()
@@ -2043,13 +2967,17 @@ def main():
                 os.path.join(parent_path, DEFAULT_JUSTMR_CONFIG_NAME))
 
     # Process the rest of the command line; use globals for simplicity
-    global g_ROOT, g_GIT, g_LAUNCHER
+    global g_ROOT, g_JUST, g_GIT, g_LAUNCHER, g_CLONE_MAP
     if args.local_build_root:
         g_ROOT = os.path.abspath(args.local_build_root)
+    if args.just_bin:
+        g_JUST = args.just_bin
     if args.git_bin:
-        g_GIT = args.git_bin
+        g_GIT = cast(str, args.git_bin)
     if args.launcher:
         g_LAUNCHER = json.loads(args.launcher)
+    if args.clone:
+        g_CLONE_MAP = json.loads(args.clone)
 
     out_config = lock_config(input_file)
     with open(output_file, "w") as f:

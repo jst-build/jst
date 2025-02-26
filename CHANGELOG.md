@@ -23,8 +23,18 @@ A feature release on top of `1.4.0`, backwards compatible.
   defines how special entries (e.g., symlinks) are to be handled when
   adding directories to CAS.
 
+- `just serve` accepts a new subkey `"client address"` for the key
+  `"execution endpoint"` in the configuration file. It informs the
+  `serve` instance that the client will access the remote-execution
+  endpoint via the given `"client address"` and not using the one
+  listed in the subkey `"address"`. This feature allows to position
+  `just serve` next to the remote-execution endpoint behind some
+  form of address translation.
+
 ### Fixes
 
+- `just-import-git` now correctly inherits pragmas for imported
+  file-type repositories during description rewrite.
 - `just-mr` repository garbage collection now properly removes
   no longer needed directories.
 - The "generic" rule now properly detects staging conflicts.
@@ -46,6 +56,11 @@ A feature release on top of `1.4.0`, backwards compatible.
 - For remote execution, the server capability `max_batch_total_size_bytes`
   is now correctly honored, if announced by the server.
 - Missing entries in the documentation have been added.
+
+### Release `1.5.0~beta1` (2025-02-24)
+
+First beta release for the upcoming `1.5.0` release; see release
+notes there.
 
 ## Release `1.4.0` (2024-11-04)
 

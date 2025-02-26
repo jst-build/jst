@@ -40,16 +40,19 @@ The following fields are supported:
    and its value is used instead.
   
  - *`"map"`* has as value a JSON object with string key-value pairs defining a
-   mapping  between repository names that would be brought in by this import
+   mapping between repository names that would be brought in by this import
    (possibly transitively) and already imported repositories. This mapping can
    be used to avoid additional duplications of repositories from multiple
    imports. This entry is optional.
 
- - *`"pragma"`* has as value a JSON object. Currently, it supports the key
-   *`"absent"`* with a boolean value; if this field evaluates to `true`, it
-   informs that the imported repository and all transitive repositories imported
-   as a consequence should have the `{"absent": true}` pragma added to their
-   description in the output configuration. This entry is optional.
+ - *`"pragma"`* has as value a JSON object. This entry is optional.  
+   If the object contains the `{"absent": true}` object, it informs that the
+   imported repository and all transitive repositories imported as a
+   consequence should have the `{"absent": true}` pragma added to their
+   description.  
+   If the object contains the `{"to_git": true}` object, it informs that all
+   `"file"`-type repositories brought in as a consequence of this import should
+   have the `{"to_git": true}` pragma added to their description.
 
 Source objects
 --------------
@@ -63,7 +66,7 @@ operation exists as well.
 Sources are given as JSON objects for which the string value to the mandatory
 key *`"source"`* defines a supported type. Each source type informs which other
 fields are available. Currently, the supported source types are *`"git"`*,
-*`"file"`*, *`"archive"`*, and *`"git tree"`*.
+*`"file"`*, *`"archive"`*, *`"git tree"`*, and *`"generic"`*.
 
 ### *`"git"`*
 
@@ -96,13 +99,18 @@ The following fields are supported:
  - *`"inherit env"`* has as value a JSON list which will be recorded as the
    value for the `"inherit env"` key in the output configuration for all
    imported `"git"`-type repositories
-   (see **`jst-configuration-format`**(5)). This entry is optional.
+   (see **`jst-repository-config`**(5)). This entry is optional.
 
  - *`"as plain"`* has a boolean value. If the field evaluates to `true`, it
    informs **`jst-lock`**(1) to consider the foreign repository configuration
    to be the canonical one for a single repository. This can be useful if the
    Git repository does not have a repository configuration or should be imported
    as-is, without dependencies. This entry is optional.
+
+ - *`"pragma"`* has as value a JSON object. If `"as plain"` evaluates to `true`,
+   if a pragma object with key `"special"` is provided, it will unconditionally
+   be forwarded to the `"pragma"` object of the repository being imported for
+   this source. This entry is optional.
 
  - *`"config"`* has a string value defining the relative path of the foreign
    repository configuration file to be considered from the Git repository. This
@@ -132,6 +140,11 @@ The following fields are supported:
    to be the canonical one for a single repository. This can be useful if the
    Git repository does not have a repository configuration or should be imported
    as-is, without dependencies. This entry is optional.
+
+ - *`"pragma"`* has as value a JSON object. If `"as plain"` evaluates to `true`,
+   if a pragma object with key `"special"` is provided, it will unconditionally
+   be forwarded to the `"pragma"` object of the repository being imported for
+   this source. This entry is optional.
 
  - *`"config"`* has a string value defining the relative path of the foreign
    repository configuration file to be considered from the Git repository. This
@@ -187,6 +200,11 @@ The following fields are supported:
    archived repository does not have a configuration file or should be imported
    as-is, without dependencies. This entry is optional.
 
+ - *`"pragma"`* has as value a JSON object. If `"as plain"` evaluates to `true`,
+   if a pragma object with key `"special"` is provided, it will unconditionally
+   be forwarded to the `"pragma"` object of the repository being imported for
+   this source. This entry is optional.
+
  - *`"config"`* has a string value defining the relative path of the foreign
    repository configuration file to be considered from the unpacked archive
    root. This entry is optional. If not provided and the `"as plain"` field does
@@ -236,6 +254,11 @@ The following fields are supported:
    Git repository does not have a repository configuration or should be imported
    as-is, without dependencies. This entry is optional.
 
+ - *`"pragma"`* has as value a JSON object. If `"as plain"` evaluates to `true`,
+   if a pragma object with key `"special"` is provided, it will unconditionally
+   be forwarded to the `"pragma"` object of the repository being imported for
+   this source. This entry is optional.
+
  - *`"config"`* has a string value defining the relative path of the foreign
    repository configuration file to be considered from the Git repository. This
    entry is optional. If not provided and the `"as plain"` field does not
@@ -243,18 +266,43 @@ The following fields are supported:
    in the same locations as **`jst`**(1) does when invoked with
    **`--norc`** in the root directory of the Git repository.
 
+### *`"generic"`*
+
+It defines a liberal way to modify a `jst` configuration via a user-provided
+command.
+
+The following fields are supported:
+
+ - *`"source"`* defines the current *source* type. This entry is mandatory.
+
+ - *`"cmd"`* provides a list of strings forming a command that accepts a string
+   as input from `stdin` containing a serialized `jst` configuration and
+   outputs a string to `stdout` containing a serialized `jst` configuration.
+   This entry is mandatory.
+
+ - *`cwd`* provides the path to the directory in which the command will be run.
+   If it is relative, it will be taken relative to the current working
+   directory. This entry is optional. If missing, `"."` is used.
+
+ - *`"env"`* provides a map of envariables to be set for executing the
+   command. This entry is optional.
+
+ - *`"inherit env"`* provides a list of variables to be inherited from the
+   environment `jst-lock` is called within, if set there. This entry is
+   optional.
+
 The jst-lock configuration format
 ----------------------------------
 
 The configuration format is structured as a JSON object. It is a superset of
-the **`jst-configuration-format`**(5), which is extended by two additional
+the **`jst-repository-config`**(5), which is extended by two additional
 fields. Specifically, the following fields are supported:
 
  - *`"main"`* has the syntax and semantics as described in
-   **`jst-configuration-format`**(5).
+   **`jst-repository-config`**(5).
 
  - *`"repositories"`* has the syntax and semantics as described in
-   **`jst-configuration-format`**(5).
+   **`jst-repository-config`**(5).
  
  - *`"imports"`* is a JSON list with each entry a *source* object.
 
@@ -275,4 +323,4 @@ See also
 
 **`jst-lock`**(1),
 **`jst`**(1),
-**`jst-configuration-format`**(5)
+**`jst-repository-config`**(5)

@@ -32,8 +32,6 @@
 #include "src/buildtool/common/remote/client_common.hpp"
 #include "src/buildtool/common/remote/retry.hpp"
 #include "src/buildtool/common/remote/retry_config.hpp"
-#include "src/buildtool/execution_api/common/bytestream_utils.hpp"
-#include "src/buildtool/execution_api/common/execution_common.hpp"
 #include "src/buildtool/execution_api/common/message_limits.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
@@ -383,42 +381,26 @@ auto BazelCasClient::UpdateSingleBlob(std::string const& instance_name,
         return oss.str();
     });
 
-    thread_local static std::string uuid{};
-    if (uuid.empty()) {
-        auto id = CreateProcessUniqueId();
-        if (not id) {
-            logger_.Emit(LogLevel::Debug, "Failed creating process unique id.");
-            return false;
-        }
-        uuid = CreateUUIDVersion4(*id);
-    }
-    auto ok = stream_->Write(
-        ByteStreamUtils::WriteRequest{instance_name, uuid, blob.digest},
-        *blob.data);
-    if (not ok) {
+    if (not stream_->Write(instance_name, blob)) {
         logger_.Emit(LogLevel::Error,
                      "Failed to write {}:{}",
                      blob.digest.hash(),
                      blob.digest.size());
+        return false;
     }
-    return ok;
+    return true;
 }
 
 auto BazelCasClient::IncrementalReadSingleBlob(std::string const& instance_name,
                                                ArtifactDigest const& digest)
     const noexcept -> ByteStreamClient::IncrementalReader {
-    return stream_->IncrementalRead(
-        ByteStreamUtils::ReadRequest{instance_name, digest});
+    return stream_->IncrementalRead(instance_name, digest);
 }
 
 auto BazelCasClient::ReadSingleBlob(std::string const& instance_name,
                                     ArtifactDigest const& digest) const noexcept
     -> std::optional<ArtifactBlob> {
-    if (auto data = stream_->Read(
-            ByteStreamUtils::ReadRequest{instance_name, digest})) {
-        return ArtifactBlob{digest, std::move(*data), /*is_exec=*/false};
-    }
-    return std::nullopt;
+    return stream_->Read(instance_name, digest);
 }
 
 auto BazelCasClient::SplitBlob(HashFunction hash_function,

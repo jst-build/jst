@@ -103,7 +103,7 @@ Usage: generate/update a `just-mr` configuration file
 
 ```
 just-lock [-C <repos.in.json>] [-o <repos.json>]
-          [--local-build-root <PATH>]
+          [--local-build-root <PATH>] [--just <PATH>]
           [--git <PATH>] [-L|--launcher <JSON>]
           [--clone <JSON>]
 
@@ -114,16 +114,18 @@ OPTIONS:
                       the workspace root. If none found, placed as 'repos.json' in parent path of input file.
   --local-build-root PATH
                       Local build root. Usual `just-mr` rules apply.
+  --just PATH         Path to a `just` binary. If missing, use the `just` name from PATH.
   --git PATH          Git binary to use if needed. If missing, system `git` is used.
                       User must pass it also to `just-mr`.
   --launcher JSON     Local launcher to use for commands. Given as a JSON list of strings.
                       If missing, ["env", "--"] is used. User must pass it also to `just-mr`.
   --clone JSON        Mapping from filesystem path to pair of repository name and a list of bindings.
-                      For each map entry, the repository found by following the bindings from the given repository,
-                      after all repositories have been imported, will be cloned in the specified filesystem directory and
-                      its description in the output configuration made to point to this clone.
-                      The specified repository names must be known, i.e., an initial repository or declared import,
-                      and both the initial and target repositories will be kept during deduplication.
+                      For each map entry, the target repository, found by following the bindings from a given start
+                      repository, after all repositories have been imported, will have its workspace root cloned in
+                      the specified filesystem directory and its description in the output configuration made to
+                      point to this clone.
+                      The start repository names must be known, i.e., an initial repository or declared import,
+                      and both the start and target repositories will be kept during deduplication.
 ```
 
 - Notes:
@@ -230,6 +232,12 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   that will be used in the resulting repository description corresponding to any
   imported `"file"`-type repositories (see `just-import-git`).
 
+  If `"as plain": true`, any provided `"special"` key for the `"pragma"` field
+  in the source description is unconditionally set in the imported repositories,
+  superseding any other config- or import-level treatment of pragmas during the
+  import. Note that `"as plain": true` results in only one repository
+  (containing the whole source repository tree) being imported.
+
   Proposed format:
   ``` jsonc
   { "source": "git"
@@ -254,6 +262,7 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   , "inherit env": [...]                  // optional; corresponds to `inherit_env` var (option --inherit-env)
   , "config": "<foreign_repos.json>"      // optional; corresponds to `foreign_repository_config` var (option -R)
   , "as plain": false     // optional; corresponds to `plain` var (option --plain)
+  , "pragma": {"special": "<value>"}      // optional; only considered if `"as plain": true`
   }
   ```
 
@@ -264,7 +273,15 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   checkout.
 
   The checkout is assumed to be maintained, so that `"file"`-type repositories
-  marked to be imported can retain their type.
+  marked to be imported can retain their type. For such transitive dependencies,
+  one can also set the `"to_git": true` pragma with a corresponding entry in the
+  usual `"pragma"` field.
+
+  If `"as plain": true`, any provided `"special"` key for the `"pragma"` field
+  in the source description is unconditionally set in the imported repositories,
+  superseding any other config- or import-level treatment of pragmas during the
+  import. Note that `"as plain": true` results in only one repository
+  (containing the whole source repository tree) being imported.
 
   Proposed format:
   ``` jsonc
@@ -277,7 +294,9 @@ The type of a _source_ is defined by the string value of the mandatory subfield
       , "repo": "<foreign_name>"        // optional; corresponds to `foreign_repository_name` var
       , "map": {"from_name": "to_name"}     // optional; corresponds to `import_map` var (option --map)
       , "pragma":             // optional
-        {"absent": true}      // corresponds to `absent` var (option --absent)
+        { "absent": true      // corresponds to `absent` var (option --absent)
+        , "to_git": true      // any imported "file"-repositories will also be "to_git":true
+        }
       }
     , ...
     ]
@@ -285,6 +304,7 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   , "path": "<source/repo/path>"          // mandatory
   , "config": "<foreign_repos.json>"      // optional; corresponds to `foreign_repository_config` var (option -R)
   , "as plain": false         // optional; corresponds to `plain` var (option --plain)
+  , "pragma": {"special": "<value>"}      // optional; only considered if `"as plain": true`
   }
   ```
 
@@ -296,6 +316,12 @@ The type of a _source_ is defined by the string value of the mandatory subfield
 
   A field `"subdir"` is provided to account for the fact that source repository
   root often is not the root directory of the unpacked archive.
+
+  If `"as plain": true`, any provided `"special"` key for the `"pragma"` field
+  in the source description is unconditionally set in the imported repositories,
+  superseding any other config- or import-level treatment of pragmas during the
+  import. Note that `"as plain": true` results in only one repository
+  (containing the whole source repository tree) being imported.
 
   Proposed format:
   ``` jsonc
@@ -323,6 +349,7 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   , "sha512": "<HASH>"        // optional checksum; if given, will be checked
   , "config": "<foreign_repos.json>"      // optional; corresponds to `foreign_repository_config` var (option -R)
   , "as plain": false         // optional; corresponds to `plain` var (option --plain)
+  , "pragma": {"special": "<value>"}      // optional; only considered if `"as plain": true`
   }
   ```
 
@@ -354,6 +381,12 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   such repositories will be translated to appropriate `"git tree"`-type
   repositories in the output configuration.
 
+  If `"as plain": true`, any provided `"special"` key for the `"pragma"` field
+  in the source description is unconditionally set in the imported repositories,
+  superseding any other config- or import-level treatment of pragmas during the
+  import. Note that `"as plain": true` results in only one repository
+  (containing the whole source repository tree) being imported.
+
   Proposed format:
   ``` jsonc
   { "source": "git tree"
@@ -377,6 +410,7 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   , "config": "<foreign_repos.json>"      // optional; corresponds to `foreign_repository_config` var (option -R)
                                           // searched for in the "subdir" tree
   , "as plain": false         // optional; corresponds to `plain` var (option --plain)
+  , "pragma": {"special": "<value>"}      // optional; only considered if `"as plain": true`
   }
   ```
 
@@ -401,8 +435,6 @@ The type of a _source_ is defined by the string value of the mandatory subfield
   from the same **git** source, the user must split that **git** source into two
   corresponding **git**  entries and place the **generic** entry between them.
 
-  The calling environment is inherited.
-
   Proposed format:
   ``` jsonc
   { "source": "generic"
@@ -411,5 +443,6 @@ The type of a _source_ is defined by the string value of the mandatory subfield
                           // if missing, defaults to "."
   , "cmd": [...]          // mandatory; command to run, as list of strings
   , "env": {...}          // optional; map of envariables needed by script
+  , "inherit env": [...]      // optional; list of envariables to inherit
   }
   ```

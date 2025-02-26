@@ -49,7 +49,7 @@ class BazelApi final : public IExecutionApi {
              gsl::not_null<Auth const*> const& auth,
              gsl::not_null<RetryConfig const*> const& retry_config,
              ExecutionConfiguration const& exec_config,
-             gsl::not_null<HashFunction const*> const& hash_function) noexcept;
+             HashFunction hash_function) noexcept;
     BazelApi(BazelApi const&) = delete;
     BazelApi(BazelApi&& other) noexcept;
     auto operator=(BazelApi const&) -> BazelApi& = delete;
@@ -121,6 +121,8 @@ class BazelApi final : public IExecutionApi {
         -> std::optional<ArtifactDigest> final;
 
     [[nodiscard]] auto BlobSpliceSupport() const noexcept -> bool final;
+
+    [[nodiscard]] auto GetHashType() const noexcept -> HashFunction::Type final;
 
   private:
     std::shared_ptr<BazelNetwork> network_;

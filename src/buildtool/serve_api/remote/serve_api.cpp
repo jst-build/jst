@@ -20,7 +20,6 @@
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/common/repository_config.hpp"
-#include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/serve/mr_git_api.hpp"
 #include "src/buildtool/execution_api/utils/rehash_utils.hpp"
@@ -61,7 +60,7 @@ auto ServeApi::UploadTree(ArtifactDigest const& tree,
         native_storage_config.emplace(*config);
     }
 
-    std::shared_ptr<IExecutionApi> git_api;
+    std::shared_ptr<MRGitApi> git_api;
     if (with_rehashing) {
         git_api = std::make_shared<MRGitApi>(
             &repo, &*native_storage_config, &storage_config_, &*apis_.local);

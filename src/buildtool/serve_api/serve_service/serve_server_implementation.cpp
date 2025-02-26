@@ -138,7 +138,8 @@ auto ServeServerImpl::Run(
                      &apis,
                      lock_,
                      serve ? &*serve : nullptr};
-    ConfigurationService cs{hash_type, remote_context->exec_config};
+    ConfigurationService cs{
+        hash_type, remote_context->exec_config, &serve_config};
 
     // For the SourceTreeService we need to always have access to a native
     // storage. In compatible mode, this requires creating a second local
@@ -176,9 +177,8 @@ auto ServeServerImpl::Run(
         is_compat ? &*local_context : nullptr,
         is_compat ? &*apis.local : nullptr);
     // setup the apis to pass to SourceTreeService
-    auto const mr_apis = ApiBundle{.hash_function = apis.hash_function,
-                                   .local = mr_local_api,
-                                   .remote = apis.remote};
+    auto const mr_apis =
+        ApiBundle{.local = mr_local_api, .remote = apis.remote};
 
     SourceTreeService sts{
         &serve_config,

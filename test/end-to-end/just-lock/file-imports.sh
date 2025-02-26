@@ -24,12 +24,23 @@ readonly OUT="${TEST_TMPDIR}/build-output"
 readonly REPO_DIRS="${TEST_TMPDIR}/repos"
 readonly WRKDIR="${PWD}/work"
 
-mkdir -p "${REPO_DIRS}/foo/src"
+mkdir -p "${REPO_DIRS}/foo/src/inner"
 cd "${REPO_DIRS}/foo"
 cat > repos.json <<'EOF'
-{"repositories": {"": {"repository": {"type": "file", "path": "src"}}}}
+{ "repositories":
+  { "":
+    { "repository":
+      { "type": "file"
+      , "path": "src"
+      , "pragma": {"special": "resolve-completely"}
+      }
+    }
+  }
+}
 EOF
-cat > src/TARGETS <<'EOF'
+# add symlink to check that special pragma is needed and is inherited in import
+ln -s inner/actual_TARGETS src/TARGETS
+cat > src/inner/actual_TARGETS <<'EOF'
 { "": {"type": "file_gen", "name": "foo.txt", "data": "FOO"}}
 EOF
 
@@ -66,7 +77,7 @@ cat > repos.in.json <<EOF
   }
   , "imports":
   [ { "source": "file"
-    , "repos": [{"alias": "foo"}]
+    , "repos": [{"alias": "foo", "pragma": {"to_git": true}}]
     , "path": "${REPO_DIRS}/foo"
     }
   , { "source": "file"
@@ -83,6 +94,10 @@ echo
 "${JUST_LOCK}" -C repos.in.json -o repos.json --local-build-root "${LBR}" 2>&1
 cat repos.json
 echo
+# Check pragmas for repo "foo" are correctly set
+[ $(jq -r '.repositories.foo.repository.pragma.special' repos.json) = "resolve-completely" ]
+[ $(jq -r '.repositories.foo.repository.pragma.to_git' repos.json) = true ]
+# Check the symlink gets resolved as expected
 "${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out.txt"

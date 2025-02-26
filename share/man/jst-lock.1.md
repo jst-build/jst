@@ -57,6 +57,13 @@ Root for local CAS, cache, and build directories. The path will be created if
 it does not exist already.  
 Default: path *`".cache/just"`* in user's home directory.
 
+**`--backend`** *`PATH`*  
+Path to the **`jst_backend`** binary in *`PATH`* or path to the **`jst_backend`** binary.
+Default: *`"jst_backend"`*.
+
+**`--just`** *`PATH`*  
+Legacy option to specify the backend binary, same as **`--backend`**.
+
 **`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
 JSON array with the list of strings representing the launcher to prepend
 any commands being executed locally.  
@@ -66,6 +73,16 @@ Default: *`["env", "--"]`*.
 Path to the git binary in *`PATH`* or path to the git binary. Used when
 shelling out to git is needed.  
 Default: *`"git"`*.
+
+**`--clone`** *`JSON_MAP`*  
+JSON map from filesystem path to pair of repository name and list of bindings.  
+For each map entry, the target repository, found by following the bindings from
+a given start repository, after all repositories have been imported, will have
+its workspace root cloned in the specified filesystem directory and its
+description in the output configuration made to point to this clone.  
+The start repository names must be known, i.e., an initial repository or
+declared import, and both the start and target repositories will be kept during
+deduplication.
 
 See also
 ========
