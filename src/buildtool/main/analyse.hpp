@@ -40,6 +40,7 @@ struct AnalysisResult {
     std::size_t jobs,
     std::optional<std::string> const& request_action_input,
     Logger const* logger = nullptr,
-    BuildMaps::Target::ServeFailureLogReporter* = nullptr)
+    BuildMaps::Target::ServeFailureLogReporter* = nullptr,
+    nlohmann::ordered_json const* ordered_config = nullptr)
     -> std::optional<AnalysisResult>;
 #endif  // INCLUDED_SRC_BUILDOOL_MAIN_ANALYSE_HPP

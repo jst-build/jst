@@ -359,7 +359,8 @@ void SetupFileChunker() {
     std::string const& main_repo,
     std::optional<std::filesystem::path> const& main_ws_root,
     gsl::not_null<const RepositoryConfig*> const& repo_config,
-    AnalysisArguments const& clargs) -> Target::ConfiguredTarget {
+    AnalysisArguments const& clargs)
+    -> std::pair<Target::ConfiguredTarget, nlohmann::ordered_json> {
     auto const* target_root = repo_config->TargetRoot(main_repo);
     if (target_root == nullptr) {
         Logger::Log(LogLevel::Error,
@@ -390,8 +391,9 @@ void SetupFileChunker() {
         if (not entity) {
             std::exit(kExitFailure);
         }
-        return Target::ConfiguredTarget{.target = std::move(*entity),
-                                        .config = std::move(config)};
+        return {Target::ConfiguredTarget{.target = std::move(*entity),
+                                         .config = std::move(config)},
+                std::move(ordered_config)};
     }
 #ifndef BOOTSTRAP_BUILD_TOOL
     if (target_root->IsAbsent()) {
@@ -420,8 +422,9 @@ void SetupFileChunker() {
         if (not entity) {
             std::exit(kExitFailure);
         }
-        return Target::ConfiguredTarget{.target = std::move(*entity),
-                                        .config = std::move(config)};
+        return {Target::ConfiguredTarget{.target = std::move(*entity),
+                                         .config = std::move(config)},
+                std::move(ordered_config)};
     }
 #endif
     auto const target_file =
@@ -464,10 +467,11 @@ void SetupFileChunker() {
                     target_file);
         std::exit(kExitFailure);
     }
-    return Target::ConfiguredTarget{
-        .target = Base::EntityName{Base::NamedTarget{
-            main_repo, current_module, json.begin().key()}},
-        .config = std::move(config)};
+    return {Target::ConfiguredTarget{
+                .target = Base::EntityName{Base::NamedTarget{
+                    main_repo, current_module, json.begin().key()}},
+                .config = std::move(config)},
+            std::move(ordered_config)};
 }
 
 [[nodiscard]] auto DetermineWorkspaceRootByLookingForMarkers() noexcept
@@ -700,7 +704,7 @@ auto DetermineNonExplicitTarget(
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     AnalysisArguments const& clargs)
     -> std::optional<BuildMaps::Target::ConfiguredTarget> {
-    auto id =
+    auto const& [id, _] =
         ReadConfiguredTarget(main_repo, main_ws_root, repo_config, clargs);
     switch (id.target.GetNamedTarget().reference_t) {
         case Base::ReferenceType::kFile:
@@ -1178,7 +1182,7 @@ auto main(int argc, char* argv[]) -> int {
         }
 
 #endif  // BOOTSTRAP_BUILD_TOOL
-        auto id = ReadConfiguredTarget(
+        auto [id, ordered_config] = ReadConfiguredTarget(
             main_repo, main_ws_root, &repo_config, arguments.analysis);
         auto serve_errors = nlohmann::json::array();
         std::mutex serve_errors_access{};
@@ -1208,7 +1212,8 @@ auto main(int argc, char* argv[]) -> int {
                           arguments.common.jobs,
                           arguments.analysis.request_action_input,
                           /*logger=*/nullptr,
-                          &collect_serve_errors);
+                          &collect_serve_errors,
+                          &ordered_config);
         if (arguments.analysis.serve_errors_file) {
             Logger::Log(serve_errors.empty() ? LogLevel::Debug : LogLevel::Info,
                         "Dumping serve-error information to {}",

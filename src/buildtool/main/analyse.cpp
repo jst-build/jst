@@ -125,7 +125,8 @@ namespace Target = BuildMaps::Target;
     std::size_t jobs,
     std::optional<std::string> const& request_action_input,
     Logger const* logger,
-    BuildMaps::Target::ServeFailureLogReporter* serve_log)
+    BuildMaps::Target::ServeFailureLogReporter* serve_log,
+    nlohmann::ordered_json const* ordered_config)
     -> std::optional<AnalysisResult> {
     // create async maps
     auto directory_entries =
@@ -159,8 +160,13 @@ namespace Target = BuildMaps::Target;
                                               &absent_target_map,
                                               &result_map,
                                               jobs);
-    Logger::Log(
-        logger, LogLevel::Info, "Requested target is {}", id.ToString());
+    static auto constexpr kIndent = 2;
+    Logger::Log(logger,
+                LogLevel::Info,
+                "Requested target {} with config: {}",
+                id.target.ToString(),
+                ordered_config != nullptr ? ordered_config->dump(kIndent)
+                                          : id.config.ToJson().dump(kIndent));
     AnalysedTargetPtr target{};
 
     // we should only report served export targets if a serve endpoint exists
