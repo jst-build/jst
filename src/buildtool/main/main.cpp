@@ -273,8 +273,8 @@ void SetupFileChunker() {
 }
 
 [[nodiscard]] auto ReadConfiguration(AnalysisArguments const& clargs) noexcept
-    -> Configuration {
-    Configuration config{};
+    -> nlohmann::ordered_json {
+    nlohmann::ordered_json config;
     if (not clargs.config_file.empty()) {
         if (not FileSystemManager::Exists(clargs.config_file)) {
             Logger::Log(LogLevel::Error,
@@ -284,14 +284,13 @@ void SetupFileChunker() {
         }
         try {
             std::ifstream fs(clargs.config_file);
-            auto map = Expression::FromJson(nlohmann::json::parse(fs));
-            if (not map->IsMap()) {
+            config = nlohmann::ordered_json::parse(fs);
+            if (not config.is_object()) {
                 Logger::Log(LogLevel::Error,
                             "Config file {} does not contain a map.",
                             clargs.config_file.string());
                 std::exit(kExitFailure);
             }
-            config = Configuration{map};
         } catch (std::exception const& e) {
             Logger::Log(LogLevel::Error,
                         "Parsing config file {} failed with error:\n{}",
@@ -300,21 +299,29 @@ void SetupFileChunker() {
             std::exit(kExitFailure);
         }
     }
+    else {
+        try {
+            config = nlohmann::ordered_json::object();
+        } catch (std::exception const& e) {
+            Logger::Log(LogLevel::Error, "Creating JSON object failed.");
+            std::exit(kExitFailure);
+        }
+    }
 
     for (auto const& s : clargs.defines) {
         try {
-            auto map = Expression::FromJson(nlohmann::json::parse(s));
-            if (not map->IsMap()) {
+            auto entry = nlohmann::ordered_json::parse(s);
+            if (not entry.is_object()) {
                 Logger::Log(LogLevel::Error,
                             "Defines entry {} does not contain a map.",
-                            nlohmann::json(s).dump());
+                            entry.dump());
                 std::exit(kExitFailure);
             }
-            config = config.Update(map);
+            config.update(entry);
         } catch (std::exception const& e) {
             Logger::Log(LogLevel::Error,
                         "Parsing defines entry {} failed with error:\n{}",
-                        nlohmann::json(s).dump(),
+                        s,
                         e.what());
             std::exit(kExitFailure);
         }
@@ -367,7 +374,8 @@ void SetupFileChunker() {
         current_module = DetermineCurrentModule(
             *main_ws_root, *target_root, target_file_name);
     }
-    auto config = ReadConfiguration(clargs);
+    auto ordered_config = ReadConfiguration(clargs);
+    auto config = Configuration(Expression::FromJson(ordered_config));
     if (clargs.target) {
         auto entity = Base::ParseEntityNameFromJson(
             *clargs.target,
@@ -796,7 +804,8 @@ auto main(int argc, char* argv[]) -> int {
                 analysis_args.config_file = std::move(eval_args.config_file);
                 auto expr = Evaluator::EvaluateExpression(
                     Expression::FromJson(*json),
-                    ReadConfiguration(analysis_args),
+                    Configuration(
+                        Expression::FromJson(ReadConfiguration(analysis_args))),
                     FunctionMap::Ptr{nullptr},
                     [](std::string const& error) {
                         Logger::Log(LogLevel::Error, error);
