@@ -251,7 +251,7 @@ $ jut build ALL
 The output produced should look like this:
 
 ``` plaintext
-INFO: Requested target is ['""//:ALL',{}]
+INFO: Requested target '""//:ALL' with config: {}
 INFO: Discovered 2 actions, 0 trees, 1 blobs
 INFO: Processed 2 actions, 2 cache hits.
 INFO: Artifacts built, logical paths are:

@@ -189,7 +189,7 @@ build: `helloworld`.
 
 ``` plaintext
 INFO: Found 4 repositories to set up
-INFO: Requested target is ['stage1//src:helloworld',{}]
+INFO: Requested target 'stage1//src:helloworld' with config: {}
 INFO: Discovered 2 actions, 1 trees, 0 blobs
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
