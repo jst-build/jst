@@ -28,6 +28,28 @@
 
 namespace {
 
+// The dynamic progress reporter constantly updates its printed
+// information about the current build process. This requires volatile
+// log messages, which are deleted if new information is going to be
+// printed. The report printed by the dynamic progress reporter can be
+// outlined as follows:
+//
+//    [ Label String ] [ Origin String ]
+//    [ Label String ] [ Origin String ]
+//          ...
+//      Building [ Progress Bar ] [ Summary String ]
+//
+// There is a limited number of actions (kMaxTasks) for which one line
+// will be printed. Each line contains a label string, which comes from
+// the action definition of the corresponding rule or a default string,
+// if no label is provided by the rule. Apart from that, the origin of
+// the action will be printed after the label string, which is basically
+// the target name plus action number.
+//
+// The last line of the progress reporter contains a progress bar of the
+// overall progress in terms of executed or cached actions and summary
+// string, which displays information that and how many tasks are
+// currently running in parallel.
 class DynamicProgressReporterImpl {
   private:
     static auto constexpr kMaxTasks = 8;
@@ -170,6 +192,15 @@ class DynamicProgressReporterImpl {
         return LabelString(sample).substr(0, max_width);
     }
 
+    // The string displayed for each task has two parts: a label string
+    // and an origin string. Each part occupies a certain fractional
+    // part of the terminal width. To cluster the important information
+    // within the first 80 characters, the fractional size of the label
+    // string is calculated based on a maximal terminal width of 80
+    // characters and the remaining size until the end of the actual
+    // terminal width is reserved for the origin string. Once the real
+    // terminal width gets smaller than 80 characters, this actual value
+    // is used for calculating the fractions for each part.
     [[nodiscard]] auto TaskString(std::string const& sample,
                                   unsigned int max_width,
                                   unsigned int max_label_width) -> std::string {
@@ -207,6 +238,16 @@ class DynamicProgressReporterImpl {
             .substr(0, max_width);
     }
 
+    // The bottom-line string has three parts: the fixed string
+    // "Building", the progress bar, and a summary string. Each part
+    // occupies a certain fractional part of the terminal width. To
+    // cluster the important information within the first 80 characters,
+    // the fractional size of the first two parts is calculated based on
+    // a maximal terminal width of 80 characters and the remaining size
+    // until the end of the actual terminal width is reserved for the
+    // summary string. Once the real terminal width gets smaller than 80
+    // characters, this actual value is used for calculating the
+    // fractions for each part.
     [[nodiscard]] auto BottomLineString(int done,
                                         int total,
                                         int active,
