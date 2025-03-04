@@ -84,10 +84,19 @@ class DynamicProgressReporterImpl {
             width = UINT_MAX;
         }
 
+        // determine maximum label string width
+        auto max_label_width = 0U;
+        for (auto const& sample : state_.samples) {
+            auto label_width =
+                static_cast<unsigned int>(LabelString(sample).size());
+            max_label_width = std::max(max_label_width, label_width);
+        }
+
         // print a line for each currently running task
         std::string progress_message{};
         for (auto const& sample : state_.samples) {
-            progress_message += TaskString(sample, *width) + "\n";
+            progress_message +=
+                TaskString(sample, *width, max_label_width) + "\n";
         }
         if (num_samples > 0 and active > num_samples) {
             progress_message += TaskContinuationString(*width) + "\n";
@@ -138,8 +147,7 @@ class DynamicProgressReporterImpl {
         return result;
     }
 
-    [[nodiscard]] auto LabelString(std::string const& sample,
-                                   unsigned int max_width) -> std::string {
+    [[nodiscard]] auto LabelString(std::string const& sample) -> std::string {
         std::string result{};
         if (progress_->TaskTracker().IsUploading(sample)) {
             result = "Uploading";
@@ -154,19 +162,28 @@ class DynamicProgressReporterImpl {
                 result = "Executing";
             }
         }
-        return result.substr(0, max_width);
+        return result;
+    }
+
+    [[nodiscard]] auto LabelString(std::string const& sample,
+                                   unsigned int max_width) -> std::string {
+        return LabelString(sample).substr(0, max_width);
     }
 
     [[nodiscard]] auto TaskString(std::string const& sample,
-                                  unsigned int max_width) -> std::string {
+                                  unsigned int max_width,
+                                  unsigned int max_label_width) -> std::string {
         auto label_width = static_cast<unsigned int>(
             (std::min(max_width, kDefaultMaxWidth) - 3) * kTaskLabelFrac);
+        label_width = std::min(label_width, max_label_width);
         auto origin_width = max_width - label_width - 3;
+        auto label_str = LabelString(sample, label_width);
         return fmt::format(
             "  {} {}",
-            Blue(fmt::format("{:.<{}}",
-                             LabelString(sample, label_width - 1) + " ",
-                             label_width)),
+            Blue(fmt::format(
+                "{:.<{}}",
+                label_str + (label_str.size() < label_width ? " " : ""),
+                label_width)),
             OriginString(sample, origin_width));
     }
 
