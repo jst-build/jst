@@ -197,6 +197,7 @@ class ResultTargetMap {
         result.trees.reserve(nt);
 
         auto& origin_map = progress->OriginMap();
+        auto& label_map = progress->LabelMap();
         origin_map.clear();
         origin_map.reserve(na);
         for (const auto& target : targets_) {
@@ -206,7 +207,7 @@ class ResultTargetMap {
                 std::for_each(
                     actions.begin(),
                     actions.end(),
-                    [&origin_map, &pos, &el](auto const& action) {
+                    [&origin_map, &label_map, &pos, &el](auto const& action) {
                         std::pair<ConfiguredTarget, std::size_t> origin{
                             el.first, pos++};
                         auto id = action->Id();
@@ -218,6 +219,7 @@ class ResultTargetMap {
                                 std::pair<ConfiguredTarget, std::size_t>>{
                                 origin};
                         }
+                        label_map.insert({id, action->Label()});
                     });
             });
             // Sort origins to get a reproducible order. We don't expect many

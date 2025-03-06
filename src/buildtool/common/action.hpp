@@ -29,6 +29,7 @@ class Action {
 
     Action(std::string action_id,
            std::vector<std::string> command,
+           std::string label,
            std::string cwd,
            std::map<std::string, std::string> env_vars,
            std::optional<std::string> may_fail,
@@ -37,6 +38,7 @@ class Action {
            std::map<std::string, std::string> execution_properties)
         : id_{std::move(action_id)},
           command_{std::move(command)},
+          label_{std::move(label)},
           cwd_{std::move(cwd)},
           env_{std::move(env_vars)},
           may_fail_{std::move(may_fail)},
@@ -46,9 +48,11 @@ class Action {
 
     Action(std::string action_id,
            std::vector<std::string> command,
+           std::string label,
            std::map<std::string, std::string> env_vars)
         : Action(std::move(action_id),
                  std::move(command),
+                 std::move(label),
                  "",
                  std::move(env_vars),
                  std::nullopt,
@@ -67,6 +71,10 @@ class Action {
     [[nodiscard]] auto Command() const& noexcept
         -> std::vector<std::string> const& {
         return command_;
+    }
+
+    [[nodiscard]] auto Label() const& noexcept -> std::string const& {
+        return label_;
     }
 
     [[nodiscard]] auto Cwd() const noexcept -> std::string const& {
@@ -112,6 +120,7 @@ class Action {
   private:
     ActionIdentifier id_;
     std::vector<std::string> command_;
+    std::string label_;
     std::string cwd_;
     std::map<std::string, std::string> env_;
     bool is_tree_{};

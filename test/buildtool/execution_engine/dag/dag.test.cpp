@@ -113,7 +113,7 @@ TEST_CASE("Empty Dependency Graph", "[dag]") {
 TEST_CASE("AddAction({single action, single output, no inputs})", "[dag]") {
     std::string const action_id = "action_id";
     auto const action_description = ActionDescription{
-        {"out"}, {}, Action{action_id, {"touch", "out"}, {}}, {}};
+        {"out"}, {}, Action{action_id, {"touch", "out"}, "", {}}, {}};
     DependencyGraph g;
     CHECK(g.AddAction(action_description));
     CheckOutputNodesCorrectlyAdded(g, action_id, {"out"});
@@ -126,7 +126,7 @@ TEST_CASE("AddAction({single action, more outputs, no inputs})", "[dag]") {
     auto const action_description = ActionDescription{
         output_files,
         {},
-        Action{action_id, {"touch", "out0", "out1", "out2"}, {}},
+        Action{action_id, {"touch", "out0", "out1", "out2"}, "", {}},
         {}};
     DependencyGraph g;
     CHECK(g.AddAction(action_description));
@@ -145,7 +145,7 @@ TEST_CASE("AddAction({single action, single output, source file})", "[dag]") {
         auto const action_description =
             ActionDescription{{"executable"},
                               {},
-                              Action{action_id, {"gcc", "main.cpp"}, {}},
+                              Action{action_id, {"gcc", "main.cpp"}, "", {}},
                               {{"main.cpp", src_description}}};
         CHECK(g.AddAction(action_description));
     }
@@ -153,7 +153,7 @@ TEST_CASE("AddAction({single action, single output, source file})", "[dag]") {
         auto const action_description =
             ActionDescription{{"executable"},
                               {},
-                              Action{action_id, {"gcc", "src/a.cpp"}, {}},
+                              Action{action_id, {"gcc", "src/a.cpp"}, "", {}},
                               {{"src/a.cpp", src_description}}};
         CHECK(g.Add({action_description}));
     }
@@ -182,7 +182,7 @@ TEST_CASE("AddAction({single action, single output, no inputs, env_variables})",
         "/bin/sh", "-c", "set -e\necho 'Hello, ${NAME}' > greeting"};
     std::map<std::string, std::string> const env_vars{{"NAME", name}};
     auto const action_description = ActionDescription{
-        {"greeting"}, {}, Action{action_id, command, env_vars}, {}};
+        {"greeting"}, {}, Action{action_id, command, "", env_vars}, {}};
 
     CHECK(g.AddAction(action_description));
 
@@ -227,7 +227,7 @@ TEST_CASE("Add executable and library", "[dag]") {
     auto const make_exec_desc =
         ActionDescription{{"exec"},
                           {},
-                          Action{make_exec_id, make_exec_cmd, {}},
+                          Action{make_exec_id, make_exec_cmd, "", {}},
                           {{"main.cpp", main_desc}, {"lib.a", lib_a_desc}}};
     auto const& exec_out_id =
         ArtifactDescription::CreateAction(make_exec_id, "exec").Id();
@@ -235,7 +235,7 @@ TEST_CASE("Add executable and library", "[dag]") {
     auto const make_lib_desc = ActionDescription{
         {"lib.a"},
         {},
-        Action{make_lib_id, make_lib_cmd, {}},
+        Action{make_lib_id, make_lib_cmd, "", {}},
         {{"lib.hpp", lib_hpp_desc}, {"lib.cpp", lib_cpp_desc}}};
 
     DependencyGraph g;
@@ -287,16 +287,17 @@ TEST_CASE("Add executable and library", "[dag]") {
 
 TEST_CASE("AddAction(id, empty action description) fails", "[dag]") {
     DependencyGraph g;
-    CHECK(not g.AddAction(ActionDescription{{}, {}, Action{"id", {}, {}}, {}}));
+    CHECK(not g.AddAction(
+        ActionDescription{{}, {}, Action{"id", {}, "", {}}, {}}));
 }
 
 TEST_CASE("AddAction(Empty mandatory non-empty field in action description)",
           "[dag]") {
     DependencyGraph g;
     CHECK(not g.AddAction(ActionDescription{
-        {"output0", "output1"}, {}, Action{"empty command", {}, {}}, {}}));
+        {"output0", "output1"}, {}, Action{"empty command", {}, "", {}}, {}}));
     CHECK(not g.AddAction(ActionDescription{
-        {}, {}, Action{"empty output", {"echo", "hello"}, {}}, {}}));
+        {}, {}, Action{"empty output", {"echo", "hello"}, "", {}}, {}}));
 }
 
 // Collision between actions tests
@@ -312,12 +313,12 @@ TEST_CASE("Adding cyclic dependencies produces invalid graph", "[dag]") {
     auto const action1_desc =
         ActionDescription{{"out1"},
                           {},
-                          Action{action1_id, {"touch", "out1"}, {}},
+                          Action{action1_id, {"touch", "out1"}, "", {}},
                           {{"dep", out2_desc}}};
     auto const action2_desc =
         ActionDescription{{"out2"},
                           {},
-                          Action{action2_id, {"touch", "out2"}, {}},
+                          Action{action2_id, {"touch", "out2"}, "", {}},
                           {{"dep", out1_desc}}};
 
     DependencyGraph g;
@@ -327,8 +328,8 @@ TEST_CASE("Adding cyclic dependencies produces invalid graph", "[dag]") {
 
 TEST_CASE("Error when adding an action with an id already added", "[dag]") {
     std::string const action_id = "id";
-    auto const action_desc =
-        ActionDescription{{"out"}, {}, Action{"id", {"touch", "out"}, {}}, {}};
+    auto const action_desc = ActionDescription{
+        {"out"}, {}, Action{"id", {"touch", "out"}, "", {}}, {}};
 
     DependencyGraph g;
     CHECK(g.AddAction(action_desc));
@@ -341,7 +342,7 @@ TEST_CASE("Error when adding an action with an id already added", "[dag]") {
 TEST_CASE("Error when adding conflicting output files and directories",
           "[dag]") {
     auto const action_desc = ActionDescription{
-        {"out"}, {"out"}, Action{"id", {"touch", "out"}, {}}, {}};
+        {"out"}, {"out"}, Action{"id", {"touch", "out"}, "", {}}, {}};
 
     DependencyGraph g;
     CHECK_FALSE(g.AddAction(action_desc));

@@ -63,6 +63,7 @@ auto const kGenericRuleFields =
     std::unordered_set<std::string>{"arguments_config",
                                     "cmds",
                                     "cwd",
+                                    "label",
                                     "deps",
                                     "env",
                                     "execution properties",
@@ -1215,6 +1216,28 @@ void GenericRuleWithDeps(
         cmd_ss << x->String();
         cmd_ss << "\n";
     }
+    auto label_exp = desc->ReadOptionalExpression("label", Expression::kNone);
+    if (not label_exp) {
+        return;
+    }
+    auto label_value = label_exp.Evaluate(
+        param_config, string_fields_fcts, [&logger](auto const& msg) {
+            (*logger)(fmt::format("While evaluating label:\n{}", msg), true);
+        });
+    if (not label_value) {
+        return;
+    }
+    // Use a default label string, if no label field was provided in the
+    // action definition.
+    if (label_value->IsNone()) {
+        label_value = Expression::FromJson(R"("Running custom commands")"_json);
+    }
+    else if (not label_value->IsString()) {
+        (*logger)(fmt::format("label has to evaluate to a string, but found {}",
+                              label_value->ToString()),
+                  true);
+        return;
+    }
     auto cwd_exp =
         desc->ReadOptionalExpression("cwd", Expression::kEmptyString);
     if (not cwd_exp) {
@@ -1397,6 +1420,7 @@ void GenericRuleWithDeps(
         outs,
         out_dirs,
         argv,
+        label_value->String(),
         cwd_value->String(),
         env_val,
         std::nullopt,

@@ -212,7 +212,7 @@ class TestProject {
             }
         }
         graph_full_description_.emplace_back(ActionDescription{
-            outputs, {}, Action{action_id, command, {}}, inputs_desc});
+            outputs, {}, Action{action_id, command, "", {}}, inputs_desc});
         return true;
     }
 

@@ -95,17 +95,17 @@ TEST_CASE("origins creation", "[result_map]") {
     auto foo = std::make_shared<ActionDescription>(
         ActionDescription::outputs_t{},
         ActionDescription::outputs_t{},
-        Action{"run_foo", {"touch", "foo"}, {}},
+        Action{"run_foo", {"touch", "foo"}, "", {}},
         ActionDescription::inputs_t{});
     auto bar = std::make_shared<ActionDescription>(
         ActionDescription::outputs_t{},
         ActionDescription::outputs_t{},
-        Action{"run_bar", {"touch", "bar"}, {}},
+        Action{"run_bar", {"touch", "bar"}, "", {}},
         ActionDescription::inputs_t{});
     auto baz = std::make_shared<ActionDescription>(
         ActionDescription::outputs_t{},
         ActionDescription::outputs_t{},
-        Action{"run_baz", {"touch", "baz"}, {}},
+        Action{"run_baz", {"touch", "baz"}, "", {}},
         ActionDescription::inputs_t{});
 
     ResultTargetMap map{0};

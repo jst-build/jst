@@ -296,7 +296,7 @@ class TestApi : public IExecutionApi {
     auto const test_action_desc = ActionDescription{
         {"output1.exe", "output2.exe"},
         {},
-        Action{"test_action", {"cmd", "line"}, {}},
+        Action{"test_action", {"cmd", "line"}, "", {}},
         {{"local.cpp", local_cpp_desc}, {known_digest.hash(), known_cpp_desc}}};
 
     CHECK(g->AddAction(test_action_desc));

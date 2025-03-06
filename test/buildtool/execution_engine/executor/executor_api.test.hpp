@@ -136,6 +136,7 @@ static inline void RunHelloWorldCompilation(
         {},
         Action{make_hello_id,
                {"c++", "src/main.cpp", "-o", "out/hello_world"},
+               "",
                env},
         {{"src/main.cpp", main_cpp_desc}}};
     auto const exec_desc =
@@ -229,6 +230,7 @@ static inline void RunGreeterCompilation(
                                   "include",
                                   "-o",
                                   "out/greet.o"},
+                                 "",
                                  env},
                           {{"include/greet.hpp", greet_hpp_desc},
                            {"src/greet.cpp", greet_cpp_desc}}};
@@ -241,7 +243,8 @@ static inline void RunGreeterCompilation(
     auto const make_lib_desc = ActionDescription{
         {"out/libgreet.a"},
         {},
-        Action{make_lib_id, {"ar", "rcs", "out/libgreet.a", "greet.o"}, env},
+        Action{
+            make_lib_id, {"ar", "rcs", "out/libgreet.a", "greet.o"}, "", env},
         {{"greet.o", greet_o_desc}}};
 
     auto const main_cpp_desc =
@@ -266,6 +269,7 @@ static inline void RunGreeterCompilation(
                                   "-lgreet",
                                   "-o",
                                   "out/greeter"},
+                                 "",
                                  env},
                           {{"src/main.cpp", main_cpp_desc},
                            {"include/greet.hpp", greet_hpp_desc},
@@ -526,7 +530,7 @@ static inline void TestUploadAndDownloadTrees(
             ActionDescription::inputs_t{{".", tree_desc.Output()}};
         ActionDescription action_desc{{"a", "b/a"},
                                       {},
-                                      Action{"action_id", {"echo"}, env},
+                                      Action{"action_id", {"echo"}, "", env},
                                       action_inputs};
 
         REQUIRE(AddAndProcessTree(&g, &runner, tree_desc));
@@ -556,7 +560,7 @@ static inline void TestUploadAndDownloadTrees(
     SECTION("Dot-path non-tree as action input") {
         auto action_inputs = ActionDescription::inputs_t{{".", foo_desc}};
         ActionDescription action_desc{
-            {"foo"}, {}, Action{"action_id", {"echo"}, {}}, action_inputs};
+            {"foo"}, {}, Action{"action_id", {"echo"}, "", {}}, action_inputs};
 
         REQUIRE(g.Add({action_desc}));
         auto const* action_node = g.ActionNodeWithId("action_id");
@@ -599,7 +603,7 @@ static inline void TestRetrieveOutputDirectories(
         return ActionDescription{
             std::move(out_files),
             std::move(out_dirs),
-            Action{make_tree_id, {"sh", "-c", make_tree_cmd}, env},
+            Action{make_tree_id, {"sh", "-c", make_tree_cmd}, "", env},
             {}};
     };
 

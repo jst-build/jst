@@ -630,6 +630,17 @@ void withDependencies(
                   }
                   cmd.emplace_back(arg->String());
               }
+              auto label_exp = eval(expr->Get("label", Expression::kNone), env);
+              // Use a default label string, if no label field was
+              // provided in the action definition.
+              if (label_exp->IsNone()) {
+                  label_exp = Expression::FromJson(R"("Executing")"_json);
+              }
+              else if (not label_exp->IsString()) {
+                  throw Evaluator::EvaluationError{
+                      fmt::format("label has to be a string, but found {}",
+                                  label_exp->ToString())};
+              }
               auto cwd_exp =
                   eval(expr->Get("cwd", Expression::kEmptyString), env);
               if (not cwd_exp->IsString()) {
@@ -748,6 +759,7 @@ void withDependencies(
                   outputs_norm,
                   output_dirs_norm,
                   std::move(cmd),
+                  label_exp->String(),
                   cwd_exp->String(),
                   env_exp,
                   may_fail,

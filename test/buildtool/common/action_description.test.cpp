@@ -34,14 +34,14 @@ TEST_CASE("From JSON", "[action_description]") {
     auto desc = ActionDescription{
         {"output0", "output1"},
         {"dir0", "dir1"},
-        Action{"id", {"command", "line"}, {{"env", "vars"}}},
+        Action{"id", {"command", "line"}, "", {{"env", "vars"}}},
         {{"path0", ArtifactDescription::CreateTree(path{"input0"})},
          {"path1", ArtifactDescription::CreateTree(path{"input1"})}}};
     auto const& action = desc.GraphAction();
     auto json =
         ActionDescription{desc.OutputFiles(),
                           desc.OutputDirs(),
-                          Action{"unused", action.Command(), action.Env()},
+                          Action{"unused", action.Command(), "", action.Env()},
                           desc.Inputs()}
             .ToJson();
 

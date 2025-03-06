@@ -125,12 +125,14 @@ resolved in a latest-wins fashion using the order of the targets in
 the evaluated `"deps"` argument. However, the input stage obtained
 by those resolution rules has to be free of semantic conflicts.
 
-The fields `"cmds"`, `"cwd"`, `"sh -c"`, `"out_dirs"`, `"outs"`, and `"env"`
+The fields `"cmds"`, `"label"`, `"cwd"`, `"sh -c"`, `"out_dirs"`, `"outs"`, and `"env"`
 are evaluated fields where `"cmds"`, `"out_dirs"`, and `"outs"`
 have to evaluate to a list of strings, `"sh -c"` has to evalute to
 a list of strings or `null`, `"env"` has to evaluate to a map
 of strings, and `"cwd"` has to evaluate to a single string naming a non-upwards
-relative path. During their evaluation, the functions `"outs"` and
+relative path. `"label"` is an optional field, but if provided, it has to
+evaluate to a single string containing a description of the activity of
+the task. During their evaluation, the functions `"outs"` and
 `"runfiles"` can be used to access the logical paths of the artifacts
 and runfiles, respectively, of a target specified in `"deps"`. Here,
 `"env"` specifies the environment in which the action is carried

@@ -88,6 +88,19 @@ class ActionDescription {
                 output_dirs = std::vector<std::string>{};
             }
 
+            std::string label{};
+            auto label_it = desc.find("label");
+            if (label_it != desc.end()) {
+                if (label_it->is_string()) {
+                    label = *label_it;
+                }
+                else {
+                    Logger::Log(LogLevel::Error,
+                                "label, if given, has to be a string");
+                    return std::nullopt;
+                }
+            }
+
             std::string cwd{};
             auto cwd_it = desc.find("cwd");
             if (cwd_it != desc.end()) {
@@ -179,6 +192,7 @@ class ActionDescription {
                 std::move(*output_dirs),
                 Action{id,
                        std::move(*command),
+                       label,
                        cwd,
                        env,
                        may_fail,
@@ -197,6 +211,10 @@ class ActionDescription {
 
     [[nodiscard]] auto Id() const noexcept -> ActionIdentifier {
         return action_.Id();
+    }
+
+    [[nodiscard]] auto Label() const noexcept -> std::string {
+        return action_.Label();
     }
 
     [[nodiscard]] auto ToJson() const -> nlohmann::json {

@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "418c0dff0f5088ed14b7ae2e58e7dbc90505b879f42dd02dd96c5b0cb8d3ac71": {
+      "command": [
+        "sh",
+        "-c",
+        "echo Hello > out.txt\n"
+      ],
+      "label": "JAAAA",
+      "origins": [
+        {
+          "config": {},
+          "subtask": 0,
+          "target": [
+            "@",
+            "",
+            "",
+            "action1"
+          ]
+        }
+      ],
+      "output": [
+        "out.txt"
+      ]
+    }
+  },
+  "blobs": [],
+  "trees": {}
+}

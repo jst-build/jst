@@ -102,21 +102,36 @@ class DynamicProgressReporterImpl {
         return sample;
     }
 
-    [[nodiscard]] auto LabelString(std::string const& sample) -> std::string {
+    [[nodiscard]] auto LabelString(std::string const& sample,
+                                   unsigned int max_width) -> std::string {
         std::string label_string{};
         if (progress_->TaskTracker().IsUploading(sample)) {
             label_string = "Uploading";
         }
         else {
-            label_string = "Executing";
+            auto const& label_map = progress_->LabelMap();
+            auto label = label_map.find(sample);
+            if (label != label_map.end()) {
+                label_string = label->second;
+            }
+            else {
+                label_string = "Executing";
+            }
+        }
+        if (label_string.size() >= max_width) {
+            label_string = label_string.substr(0, max_width);
+        }
+        else {
+            label_string += " ";
         }
         return label_string;
     }
 
     [[nodiscard]] auto TaskString(std::string const& sample) -> std::string {
-        return fmt::format("{} {}",
-                           Blue(fmt::format("{:>12}", LabelString(sample))),
-                           OriginString(sample));
+        return fmt::format(
+            "{} {}",
+            Blue(fmt::format("  {:.<38}", LabelString(sample, 38))),
+            OriginString(sample));
     }
 
     [[nodiscard]] static auto TaskContinuationString() -> std::string {
