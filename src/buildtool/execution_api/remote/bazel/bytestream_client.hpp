@@ -29,12 +29,14 @@
 #include "google/bytestream/bytestream.pb.h"
 #include "gsl/gsl"
 #include "src/buildtool/auth/authentication.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/remote/client_common.hpp"
 #include "src/buildtool/common/remote/port.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
+#include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/common/bytestream_utils.hpp"
 #include "src/buildtool/execution_api/common/ids.hpp"
+#include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/utils/cpp/expected.hpp"
@@ -115,7 +117,15 @@ class ByteStreamClient {
         if (not data) {
             return std::nullopt;
         }
-        return ArtifactBlob{digest, std::move(output), /*is_exec=*/false};
+
+        auto blob = ArtifactBlob::FromMemory(
+            HashFunction{digest.GetHashType()},
+            digest.IsTree() ? ObjectType::Tree : ObjectType::File,
+            std::move(output));
+        if (not blob.has_value() or blob->GetDigest() != digest) {
+            return std::nullopt;
+        }
+        return *std::move(blob);
     }
 
     [[nodiscard]] auto Write(std::string const& instance_name,
@@ -137,14 +147,14 @@ class ByteStreamClient {
             auto writer = stub_->Write(&ctx, &response);
 
             auto const resource_name = ByteStreamUtils::WriteRequest::ToString(
-                instance_name, uuid, blob.digest);
+                instance_name, uuid, blob.GetDigest());
 
             google::bytestream::WriteRequest request{};
             request.set_resource_name(resource_name);
             request.mutable_data()->reserve(ByteStreamUtils::kChunkSize);
 
-            auto const to_read = ::IncrementalReader::FromMemory(
-                ByteStreamUtils::kChunkSize, &*blob.data);
+            auto const to_read =
+                blob.ReadIncrementally(ByteStreamUtils::kChunkSize);
             if (not to_read.has_value()) {
                 logger_.Emit(
                     LogLevel::Error,
@@ -169,7 +179,7 @@ class ByteStreamClient {
 
                 request.set_write_offset(static_cast<int>(pos));
                 request.set_finish_write(pos + chunk->size() >=
-                                         blob.data->size());
+                                         blob.GetContentSize());
                 if (writer->Write(request)) {
                     pos += chunk->size();
                     ++it;
@@ -206,12 +216,12 @@ class ByteStreamClient {
                 return false;
             }
             if (gsl::narrow<std::size_t>(response.committed_size()) !=
-                blob.data->size()) {
+                blob.GetContentSize()) {
                 logger_.Emit(
                     LogLevel::Warning,
                     "Commited size {} is different from the original one {}.",
                     response.committed_size(),
-                    blob.data->size());
+                    blob.GetContentSize());
                 return false;
             }
             return true;

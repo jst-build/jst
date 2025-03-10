@@ -24,12 +24,12 @@
 #include "fmt/core.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "src/buildtool/common/artifact.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/bazel_msg_factory.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/remote/bazel/bazel_network_reader.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
@@ -50,12 +50,8 @@ auto ProcessDirectoryMessage(HashFunction hash_function,
                 fmt::format("found invalid symlink at {}", link.name())};
         }
     }
-    auto data = dir.SerializeAsString();
-    auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-        hash_function, data);
-    return ArtifactBlob{std::move(digest),
-                        std::move(data),
-                        /*is_exec=*/false};
+    return ArtifactBlob::FromMemory(
+        hash_function, ObjectType::File, dir.SerializeAsString());
 }
 
 }  // namespace
@@ -67,7 +63,9 @@ auto BazelResponse::ReadStringBlob(bazel_re::Digest const& id) noexcept
     if (digest.has_value()) {
         auto reader = network_->CreateReader();
         if (auto blob = reader.ReadSingleBlob(*digest)) {
-            return *blob->data;
+            if (auto const content = blob->ReadContent()) {
+                return *content;
+            }
         }
     }
     Logger::Log(LogLevel::Warning,
@@ -239,12 +237,15 @@ auto BazelResponse::Populate() noexcept -> std::optional<std::string> {
     for (auto tree_blobs : reader.ReadIncrementally(&tree_digests)) {
         for (auto const& tree_blob : tree_blobs) {
             try {
-                auto tree = BazelMsgFactory::MessageFromString<bazel_re::Tree>(
-                    *tree_blob.data);
+                std::optional<bazel_re::Tree> tree;
+                if (auto const content = tree_blob.ReadContent()) {
+                    tree = BazelMsgFactory::MessageFromString<bazel_re::Tree>(
+                        *content);
+                }
                 if (not tree) {
                     return fmt::format(
                         "BazelResponse: failed to create Tree for {}",
-                        tree_blob.digest.hash());
+                        tree_blob.GetDigest().hash());
                 }
 
                 // The server does not store the Directory messages it just
@@ -266,7 +267,7 @@ auto BazelResponse::Populate() noexcept -> std::optional<std::string> {
                 return fmt::format(
                     "BazelResponse: unexpected failure gathering digest for "
                     "{}:\n{}",
-                    tree_blob.digest.hash(),
+                    tree_blob.GetDigest().hash(),
                     ex.what());
             }
             ++pos;
@@ -291,7 +292,7 @@ auto BazelResponse::UploadTreeMessageDirectories(
     if (not rootdir_blob) {
         return unexpected{std::move(rootdir_blob).error()};
     }
-    auto const root_digest = rootdir_blob->digest;
+    auto const root_digest = rootdir_blob->GetDigest();
     // store or upload rootdir blob, taking maximum transfer size into account
     if (not UpdateContainerAndUpload(&dir_blobs,
                                      *std::move(rootdir_blob),
@@ -307,7 +308,7 @@ auto BazelResponse::UploadTreeMessageDirectories(
         if (not blob) {
             return unexpected{std::move(blob).error()};
         }
-        auto const blob_digest = blob->digest;
+        auto const blob_digest = blob->GetDigest();
         if (not UpdateContainerAndUpload(&dir_blobs,
                                          *std::move(blob),
                                          /*exception_is_fatal=*/false,

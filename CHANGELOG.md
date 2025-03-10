@@ -1,4 +1,4 @@
-## Release `1.5.0` (UNRELEASED)
+## Release `1.5.0` (2025-03-06)
 
 A feature release on top of `1.4.0`, backwards compatible.
 
@@ -22,7 +22,6 @@ A feature release on top of `1.4.0`, backwards compatible.
 - `just add-to-cas` now supports the `--resolve-special` option, which
   defines how special entries (e.g., symlinks) are to be handled when
   adding directories to CAS.
-
 - `just serve` accepts a new subkey `"client address"` for the key
   `"execution endpoint"` in the configuration file. It informs the
   `serve` instance that the client will access the remote-execution
@@ -57,7 +56,33 @@ A feature release on top of `1.4.0`, backwards compatible.
   is now correctly honored, if announced by the server.
 - Missing entries in the documentation have been added.
 
-### Release `1.5.0~beta1` (2025-02-24)
+
+### Changes since `1.5.0~beta2`
+
+- Fixed how `just-import-git` and `just-lock` handle the transitively
+  implied base repositories of computed roots; the lack of properly
+  handling indirections led to crashes even if computed roots where
+  not used at all.
+- A case was fixed where special entries where not ignored properly,
+  even though this was requested.
+- Unnecessary verbosity reduced.
+- Updated dependencies.
+- Documentation extended.
+
+## Release `1.5.0~beta2` (2025-02-28)
+
+Second beta release for the upcoming `1.5.0` release; see release
+notes there.
+
+### Changes since `1.5.0~beta1`
+
+- New configuration option `"client address"` for `just serve`.
+- `just-lock` now fetches and clones repositories in parallel.
+- Blob content is not any more kept in memory unecessarily at
+  various places.
+- Various internal clean up of the code base.
+
+## Release `1.5.0~beta1` (2025-02-24)
 
 First beta release for the upcoming `1.5.0` release; see release
 notes there.

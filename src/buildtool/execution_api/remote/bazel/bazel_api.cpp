@@ -26,13 +26,13 @@
 #include <utility>  // std::move
 
 #include "src/buildtool/auth/authentication.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/bazel_types.hpp"
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/execution_api/bazel_msg/directory_tree.hpp"
 #include "src/buildtool/execution_api/bazel_msg/execution_config.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/stream_dumper.hpp"
 #include "src/buildtool/execution_api/common/tree_reader.hpp"
@@ -73,9 +73,9 @@ namespace {
             return false;
         }
         for (auto& blob : blobs) {
-            auto const info = back_map->GetReference(blob.digest);
-            blob.is_exec =
-                info.has_value() and IsExecutableObject(info.value()->type);
+            auto const info = back_map->GetReference(blob.GetDigest());
+            blob.SetExecutable(info.has_value() and
+                               IsExecutableObject(info.value()->type));
             // Collect blob and upload to other CAS if transfer size reached.
             if (not UpdateContainerAndUpload(
                     &container,
@@ -237,9 +237,15 @@ auto BazelApi::CreateAction(
         for (std::size_t pos = 0; pos < blobs.size(); ++pos) {
             auto gpos = artifact_pos[count + pos];
             auto const& type = artifacts_info[gpos].type;
-            if (not FileSystemManager::WriteFileAs</*kSetEpochTime=*/true,
-                                                   /*kSetWritable=*/true>(
-                    *blobs[pos].data, output_paths[gpos], type)) {
+
+            bool written = false;
+            if (auto const content = blobs[pos].ReadContent()) {
+                written = FileSystemManager::WriteFileAs</*kSetEpochTime=*/true,
+                                                         /*kSetWritable=*/true>(
+                    *content, output_paths[gpos], type);
+            }
+
+            if (not written) {
                 Logger::Log(LogLevel::Warning,
                             "staging to output path {} failed.",
                             output_paths[gpos].string());
@@ -486,7 +492,9 @@ auto BazelApi::CreateAction(
     -> std::optional<std::string> {
     auto reader = network_->CreateReader();
     if (auto blob = reader.ReadSingleBlob(artifact_info.digest)) {
-        return *blob->data;
+        if (auto const content = blob->ReadContent()) {
+            return *content;
+        }
     }
     return std::nullopt;
 }
@@ -520,7 +528,9 @@ auto BazelApi::CreateAction(
             targets->reserve(digests.size());
             for (auto blobs : reader.ReadIncrementally(&digests)) {
                 for (auto const& blob : blobs) {
-                    targets->emplace_back(*blob.data);
+                    if (auto const content = blob.ReadContent()) {
+                        targets->emplace_back(*content);
+                    }
                 }
             }
         });

@@ -50,16 +50,15 @@
 #include "nlohmann/json.hpp"
 #include "src/buildtool/common/action_description.hpp"
 #include "src/buildtool/common/artifact.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_description.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
-#include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/cli.hpp"
 #include "src/buildtool/common/identifier.hpp"
 #include "src/buildtool/common/statistics.hpp"
 #include "src/buildtool/common/tree.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/utils/subobject.hpp"
@@ -73,6 +72,7 @@
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/progress_reporting/base_progress_reporter.hpp"
+#include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/json.hpp"
 #include "src/utils/cpp/path.hpp"
 
@@ -114,18 +114,18 @@ class GraphTraverser {
     [[nodiscard]] auto BuildAndStage(
         std::map<std::string, ArtifactDescription> const& artifact_descriptions,
         std::map<std::string, ArtifactDescription> const& runfile_descriptions,
-        std::vector<ActionDescription::Ptr> const& action_descriptions,
-        std::vector<std::string> const& blobs,
-        std::vector<Tree::Ptr> const& trees,
+        std::vector<ActionDescription::Ptr>&& action_descriptions,
+        std::vector<std::string>&& blobs,
+        std::vector<Tree::Ptr>&& trees,
         std::vector<ArtifactDescription>&& extra_artifacts = {}) const
         -> std::optional<BuildResult> {
         DependencyGraph graph;  // must outlive artifact_nodes
         auto artifacts = BuildArtifacts(&graph,
                                         artifact_descriptions,
                                         runfile_descriptions,
-                                        action_descriptions,
-                                        trees,
-                                        blobs,
+                                        std::move(action_descriptions),
+                                        std::move(trees),
+                                        std::move(blobs),
                                         extra_artifacts);
         if (not artifacts) {
             return std::nullopt;
@@ -211,7 +211,7 @@ class GraphTraverser {
         if (not desc) {
             return std::nullopt;
         }
-        auto const [blobs, tree_descs, actions] = *desc;
+        auto [blobs, tree_descs, actions] = *std::move(desc);
 
         HashFunction::Type const hash_type =
             context_.apis->local->GetHashType();
@@ -245,8 +245,11 @@ class GraphTraverser {
             artifact_descriptions.emplace(rel_path, std::move(*artifact));
         }
 
-        return BuildAndStage(
-            artifact_descriptions, {}, action_descriptions, blobs, trees);
+        return BuildAndStage(artifact_descriptions,
+                             {},
+                             std::move(action_descriptions),
+                             std::move(blobs),
+                             std::move(trees));
     }
 
   private:
@@ -310,24 +313,27 @@ class GraphTraverser {
     /// of the uploads fails, execution is terminated
     /// \param[in]  blobs   blobs to be uploaded
     [[nodiscard]] auto UploadBlobs(
-        std::vector<std::string> const& blobs) const noexcept -> bool {
+        std::vector<std::string>&& blobs) const noexcept -> bool {
         std::unordered_set<ArtifactBlob> container;
         HashFunction const hash_function{context_.apis->remote->GetHashType()};
-        for (auto const& blob : blobs) {
-            auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-                hash_function, blob);
+        for (auto& content : blobs) {
+            auto blob = ArtifactBlob::FromMemory(
+                hash_function, ObjectType::File, std::move(content));
+            if (not blob.has_value()) {
+                logger_->Emit(LogLevel::Trace, "Failed to create ArtifactBlob");
+                return false;
+            }
             Logger::Log(logger_, LogLevel::Trace, [&]() {
                 return fmt::format(
-                    "Will upload blob {}, its digest has id {} and size {}.",
-                    nlohmann::json(blob).dump(),
-                    digest.hash(),
-                    digest.size());
+                    "Will upload blob, its digest has id {} and size {}.",
+                    blob->GetDigest().hash(),
+                    blob->GetDigest().size());
             });
             // Store and/or upload blob, taking into account the maximum
             // transfer size.
             if (not UpdateContainerAndUpload(
                     &container,
-                    ArtifactBlob{std::move(digest), blob, /*is_exec=*/false},
+                    *std::move(blob),
                     /*exception_is_fatal=*/true,
                     [&api = context_.apis->remote](
                         std::unordered_set<ArtifactBlob>&& blobs) {
@@ -490,15 +496,15 @@ class GraphTraverser {
         gsl::not_null<DependencyGraph*> const& graph,
         std::map<std::string, ArtifactDescription> const& artifacts,
         std::map<std::string, ArtifactDescription> const& runfiles,
-        std::vector<ActionDescription::Ptr> const& actions,
-        std::vector<Tree::Ptr> const& trees,
-        std::vector<std::string> const& blobs,
+        std::vector<ActionDescription::Ptr>&& actions,
+        std::vector<Tree::Ptr>&& trees,
+        std::vector<std::string>&& blobs,
         std::vector<ArtifactDescription> const& extra_artifacts = {}) const
         -> std::optional<
             std::tuple<std::vector<std::filesystem::path>,
                        std::vector<DependencyGraph::ArtifactNode const*>,
                        std::vector<DependencyGraph::ArtifactNode const*>>> {
-        if (not UploadBlobs(blobs)) {
+        if (not UploadBlobs(std::move(blobs))) {
             return std::nullopt;
         }
 

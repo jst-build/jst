@@ -66,8 +66,10 @@ auto BazelNetworkReader::ReadDirectory(ArtifactDigest const& digest)
     }
 
     if (auto blob = ReadSingleBlob(digest)) {
-        return BazelMsgFactory::MessageFromString<bazel_re::Directory>(
-            *blob->data);
+        if (auto const content = blob->ReadContent()) {
+            return BazelMsgFactory::MessageFromString<bazel_re::Directory>(
+                *content);
+        }
     }
     Logger::Log(
         LogLevel::Debug, "Directory {} not found in CAS", digest.hash());
@@ -83,6 +85,11 @@ auto BazelNetworkReader::ReadGitTree(ArtifactDigest const& digest)
         Logger::Log(LogLevel::Debug, "Tree {} not found in CAS", digest.hash());
         return std::nullopt;
     }
+    auto const content = read_blob->ReadContent();
+    if (content == nullptr) {
+        return std::nullopt;
+    }
+
     auto check_symlinks = [this](std::vector<ArtifactDigest> const& ids) {
         size_t const size = ids.size();
         size_t count = 0;
@@ -94,7 +101,8 @@ auto BazelNetworkReader::ReadGitTree(ArtifactDigest const& digest)
             }
             bool valid = std::all_of(
                 blobs.begin(), blobs.end(), [](ArtifactBlob const& blob) {
-                    return PathIsNonUpwards(*blob.data);
+                    auto const content = blob.ReadContent();
+                    return content != nullptr and PathIsNonUpwards(*content);
                 });
             if (not valid) {
                 return false;
@@ -104,11 +112,10 @@ auto BazelNetworkReader::ReadGitTree(ArtifactDigest const& digest)
         return true;
     };
 
-    std::string const& content = *read_blob->data;
-    return GitRepo::ReadTreeData(content,
-                                 hash_function_.HashTreeData(content).Bytes(),
+    return GitRepo::ReadTreeData(*content,
+                                 digest.hash(),
                                  check_symlinks,
-                                 /*is_hex_id=*/false);
+                                 /*is_hex_id=*/true);
 }
 
 auto BazelNetworkReader::DumpRawTree(Artifact::ObjectInfo const& info,
@@ -122,7 +129,8 @@ auto BazelNetworkReader::DumpRawTree(Artifact::ObjectInfo const& info,
     }
 
     try {
-        return std::invoke(dumper, *read_blob->data);
+        auto const content = read_blob->ReadContent();
+        return content != nullptr and std::invoke(dumper, *content);
     } catch (...) {
         return false;
     }
@@ -171,11 +179,7 @@ auto BazelNetworkReader::MakeAuxiliaryMap(
 
 auto BazelNetworkReader::ReadSingleBlob(ArtifactDigest const& digest)
     const noexcept -> std::optional<ArtifactBlob> {
-    auto blob = cas_.ReadSingleBlob(instance_name_, digest);
-    if (not blob or not Validate(*blob)) {
-        return std::nullopt;
-    }
-    return blob;
+    return cas_.ReadSingleBlob(instance_name_, digest);
 }
 
 auto BazelNetworkReader::ReadIncrementally(
@@ -193,54 +197,22 @@ auto BazelNetworkReader::BatchReadBlobs(
 
     // Map digests to blobs for further lookup:
     auto const back_map = BackMap<ArtifactDigest, ArtifactBlob>::Make(
-        &batched_blobs, [](ArtifactBlob const& blob) { return blob.digest; });
+        &batched_blobs,
+        [](ArtifactBlob const& blob) { return blob.GetDigest(); });
 
     if (back_map == nullptr) {
         return {};
     }
 
+    // Restore the requested order:
     std::vector<ArtifactBlob> artifacts;
     artifacts.reserve(digests.size());
-
-    // To not validate blobs several times, hash the result of validation:
-    std::unordered_map<std::size_t, ArtifactBlob const*> validated;
-    validated.reserve(digests.size());
-
-    auto const hasher = std::hash<ArtifactDigest>{};
     for (ArtifactDigest const& digest : digests) {
-        std::size_t const hash = std::invoke(hasher, digest);
-        // If the blob has been validated already, just return the result:
-        if (auto it = validated.find(hash); it != validated.end()) {
-            if (it->second != nullptr) {
-                artifacts.push_back(*it->second);
-            }
-            continue;
-        }
-
-        // Blob hasn't been processed yet, perform validation:
-        auto value = back_map->GetReference(digest);
-        if (not value.has_value()) {
-            continue;
-        }
-
-        if (Validate(*value.value())) {
-            validated[hash] = &artifacts.emplace_back(*value.value());
-        }
-        else {
-            validated[hash] = nullptr;
+        if (auto value = back_map->GetReference(digest)) {
+            artifacts.emplace_back(*value.value());
         }
     }
     return artifacts;
-}
-
-auto BazelNetworkReader::Validate(ArtifactBlob const& blob) const noexcept
-    -> bool {
-    auto rehashed = blob.digest.IsTree()
-                        ? ArtifactDigestFactory::HashDataAs<ObjectType::Tree>(
-                              hash_function_, *blob.data)
-                        : ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-                              hash_function_, *blob.data);
-    return rehashed == blob.digest;
 }
 
 auto BazelNetworkReader::GetMaxBatchTransferSize() const noexcept

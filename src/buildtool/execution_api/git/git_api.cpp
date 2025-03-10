@@ -17,14 +17,15 @@
 #include <cstddef>
 #include <cstdio>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <unordered_set>
 #include <utility>
 
 #include "nlohmann/json.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_tree.hpp"
@@ -197,45 +198,20 @@ auto GitApi::RetrieveToCas(
             if (not tree) {
                 return false;
             }
-            std::unordered_set<ArtifactBlob> tree_deps_only_blobs;
+
+            std::vector<Artifact::ObjectInfo> subentries;
+            subentries.reserve(std::distance(tree->begin(), tree->end()));
             for (auto const& [path, entry] : *tree) {
-                if (entry->IsTree()) {
-                    auto digest = ToArtifactDigest(*entry);
-                    if (not digest or
-                        not RetrieveToCas(
-                            {Artifact::ObjectInfo{.digest = *std::move(digest),
-                                                  .type = entry->Type(),
-                                                  .failed = false}},
-                            api)) {
-                        return false;
-                    }
+                auto digest = ToArtifactDigest(*entry);
+                if (not digest.has_value()) {
+                    return false;
                 }
-                else {
-                    auto const& entry_content = entry->RawData();
-                    if (not entry_content) {
-                        return false;
-                    }
-                    auto digest =
-                        ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-                            hash_function, *entry_content);
-                    // Collect blob and upload to remote CAS if transfer
-                    // size reached.
-                    if (not UpdateContainerAndUpload(
-                            &tree_deps_only_blobs,
-                            ArtifactBlob{std::move(digest),
-                                         *entry_content,
-                                         IsExecutableObject(entry->Type())},
-                            /*exception_is_fatal=*/true,
-                            [&api](std::unordered_set<ArtifactBlob>&& blobs)
-                                -> bool {
-                                return api.Upload(std::move(blobs));
-                            })) {
-                        return false;
-                    }
-                }
+                subentries.push_back(
+                    Artifact::ObjectInfo{.digest = *std::move(digest),
+                                         .type = entry->Type(),
+                                         .failed = false});
             }
-            // Upload remaining blobs.
-            if (not api.Upload(std::move(tree_deps_only_blobs))) {
+            if (not RetrieveToCas(subentries, api)) {
                 return false;
             }
             content = tree->RawData();
@@ -247,19 +223,16 @@ auto GitApi::RetrieveToCas(
             return false;
         }
 
-        ArtifactDigest digest =
-            IsTreeObject(info->type)
-                ? ArtifactDigestFactory::HashDataAs<ObjectType::Tree>(
-                      hash_function, *content)
-                : ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-                      hash_function, *content);
+        auto blob = ArtifactBlob::FromMemory(
+            hash_function, info->type, *std::move(content));
+        if (not blob.has_value()) {
+            return false;
+        }
 
         // Collect blob and upload to remote CAS if transfer size reached.
         if (not UpdateContainerAndUpload(
                 &container,
-                ArtifactBlob{std::move(digest),
-                             std::move(*content),
-                             IsExecutableObject(info->type)},
+                *std::move(blob),
                 /*exception_is_fatal=*/true,
                 [&api](std::unordered_set<ArtifactBlob>&& blobs) {
                     return api.Upload(std::move(blobs),

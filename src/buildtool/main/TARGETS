@@ -36,6 +36,7 @@
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/common", "config"]
     , ["src/buildtool/common", "protocol_traits"]
+    , ["src/buildtool/common", "statistics"]
     , ["src/buildtool/common/remote", "remote_common"]
     , ["src/buildtool/common/remote", "retry_config"]
     , ["src/buildtool/computed_roots", "evaluate"]
@@ -166,7 +167,6 @@
   , "private-deps":
     [ "archive"
     , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
     , ["src/buildtool/common/remote", "remote_common"]
     , ["src/buildtool/execution_api/common", "common"]
     , ["src/buildtool/execution_api/remote", "config"]
@@ -250,8 +250,8 @@
   , "hdrs": ["analyse_context.hpp"]
   , "deps":
     [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
     , ["src/buildtool/common", "config"]
+    , ["src/buildtool/common", "statistics"]
     , ["src/buildtool/progress_reporting", "progress"]
     , ["src/buildtool/serve_api/remote", "serve_api"]
     , ["src/buildtool/storage", "storage"]
@@ -387,7 +387,6 @@
   , "stage": ["src", "buildtool", "main"]
   , "private-deps":
     [ ["", "libarchive"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
     , ["src/buildtool/file_system", "git_repo"]
     , ["src/buildtool/file_system", "object_type"]
     , ["src/buildtool/logging", "log_level"]

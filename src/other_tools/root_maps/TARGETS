@@ -19,7 +19,6 @@
   , "stage": ["src", "other_tools", "root_maps"]
   , "private-deps":
     [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/file_system", "file_root"]
@@ -57,7 +56,6 @@
   , "stage": ["src", "other_tools", "root_maps"]
   , "private-deps":
     [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/file_system", "file_root"]
@@ -97,7 +95,7 @@
   , "stage": ["src", "other_tools", "root_maps"]
   , "private-deps":
     [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
+    , ["src/buildtool/common", "common"]
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/file_system", "file_root"]
     , ["src/buildtool/file_system", "file_system_manager"]
@@ -132,7 +130,6 @@
   , "stage": ["src", "other_tools", "root_maps"]
   , "private-deps":
     [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "artifact_digest_factory"]
     , ["src/buildtool/common", "common"]
     , ["src/buildtool/crypto", "hash_function"]
     , ["src/buildtool/crypto", "hash_info"]
@@ -205,13 +202,12 @@
   , "private-deps":
     [ ["@", "fmt", "", "fmt"]
     , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/execution_api/serve", "mr_git_api"]
     , ["src/buildtool/file_system", "file_root"]
     , ["src/buildtool/file_system", "object_type"]
     , ["src/buildtool/multithreading", "task_system"]
     , ["src/other_tools/git_operations", "git_ops_types"]
     , ["src/other_tools/git_operations", "git_repo_remote"]
+    , ["src/utils/cpp", "expected"]
     , ["src/utils/cpp", "tmp_dir"]
     ]
   }

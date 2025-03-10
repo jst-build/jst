@@ -26,10 +26,10 @@
 
 #include "gsl/gsl"
 #include "src/buildtool/common/artifact.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/bazel_types.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/remote/bazel/bazel_cas_client.hpp"
 #include "src/buildtool/file_system/git_repo.hpp"
 
@@ -95,9 +95,6 @@ class BazelNetworkReader final {
         -> std::vector<ArtifactBlob>;
 
     [[nodiscard]] auto GetMaxBatchTransferSize() const noexcept -> std::size_t;
-
-    [[nodiscard]] auto Validate(ArtifactBlob const& blob) const noexcept
-        -> bool;
 };
 
 class BazelNetworkReader::IncrementalReader final {

@@ -39,6 +39,7 @@
 #include "src/buildtool/build_engine/target_map/configured_target.hpp"
 #include "src/buildtool/common/action.hpp"
 #include "src/buildtool/common/artifact.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/git_hashes_converter.hpp"
@@ -49,7 +50,6 @@
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/execution_api/bazel_msg/execution_config.hpp"
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
@@ -333,6 +333,7 @@ class ExecutorImpl {
         }
 
         // upload missing entries (blobs or trees)
+        HashFunction const hash_function{api.GetHashType()};
         std::unordered_set<ArtifactBlob> container;
         for (auto const& [digest, value] : missing_entries) {
             auto const entry = value->second;
@@ -340,13 +341,16 @@ class ExecutorImpl {
             if (not content.has_value()) {
                 return false;
             }
+            auto blob = ArtifactBlob::FromMemory(
+                hash_function, entry->Type(), *std::move(content));
+            if (not blob.has_value()) {
+                return false;
+            }
             // store and/or upload blob, taking into account the maximum
             // transfer size
             if (not UpdateContainerAndUpload(
                     &container,
-                    ArtifactBlob{*digest,
-                                 std::move(*content),
-                                 IsExecutableObject(entry->Type())},
+                    *std::move(blob),
                     /*exception_is_fatal=*/true,
                     [&api](std::unordered_set<ArtifactBlob>&& blobs) {
                         return api.Upload(std::move(blobs),
@@ -398,9 +402,14 @@ class ExecutorImpl {
             return false;
         }
 
-        return api.Upload({ArtifactBlob{info.digest,
-                                        std::move(*content),
-                                        IsExecutableObject(info.type)}},
+        auto blob = ArtifactBlob::FromMemory(
+            HashFunction{api.GetHashType()}, info.type, *std::move(content));
+        if (not blob.has_value()) {
+            Logger::Log(LogLevel::Error, "failed to create ArtifactBlob");
+            return false;
+        }
+
+        return api.Upload({*std::move(blob)},
                           /*skip_find_missing=*/true);
     }
 
@@ -485,12 +494,14 @@ class ExecutorImpl {
         if (not content.has_value()) {
             return std::nullopt;
         }
-        HashFunction const hash_function{api.GetHashType()};
-        auto digest = ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-            hash_function, *content);
-        if (not api.Upload({ArtifactBlob{digest,
-                                         std::move(*content),
-                                         IsExecutableObject(*object_type)}})) {
+
+        auto blob = ArtifactBlob::FromMemory(
+            HashFunction{api.GetHashType()}, *object_type, *std::move(content));
+        if (not blob.has_value()) {
+            return std::nullopt;
+        }
+        auto digest = blob->GetDigest();
+        if (not api.Upload({*std::move(blob)})) {
             return std::nullopt;
         }
         return Artifact::ObjectInfo{.digest = std::move(digest),

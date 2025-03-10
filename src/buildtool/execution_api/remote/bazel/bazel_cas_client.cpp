@@ -36,6 +36,7 @@
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/utils/cpp/back_map.hpp"
+#include "src/utils/cpp/expected.hpp"
 
 namespace {
 
@@ -46,7 +47,7 @@ namespace {
 
 [[nodiscard]] auto GetContentSize(ArtifactBlob const& blob) noexcept
     -> std::size_t {
-    return blob.data->size();
+    return blob.GetContentSize();
 }
 
 template <typename TRequest,
@@ -62,15 +63,20 @@ template <typename TRequest,
                                    std::nullopt) -> TIterator {
     std::size_t content_size = 0;
     for (auto it = begin; it != end; ++it) {
-        auto to_merge = std::invoke(request_creator, *it);
-        if (request->ByteSizeLong() + to_merge.ByteSizeLong() > message_limit) {
+        std::optional<TRequest> to_merge = std::invoke(request_creator, *it);
+        if (not to_merge.has_value()) {
+            return it;
+        }
+
+        if (request->ByteSizeLong() + to_merge->ByteSizeLong() >
+            message_limit) {
             return it;
         }
         if (content_limit.has_value() and
             content_size + GetContentSize(*it) > *content_limit) {
             return it;
         }
-        request->MergeFrom(to_merge);
+        request->MergeFrom(*std::move(to_merge));
         content_size += GetContentSize(*it);
     }
     return end;
@@ -297,12 +303,19 @@ auto BazelCasClient::BatchReadBlobs(
                                 std::vector<ArtifactBlob>* v,
                                 bazel_re::BatchReadBlobsResponse_Response const&
                                     r) {
-                                if (auto value =
-                                        back_map->GetReference(r.digest())) {
-                                    v->emplace_back(*value.value(),
-                                                    r.data(),
-                                                    /*is_exec=*/false);
+                                auto ref = back_map->GetReference(r.digest());
+                                if (not ref.has_value()) {
+                                    return;
                                 }
+                                auto blob = ArtifactBlob::FromMemory(
+                                    HashFunction{ref.value()->GetHashType()},
+                                    ref.value()->IsTree() ? ObjectType::Tree
+                                                          : ObjectType::File,
+                                    r.data());
+                                if (not blob.has_value()) {
+                                    return;
+                                }
+                                v->emplace_back(*std::move(blob));
                             });
                         if (batch_response.ok) {
                             std::move(batch_response.result.begin(),
@@ -377,15 +390,15 @@ auto BazelCasClient::UpdateSingleBlob(std::string const& instance_name,
     logger_.Emit(LogLevel::Trace, [&blob]() {
         std::ostringstream oss{};
         oss << "upload single blob" << std::endl;
-        oss << fmt::format(" - {}", blob.digest.hash()) << std::endl;
+        oss << fmt::format(" - {}", blob.GetDigest().hash()) << std::endl;
         return oss.str();
     });
 
     if (not stream_->Write(instance_name, blob)) {
         logger_.Emit(LogLevel::Error,
                      "Failed to write {}:{}",
-                     blob.digest.hash(),
-                     blob.digest.size());
+                     blob.GetDigest().hash(),
+                     blob.GetDigest().size());
         return false;
     }
     return true;
@@ -589,13 +602,20 @@ auto BazelCasClient::BatchUpdateBlobs(std::string const& instance_name,
 
     auto const max_content_size = GetMaxBatchTransferSize(instance_name);
 
-    auto request_creator = [&instance_name](ArtifactBlob const& blob) {
+    auto request_creator = [&instance_name](ArtifactBlob const& blob)
+        -> std::optional<bazel_re::BatchUpdateBlobsRequest> {
+        auto const content = blob.ReadContent();
+        if (content == nullptr) {
+            return std::nullopt;
+        }
+
         bazel_re::BatchUpdateBlobsRequest request;
         request.set_instance_name(instance_name);
 
         auto& r = *request.add_requests();
-        (*r.mutable_digest()) = ArtifactDigestFactory::ToBazel(blob.digest);
-        r.set_data(*blob.data);
+        (*r.mutable_digest()) =
+            ArtifactDigestFactory::ToBazel(blob.GetDigest());
+        r.set_data(*content);
         return request;
     };
 
@@ -618,7 +638,7 @@ auto BazelCasClient::BatchUpdateBlobs(std::string const& instance_name,
                 logger_.Emit(
                     LogLevel::Warning,
                     "BatchUpdateBlobs: Failed to prepare request for {}",
-                    it->digest.hash());
+                    it->GetDigest().hash());
                 ++it;
                 continue;
             }
@@ -676,7 +696,7 @@ auto BazelCasClient::BatchUpdateBlobs(std::string const& instance_name,
         std::ostringstream oss{};
         oss << "upload blobs" << std::endl;
         for (auto const& blob : blobs) {
-            oss << fmt::format(" - {}", blob.digest.hash()) << std::endl;
+            oss << fmt::format(" - {}", blob.GetDigest().hash()) << std::endl;
         }
         oss << "received blobs" << std::endl;
         for (auto const& digest : updated) {
@@ -696,7 +716,8 @@ auto BazelCasClient::BatchUpdateBlobs(std::string const& instance_name,
         std::unordered_set<ArtifactBlob> missing_blobs;
         missing_blobs.reserve(missing);
         for (auto const& blob : blobs) {
-            auto bazel_digest = ArtifactDigestFactory::ToBazel(blob.digest);
+            auto bazel_digest =
+                ArtifactDigestFactory::ToBazel(blob.GetDigest());
             if (not updated.contains(bazel_digest)) {
                 missing_blobs.emplace(blob);
             }

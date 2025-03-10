@@ -16,6 +16,7 @@
 import fcntl
 import hashlib
 import json
+import multiprocessing
 import os
 import shutil
 import stat
@@ -29,6 +30,7 @@ from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
 from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional, Set, TextIO, Tuple, Union, cast
 from enum import Enum
+from concurrent.futures import ThreadPoolExecutor
 
 # generic JSON type that avoids getter issues; proper use is being enforced by
 # return types of methods and typing vars holding return values of json getters
@@ -57,7 +59,7 @@ DEFAULT_INPUT_CONFIG_NAME: str = "repos.in.json"
 DEFAULT_JUSTMR_CONFIG_NAME: str = "repos.json"
 DEFAULT_CONFIG_DIRS: List[str] = [".", "./etc"]
 """Directories where to look for configuration file inside a root"""
-DEFAULT_JUST: str = "just"
+DEFAULT_JUST: str = "jst_backend"
 
 GIT_NOBODY_ENV: Dict[str, str] = {
     "GIT_AUTHOR_DATE": "1970-01-01T00:00Z",
@@ -68,12 +70,6 @@ GIT_NOBODY_ENV: Dict[str, str] = {
     "GIT_COMMITTER_EMAIL": "nobody@example.org",
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_SYSTEM": "/dev/null",
-}
-
-SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP: Dict[str, str] = {
-    "ignore": "ignore",
-    "resolve-partially": "tree-upwards",
-    "resolve-completely": "tree-all"
 }
 
 
@@ -89,6 +85,23 @@ SUPPORTED_BLOB_TYPES: List[ObjectType] = [
 ]
 
 SHA1_SIZE_BYTES: int = 20
+
+
+class LogLimit(Enum):
+    ERROR = 1
+    WARN = 2
+    INFO = 3
+
+
+LOGGER_MAP: Dict[LogLimit, Tuple[str, str]] = {
+    # Color is fmt::color::red
+    LogLimit.ERROR: (f"\033[38;2;255;0;0mERROR:\033[0m", 6 * " "),
+    # Color is fmt::color::orange
+    LogLimit.WARN: (f"\033[38;2;255;0;0mWARN:\033[0m", 5 * " "),
+    # Color is fmt::color::lime_green
+    LogLimit.INFO: (f"\033[38;2;50;205;50mINFO:\033[0m", 5 * " ")
+}
+"""Mapping from log limit to pair of colored prefix and continuation prefix."""
 
 ###
 # Global vars
@@ -114,30 +127,39 @@ def log(*args: str, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
 
+def formatted_log(log_limit: LogLimit, msg: str) -> None:
+    parts: List[str] = msg.rstrip('\n').split('\n')
+    new_msg: str = "%s %s" % (LOGGER_MAP[log_limit][0], parts[0])
+    for part in parts[1:]:
+        new_msg += "\n%s %s" % (LOGGER_MAP[log_limit][1], part)
+    log(new_msg)
+
+
 def fail(s: str, exit_code: int = 1) -> NoReturn:
     """Log as error and exit. Matches the color scheme of 'just-mr'."""
-    # Color is fmt::color::red
-    log(f"\033[38;2;255;0;0mERROR:\033[0m {s}")
+    formatted_log(LogLimit.ERROR, s)
     sys.exit(exit_code)
 
 
 def warn(s: str) -> None:
     """Log as warning. Matches the color scheme of 'just-mr'."""
-    # Color is fmt::color::orange
-    log(f"\033[38;2;255;0;0mWARN:\033[0m {s}")
+    formatted_log(LogLimit.WARN, s)
 
 
 def report(s: Optional[str]) -> None:
     """Log as information message. Matches the color scheme of 'just-mr'."""
-    # Color is fmt::color::lime_green
-    log("" if s is None else f"\033[38;2;50;205;50mINFO:\033[0m {s}")
+    if s is None:
+        log("")
+    else:
+        formatted_log(LogLimit.INFO, s)
 
 
 def run_cmd(
     cmd: List[str],
     *,
     env: Optional[Any] = None,
-    stdout: Optional[Any] = subprocess.DEVNULL,
+    stdout: Optional[Any] = subprocess.DEVNULL,  # ignore output by default
+    stderr: Optional[Any] = subprocess.PIPE,  # capture errors by default
     stdin: Optional[Any] = None,
     input: Optional[bytes] = None,
     cwd: str,
@@ -153,14 +175,16 @@ def run_cmd(
                                 cwd=cwd,
                                 env=env,
                                 stdout=stdout,
+                                stderr=stderr,
                                 stdin=stdin,
                                 input=input)
         if result.returncode == 0:
             return result.stdout, result.returncode  # return successful result
     if fail_context is not None:
-        fail("%sCommand %s in %s failed after %d attempt%s" %
-             (fail_context, cmd, cwd, attempts, "" if attempts == 1 else "s"))
-    return result.stdout, result.returncode  # return result of last failure
+        fail("%sCommand %s in %s failed after %d attempt%s with:\n%s" %
+             (fail_context, cmd, cwd, attempts, "" if attempts == 1 else "s",
+              result.stderr))
+    return result.stderr, result.returncode  # return result of last failure
 
 
 def try_rmtree(tree: str) -> None:
@@ -183,7 +207,8 @@ def lock_acquire(fpath: str, is_shared: bool = False) -> TextIO:
             fail("Lock path %s is a directory!" % (fpath, ))
     else:
         os.makedirs(Path(fpath).parent, exist_ok=True)
-    lockfile = open(fpath, "a+")  # allow shared read and create if on first try
+    lockfile = open(fpath,
+                    "a+")  # allow shared read and create if on first try
     fcntl.flock(lockfile.fileno(),
                 fcntl.LOCK_SH if is_shared else fcntl.LOCK_EX)
     return lockfile
@@ -254,7 +279,8 @@ def get_repository_config_file(filename: str,
 def gc_repo_lock_acquire(is_shared: bool = False) -> TextIO:
     """Acquire garbage collector file lock for the Git cache."""
     # use same naming scheme as in Just
-    return lock_acquire(os.path.join(g_ROOT, "repositories/gc.lock"), is_shared)
+    return lock_acquire(os.path.join(g_ROOT, "repositories/gc.lock"),
+                        is_shared)
 
 
 def git_root(*, upstream: Optional[str]) -> str:
@@ -269,15 +295,21 @@ def git_keep(commit: str, *, upstream: Optional[str],
              fail_context: str) -> None:
     """Keep commit by tagging it. It is a user error if the referenced Git
     repository does not exist."""
-    git_env = {**os.environ, **GIT_NOBODY_ENV}
+    root: str = git_root(upstream=upstream)
+    # acquire exclusive lock
+    lockfile = lock_acquire(os.path.join(Path(root).parent, "init_open.lock"))
+    # tag commit
+    git_env = {**os.environ.copy(), **GIT_NOBODY_ENV}
     run_cmd(g_LAUNCHER + [
         g_GIT, "tag", "-f", "-m", "Keep referenced tree alive",
         "keep-%s" % (commit, ), commit
     ],
-            cwd=git_root(upstream=upstream),
+            cwd=root,
             env=git_env,
             attempts=3,
             fail_context=fail_context)
+    # release exclusive lock
+    lock_release(lockfile)
 
 
 def ensure_git_init(*,
@@ -336,7 +368,10 @@ def git_fetch(*, from_repo: Optional[str], to_repo: Optional[str],
         path_url = git_url_is_path(from_repo)
         if path_url is not None:
             from_repo = os.path.abspath(path_url)
-    return run_cmd(g_LAUNCHER + [g_GIT, "fetch", from_repo, fetchable],
+    return run_cmd(g_LAUNCHER + [
+        g_GIT, "fetch", "--no-auto-gc", "--no-write-fetch-head", from_repo,
+        fetchable
+    ],
                    cwd=git_root(upstream=to_repo),
                    fail_context=fail_context)[1] == 0
 
@@ -480,15 +515,16 @@ def import_to_git(target: str, *, repo_type: str, content_id: str,
              "Writing tree to temporary repository failed with:\n%r" % (ex, ))
 
     # Commit the tree
-    git_env = {**os.environ, **GIT_NOBODY_ENV}
-    commit: str = run_cmd(g_LAUNCHER + [
-        g_GIT, "commit-tree", tree_id, "-m",
-        "Content of %s %r" % (repo_type, content_id)
-    ],
-                          stdout=subprocess.PIPE,
-                          cwd=repo_tmp_dir,
-                          env=git_env,
-                          fail_context=fail_context)[0].decode('utf-8').strip()
+    git_env = {**os.environ.copy(), **GIT_NOBODY_ENV}
+    commit: str = run_cmd(
+        g_LAUNCHER + [
+            g_GIT, "commit-tree", tree_id, "-m",
+            "Content of %s %r" % (repo_type, content_id)
+        ],
+        stdout=subprocess.PIPE,
+        cwd=repo_tmp_dir,
+        env=git_env,
+        fail_context=fail_context)[0].decode('utf-8').strip()
 
     # Update the HEAD to make the tree fetchable
     run_cmd(g_LAUNCHER + [g_GIT, "update-ref", "HEAD", commit],
@@ -749,8 +785,10 @@ def get_repo_to_import(config: Json) -> str:
     fail("Config does not contain any repositories; unsure what to import")
 
 
-def get_base_repo_if_computed(repo: Json) -> Optional[str]:
+def get_base_repo_if_computed(repo: Any, repos_config: Json) -> Optional[str]:
     """If repository is computed, return the base repository name."""
+    while isinstance(repo, str):
+        repo = repos_config[repo]["repository"]
     if repo.get("type") in ["computed", "tree structure"]:
         return cast(str, repo.get("repo"))
     return None
@@ -787,7 +825,7 @@ def repos_to_import(repos_config: Json, entry: str,
                 visit(repo)
         else:
             # if computed, visit the referred repository
-            repo_base = get_base_repo_if_computed(cast(Json, repo))
+            repo_base = get_base_repo_if_computed(repo, repos_config)
             if repo_base is not None:
                 extra_imports.discard(repo_base)
                 visit(repo_base)
@@ -800,8 +838,8 @@ def repos_to_import(repos_config: Json, entry: str,
                 if extra not in known and extra not in to_import:
                     extra_imports.add(extra)
                 extra_repo_base = get_base_repo_if_computed(
-                    cast(Json,
-                         repos_config.get(extra, {}).get("repository", {})))
+                    repos_config.get(extra, {}).get("repository", {}),
+                    repos_config)
                 if extra_repo_base is not None:
                     extra_imports.discard(extra_repo_base)
                     visit(extra_repo_base)
@@ -839,8 +877,9 @@ def name_imports(to_import: List[str],
     return assign
 
 
-def rewrite_file_repo(repo: Json, remote_type: str, remote_stub: Dict[str, Any],
-                      *, fail_context: str) -> Json:
+def rewrite_file_repo(repo: Json, remote_type: str, remote_stub: Dict[str,
+                                                                      Any], *,
+                      fail_context: str) -> Json:
     """Rewrite \"file\"-type descriptions based on remote type."""
     if remote_type == "git":
         # for imports from Git, file repos become type 'git' with subdir; the
@@ -953,9 +992,9 @@ def update_pragmas(repo: Json, import_pragma: Json,
 
 
 def rewrite_repo(repo_spec: Json, *, remote_type: str,
-                 remote_stub: Dict[str, Any], assign: Json, import_pragma: Json,
-                 pragma_special: Optional[str], as_layer: bool,
-                 fail_context: str) -> Json:
+                 remote_stub: Dict[str, Any], assign: Json,
+                 import_pragma: Json, pragma_special: Optional[str],
+                 as_layer: bool, fail_context: str) -> Json:
     """Rewrite description of imported repositories."""
     new_spec: Json = {}
     repo = repo_spec.get("repository", {})
@@ -1091,97 +1130,32 @@ def handle_import(remote_type: str, remote_stub: Dict[str, Any],
 
 
 ###
+# Checkout utils
+##
+
+
+class CheckoutInfo:
+    """Stores the result of fetching and checking out source repositories."""
+    def __init__(self, srcdir: str, remote_stub: Json, to_clean_up: str):
+        self.srcdir = srcdir
+        """Sources directory"""
+        self.remote_stub = remote_stub
+        """Stub of remote configuration."""
+        self.to_clean_up = to_clean_up
+        """Temporary directory to clean up after handling imports."""
+
+
+###
 # Import from Git
 ##
 
 
-def git_checkout(url: str, branch: str, *, commit: Optional[str],
-                 mirrors: List[str], inherit_env: List[str],
-                 fail_context: str) -> Tuple[str, Dict[str, Any], str]:
+def git_checkout(imports_entry: Json) -> Optional[CheckoutInfo]:
     """Fetch a given remote Git repository and checkout a specified branch.
     Return the checkout location, the repository description stub to use for
     rewriting 'file'-type dependencies, and the temp dir to later clean up."""
-    workdir: str = create_tmp_dir(type="git-checkout")
-    srcdir: str = os.path.join(workdir, "src")
-
-    fail_context += "While checking out branch %r of %r:\n" % (branch, url)
-    if commit is None:
-        # If no commit given, do shallow clone and get HEAD commit from
-        # definitive source location
-        fetch_url = git_url_is_path(url)
-        if fetch_url is None:
-            fetch_url = url
-        else:
-            fetch_url = os.path.abspath(fetch_url)
-        run_cmd(
-            g_LAUNCHER +
-            [g_GIT, "clone", "-b", branch, "--depth", "1", fetch_url, "src"],
-            cwd=workdir,
-            fail_context=fail_context)
-        commit = run_cmd(g_LAUNCHER + [g_GIT, "log", "-n", "1", "--pretty=%H"],
-                         cwd=srcdir,
-                         stdout=subprocess.PIPE,
-                         fail_context=fail_context)[0].decode('utf-8').strip()
-        report("Importing remote Git commit %s" % (commit, ))
-        # Cache this commit by fetching it to Git cache and tagging it
-        ensure_git_init(upstream=None, fail_context=fail_context)
-        git_fetch(from_repo=srcdir,
-                  to_repo=None,
-                  fetchable=commit,
-                  fail_context=fail_context)
-        git_keep(commit, upstream=None, fail_context=fail_context)
-    else:
-        if not git_commit_present(commit, upstream=None):
-            # If commit not in Git cache repository, fetch witnessing branch
-            # from remote into the Git cache repository. Try mirrors first, as
-            # they are closer
-            ensure_git_init(upstream=None, fail_context=fail_context)
-            fetched: bool = False
-            for source in mirrors + [url]:
-                if git_fetch(from_repo=source,
-                             to_repo=None,
-                             fetchable=branch,
-                             fail_context=None) and git_commit_present(
-                                 commit, upstream=None):
-                    fetched = True
-                    break
-            if not fetched:
-                fail(fail_context +
-                     "Failed to fetch commit %s.\nTried locations:\n%s" % (
-                         commit,
-                         "\n".join(["\t%s" % (x, ) for x in mirrors + [url]]),
-                     ))
-            git_keep(commit, upstream=None, fail_context=fail_context)
-        # Create checkout from commit in Git cache repository
-        ensure_git_init(upstream=srcdir,
-                        init_bare=False,
-                        fail_context=fail_context)
-        git_fetch(from_repo=None,
-                  to_repo=srcdir,
-                  fetchable=commit,
-                  fail_context=fail_context)
-        run_cmd(g_LAUNCHER + [g_GIT, "checkout", commit],
-                cwd=srcdir,
-                fail_context=fail_context)
-
-    # Prepare the description stub used to rewrite "file"-type dependencies
-    repo_stub: Dict[str, Any] = {
-        "type": "git",
-        "repository": url,
-        "branch": branch,
-        "commit": commit,
-    }
-    if mirrors:
-        repo_stub = dict(repo_stub, **{"mirrors": mirrors})
-    if inherit_env:
-        repo_stub = dict(repo_stub, **{"inherit env": inherit_env})
-    return srcdir, repo_stub, workdir
-
-
-def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
-    """Handles imports from Git repositories."""
     # Set granular logging message
-    fail_context: str = "While importing from source \"git\":\n"
+    fail_context: str = "While checking out source \"git\":\n"
 
     # Get the repositories list
     repos: List[Any] = imports_entry.get("repos", [])
@@ -1191,10 +1165,10 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
              (json.dumps(repos, indent=2), ))
 
     # Check if anything is to be done
-    if not repos:  # empty
-        return core_repos
+    if not repos:
+        return None
 
-    # Parse source config fields
+    # Parse source fetch fields
     url: str = imports_entry.get("url", None)
     if not isinstance(url, str):
         fail(fail_context +
@@ -1225,6 +1199,121 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"inherit env\" to be a list, but found:\n%r" %
              (json.dumps(inherit_env, indent=2), ))
 
+    # Fetch the source repository
+    workdir: str = create_tmp_dir(type="git-checkout")
+    srcdir: str = os.path.join(workdir, "src")
+
+    if commit is None:
+        # Get top commit of remote branch from definitive source location
+        fetch_url = git_url_is_path(url)
+        if fetch_url is None:
+            fetch_url = url
+        else:
+            fetch_url = os.path.abspath(fetch_url)
+        commit = run_cmd(
+            g_LAUNCHER + [g_GIT, "ls-remote", fetch_url, branch],
+            cwd=workdir,
+            stdout=subprocess.PIPE,
+            fail_context=fail_context)[0].decode('utf-8').split('\t')[0]
+        if not git_commit_present(commit, upstream=None):
+            # If commit not in Git cache repository, do shallow clone and get
+            # HEAD commit from definitive source location
+            report("\tFetching top commit from remote Git [%s]" % (url, ))
+            run_cmd(g_LAUNCHER + [
+                g_GIT, "clone", "-b", branch, "--depth", "1", fetch_url, "src"
+            ],
+                    cwd=workdir,
+                    fail_context=fail_context)
+            # In the very small chance that the remote top commit changed in the
+            # meanwhile, only trust what has been actually cloned
+            commit = run_cmd(
+                g_LAUNCHER + [g_GIT, "log", "-n", "1", "--pretty=%H"],
+                cwd=srcdir,
+                stdout=subprocess.PIPE,
+                fail_context=fail_context)[0].decode('utf-8').strip()
+            # Cache this commit by fetching it to Git cache and tagging it
+            ensure_git_init(upstream=None, fail_context=fail_context)
+            git_fetch(from_repo=srcdir,
+                      to_repo=None,
+                      fetchable=commit,
+                      fail_context=fail_context)
+            git_keep(commit, upstream=None, fail_context=fail_context)
+        else:
+            report("\tCache hit for commit %s" % (commit, ))
+            # Create checkout from commit in Git cache repository
+            ensure_git_init(upstream=srcdir,
+                            init_bare=False,
+                            fail_context=fail_context)
+            git_fetch(from_repo=None,
+                      to_repo=srcdir,
+                      fetchable=commit,
+                      fail_context=fail_context)
+            run_cmd(g_LAUNCHER + [g_GIT, "checkout", commit],
+                    cwd=srcdir,
+                    fail_context=fail_context)
+    else:
+        if not git_commit_present(commit, upstream=None):
+            # If commit not in Git cache repository, fetch witnessing branch
+            # from remote into the Git cache repository. Try mirrors first, as
+            # they are closer
+            ensure_git_init(upstream=None, fail_context=fail_context)
+            report("\tFetching commit %s from remote Git [%s]" % (commit, url))
+            fetched: bool = False
+            for source in mirrors + [url]:
+                if git_fetch(from_repo=source,
+                             to_repo=None,
+                             fetchable=branch,
+                             fail_context=None) and git_commit_present(
+                                 commit, upstream=None):
+                    fetched = True
+                    break
+            if not fetched:
+                fail(fail_context +
+                     "Failed to fetch commit %s.\nTried locations:\n%s" % (
+                         commit,
+                         "\n".join(["\t%s" % (x, ) for x in mirrors + [url]]),
+                     ))
+            git_keep(commit, upstream=None, fail_context=fail_context)
+        else:
+            report("\tCache hit for commit %s" % (commit, ))
+        # Create checkout from commit in Git cache repository
+        ensure_git_init(upstream=srcdir,
+                        init_bare=False,
+                        fail_context=fail_context)
+        git_fetch(from_repo=None,
+                  to_repo=srcdir,
+                  fetchable=commit,
+                  fail_context=fail_context)
+        run_cmd(g_LAUNCHER + [g_GIT, "checkout", commit],
+                cwd=srcdir,
+                fail_context=fail_context)
+
+    # Prepare the description stub used to rewrite "file"-type dependencies
+    repo_stub: Dict[str, Any] = {
+        "type": "git",
+        "repository": url,
+        "branch": branch,
+        "commit": commit,
+    }
+    if mirrors:
+        repo_stub = dict(repo_stub, **{"mirrors": mirrors})
+    if inherit_env:
+        repo_stub = dict(repo_stub, **{"inherit env": inherit_env})
+
+    return CheckoutInfo(srcdir, repo_stub, workdir)
+
+
+def import_from_git(core_repos: Json, imports_entry: Json,
+                    checkout_info: CheckoutInfo) -> Json:
+    """Handles imports from Git repositories. Requires the result of a call to
+    git_checkout."""
+    # Set granular logging message
+    fail_context: str = "While importing from source \"git\":\n"
+
+    # Get needed known fields (validated during checkout)
+    repos: List[Any] = imports_entry["repos"]
+
+    # Parse remaining fields
     as_plain: Optional[bool] = imports_entry.get("as plain", False)
     if as_plain is not None and not isinstance(as_plain, bool):
         fail(fail_context +
@@ -1248,20 +1337,13 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
         # only enabled if as_plain is true
         pragma_special = None
 
-    # Fetch the source Git repository
-    srcdir, remote_stub, to_clean_up = git_checkout(url,
-                                                    branch,
-                                                    commit=commit,
-                                                    mirrors=mirrors,
-                                                    inherit_env=inherit_env,
-                                                    fail_context=fail_context)
-
     # Read in the foreign config file
     if foreign_config_file:
-        foreign_config_file = os.path.join(srcdir, foreign_config_file)
+        foreign_config_file = os.path.join(checkout_info.srcdir,
+                                           foreign_config_file)
     else:
         foreign_config_file = get_repository_config_file(
-            DEFAULT_JUSTMR_CONFIG_NAME, srcdir)
+            DEFAULT_JUSTMR_CONFIG_NAME, checkout_info.srcdir)
     foreign_config: Json = {}
     if as_plain:
         foreign_config = {"main": "", "repositories": DEFAULT_REPO}
@@ -1290,7 +1372,7 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
         repo_entry = cast(Json, repo_entry)
 
         new_repos = handle_import("git",
-                                  remote_stub,
+                                  checkout_info.remote_stub,
                                   repo_entry,
                                   new_repos,
                                   foreign_config,
@@ -1298,7 +1380,7 @@ def import_from_git(core_repos: Json, imports_entry: Json) -> Json:
                                   fail_context=fail_context)
 
     # Clean up local fetch
-    try_rmtree(to_clean_up)
+    try_rmtree(checkout_info.to_clean_up)
     return new_repos
 
 
@@ -1422,9 +1504,12 @@ def archive_fetch(locations: List[str],
             data = try_read_object_from_repo(content, "blob", upstream=None)
             if data is not None:
                 _, content = add_to_cas(data)
+                report("\tCache hit for archive %s" % (content, ))
                 return content
         # Fetch from remote
         fetched: bool = False
+        report("\tFetching archive from remote locations [%s]" %
+               (locations[-1]))
         for source in locations:
             data, err_code = run_cmd(g_LAUNCHER + ["wget", "-O", "-", source],
                                      stdout=subprocess.PIPE,
@@ -1515,75 +1600,32 @@ def unpack_archive(content_id: str, *, archive_type: str, unpack_to: str,
     # unpack based on archive type
     if archive_type == "zip":
         # try as zip and 7z archives
-        if run_cmd(g_LAUNCHER + ["unzip", "-d", ".",
-                                 cas_path(content_id)],
-                   cwd=unpack_to,
-                   fail_context=None)[1] != 0 and run_cmd(
-                       g_LAUNCHER + ["7z", "x", cas_path(content_id)],
-                       cwd=unpack_to,
-                       fail_context=None)[1] != 0:
+        if run_cmd(
+                g_LAUNCHER +
+            ["unzip", "-d", ".", cas_path(content_id)],
+                cwd=unpack_to,
+                fail_context=None)[1] != 0 and run_cmd(
+                    g_LAUNCHER + ["7z", "x", cas_path(content_id)],
+                    cwd=unpack_to,
+                    fail_context=None)[1] != 0:
             fail(fail_context + "Failed to extract zip-like archive %s" %
                  (cas_path(content_id), ))
     else:
         # try as tarball
-        if run_cmd(g_LAUNCHER + ["tar", "xf", cas_path(content_id)],
-                   cwd=unpack_to,
-                   fail_context=None)[1] != 0:
+        if run_cmd(
+                g_LAUNCHER + ["tar", "xf", cas_path(content_id)],
+                cwd=unpack_to,
+                fail_context=None)[1] != 0:
             fail(fail_context + "Failed to extract tarball %s" %
                  (cas_path(content_id), ))
     return
 
 
-def archive_checkout(fetch: str, *, archive_type: str, content: Optional[str],
-                     mirrors: List[str], sha256: Optional[str],
-                     sha512: Optional[str], subdir: Optional[str],
-                     fail_context: str) -> Tuple[str, Dict[str, Any], str]:
+def archive_checkout(imports_entry: Json) -> Optional[CheckoutInfo]:
     """Fetch a given remote archive to local CAS, unpack it, check content,
     and return the checkout location."""
-    fail_context += "While checking out archive %r:\n" % (fetch)
-    if content is None:
-        # If content is not known, get it from the definitive source location
-        content = archive_fetch([fetch],
-                                content=None,
-                                sha256=sha256,
-                                sha512=sha512,
-                                fail_context=fail_context)
-    else:
-        # If content known, try the mirrors first, as they are closer
-        archive_fetch(mirrors + [fetch],
-                      content=content,
-                      sha256=sha256,
-                      sha512=sha512,
-                      fail_context=fail_context)
-
-    workdir: str = create_tmp_dir(type="archive-checkout")
-    unpack_archive(content,
-                   archive_type=archive_type,
-                   unpack_to=workdir,
-                   fail_context=fail_context)
-    srcdir = (workdir if subdir is None else os.path.join(workdir, subdir))
-
-    # Prepare the description stub used to rewrite "file"-type dependencies
-    repo_stub: Dict[str, Any] = {
-        "type": "zip" if archive_type == "zip" else "archive",
-        "fetch": fetch,
-        "content": content,
-    }
-    if mirrors:
-        repo_stub = dict(repo_stub, **{"mirrors": mirrors})
-    if sha256 is not None:
-        repo_stub = dict(repo_stub, **{"sha256": sha256})
-    if sha512 is not None:
-        repo_stub = dict(repo_stub, **{"sha512": sha512})
-    if subdir is not None:
-        repo_stub = dict(repo_stub, **{"subdir": subdir})
-    return srcdir, repo_stub, workdir
-
-
-def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
-    """Handles imports from archive-type repositories."""
     # Set granular logging message
-    fail_context: str = "While importing from source \"archive\":\n"
+    fail_context: str = "While checking out source \"archive\":\n"
 
     # Get the repositories list
     repos: List[Any] = imports_entry.get("repos", [])
@@ -1593,10 +1635,10 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
              (json.dumps(repos, indent=2), ))
 
     # Check if anything is to be done
-    if not repos:  # empty
-        return core_repos
+    if not repos:
+        return None
 
-    # Parse source config fields
+    # Parse source fetch fields
     fetch: str = imports_entry.get("fetch", None)
     if not isinstance(fetch, str):
         fail(fail_context +
@@ -1657,6 +1699,61 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
         if subdir == ".":
             subdir = None  # treat as if missing
 
+    # Fetch the source repository
+    if content is None:
+        # If content is not known, get it from the definitive source location
+        content = archive_fetch([fetch],
+                                content=None,
+                                sha256=sha256,
+                                sha512=sha512,
+                                fail_context=fail_context)
+    else:
+        # If content known, try the mirrors first, as they are closer
+        archive_fetch(mirrors + [fetch],
+                      content=content,
+                      sha256=sha256,
+                      sha512=sha512,
+                      fail_context=fail_context)
+
+    workdir: str = create_tmp_dir(type="archive-checkout")
+    unpack_archive(content,
+                   archive_type=archive_type,
+                   unpack_to=workdir,
+                   fail_context=fail_context)
+    srcdir = (workdir if subdir is None else os.path.join(workdir, subdir))
+
+    # Prepare the description stub used to rewrite "file"-type dependencies
+    repo_stub: Dict[str, Any] = {
+        "type": "zip" if archive_type == "zip" else "archive",
+        "fetch": fetch,
+        "content": content,
+    }
+    if mirrors:
+        repo_stub = dict(repo_stub, **{"mirrors": mirrors})
+    if sha256 is not None:
+        repo_stub = dict(repo_stub, **{"sha256": sha256})
+    if sha512 is not None:
+        repo_stub = dict(repo_stub, **{"sha512": sha512})
+    if subdir is not None:
+        repo_stub = dict(repo_stub, **{"subdir": subdir})
+
+    return CheckoutInfo(srcdir, repo_stub, workdir)
+
+
+def import_from_archive(core_repos: Json, imports_entry: Json,
+                        checkout_info: CheckoutInfo) -> Json:
+    """Handles imports from archive-type repositories. Requires the result of a
+    call to archive_checkout."""
+    # Set granular logging message
+    fail_context: str = "While importing from source \"archive\":\n"
+
+    # Get needed known fields (validated during checkout)
+    repos: List[Any] = imports_entry["repos"]
+    archive_type: str = imports_entry.get("type", "tar")
+    if archive_type != "zip":
+        archive_type = "archive"  # type name as in Just-MR
+
+    # Parse remaining fields
     as_plain: Optional[bool] = imports_entry.get("as plain", False)
     if as_plain is not None and not isinstance(as_plain, bool):
         fail(fail_context +
@@ -1680,23 +1777,13 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
         # only enabled if as_plain is true
         pragma_special = None
 
-    # Fetch archive to local CAS and unpack
-    srcdir, remote_stub, to_clean_up = archive_checkout(
-        fetch,
-        archive_type=archive_type,
-        content=content,
-        mirrors=mirrors,
-        sha256=sha256,
-        sha512=sha512,
-        subdir=subdir,
-        fail_context=fail_context)
-
     # Read in the foreign config file
     if foreign_config_file:
-        foreign_config_file = os.path.join(srcdir, foreign_config_file)
+        foreign_config_file = os.path.join(checkout_info.srcdir,
+                                           foreign_config_file)
     else:
         foreign_config_file = get_repository_config_file(
-            DEFAULT_JUSTMR_CONFIG_NAME, srcdir)
+            DEFAULT_JUSTMR_CONFIG_NAME, checkout_info.srcdir)
     foreign_config: Json = {}
     if as_plain:
         foreign_config = {"main": "", "repositories": DEFAULT_REPO}
@@ -1725,7 +1812,7 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
         repo_entry = cast(Json, repo_entry)
 
         new_repos = handle_import(archive_type,
-                                  remote_stub,
+                                  checkout_info.remote_stub,
                                   repo_entry,
                                   new_repos,
                                   foreign_config,
@@ -1733,7 +1820,7 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
                                   fail_context=fail_context)
 
     # Clean up local fetch
-    try_rmtree(to_clean_up)
+    try_rmtree(checkout_info.to_clean_up)
     return new_repos
 
 
@@ -1742,76 +1829,14 @@ def import_from_archive(core_repos: Json, imports_entry: Json) -> Json:
 ##
 
 
-def git_tree_checkout(command: List[str], do_generate: bool, *,
-                      command_env: Json, subdir: Optional[str],
-                      inherit_env: List[str],
-                      fail_context: str) -> Tuple[str, Dict[str, Any], str]:
+def git_tree_checkout(imports_entry: Json) -> Optional[CheckoutInfo]:
     """Run a given command or the command generated by the given command and
     import the obtained tree to Git cache. Return the checkout location, the
     repository description stub to use for rewriting 'file'-type dependencies,
     containing any additional needed data, and the temp dir to later clean up.
     """
-    fail_context += "While checking out Git-tree:\n"
-
-    # Set the command environment
-    curr_env = os.environ
-    new_envs = {}
-    for envar in inherit_env:
-        if envar in curr_env:
-            new_envs[envar] = curr_env[envar]
-    cmd_env = dict(command_env, **new_envs)
-
-    # Generate the command to be run, if needed
-    if do_generate:
-        tmpdir: str = create_tmp_dir(
-            type="cmd-gen")  # to avoid polluting the current dir
-        data, _ = run_cmd(g_LAUNCHER + command,
-                          cwd=tmpdir,
-                          env=cmd_env,
-                          stdout=subprocess.PIPE,
-                          fail_context=fail_context)
-        command = json.loads(data)
-        try_rmtree(tmpdir)
-
-    # Generate the sources tree content; here we use the environment provided
-    workdir: str = create_tmp_dir(type="git-tree-checkout")
-    run_cmd(g_LAUNCHER + command,
-            cwd=workdir,
-            env=cmd_env,
-            fail_context=fail_context)
-
-    # Import root tree to Git cache; as we do not have the tree hash, identify
-    # commits by the hash of the generating command instead
-    tree_id = import_to_git(workdir,
-                            repo_type="git tree",
-                            content_id=git_hash(
-                                json.dumps(command).encode('utf-8'))[0],
-                            fail_context=fail_context)
-
-    # Point the sources path for imports to the right subdirectory
-    srcdir = (workdir if subdir is None else os.path.join(workdir, subdir))
-
-    # Prepare the description stub used to rewrite "file"-type dependencies
-    repo_stub: Dict[str, Any] = {
-        "type": "git tree",
-        "cmd": command,
-        "env": command_env,  # original env
-        "id": tree_id,  # the root tree id
-    }
-    if inherit_env:
-        repo_stub = dict(repo_stub, **{"inherit env": inherit_env})
-    # The subdir should not be part of the final description, but is needed for
-    # computing the subtree identifier
-    if subdir is not None:
-        repo_stub = dict(repo_stub, **{"subdir": subdir})
-    return srcdir, repo_stub, workdir
-
-
-def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
-    """Handles imports from general Git trees obtained by running a command
-    (explicitly given or generated by a given command)."""
     # Set granular logging message
-    fail_context: str = "While importing from source \"git tree\":\n"
+    fail_context: str = "While checking out source \"git tree\":\n"
 
     # Get the repositories list
     repos: List[Any] = imports_entry.get("repos", [])
@@ -1821,8 +1846,8 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
              (json.dumps(repos, indent=2), ))
 
     # Check if anything is to be done
-    if not repos:  # empty
-        return core_repos
+    if not repos:
+        return None
 
     # Parse source config fields
     command: Optional[List[str]] = imports_entry.get("cmd", None)
@@ -1866,6 +1891,80 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
              "Expected field \"inherit env\" to be a list, but found:\n%r" %
              (json.dumps(inherit_env, indent=2), ))
 
+    # Set the command environment
+    curr_env = os.environ.copy()
+    new_envs = {}
+    for envar in inherit_env:
+        if envar in curr_env:
+            new_envs[envar] = curr_env[envar]
+    command_env = dict(command_env, **new_envs)
+
+    # Generate the command to be run, if needed
+    report("\tGenerating Git-tree content")
+    if command_gen is not None:
+        tmpdir: str = create_tmp_dir(
+            type="cmd-gen")  # to avoid polluting the current dir
+        data, _ = run_cmd(g_LAUNCHER + command_gen,
+                          cwd=tmpdir,
+                          env=command_env,
+                          stdout=subprocess.PIPE,
+                          fail_context=fail_context)
+        tmp_cmd = json.loads(data)
+        if not isinstance(tmp_cmd, list):
+            fail(
+                fail_context +
+                "Generative command should have produced a list, but found:\n%r"
+                % (data, ))
+        command = tmp_cmd
+        try_rmtree(tmpdir)
+
+    # Generate the sources tree content; here we use the environment provided
+    command = cast(List[str], command)
+    workdir: str = create_tmp_dir(type="git-tree-checkout")
+    run_cmd(g_LAUNCHER + command,
+            cwd=workdir,
+            env=command_env,
+            fail_context=fail_context)
+
+    # Import root tree to Git cache; as we do not have the tree hash, identify
+    # commits by the hash of the generating command instead
+    tree_id = import_to_git(workdir,
+                            repo_type="git tree",
+                            content_id=git_hash(
+                                json.dumps(command).encode('utf-8'))[0],
+                            fail_context=fail_context)
+
+    # Point the sources path for imports to the right subdirectory
+    srcdir = (workdir if subdir is None else os.path.join(workdir, subdir))
+
+    # Prepare the description stub used to rewrite "file"-type dependencies
+    repo_stub: Dict[str, Any] = {
+        "type": "git tree",
+        "cmd": command,
+        "env": command_env,  # original env
+        "id": tree_id,  # the root tree id
+    }
+    if inherit_env:
+        repo_stub = dict(repo_stub, **{"inherit env": inherit_env})
+    # The subdir should not be part of the final description, but is needed for
+    # computing the subtree identifier
+    if subdir is not None:
+        repo_stub = dict(repo_stub, **{"subdir": subdir})
+
+    return CheckoutInfo(srcdir, repo_stub, workdir)
+
+
+def import_from_git_tree(core_repos: Json, imports_entry: Json,
+                         checkout_info: CheckoutInfo) -> Json:
+    """Handles imports from general Git trees obtained by running a command
+    (explicitly given or generated by a given command)."""
+    # Set granular logging message
+    fail_context: str = "While importing from source \"git tree\":\n"
+
+    # Get needed known fields (validated during checkout)
+    repos: List[Any] = imports_entry["repos"]
+
+    # Parse remaining fields
     as_plain: Optional[bool] = imports_entry.get("as plain", False)
     if as_plain is not None and not isinstance(as_plain, bool):
         fail(fail_context +
@@ -1889,21 +1988,13 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
         # only enabled if as_plain is true
         pragma_special = None
 
-    # Fetch the Git tree
-    srcdir, remote_stub, to_clean_up = git_tree_checkout(
-        command=cast(List[str], command_gen if command is None else command),
-        do_generate=command is None,
-        command_env=command_env,
-        subdir=subdir,
-        inherit_env=inherit_env,
-        fail_context=fail_context)
-
     # Read in the foreign config file
     if foreign_config_file:
-        foreign_config_file = os.path.join(srcdir, foreign_config_file)
+        foreign_config_file = os.path.join(checkout_info.srcdir,
+                                           foreign_config_file)
     else:
         foreign_config_file = get_repository_config_file(
-            DEFAULT_JUSTMR_CONFIG_NAME, srcdir)
+            DEFAULT_JUSTMR_CONFIG_NAME, checkout_info.srcdir)
     foreign_config: Json = {}
     if as_plain:
         foreign_config = {"main": "", "repositories": DEFAULT_REPO}
@@ -1932,7 +2023,7 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
         repo_entry = cast(Json, repo_entry)
 
         new_repos = handle_import("git tree",
-                                  remote_stub,
+                                  checkout_info.remote_stub,
                                   repo_entry,
                                   new_repos,
                                   foreign_config,
@@ -1940,7 +2031,7 @@ def import_from_git_tree(core_repos: Json, imports_entry: Json) -> Json:
                                   fail_context=fail_context)
 
     # Clean up local fetch
-    try_rmtree(to_clean_up)
+    try_rmtree(checkout_info.to_clean_up)
     return new_repos
 
 
@@ -2014,10 +2105,9 @@ def import_generic(core_config: Json, imports_entry: Json) -> Json:
     main: str = parsed_output.get("main", None)
     if main is not None:
         if not isinstance(main, str):
-            fail(
-                fail_context +
-                "Output configuration has malformed value %s for key \"main\"" %
-                (main, ))
+            fail(fail_context +
+                 "Output configuration has malformed value %s for key \"main\""
+                 % (main, ))
         new_config["main"] = main
 
     return new_config
@@ -2051,10 +2141,9 @@ def rewrite_cloned_repo(repos: Json, *, clone_to: str, target_repo: str,
     # Keep relevant pragmas from the workspace root repository
     pragma: Json = {}
     existing: Json = repos[ws_root_repo]["repository"].get("pragma", {})
-    if ws_root_desc["repository"]["type"] not in ["archive", "zip"]:
-        special = existing.get("special", None)
-        if special:
-            pragma["special"] = special
+    special = existing.get("special", None)
+    if special:
+        pragma["special"] = special
     to_git = existing.get("to_git", False)
     if to_git:
         pragma["to_git"] = True
@@ -2086,7 +2175,8 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
     clone_to = os.path.abspath(clone_to)
     if os.path.exists(clone_to):
         if not os.path.isdir(clone_to):
-            fail(fail_context + "Clone path %r exists and is not a directory!" %
+            fail(fail_context +
+                 "Clone path %r exists and is not a directory!" %
                  (json.dumps(clone_to), ))
         if os.listdir(clone_to):
             warn(fail_context +
@@ -2124,6 +2214,7 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
                  (json.dumps(commit, indent=2), ))
         # If commit in Git cache, stage it and return
         if git_commit_present(commit, upstream=None):
+            report("\tCache hit for commit %s" % (commit, ))
             stage_git_commit(commit,
                              upstream=None,
                              stage_to=clone_to,
@@ -2148,16 +2239,17 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         # Clone the branch fully and reset to specific commit; in this case, we
         # are interested also in the Git history, so a simple commit checkout is
         # not enough; try mirrors first, as they are closer
+        report("\tCloning commit %s from remote" % (commit, ))
         cloned: bool = False
         sources = mirrors + [url]
         for source in sources:
             if (run_cmd(g_LAUNCHER +
                         [g_GIT, "clone", "-b", branch, source, clone_to],
                         cwd=os.getcwd(),
-                        fail_context=None)[1] == 0
-                    and run_cmd(g_LAUNCHER + [g_GIT, "reset", "--hard", commit],
-                                cwd=clone_to,
-                                fail_context=None)[1] == 0):
+                        fail_context=None)[1] == 0 and run_cmd(
+                            g_LAUNCHER + [g_GIT, "reset", "--hard", commit],
+                            cwd=clone_to,
+                            fail_context=None)[1] == 0):
                 cloned = True
                 break
         if not cloned:
@@ -2173,10 +2265,9 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         subdir: Optional[str] = repository.get("subdir", None)
         if subdir is not None:
             if not isinstance(subdir, str):
-                fail(
-                    fail_context +
-                    "Expected field \"subdir\" to be a string, but found:\n%r" %
-                    (json.dumps(subdir, indent=2), ))
+                fail(fail_context +
+                     "Expected field \"subdir\" to be a string, but found:\n%r"
+                     % (json.dumps(subdir, indent=2), ))
             subdir = os.path.normpath(subdir)
             if os.path.isabs(subdir) or subdir.startswith(".."):
                 fail(
@@ -2188,13 +2279,8 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         # Fetch the archive
         content = archive_fetch_with_parse(repository,
                                            fail_context=fail_context)
-        # Stage the content; first resolve special entries, if needed, then keep
-        # the relevant subdir, if given
-        special_pragma: Optional[str] = repository.get("pragma",
-                                                       {}).get("special", None)
-
-        if (special_pragma not in SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP.keys()
-                and subdir is None):
+        # Stage the content of the relevant subdir
+        if subdir is None:
             # Unpack directly to clone location
             unpack_archive(content,
                            archive_type=repo_type,
@@ -2203,43 +2289,12 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         else:
             # Unpack to a temporary dir
             workdir: str = create_tmp_dir(type="archive-unpack")
-            srcdir: str = os.path.join(workdir, "src")
             unpack_archive(content,
                            archive_type=repo_type,
-                           unpack_to=srcdir,
+                           unpack_to=workdir,
                            fail_context=fail_context)
-
-            move_from_dir: str = srcdir
-            if (special_pragma is not None and special_pragma
-                    in SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP.keys()):
-                # Resolve the tree according to the pragma
-                resolve_special_arg = SPECIAL_PRAGMA_TO_CAS_RESOLVE_MAP[
-                    special_pragma]
-                resolved_tree = run_cmd(
-                    g_LAUNCHER + [
-                        g_JUST, "add-to-cas", "--local-build-root", g_ROOT,
-                        "--resolve-special=%s" % resolve_special_arg, srcdir
-                    ],
-                    cwd=workdir,
-                    stdout=subprocess.PIPE,
-                    fail_context=fail_context)[0].decode('utf-8').strip()
-                # Stage the resolved tree
-                resolved_dir: str = os.path.join(workdir, "resolved")
-                subdir_args: List[str] = []
-                if subdir is not None:
-                    subdir_args = ["-P", subdir]
-                run_cmd(g_LAUNCHER + [
-                    g_JUST, "install-cas", "--local-build-root", g_ROOT,
-                    "%s::t" % resolved_tree, "-o", resolved_dir
-                ] + subdir_args,
-                        cwd=workdir,
-                        fail_context=fail_context)
-                move_from_dir = resolved_dir
-            else:
-                # Subdir is not None, so keep only that subdirectory
-                move_from_dir = os.path.join(move_from_dir, cast(str, subdir))
-
-            # Do the move into clone directory
+            # Keep relevant subdir
+            move_from_dir: str = os.path.join(workdir, subdir)
             os.makedirs(clone_to, exist_ok=True)
             for entry in os.listdir(move_from_dir):
                 # shutil.move uses os.rename if on same filesystem or
@@ -2248,9 +2303,9 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
                 try:
                     shutil.move(os.path.join(move_from_dir, entry), clone_to)
                 except Exception as ex:
-                    fail(fail_context + "Moving file path %s failed with:\n%r" %
+                    fail(fail_context +
+                         "Moving file path %s failed with:\n%r" %
                          (os.path.join(move_from_dir, entry), ex))
-
             # Clean up tmp dir
             try_rmtree(workdir)
 
@@ -2301,10 +2356,9 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         # Parse fields
         distdir_list: List[str] = repository.get("repositories", None)
         if not isinstance(distdir_list, list):
-            fail(
-                fail_context +
-                "Expected field \"repositories\" to be a list, but found:\n%r" %
-                (json.dumps(distdir_list, indent=2), ))
+            fail(fail_context +
+                 "Expected field \"repositories\" to be a list, but found:\n%r"
+                 % (json.dumps(distdir_list, indent=2), ))
         # Gather the distdirs
         content: Dict[str, str] = {}
         to_fetch: List[str] = []
@@ -2357,6 +2411,7 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
         # If tree is in Git cache, stage it from there
         if (try_read_object_from_repo(tree_id, "tree", upstream=None)
                 is not None):
+            report("\tCache hit for Git-tree %s" % (tree_id, ))
             os.makedirs(clone_to, exist_ok=True)
             stage_git_entry(fpath=clone_to,
                             obj_id=tree_id,
@@ -2377,17 +2432,19 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
                  (json.dumps(command_env, indent=2), ))
         inherit_env: List[str] = repository.get("inherit env", [])
         if not isinstance(inherit_env, list):
-            fail(fail_context +
-                 "Expected field \"inherit env\" to be a list, but found:\n%r" %
-                 (json.dumps(inherit_env, indent=2), ))
+            fail(
+                fail_context +
+                "Expected field \"inherit env\" to be a list, but found:\n%r" %
+                (json.dumps(inherit_env, indent=2), ))
         # Get the actual command environment
-        curr_env = os.environ
+        curr_env = os.environ.copy()
         new_envs = {}
         for envar in inherit_env:
             if envar in curr_env:
                 new_envs[envar] = curr_env[envar]
         command_env = dict(command_env, **new_envs)
         # Generate the content
+        report("\tGenerating Git-tree content")
         os.makedirs(clone_to, exist_ok=True)
         run_cmd(g_LAUNCHER + command,
                 cwd=clone_to,
@@ -2402,7 +2459,8 @@ def clone_repo(repos: Json, known_repo: str, deps_chain: List[str],
                             symlinks=True,
                             dirs_exist_ok=True)
         except Exception as ex:
-            report("Copying file path %s failed with:\n%r" % (clone_to, ex))
+            fail(fail_context + "Copying file path %s failed with:\n%r" %
+                 (clone_to, ex))
         imported_tree_id = import_to_git(workdir,
                                          repo_type="git-tree",
                                          content_id=tree_id,
@@ -2826,18 +2884,48 @@ def lock_config(input_file: str) -> Json:
         fail("Expected field \"keep\" to be a list, but found:\n%r" %
              (json.dumps(keep, indent=2), ))
 
+    # Acquire garbage collector locks
+    git_gc_lock = gc_repo_lock_acquire(is_shared=True)
+    storage_gc_lock = gc_storage_lock_acquire(is_shared=True)
+
+    # Do checkouts asynchronously
+    checkouts: Dict[int, Optional[CheckoutInfo]] = {}
+
+    def run_checkout(*, source: str, key: int, entry: Json) -> None:
+        """Run checkout and updates the outer variable 'checkouts'. Updates are
+        atomic, so no extra locking is needed."""
+        if source == "git":
+            checkouts[key] = git_checkout(entry)
+        elif source == "archive":
+            checkouts[key] = archive_checkout(entry)
+        elif source == "git tree":
+            checkouts[key] = git_tree_checkout(entry)
+
+    report("Check out sources")
+    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as ts:
+        for index, entry in enumerate(imports):
+            if not isinstance(entry, dict):
+                fail("Expected import entries to be objects, but found:\n%r" %
+                     (json.dumps(entry, indent=2), ))
+            entry = cast(Json, entry)
+
+            source = entry.get("source")
+            if not isinstance(source, str):
+                fail("Expected field \"source\" to be a string, but found:\n%r"
+                     % (json.dumps(source, indent=2), ))
+
+            # Add task only for sources that do work
+            if source in ["git", "archive", "git tree"]:
+                ts.submit(run_checkout, source=source, key=index, entry=entry)
+
     # Initialize the core config, which will be extended with imports
     core_config: Json = {}
     if main is not None:
         core_config["main"] = main
     core_config["repositories"] = repositories
 
-    # Acquire garbage collector locks
-    git_gc_lock = gc_repo_lock_acquire(is_shared=True)
-    storage_gc_lock = gc_storage_lock_acquire(is_shared=True)
-
     # Handle imports
-    for entry in imports:
+    for index, entry in enumerate(imports):
         if not isinstance(entry, dict):
             fail("Expected import entries to be objects, but found:\n%r" %
                  (json.dumps(entry, indent=2), ))
@@ -2849,39 +2937,60 @@ def lock_config(input_file: str) -> Json:
                  (json.dumps(source, indent=2), ))
 
         if source == "git":
-            core_config["repositories"] = import_from_git(
-                core_config["repositories"], entry)
+            # Get checkout info
+            checkout_info = checkouts[index]
+            if checkout_info is not None:
+                core_config["repositories"] = import_from_git(
+                    core_config["repositories"], entry, checkout_info)
         elif source == "file":
             core_config["repositories"] = import_from_file(
                 core_config["repositories"], entry)
         elif source == "archive":
-            core_config["repositories"] = import_from_archive(
-                core_config["repositories"], entry)
+            checkout_info = checkouts[index]
+            if checkout_info is not None:
+                core_config["repositories"] = import_from_archive(
+                    core_config["repositories"], entry, checkout_info)
         elif source == "git tree":
-            core_config["repositories"] = import_from_git_tree(
-                core_config["repositories"], entry)
+            checkout_info = checkouts[index]
+            if checkout_info is not None:
+                core_config["repositories"] = import_from_git_tree(
+                    core_config["repositories"], entry, checkout_info)
         elif source == "generic":
             core_config = import_generic(core_config, entry)
         else:
             fail("Unknown source for import entry \n%r" %
                  (json.dumps(entry, indent=2), ))
 
-    # Clone specified Git repositories locally
+    # Clone specified Git repositories locally asynchronously
     rewritten_repos: Json = {}
-    for clone_to, (known_repo, deps_chain) in g_CLONE_MAP.items():
+
+    def run_clone(*, repos: Json, clone_to: str, known_repo: str,
+                  deps_chain: List[str]) -> None:
+        """Perform the cloning and update, if needed, the outer 'keep' list and
+        fill in the 'rewritten_repos' dict. These updates are atomic, so no
+        extra locking is needed."""
         # Find target repository and clone its workspace root
-        result = clone_repo(core_config["repositories"], known_repo, deps_chain,
-                            clone_to)
+        result = clone_repo(repos, known_repo, deps_chain, clone_to)
         if result is not None:
             target_repo, cloned_repo = result
             # Rewrite description of target repo to point to clone location
             rewritten_repos[target_repo] = rewrite_cloned_repo(
-                core_config["repositories"],
+                repos,
                 clone_to=clone_to,
                 target_repo=target_repo,
                 ws_root_repo=cloned_repo)
             # Add start and target repos to 'keep' list
-            keep += [known_repo, target_repo]
+            keep.extend([known_repo, target_repo])
+
+    if g_CLONE_MAP:
+        report("Clone repositories")
+    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as ts:
+        for clone_to, (known_repo, deps_chain) in g_CLONE_MAP.items():
+            ts.submit(run_clone,
+                      repos=core_config["repositories"],
+                      clone_to=clone_to,
+                      known_repo=known_repo,
+                      deps_chain=deps_chain)
 
     core_config["repositories"].update(rewritten_repos)
 
@@ -2914,7 +3023,8 @@ def main():
                         dest="local_build_root",
                         help="Root for CAS, repository space, etc",
                         metavar="PATH")
-    parser.add_argument("--backend", "--just",
+    parser.add_argument("--backend",
+                        "--just",
                         dest="just_bin",
                         help="Path to the 'jst_backend' binary",
                         metavar="PATH")

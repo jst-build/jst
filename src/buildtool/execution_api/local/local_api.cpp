@@ -25,7 +25,6 @@
 
 #include <grpcpp/support/status.h>
 
-#include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/protocol_traits.hpp"
 #include "src/buildtool/execution_api/bazel_msg/directory_tree.hpp"
 #include "src/buildtool/execution_api/common/common_api.hpp"
@@ -154,11 +153,11 @@ auto LocalApi::RetrieveToCas(
     // Collect blobs of missing artifacts from local CAS. Trees are
     // processed recursively before any blob is uploaded.
     std::unordered_set<ArtifactBlob> container;
+    auto const& cas = local_context_.storage->CAS();
     for (auto const& info : missing) {
         // Recursively process trees.
         if (IsTreeObject(info->type)) {
-            auto reader =
-                TreeReader<LocalCasReader>{&local_context_.storage->CAS()};
+            auto reader = TreeReader<LocalCasReader>{&cas};
             auto const& result = reader.ReadDirectTreeEntries(
                 info->digest, std::filesystem::path{});
             if (not result or not RetrieveToCas(result->infos, api)) {
@@ -167,36 +166,26 @@ auto LocalApi::RetrieveToCas(
         }
 
         // Determine artifact path.
-        auto const path =
+        auto path =
             IsTreeObject(info->type)
-                ? local_context_.storage->CAS().TreePath(info->digest)
-                : local_context_.storage->CAS().BlobPath(
-                      info->digest, IsExecutableObject(info->type));
-        if (not path) {
+                ? cas.TreePath(info->digest)
+                : cas.BlobPath(info->digest, IsExecutableObject(info->type));
+        if (not path.has_value()) {
             return false;
         }
 
-        // Read artifact content (file or symlink).
-        auto const& content = FileSystemManager::ReadFile(*path);
-        if (not content) {
+        auto blob =
+            ArtifactBlob::FromFile(local_context_.storage_config->hash_function,
+                                   info->type,
+                                   *std::move(path));
+        if (not blob.has_value()) {
             return false;
         }
-
-        // Regenerate digest since object infos read by
-        // storage_.ReadTreeInfos() will contain 0 as size.
-        ArtifactDigest digest =
-            IsTreeObject(info->type)
-                ? ArtifactDigestFactory::HashDataAs<ObjectType::Tree>(
-                      local_context_.storage_config->hash_function, *content)
-                : ArtifactDigestFactory::HashDataAs<ObjectType::File>(
-                      local_context_.storage_config->hash_function, *content);
 
         // Collect blob and upload to remote CAS if transfer size reached.
         if (not UpdateContainerAndUpload(
                 &container,
-                ArtifactBlob{std::move(digest),
-                             *content,
-                             IsExecutableObject(info->type)},
+                *std::move(blob),
                 /*exception_is_fatal=*/true,
                 [&api](std::unordered_set<ArtifactBlob>&& blobs) {
                     return api.Upload(std::move(blobs),
@@ -232,15 +221,22 @@ auto LocalApi::RetrieveToMemory(Artifact::ObjectInfo const& artifact_info)
 
 auto LocalApi::Upload(std::unordered_set<ArtifactBlob>&& blobs,
                       bool /*skip_find_missing*/) const noexcept -> bool {
-    return std::all_of(
+    // Blobs could have been received over the network, so a simple failure
+    // could result in lost traffic. Try add all blobs and fail if at least
+    // one is corrupted.
+    std::size_t const valid_count = std::count_if(
         blobs.begin(),
         blobs.end(),
         [&cas = local_context_.storage->CAS()](ArtifactBlob const& blob) {
-            auto const cas_digest =
-                blob.digest.IsTree() ? cas.StoreTree(*blob.data)
-                                     : cas.StoreBlob(*blob.data, blob.is_exec);
-            return cas_digest and *cas_digest == blob.digest;
+            std::optional<ArtifactDigest> cas_digest;
+            if (auto const content = blob.ReadContent()) {
+                cas_digest = blob.GetDigest().IsTree()
+                                 ? cas.StoreTree(*content)
+                                 : cas.StoreBlob(*content, blob.IsExecutable());
+            }
+            return cas_digest and *cas_digest == blob.GetDigest();
         });
+    return valid_count == blobs.size();
 }
 
 auto LocalApi::UploadTree(

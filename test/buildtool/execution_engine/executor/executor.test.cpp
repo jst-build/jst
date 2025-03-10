@@ -35,6 +35,7 @@
 #include "src/buildtool/common/action.hpp"
 #include "src/buildtool/common/action_description.hpp"
 #include "src/buildtool/common/artifact.hpp"
+#include "src/buildtool/common/artifact_blob.hpp"
 #include "src/buildtool/common/artifact_description.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
@@ -44,7 +45,6 @@
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/common/statistics.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
-#include "src/buildtool/execution_api/common/artifact_blob.hpp"
 #include "src/buildtool/execution_api/common/execution_action.hpp"
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/execution_api/common/execution_response.hpp"
@@ -226,12 +226,16 @@ class TestApi : public IExecutionApi {
         return std::all_of(
             blobs.begin(), blobs.end(), [this](auto const& blob) {
                 // for local artifacts
-                auto it1 = config_.artifacts.find(*blob.data);
+                auto const content = blob.ReadContent();
+                if (content == nullptr) {
+                    return false;
+                }
+                auto it1 = config_.artifacts.find(*content);
                 if (it1 != config_.artifacts.end() and it1->second.uploads) {
                     return true;
                 }
                 // for known and action artifacts
-                auto it2 = config_.artifacts.find(blob.digest.hash());
+                auto it2 = config_.artifacts.find(blob.GetDigest().hash());
                 return it2 != config_.artifacts.end() and it2->second.uploads;
             });
     }
