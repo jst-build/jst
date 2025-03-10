@@ -40,7 +40,7 @@ auto version() -> std::string {
     static const std::size_t kJstMajor = 1;
     static const std::size_t kJstMinor = 5;
     static const std::size_t kJstRevision = 0;
-    std::string version_suffix = "~beta1";
+    std::string version_suffix = "~beta2";
 
 #ifdef VERSION_EXTRA_SUFFIX
     version_suffix += VERSION_EXTRA_SUFFIX;
