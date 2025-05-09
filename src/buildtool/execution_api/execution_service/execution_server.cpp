@@ -97,6 +97,10 @@ auto ExecutionServiceImpl::ToIExecutionAction(
     for (auto const& x : command.environment_variables()) {
         env_vars.insert_or_assign(x.name(), x.value());
     }
+    std::map<std::string, std::string> properties;
+    for (auto const& x : command.platform().properties()) {
+        env_vars.insert_or_assign(x.name(), x.value());
+    }
     auto execution_action = IExecutionAction::Ptr{};
     if (legacy_client) {
         // force legacy mode, DEPRECATED as of RBEv2.1
@@ -111,7 +115,7 @@ auto ExecutionServiceImpl::ToIExecutionAction(
                                              files,
                                              dirs,
                                              env_vars,
-                                             /*properties=*/{},
+                                             properties,
                                              /*force_legacy=*/true);
     }
     else {
@@ -122,7 +126,7 @@ auto ExecutionServiceImpl::ToIExecutionAction(
                                              command.working_directory(),
                                              paths,
                                              env_vars,
-                                             /*properties=*/{});
+                                             properties);
     }
 
     if (execution_action == nullptr) {

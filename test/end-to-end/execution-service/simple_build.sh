@@ -69,7 +69,20 @@ cat <<EOF > TARGETS
 }
 EOF
 
+echo "Build first time with no PATH"
 "${JUST}" install -r localhost:${PORT} --local-build-root="${LBRDIR}" --local-launcher '["env", "--", "PATH=/nonexistent"]' -o . 2>&1
+echo "Verify number of action cache entries"
+# should be two: one for client action and one for the internal LocalAPI action
+[ $(find "${ESDIR}/protocol-dependent/generation-0/git-sha1/ac/" -type f | wc -l) = 2 ]
+echo "SUCCESS"
+
+echo "Build second time with different remote execution property"
+"${JUST}" install -r localhost:${PORT} --remote-execution-property image:foo --local-build-root="${LBRDIR}" --local-launcher '["env", "--", "PATH=/nonexistent"]' -o . 2>&1
+echo "Verify number of action cache entries"
+# should be two more, due to the new roperty invalidating previous actions
+[ $(find "${ESDIR}/protocol-dependent/generation-0/git-sha1/ac/" -type f | wc -l) = 4 ]
+echo "SUCCESS"
+
 kill $(cat "${PIDFILE}")
 
 readonly OUT=$(cat foo.txt)
