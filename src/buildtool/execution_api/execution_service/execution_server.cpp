@@ -97,8 +97,17 @@ auto ExecutionServiceImpl::ToIExecutionAction(
     for (auto const& x : command.environment_variables()) {
         env_vars.insert_or_assign(x.name(), x.value());
     }
+    auto get_properties = [&action, &command]() -> auto const& {
+        auto const& action_properties = action.platform().properties();
+        if (not action_properties.empty()) {
+            // NEW in RBEv2.2
+            return action_properties;
+        }
+        // DEPRECATED as of RBEv2.2, but still used by legacy clients
+        return command.platform().properties();
+    };
     std::map<std::string, std::string> properties;
-    for (auto const& x : command.platform().properties()) {
+    for (auto const& x : get_properties()) {
         env_vars.insert_or_assign(x.name(), x.value());
     }
     auto execution_action = IExecutionAction::Ptr{};

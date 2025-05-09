@@ -47,7 +47,7 @@ auto CapabilitiesServiceImpl::GetCapabilities(
     low_v.set_minor(0);
     ::build::bazel::semver::SemVer high_v{};
     high_v.set_major(2);
-    high_v.set_minor(1);
+    high_v.set_minor(2);
 
     *(response->mutable_low_api_version()) = low_v;
     *(response->mutable_high_api_version()) = high_v;
