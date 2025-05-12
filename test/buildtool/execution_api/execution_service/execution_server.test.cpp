@@ -62,6 +62,7 @@ namespace {
 
 auto const kV20 = Capabilities::Version{.major = 2, .minor = 0, .patch = 0};
 auto const kV21 = Capabilities::Version{.major = 2, .minor = 1, .patch = 0};
+auto const kV22 = Capabilities::Version{.major = 2, .minor = 2, .patch = 0};
 
 // Class to obtain a valid pointer to internal ServerWriter<...::Operation>
 class MockServerWriter final
@@ -200,7 +201,9 @@ template <ObjectType kType>
                   output_dirs.end(),
                   pb::back_inserter(cmd.mutable_output_directories()));
     }
-    cmd.set_allocated_platform(get_platform());
+    if (version < kV22) {
+        cmd.set_allocated_platform(get_platform());
+    }
     auto cmd_digest = Upload<ObjectType::File>(
         cas_server, instance_name, storage_config, cmd.SerializeAsString());
     REQUIRE(cmd_digest);
@@ -209,6 +212,9 @@ template <ObjectType kType>
     auto action = bazel_re::Action{};
     action.mutable_command_digest()->CopyFrom(*cmd_digest);
     action.mutable_input_root_digest()->CopyFrom(root_digest);
+    if (version >= kV22) {
+        action.set_allocated_platform(get_platform());
+    }
     auto action_digest = Upload<ObjectType::File>(
         cas_server, instance_name, storage_config, action.SerializeAsString());
     REQUIRE(action_digest);
@@ -264,7 +270,7 @@ TEST_CASE("Execution Service: Test supported API versions",
         env.emplace("PATH", path_var);
     }
 
-    auto version = GENERATE(kV20, kV21);
+    auto version = GENERATE(kV20, kV21, kV22);
 
     DYNAMIC_SECTION("Pretend being a client using RBEv" << ToString(version)) {
         auto action_digest =
