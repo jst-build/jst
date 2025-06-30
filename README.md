@@ -81,12 +81,7 @@ Hello World!
 - [Target-Level Caching as a Service](doc/concepts/service-target-cache.md)
 - [Garbage Collection](doc/concepts/garbage.md)
 - [Symbolic links](doc/concepts/symlinks.md)
+- [Tree overlays](doc/concepts/tree-overlay.md)
 - [Execution properties](doc/concepts/execution-properties.md)
 - [Computed roots](doc/concepts/computed-roots.md)
-
-## Rule writing documentation
-
-- [Rule Expression Language](doc/concepts/expressions.md)
-- [User-Defined Rules](doc/concepts/rules.md)
-- [Documentation Strings](doc/concepts/doc-strings.md)
-- [Anonymous Targets](doc/concepts/anonymous-targets.md)
+- [Profiling and Invocation Logging](doc/concepts/profiling.md)

@@ -26,7 +26,7 @@ namespace upstream {
 
 auto version() -> std::string {
     static const std::size_t kMajor = 1;
-    static const std::size_t kMinor = 5;
+    static const std::size_t kMinor = 6;
     static const std::size_t kRevision = 0;
     std::string suffix = std::string{};
 
@@ -38,9 +38,9 @@ auto version() -> std::string {
 
 auto version() -> std::string {
     static const std::size_t kJstMajor = 1;
-    static const std::size_t kJstMinor = 5;
+    static const std::size_t kJstMinor = 6;
     static const std::size_t kJstRevision = 0;
-    std::string version_suffix = "~beta2";
+    std::string version_suffix = "~alpha";
 
 #ifdef VERSION_EXTRA_SUFFIX
     version_suffix += VERSION_EXTRA_SUFFIX;

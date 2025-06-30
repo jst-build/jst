@@ -25,19 +25,24 @@
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/file_system/file_root.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
+#include "src/buildtool/storage/config.hpp"
 #include "test/buildtool/build_engine/base_maps/test_repo.hpp"
+#include "test/utils/hermeticity/test_storage_config.hpp"
 
 namespace {
 
 using namespace BuildMaps::Base;  // NOLINT
 
 auto SetupConfig(std::string target_file_name,
+                 StorageConfig const* storage_config,
                  bool use_git) -> RepositoryConfig {
     auto root = FileRoot{kBasePath};
     if (use_git) {
         auto repo_path = CreateTestRepo();
         REQUIRE(repo_path);
-        auto git_root = FileRoot::FromGit(*repo_path, kJsonTreeId);
+        REQUIRE(storage_config);
+        auto git_root =
+            FileRoot::FromGit(storage_config, *repo_path, kJsonTreeId);
         REQUIRE(git_root);
         root = std::move(*git_root);
     }
@@ -52,10 +57,11 @@ template <bool kMandatory = true>
 auto ReadJsonFile(std::string const& target_file_name,
                   ModuleName const& id,
                   JsonFileMap::Consumer value_checker,
+                  StorageConfig const* storage_config,
                   bool use_git = false,
                   std::optional<JsonFileMap::FailureFunction> fail_func =
                       std::nullopt) -> bool {
-    auto repo_config = SetupConfig(target_file_name, use_git);
+    auto repo_config = SetupConfig(target_file_name, storage_config, use_git);
     auto json_files = CreateJsonFileMap<&RepositoryConfig::WorkspaceRoot,
                                         &RepositoryConfig::TargetFileName,
                                         JustFileType::kTargets,
@@ -87,12 +93,18 @@ TEST_CASE("simple usage") {
     };
 
     SECTION("via file") {
-        CHECK(ReadJsonFile("foo.json", name, consumer, /*use_git=*/false));
+        CHECK(ReadJsonFile(
+            "foo.json", name, consumer, nullptr, /*use_git=*/false));
         CHECK(as_expected);
     }
 
     SECTION("via git tree") {
-        CHECK(ReadJsonFile("foo.json", name, consumer, /*use_git=*/true));
+        auto const storage_config = TestStorageConfig::Create();
+        CHECK(ReadJsonFile("foo.json",
+                           name,
+                           consumer,
+                           &storage_config.Get(),
+                           /*use_git=*/true));
         CHECK(as_expected);
     }
 }
@@ -114,15 +126,24 @@ TEST_CASE("non existent") {
         auto name = ModuleName{"", "missing"};
 
         SECTION("via file") {
-            CHECK(ReadJsonFile<false>(
-                "foo.json", name, consumer, /*use_git=*/false, fail_func));
+            CHECK(ReadJsonFile<false>("foo.json",
+                                      name,
+                                      consumer,
+                                      nullptr,
+                                      /*use_git=*/false,
+                                      fail_func));
             CHECK(as_expected);
             CHECK(failcont_counter == 0);
         }
 
         SECTION("via git tree") {
-            CHECK(ReadJsonFile<false>(
-                "foo.json", name, consumer, /*use_git=*/true, fail_func));
+            auto const storage_config = TestStorageConfig::Create();
+            CHECK(ReadJsonFile<false>("foo.json",
+                                      name,
+                                      consumer,
+                                      &storage_config.Get(),
+                                      /*use_git=*/true,
+                                      fail_func));
             CHECK(as_expected);
             CHECK(failcont_counter == 0);
         }
@@ -132,15 +153,24 @@ TEST_CASE("non existent") {
         auto name = ModuleName{"", "missing"};
 
         SECTION("via file") {
-            CHECK_FALSE(ReadJsonFile<true>(
-                "foo.json", name, consumer, /*use_git=*/false, fail_func));
+            CHECK_FALSE(ReadJsonFile<true>("foo.json",
+                                           name,
+                                           consumer,
+                                           nullptr,
+                                           /*use_git=*/false,
+                                           fail_func));
             CHECK_FALSE(as_expected);
             CHECK(failcont_counter == 1);
         }
 
         SECTION("via git tree") {
-            CHECK_FALSE(ReadJsonFile<true>(
-                "foo.json", name, consumer, /*use_git=*/true, fail_func));
+            auto const storage_config = TestStorageConfig::Create();
+            CHECK_FALSE(ReadJsonFile<true>("foo.json",
+                                           name,
+                                           consumer,
+                                           &storage_config.Get(),
+                                           /*use_git=*/true,
+                                           fail_func));
             CHECK_FALSE(as_expected);
             CHECK(failcont_counter == 1);
         }
@@ -154,6 +184,7 @@ TEST_CASE("Bad syntax") {
         "bad.json",
         {"", "data_json"},
         [](auto const& /* unused */) {},
+        nullptr,
         /*use_git=*/false,
         fail_func));
     CHECK(failcont_counter == 1);

@@ -127,7 +127,7 @@ by those resolution rules has to be free of semantic conflicts.
 
 The fields `"cmds"`, `"label"`, `"cwd"`, `"sh -c"`, `"out_dirs"`, `"outs"`, and `"env"`
 are evaluated fields where `"cmds"`, `"out_dirs"`, and `"outs"`
-have to evaluate to a list of strings, `"sh -c"` has to evalute to
+have to evaluate to a list of strings, `"sh -c"` has to evaluate to
 a list of strings or `null`, `"env"` has to evaluate to a map
 of strings, and `"cwd"` has to evaluate to a single string naming a non-upwards
 relative path. `"label"` is an optional field, but if provided, it has to
@@ -223,6 +223,31 @@ Example:
 {
   foobar_tree: {
     type: 'tree',
+    name: 'foobar',
+    deps: [@'//src:foo', @'//src:bar'],
+  },
+}
+```
+
+`"tree_overlay"` and `"disjoint_tree_overlay"`
+----------------------------------------------
+
+The rules `"tree_overlay"` and `"disjoint_tree_overlay"` allow to
+define a tree as the overlay of the trees given by the artifact
+stages of a list of given targets. More precisely, the field `"deps"`
+has to evaluate to a list of targets. For each target, a tree is
+formed from its artifact stage. A new tree is defined as the tree
+overlay, or disjoint tree overlay, of those trees. Both, artifacts
+and runfiles of the target are a singleton map with key the result
+of evaluating the field `"name"` which has to evaluate to a single
+string and value that (disjoint) tree overlay.
+
+Example:
+
+``` jsonnet
+{
+  foobar_overlay: {
+    type: 'tree_overlay',
     name: 'foobar',
     deps: [@'//src:foo', @'//src:bar'],
   },

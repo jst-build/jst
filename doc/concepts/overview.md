@@ -21,12 +21,12 @@ actual library file and its public headers) as well as information on
 how to use the target (linking arguments, transitive header files, etc).
 For a consumer of a target, the definition of this collection of files
 as well as the additionally provided information is what defines the
-target as a dependency, respectively of where the target is coming from
+target as a dependency, irrespectively of where the target is coming from
 (i.e., targets coinciding here are indistinguishable for other targets).
 
 Of course, to actually build a single target from its dependencies, many
 invocations of the compiler or other tools are necessary (so called
-"actions"); the build tool translates these high level description
+"actions"); the build tool translates these high-level description
 into the individual actions necessary and only re-executes those where
 inputs have changed.
 
@@ -40,7 +40,7 @@ typically maintained centrally for a project or an organization.
 The code base is usually split into many directories, each containing
 source files belonging together. To allow the definition of targets
 where their code is, the targets are structured in a similar way. For
-each directory, there can be a targets files. Directories for which such
+each directory, there can be a targets file. Directories for which such
 a targets file exists are called "modules". Each file belongs to the
 module that is closest when searching upwards in the directory tree. The
 targets file of a module defines the targets formed from the source
@@ -78,8 +78,8 @@ Repository data
 
 A repository uses a (logical) directory for several purposes: to obtain
 source files, to read definitions of targets, to read rules, and to read
-expressions that can be used by rules. While all those directories can
-(and often are) be the same, this does not have to be the case. For each
+expressions that can be used by rules. While all those directories can be
+(and often are) the same, this does not have to be the case. For each
 of those purposes, a different logical directory (also called "root")
 can be used. In this way, one can, e.g., add target definitions to a
 source tree originally written for a different build tool without

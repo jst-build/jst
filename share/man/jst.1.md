@@ -381,6 +381,7 @@ details.
 See also
 ========
 
+**`jstrc`**(5),
 **`jst-repo-config`**(5),
 **`jst_backend-repo-config`**(5),
 **`jst_backend`**(1)

@@ -160,7 +160,8 @@ static inline void RunHelloWorldCompilation(
                                         .apis = &apis,
                                         .remote_context = &remote_context,
                                         .statistics = stats,
-                                        .progress = progress};
+                                        .progress = progress,
+                                        .profile = std::nullopt};
     Executor runner{&exec_context};
 
     // upload local artifacts
@@ -294,7 +295,8 @@ static inline void RunGreeterCompilation(
                                         .apis = &apis,
                                         .remote_context = &remote_context,
                                         .statistics = stats,
-                                        .progress = progress};
+                                        .progress = progress,
+                                        .profile = std::nullopt};
     Executor runner{&exec_context};
 
     // upload local artifacts
@@ -461,7 +463,8 @@ static inline void TestUploadAndDownloadTrees(
                                         .apis = &apis,
                                         .remote_context = &remote_context,
                                         .statistics = stats,
-                                        .progress = progress};
+                                        .progress = progress,
+                                        .profile = std::nullopt};
     Executor runner{&exec_context};
 
     REQUIRE(runner.Process(g.ArtifactNodeWithId(foo_id)));
@@ -480,7 +483,7 @@ static inline void TestUploadAndDownloadTrees(
         CHECK(FileSystemManager::IsNonUpwardsSymlink(tmpdir / "b"));
         CHECK(*FileSystemManager::ReadFile(tmpdir / "a") == "foo");
         CHECK(*FileSystemManager::ReadSymlink(tmpdir / "b") == "bar");
-        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir, true));
+        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir));
     }
 
     SECTION("Subdir in tree path") {
@@ -497,7 +500,7 @@ static inline void TestUploadAndDownloadTrees(
         CHECK(FileSystemManager::IsNonUpwardsSymlink(tmpdir / "b" / "a"));
         CHECK(*FileSystemManager::ReadFile(tmpdir / "a") == "foo");
         CHECK(*FileSystemManager::ReadSymlink(tmpdir / "b" / "a") == "bar");
-        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir, true));
+        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir));
     }
 
     SECTION("Nested trees") {
@@ -518,7 +521,7 @@ static inline void TestUploadAndDownloadTrees(
         CHECK(FileSystemManager::IsNonUpwardsSymlink(tmpdir / "b" / "a"));
         CHECK(*FileSystemManager::ReadFile(tmpdir / "a") == "foo");
         CHECK(*FileSystemManager::ReadSymlink(tmpdir / "b" / "a") == "bar");
-        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir, true));
+        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir));
     }
 
     SECTION("Dot-path tree as action input") {
@@ -551,13 +554,16 @@ static inline void TestUploadAndDownloadTrees(
         CHECK(FileSystemManager::IsNonUpwardsSymlink(tmpdir / "b" / "a"));
         CHECK(*FileSystemManager::ReadFile(tmpdir / "a") == "foo");
         CHECK(*FileSystemManager::ReadSymlink(tmpdir / "b" / "a") == "bar");
-        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir, true));
+        REQUIRE(FileSystemManager::RemoveDirectory(tmpdir));
     }
 
     SECTION("Dot-path non-tree as action input") {
         auto action_inputs = ActionDescription::inputs_t{{".", foo_desc}};
         ActionDescription action_desc{
-            {"foo"}, {}, Action{"action_id", {"echo"}, "", {}}, action_inputs};
+            {"foo"},
+            {},
+            Action{"action_id", std::vector<std::string>{"echo"}, "", {}},
+            action_inputs};
 
         REQUIRE(g.Add({action_desc}));
         auto const* action_node = g.ActionNodeWithId("action_id");
@@ -633,7 +639,8 @@ static inline void TestRetrieveOutputDirectories(
                                             .apis = &apis,
                                             .remote_context = &remote_context,
                                             .statistics = stats,
-                                            .progress = progress};
+                                            .progress = progress,
+                                            .profile = std::nullopt};
         Executor runner{&exec_context};
         REQUIRE(runner.Process(action));
 
@@ -687,7 +694,8 @@ static inline void TestRetrieveOutputDirectories(
                                             .apis = &apis,
                                             .remote_context = &remote_context,
                                             .statistics = stats,
-                                            .progress = progress};
+                                            .progress = progress,
+                                            .profile = std::nullopt};
         Executor runner{&exec_context};
         REQUIRE(runner.Process(action));
 
@@ -758,7 +766,8 @@ static inline void TestRetrieveOutputDirectories(
                                             .apis = &apis,
                                             .remote_context = &remote_context,
                                             .statistics = stats,
-                                            .progress = progress};
+                                            .progress = progress,
+                                            .profile = std::nullopt};
         Executor runner{&exec_context};
         REQUIRE(runner.Process(action));
 
@@ -832,7 +841,8 @@ static inline void TestRetrieveOutputDirectories(
                 .apis = &apis,
                 .remote_context = &remote_context,
                 .statistics = stats,
-                .progress = progress};
+                .progress = progress,
+                .profile = std::nullopt};
             Executor runner{&exec_context};
             CHECK_FALSE(runner.Process(action));
         }
@@ -859,7 +869,8 @@ static inline void TestRetrieveOutputDirectories(
                 .apis = &apis,
                 .remote_context = &remote_context,
                 .statistics = stats,
-                .progress = progress};
+                .progress = progress,
+                .profile = std::nullopt};
             Executor runner{&exec_context};
             CHECK_FALSE(runner.Process(action));
         }

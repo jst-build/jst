@@ -26,6 +26,7 @@
 #include "src/buildtool/build_engine/target_map/result_map.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/analyse_context.hpp"
+#include "src/buildtool/profile/profile.hpp"
 
 struct AnalysisResult {
     BuildMaps::Target::ConfiguredTarget id;
@@ -41,6 +42,7 @@ struct AnalysisResult {
     std::optional<std::string> const& request_action_input,
     Logger const* logger = nullptr,
     BuildMaps::Target::ServeFailureLogReporter* = nullptr,
+    Profile* = nullptr,
     nlohmann::ordered_json const* ordered_config = nullptr)
     -> std::optional<AnalysisResult>;
 #endif  // INCLUDED_SRC_BUILDOOL_MAIN_ANALYSE_HPP

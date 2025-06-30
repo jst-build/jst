@@ -111,6 +111,7 @@ namespace Target = BuildMaps::Target;
         std::vector<ActionDescription::Ptr>{action},
         target->Blobs(),
         target->Trees(),
+        target->TreeOverlays(),
         target->Vars(),
         target->Tainted(),
         target->ImpliedExport(),
@@ -126,6 +127,7 @@ namespace Target = BuildMaps::Target;
     std::optional<std::string> const& request_action_input,
     Logger const* logger,
     BuildMaps::Target::ServeFailureLogReporter* serve_log,
+    Profile* profile,
     nlohmann::ordered_json const* ordered_config)
     -> std::optional<AnalysisResult> {
     // create async maps
@@ -186,12 +188,15 @@ namespace Target = BuildMaps::Target;
             &ts,
             {id},
             [&target](auto values) { target = *values[0]; },
-            [&failed, logger](auto const& msg, bool fatal) {
+            [&failed, logger, profile](auto const& msg, bool fatal) {
                 Logger::Log(logger,
                             fatal ? LogLevel::Error : LogLevel::Warning,
                             "While processing targets:\n{}",
                             msg);
                 failed = failed or fatal;
+                if (fatal and (profile != nullptr)) {
+                    profile->NoteAnalysisError(msg);
+                }
             });
     }
 
