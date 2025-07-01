@@ -19,7 +19,7 @@
     , ["src/justlang/ast", "augment"]
     , ["src/justlang/ast", "to_json_visitor"]
     , ["src/justlang/ast", "to_string_visitor"]
-    , ["src/justlang/ast/jsonnet", "parser"]
+    , ["src/justlang/ast/native", "parser"]
     ]
   , "stage": ["justlang"]
   }

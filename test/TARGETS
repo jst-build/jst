@@ -10,7 +10,7 @@
     [ ["@", "justlang", "src/justlang/ast", "inline"]
     , ["@", "justlang", "src/justlang/ast", "builtins"]
     , ["@", "justlang", "src/justlang/ast", "to_json_visitor"]
-    , ["@", "justlang", "src/justlang/ast/jsonnet", "parser"]
+    , ["@", "justlang", "src/justlang/ast/native", "parser"]
     , ["@", "catch2", "", "catch2"]
     , ["@", "catch2", "", "catch2-main"]
     ]
@@ -52,8 +52,7 @@
   , "name": ["parser"]
   , "srcs": ["parser.test.cpp"]
   , "private-deps":
-    [ ["@", "justlang", "src/justlang/ast/jsonnet", "parser"]
-    , ["@", "justlang", "src/justlang/ast/native", "parser"]
+    [ ["@", "justlang", "src/justlang/ast/native", "parser"]
     , ["@", "justlang", "src/justlang/ast", "to_string_visitor"]
     , ["@", "catch2", "", "catch2"]
     , ["@", "catch2", "", "catch2-main"]

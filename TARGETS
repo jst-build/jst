@@ -53,9 +53,6 @@
 , "DEV":
   { "type": ["@", "rules", "CC", "install-with-deps"]
   , "hdrs-only": ["yes"]
-  , "targets":
-    [ ["@", "json", "", "json"]
-    , ["@", "jsonnet", "", "libjsonnet_internals"]
-    ]
+  , "targets": [["@", "json", "", "json"]]
   }
 }

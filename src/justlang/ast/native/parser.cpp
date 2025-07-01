@@ -829,7 +829,7 @@ auto NativeParser::ParseData(const FileData& file_data)
             if (auto data = reader_(
                     import_chain_.back(), file, repo ? &(*repo) : nullptr)) {
                 auto import_parser =
-                    NativeParser::Create(reader_, import_chain_);
+                    std::make_unique<NativeParser>(reader_, import_chain_);
                 return std::make_shared<justlang::ForeignNode>(
                     CreateLocation(begin, tokens_.Peek(), import_chain_.back()),
                     import_parser->ParseData(data.value()));
@@ -945,6 +945,11 @@ template <class TParams>
 
 [[nodiscard]] auto NativeParser::ParseCallArgs() -> CallNode::params_t {
     return ParseArgs<CallNode::params_t>();
+}
+
+auto Parser::Create(FileData::reader_t reader) -> justlang::ParserPtr {
+    return std::make_unique<NativeParser>(std::move(reader),
+                                          std::vector<FileLocation>{});
 }
 
 }  // namespace justlang

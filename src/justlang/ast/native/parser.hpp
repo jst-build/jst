@@ -17,7 +17,6 @@
 
 #include <concepts>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,13 +30,6 @@ namespace justlang {
 
 class NativeParser final : public Parser {
   public:
-    static auto Create(FileData::reader_t reader,
-                       std::vector<FileLocation> import_chain = {})
-        -> std::unique_ptr<NativeParser> {
-        return std::make_unique<NativeParser>(std::move(reader),
-                                              std::move(import_chain));
-    }
-
     NativeParser(FileData::reader_t reader,
                  std::vector<FileLocation> import_chain)
         : reader_{std::move(reader)}, import_chain_{std::move(import_chain)} {}

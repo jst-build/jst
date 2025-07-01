@@ -20,7 +20,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "justlang/ast/native/parser.hpp"
 #include "justlang/ast/to_string_visitor.hpp"
 #include "justlang/file_data.hpp"
 
@@ -44,24 +43,13 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     };
 }
 
-[[nodiscard]] auto jsonnetParser(std::string const& code,
-                                 std::string const& entry = "<stdin>",
-                                 file_map_t const& files = {}) -> std::string {
-    auto file_data = justlang::FileData{
-        .location = justlang::FileLocation{.repo = "", .path = entry},
-        .content = code};
-    auto org_parser = justlang::Parser::Create(CreateMocReader(&files));
-    auto org_ast = org_parser->ParseData(file_data);
-    return justlang::ASTToStringVisitor{}.Dump(*org_ast);
-}
-
 [[nodiscard]] auto nativeParser(std::string const& code,
                                 std::string const& entry = "<stdin>",
                                 file_map_t const& files = {}) -> std::string {
     auto file_data = justlang::FileData{
         .location = justlang::FileLocation{.repo = "", .path = entry},
         .content = code};
-    auto parser = justlang::NativeParser::Create(CreateMocReader(&files));
+    auto parser = justlang::Parser::Create(CreateMocReader(&files));
     auto ast = parser->ParseData(file_data);
     return justlang::ASTToStringVisitor{}.Dump(*ast);
 }
@@ -74,8 +62,18 @@ TEST_CASE("TestOperators", "[basic_operators]") {
               foo: foo,
             })";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        READ
+        - TARGET: "foo"
+)");
     }
 
     SECTION("variables inlining other variables") {
@@ -86,8 +84,24 @@ TEST_CASE("TestOperators", "[basic_operators]") {
             foo: bar,
           })";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        READ
+        - TARGET: "foo"
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            READ
+            - TARGET: "bar"
+)");
     }
 
     SECTION("variables in computed field") {
@@ -97,8 +111,19 @@ TEST_CASE("TestOperators", "[basic_operators]") {
             [foo]: foo,
           })";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    MAP
+    - KEY0:
+        READ
+        - TARGET: "foo"
+    - VAL0:
+        READ
+        - TARGET: "foo"
+)");
     }
 
     SECTION("computed variable field") {
@@ -109,8 +134,35 @@ TEST_CASE("TestOperators", "[basic_operators]") {
           })";
 
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: map
+- VALUE:
+    MAP
+    - KEY0:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(env)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            STRING(NAME)
+    - VAL0:
+        STRING(foo)
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(foo)
+        - CONTAINER:
+            READ
+            - TARGET: "map"
+)");
     }
 }
 
@@ -123,8 +175,25 @@ TEST_CASE("ast_parser", "[variables]") {
           }
         )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        READ
+        - TARGET: "x"
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+)");
     }
 
     SECTION("functions inlining other functions") {
@@ -136,8 +205,38 @@ TEST_CASE("ast_parser", "[variables]") {
               }
             )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        READ
+        - TARGET: "x"
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            CALL
+            - TARGET: "foo"
+            - <arg0>:
+                READ
+                - TARGET: "x"
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "bar"
+            - <arg0>:
+                STRING(foo)
+)");
     }
 
     SECTION("functions in computed field") {
@@ -148,8 +247,28 @@ TEST_CASE("ast_parser", "[variables]") {
               }
             )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        READ
+        - TARGET: "x"
+- NEXT:
+    MAP
+    - KEY0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+)");
     }
 
     SECTION("computed variable field") {
@@ -160,8 +279,35 @@ TEST_CASE("ast_parser", "[variables]") {
         })";
 
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: map
+- VALUE:
+    MAP
+    - KEY0:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(env)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            STRING(NAME)
+    - VAL0:
+        STRING(foo)
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(foo)
+        - CONTAINER:
+            READ
+            - TARGET: "map"
+)");
     }
     SECTION("variable shadows previous variable") {
         auto const* code = R"(
@@ -171,8 +317,23 @@ TEST_CASE("ast_parser", "[variables]") {
           foo: foo,
         })";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(bar)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        STRING(foo)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            READ
+            - TARGET: "foo"
+)");
     }
 }
 
@@ -187,8 +348,30 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+        STRING(test)
+    - BODY:
+        READ
+        - TARGET: "x"
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+    - KEY1:
+        STRING(bar)
+    - VAL1:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+)");
     }
 
     SECTION("functions with inlining default argument") {
@@ -201,8 +384,41 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+        STRING(test)
+    - BODY:
+        READ
+        - TARGET: "x"
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+            CALL
+            - TARGET: "foo"
+        - BODY:
+            READ
+            - TARGET: "x"
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "bar"
+        - KEY1:
+            STRING(bar)
+        - VAL1:
+            CALL
+            - TARGET: "bar"
+            - <arg0>:
+                STRING(foo)
+)");
     }
 
     SECTION("functions shadow previous functions") {
@@ -214,8 +430,41 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        [
+          READ
+          - TARGET: "x"
+          STRING(foo)
+        ]
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            [
+              READ
+              - TARGET: "x"
+              STRING(bar)
+            ]
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "foo"
+            - <arg0>:
+                STRING(foo)
+)");
     }
 
     SECTION("variables should not shadow params in preceding functions") {
@@ -228,8 +477,39 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: a
+- VALUE:
+    STRING(bar)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            [
+              READ
+              - TARGET: "x"
+              READ
+              - TARGET: "a"
+            ]
+    - NEXT:
+        LET
+        - NAME: a
+        - VALUE:
+            STRING(foo)
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "foo"
+                - <arg0>:
+                    STRING(foo)
+)");
     }
 
     SECTION("no defintion should shadow function arguments") {
@@ -242,8 +522,38 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: x
+- VALUE:
+    STRING(bar)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            [
+              READ
+              - TARGET: "x"
+              STRING(bar)
+            ]
+    - NEXT:
+        LET
+        - NAME: x
+        - VALUE:
+            STRING(baz)
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "foo"
+                - <arg0>:
+                    STRING(foo)
+)");
     }
 
     SECTION(
@@ -257,8 +567,37 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: y
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - x:
+            READ
+            - TARGET: "y"
+        - BODY:
+            [
+              READ
+              - TARGET: "x"
+              STRING(bar)
+            ]
+    - NEXT:
+        LET
+        - NAME: y
+        - VALUE:
+            STRING(bar)
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "foo"
+)");
     }
 
     SECTION("outer variables should not shadow inner function variables") {
@@ -273,8 +612,42 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: y
+- VALUE:
+    STRING(bar)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - x:
+            READ
+            - TARGET: "y"
+        - BODY:
+            LET
+            - NAME: x
+            - VALUE:
+                STRING(foo)
+            - NEXT:
+                [
+                  READ
+                  - TARGET: "x"
+                  STRING(bar)
+                ]
+    - NEXT:
+        LET
+        - NAME: x
+        - VALUE:
+            STRING(bar)
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "foo"
+)");
     }
 
     SECTION("inner function params should shadow outer function params") {
@@ -287,8 +660,40 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        LET
+        - NAME: bar
+        - VALUE:
+            FUNC
+            - x:
+null
+            - BODY:
+                READ
+                - TARGET: "x"
+        - NEXT:
+            [
+              CALL
+              - TARGET: "bar"
+              - <arg0>:
+                  STRING(foo)
+              STRING(bar)
+            ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(bar)
+)");
     }
 
     SECTION("function param defaults can access preceding params") {
@@ -300,8 +705,37 @@ TEST_CASE("ast_parser", "[functions]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: a
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - a:
+null
+        - b:
+            READ
+            - TARGET: "a"
+        - BODY:
+            [
+              READ
+              - TARGET: "a"
+              READ
+              - TARGET: "b"
+            ]
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "foo"
+            - <arg0>:
+                STRING(bar)
+)");
     }
 
     SECTION("functions with nested variables") {
@@ -314,8 +748,40 @@ TEST_CASE("ast_parser", "[functions]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        LET
+        - NAME: bar
+        - VALUE:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                READ
+                - TARGET: "x"
+        - NEXT:
+            READ
+            - TARGET: "bar"
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+)");
     }
 }
 
@@ -324,29 +790,29 @@ TEST_CASE("ast_parser", "[special strings]") {
         SECTION("plain reference") {
             auto const* code = R"(@':foo')";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(REF("foo")
+)");
         }
 
         SECTION("reference with ''") {
             auto const* code = R"(@':foo''bar')";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(REF("foo'bar")
+)");
         }
 
         SECTION("reference as JSON") {
             auto const* code = R"(@':"foo"')";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(REF("foo")
+)");
         }
 
         SECTION("reference as JSON with special chars") {
             auto const* code = R"(@':"foo \"\n bar"')";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(REF("foo \"\n bar")
+)");
         }
     }
 }
@@ -362,8 +828,48 @@ TEST_CASE("ast_parser", "[built-in function evaluation]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: test
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(keys)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            READ
+            - TARGET: "x"
+- NEXT:
+    LET
+    - NAME: map
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(key0)
+        - VAL0:
+            STRING(val0)
+        - KEY1:
+            STRING(key1)
+        - VAL1:
+            STRING(val1)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "test"
+            - <arg0>:
+                READ
+                - TARGET: "map"
+)");
         }
 
         SECTION("runtime data") {
@@ -374,8 +880,43 @@ TEST_CASE("ast_parser", "[built-in function evaluation]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: test
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(keys)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            READ
+            - TARGET: "x"
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "test"
+        - <arg0>:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                STRING(map)
+)");
         }
     }
 }
@@ -391,8 +932,28 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                READ
+                - TARGET: "foo"
+            - RHS:
+                READ
+                - TARGET: "bar"
+)");
         }
 
         SECTION("functions") {
@@ -404,8 +965,32 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - BODY:
+        STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - BODY:
+            STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                CALL
+                - TARGET: "foo"
+            - RHS:
+                CALL
+                - TARGET: "bar"
+)");
         }
 
         SECTION("loop variable") {
@@ -415,8 +1000,26 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    FOREACH
+    - VAR: x
+    - RANGE:
+        [
+          STRING(bar)
+          STRING(baz)
+        ]
+    - BODY:
+        BINARY_OPERATION(unknown)
+        - LHS:
+            READ
+            - TARGET: "x"
+        - RHS:
+            READ
+            - TARGET: "x"
+)");
         }
 
         SECTION("sum numbers") {
@@ -425,8 +1028,16 @@ TEST_CASE("ast_parser", "[type deduction]") {
               foo: 5 + 6
             })";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    BINARY_OPERATION(unknown)
+    - LHS:
+        NUMBER(5)
+    - RHS:
+        NUMBER(6)
+)");
         }
 
         SECTION("builtin functions") {
@@ -437,8 +1048,27 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    BINARY_OPERATION(unknown)
+    - LHS:
+        STRING(foo)
+    - RHS:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(join)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            [
+              STRING(bar)
+            ]
+)");
         }
 
         SECTION("builtin functions in function body") {
@@ -449,8 +1079,52 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        BINARY_OPERATION(unknown)
+        - LHS:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(join)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                [
+                  READ
+                  - TARGET: "x"
+                ]
+        - RHS:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(join)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                [
+                  READ
+                  - TARGET: "x"
+                ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            STRING(foo)
+)");
         }
     }
 
@@ -465,8 +1139,39 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    [
+      STRING(foo)
+    ]
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        CALL
+        - TARGET:
+            UNRESOLVED_LOOKUP
+            - INDEX:
+                STRING(env)
+            - CONTAINER:
+                READ
+                - TARGET: "jst"
+        - <arg0>:
+            STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                READ
+                - TARGET: "foo"
+            - RHS:
+                READ
+                - TARGET: "bar"
+)");
         }
 
         SECTION("functions") {
@@ -478,8 +1183,43 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - BODY:
+        [
+          STRING(foo)
+        ]
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - BODY:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                CALL
+                - TARGET: "foo"
+            - RHS:
+                CALL
+                - TARGET: "bar"
+)");
         }
 
         SECTION("local variable") {
@@ -492,8 +1232,39 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    LET
+    - NAME: foo
+    - VALUE:
+        [
+          STRING(foo)
+        ]
+    - NEXT:
+        LET
+        - NAME: bar
+        - VALUE:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                STRING(bar)
+        - NEXT:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                READ
+                - TARGET: "foo"
+            - RHS:
+                READ
+                - TARGET: "bar"
+)");
         }
 
         SECTION("local function") {
@@ -506,8 +1277,43 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    LET
+    - NAME: foo
+    - VALUE:
+        FUNC
+        - BODY:
+            [
+              STRING(foo)
+            ]
+    - NEXT:
+        LET
+        - NAME: bar
+        - VALUE:
+            FUNC
+            - BODY:
+                CALL
+                - TARGET:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(env)
+                    - CONTAINER:
+                        READ
+                        - TARGET: "jst"
+                - <arg0>:
+                    STRING(bar)
+        - NEXT:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                CALL
+                - TARGET: "foo"
+            - RHS:
+                CALL
+                - TARGET: "bar"
+)");
         }
 
         SECTION("loop variable") {
@@ -518,8 +1324,37 @@ TEST_CASE("ast_parser", "[type deduction]") {
             }
           )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: bar
+- VALUE:
+    STRING(bar)
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        FOREACH
+        - VAR: x
+        - RANGE:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                STRING(baz)
+        - BODY:
+            BINARY_OPERATION(unknown)
+            - LHS:
+                READ
+                - TARGET: "bar"
+            - RHS:
+                READ
+                - TARGET: "x"
+)");
         }
 
         SECTION("sum numbers") {
@@ -529,8 +1364,31 @@ TEST_CASE("ast_parser", "[type deduction]") {
               foo: var + 6
             })";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: var
+- VALUE:
+    CALL
+    - TARGET:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(env)
+        - CONTAINER:
+            READ
+            - TARGET: "jst"
+    - <arg0>:
+        STRING(NUMBER)
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        BINARY_OPERATION(unknown)
+        - LHS:
+            READ
+            - TARGET: "var"
+        - RHS:
+            NUMBER(6)
+)");
         }
 
         SECTION("unary minus in function body") {
@@ -540,8 +1398,26 @@ TEST_CASE("ast_parser", "[type deduction]") {
               foo: foo(2)
             })";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FUNC
+    - x:
+null
+    - BODY:
+        NEGATE
+          READ
+          - TARGET: "x"
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        CALL
+        - TARGET: "foo"
+        - <arg0>:
+            NUMBER(2)
+)");
         }
     }
 }
@@ -556,8 +1432,25 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(1)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("negative indexing - string indexing") {
@@ -568,8 +1461,25 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(-2)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("simple full inlining - number indexing") {
@@ -580,8 +1490,25 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            NUMBER(1)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("negative indexing - number indexing") {
@@ -592,8 +1519,26 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            NEGATE
+              NUMBER(1)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("computed fields full inlining") {
@@ -604,8 +1549,30 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            NUMBER(0)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(1)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("inlining static expressions") {
@@ -618,8 +1585,53 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    MAP
+    - KEY0:
+        STRING(index)
+    - VAL0:
+        STRING(1)
+- NEXT:
+    LET
+    - NAME: baz
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            READ
+            - TARGET: "foo"
+    - NEXT:
+        LET
+        - NAME: list
+        - VALUE:
+            [
+              STRING(foo)
+              STRING(bar)
+            ]
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(index)
+                    - CONTAINER:
+                        UNRESOLVED_LOOKUP
+                        - INDEX:
+                            STRING(bar)
+                        - CONTAINER:
+                            READ
+                            - TARGET: "baz"
+                - CONTAINER:
+                    READ
+                    - TARGET: "list"
+)");
     }
 
     SECTION("index var") {
@@ -630,12 +1642,37 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      STRING(foo)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(env)
+                - CONTAINER:
+                    READ
+                    - TARGET: "jst"
+            - <arg0>:
+                STRING(INDEX)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 
     SECTION("field var full inlining") {
-
         auto const* code = R"(
             local list = [jst.env("INDEX"), 'bar'];
             {
@@ -643,8 +1680,34 @@ TEST_CASE("list_at_parsing", "[index]") {
             }
           )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: list
+- VALUE:
+    [
+      CALL
+      - TARGET:
+          UNRESOLVED_LOOKUP
+          - INDEX:
+              STRING(env)
+          - CONTAINER:
+              READ
+              - TARGET: "jst"
+      - <arg0>:
+          STRING(INDEX)
+      STRING(bar)
+    ]
+- NEXT:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        UNRESOLVED_LOOKUP
+        - INDEX:
+            STRING(0)
+        - CONTAINER:
+            READ
+            - TARGET: "list"
+)");
     }
 }
 
@@ -656,8 +1719,26 @@ TEST_CASE("ast_parser", "[read-call-separation]") {
         foo + bar()
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - BODY:
+            STRING(bar)
+    - NEXT:
+        BINARY_OPERATION(unknown)
+        - LHS:
+            READ
+            - TARGET: "foo"
+        - RHS:
+            CALL
+            - TARGET: "bar"
+)");
     }
 }
 
@@ -671,8 +1752,25 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - BODY:
+            STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "bar"
+)");
     }
 
     SECTION("call scope object with parameters") {
@@ -684,8 +1782,37 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            IF
+            - COND:
+                READ
+                - TARGET: "x"
+            - THEN:
+                STRING(bar)
+            - ELSE:
+                STRING(baz)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "bar"
+            - <arg0>:
+                READ
+                - TARGET: "foo"
+)");
     }
 
     SECTION("call field object without parameters") {
@@ -697,8 +1824,35 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - BODY:
+                STRING(bar)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(bar)
+                - CONTAINER:
+                    READ
+                    - TARGET: "bar"
+)");
     }
 
     SECTION("call field object with parameters") {
@@ -710,8 +1864,47 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - x:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "x"
+                - THEN:
+                    STRING(bar)
+                - ELSE:
+                    STRING(baz)
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET:
+                UNRESOLVED_LOOKUP
+                - INDEX:
+                    STRING(bar)
+                - CONTAINER:
+                    READ
+                    - TARGET: "bar"
+            - <arg0>:
+                READ
+                - TARGET: "foo"
+)");
     }
 
     SECTION("pass scope function as parameter for calling") {
@@ -724,8 +1917,50 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            IF
+            - COND:
+                READ
+                - TARGET: "x"
+            - THEN:
+                STRING(bar)
+            - ELSE:
+                STRING(baz)
+    - NEXT:
+        LET
+        - NAME: launcher
+        - VALUE:
+            FUNC
+            - func:
+null
+            - BODY:
+                CALL
+                - TARGET: "func"
+                - <arg0>:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "launcher"
+                - <arg0>:
+                    READ
+                    - TARGET: "bar"
+)");
     }
 
     SECTION("pass inline object as parameter for calling") {
@@ -737,8 +1972,44 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: launcher
+    - VALUE:
+        FUNC
+        - func:
+null
+        - BODY:
+            CALL
+            - TARGET: "func"
+            - <arg0>:
+                READ
+                - TARGET: "foo"
+    - NEXT:
+        MAP
+        - KEY0:
+            STRING(foo)
+        - VAL0:
+            CALL
+            - TARGET: "launcher"
+            - <arg0>:
+                FUNC
+                - x:
+null
+                - BODY:
+                    IF
+                    - COND:
+                        READ
+                        - TARGET: "x"
+                    - THEN:
+                        STRING(bar)
+                    - ELSE:
+                        STRING(baz)
+)");
     }
 
     SECTION("pass scope object as parameter for calling") {
@@ -751,8 +2022,50 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            IF
+            - COND:
+                READ
+                - TARGET: "x"
+            - THEN:
+                STRING(bar)
+            - ELSE:
+                STRING(baz)
+    - NEXT:
+        LET
+        - NAME: launcher
+        - VALUE:
+            FUNC
+            - func:
+null
+            - BODY:
+                CALL
+                - TARGET: "func"
+                - <arg0>:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "launcher"
+                - <arg0>:
+                    READ
+                    - TARGET: "bar"
+)");
     }
 
     SECTION("pass field function as parameter for calling") {
@@ -765,8 +2078,58 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - x:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "x"
+                - THEN:
+                    STRING(bar)
+                - ELSE:
+                    STRING(baz)
+    - NEXT:
+        LET
+        - NAME: launcher
+        - VALUE:
+            FUNC
+            - func:
+null
+            - BODY:
+                CALL
+                - TARGET: "func"
+                - <arg0>:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "launcher"
+                - <arg0>:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(bar)
+                    - CONTAINER:
+                        READ
+                        - TARGET: "bar"
+)");
     }
 
     SECTION("pass field object as parameter for calling") {
@@ -779,8 +2142,58 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - x:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "x"
+                - THEN:
+                    STRING(bar)
+                - ELSE:
+                    STRING(baz)
+    - NEXT:
+        LET
+        - NAME: launcher
+        - VALUE:
+            FUNC
+            - func:
+null
+            - BODY:
+                CALL
+                - TARGET: "func"
+                - <arg0>:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            MAP
+            - KEY0:
+                STRING(foo)
+            - VAL0:
+                CALL
+                - TARGET: "launcher"
+                - <arg0>:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(bar)
+                    - CONTAINER:
+                        READ
+                        - TARGET: "bar"
+)");
     }
 
     SECTION("call scope function from function return") {
@@ -794,8 +2207,71 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            IF
+            - COND:
+                READ
+                - TARGET: "x"
+            - THEN:
+                STRING(bar)
+            - ELSE:
+                STRING(baz)
+    - NEXT:
+        LET
+        - NAME: get_func
+        - VALUE:
+            FUNC
+            - foo:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "foo"
+                - THEN:
+                    READ
+                    - TARGET: "bar"
+                - ELSE:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            LET
+            - NAME: launcher
+            - VALUE:
+                FUNC
+                - func:
+null
+                - BODY:
+                    CALL
+                    - TARGET: "func"
+                    - <arg0>:
+                        READ
+                        - TARGET: "foo"
+            - NEXT:
+                MAP
+                - KEY0:
+                    STRING(foo)
+                - VAL0:
+                    CALL
+                    - TARGET: "launcher"
+                    - <arg0>:
+                        CALL
+                        - TARGET: "get_func"
+                        - <arg0>:
+                            READ
+                            - TARGET: "foo"
+)");
     }
 
     SECTION("call scope object from function return") {
@@ -809,8 +2285,71 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        FUNC
+        - x:
+null
+        - BODY:
+            IF
+            - COND:
+                READ
+                - TARGET: "x"
+            - THEN:
+                STRING(bar)
+            - ELSE:
+                STRING(baz)
+    - NEXT:
+        LET
+        - NAME: get_func
+        - VALUE:
+            FUNC
+            - foo:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "foo"
+                - THEN:
+                    READ
+                    - TARGET: "bar"
+                - ELSE:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            LET
+            - NAME: launcher
+            - VALUE:
+                FUNC
+                - func:
+null
+                - BODY:
+                    CALL
+                    - TARGET: "func"
+                    - <arg0>:
+                        READ
+                        - TARGET: "foo"
+            - NEXT:
+                MAP
+                - KEY0:
+                    STRING(foo)
+                - VAL0:
+                    CALL
+                    - TARGET: "launcher"
+                    - <arg0>:
+                        CALL
+                        - TARGET: "get_func"
+                        - <arg0>:
+                            READ
+                            - TARGET: "foo"
+)");
     }
 
     SECTION("call field function from function return") {
@@ -824,8 +2363,79 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - x:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "x"
+                - THEN:
+                    STRING(bar)
+                - ELSE:
+                    STRING(baz)
+    - NEXT:
+        LET
+        - NAME: get_func
+        - VALUE:
+            FUNC
+            - foo:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "foo"
+                - THEN:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(bar)
+                    - CONTAINER:
+                        READ
+                        - TARGET: "bar"
+                - ELSE:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            LET
+            - NAME: launcher
+            - VALUE:
+                FUNC
+                - func:
+null
+                - BODY:
+                    CALL
+                    - TARGET: "func"
+                    - <arg0>:
+                        READ
+                        - TARGET: "foo"
+            - NEXT:
+                MAP
+                - KEY0:
+                    STRING(foo)
+                - VAL0:
+                    CALL
+                    - TARGET: "launcher"
+                    - <arg0>:
+                        CALL
+                        - TARGET: "get_func"
+                        - <arg0>:
+                            READ
+                            - TARGET: "foo"
+)");
     }
 
     SECTION("call field object from function return") {
@@ -839,8 +2449,79 @@ TEST_CASE("ast_parser", "[function objects]") {
         }
       )";
         auto output = nativeParser(code);
-        auto expect = jsonnetParser(code);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    STRING(foo)
+- NEXT:
+    LET
+    - NAME: bar
+    - VALUE:
+        MAP
+        - KEY0:
+            STRING(bar)
+        - VAL0:
+            FUNC
+            - x:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "x"
+                - THEN:
+                    STRING(bar)
+                - ELSE:
+                    STRING(baz)
+    - NEXT:
+        LET
+        - NAME: get_func
+        - VALUE:
+            FUNC
+            - foo:
+null
+            - BODY:
+                IF
+                - COND:
+                    READ
+                    - TARGET: "foo"
+                - THEN:
+                    UNRESOLVED_LOOKUP
+                    - INDEX:
+                        STRING(bar)
+                    - CONTAINER:
+                        READ
+                        - TARGET: "bar"
+                - ELSE:
+                    READ
+                    - TARGET: "foo"
+        - NEXT:
+            LET
+            - NAME: launcher
+            - VALUE:
+                FUNC
+                - func:
+null
+                - BODY:
+                    CALL
+                    - TARGET: "func"
+                    - <arg0>:
+                        READ
+                        - TARGET: "foo"
+            - NEXT:
+                MAP
+                - KEY0:
+                    STRING(foo)
+                - VAL0:
+                    CALL
+                    - TARGET: "launcher"
+                    - <arg0>:
+                        CALL
+                        - TARGET: "get_func"
+                        - <arg0>:
+                            READ
+                            - TARGET: "foo"
+)");
     }
 }
 TEST_CASE("ast_parser", "[get functions]") {
@@ -848,29 +2529,73 @@ TEST_CASE("ast_parser", "[get functions]") {
         {
             auto const* code = "jst.get('foo', {})";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(get)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- <arg0>:
+    STRING(foo)
+- <arg1>:
+    MAP
+)");
         }
 
         {
             auto const* code = "jst.get('foo', map={})";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(get)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- <arg0>:
+    STRING(foo)
+- map:
+    MAP
+)");
         }
 
         {
             auto const* code = "jst.get(map={}, key='foo')";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(get)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- map:
+    MAP
+- key:
+    STRING(foo)
+)");
         }
 
         {
             auto const* code = "jst.get(key='foo', map={})";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(get)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- key:
+    STRING(foo)
+- map:
+    MAP
+)");
         }
         {
             auto const* code = R"(
@@ -880,14 +2605,80 @@ TEST_CASE("ast_parser", "[get functions]") {
         ])
       )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(nub_right)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- <arg0>:
+    [
+      IF
+      - COND:
+          CALL
+          - TARGET:
+              UNRESOLVED_LOOKUP
+              - INDEX:
+                  STRING(env)
+              - CONTAINER:
+                  READ
+                  - TARGET: "jst"
+          - <arg0>:
+              STRING(foo)
+      - THEN:
+          STRING(foo)
+      - ELSE:
+          STRING(bar)
+      IF
+      - COND:
+          CALL
+          - TARGET:
+              UNRESOLVED_LOOKUP
+              - INDEX:
+                  STRING(env)
+              - CONTAINER:
+                  READ
+                  - TARGET: "jst"
+          - <arg0>:
+              STRING(bar)
+      - THEN:
+          STRING(bar)
+      - ELSE:
+          STRING(foo)
+    ]
+)");
         }
         {
             auto const* code = "jst.at(list=[jst.env('foo'), 'bar'],index=-1)";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(at)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- list:
+    [
+      CALL
+      - TARGET:
+          UNRESOLVED_LOOKUP
+          - INDEX:
+              STRING(env)
+          - CONTAINER:
+              READ
+              - TARGET: "jst"
+      - <arg0>:
+          STRING(foo)
+      STRING(bar)
+    ]
+- index:
+    NEGATE
+      NUMBER(1)
+)");
         }
         {
             auto const* code = R"(
@@ -899,20 +2690,69 @@ TEST_CASE("ast_parser", "[get functions]") {
         )
       )";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(to_subdir)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- msg:
+    STRING(some error)
+- flat:
+    BOOL(true)
+- subdir:
+    STRING(baz)
+- map:
+    MAP
+    - KEY0:
+        STRING(a/foo)
+    - VAL0:
+        STRING(foo)
+    - KEY1:
+        STRING(b/bar)
+    - VAL1:
+        STRING(bar)
+)");
         }
         {
             auto const* code = "{ foo: 5 - 3 }";
             auto output = nativeParser(code);
-            auto expect = jsonnetParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(MAP
+- KEY0:
+    STRING(foo)
+- VAL0:
+    BINARY_OPERATION(+)
+    - LHS:
+        NUMBER(5)
+    - RHS:
+        NEGATE
+          NUMBER(3)
+)");
         }
         {
             auto const* code = "jst.get('foo', {foo: null}, default='bar')";
-            auto expect = jsonnetParser(code);
             auto output = nativeParser(code);
-            CHECK(output == expect);
+            CHECK(output == R"(CALL
+- TARGET:
+    UNRESOLVED_LOOKUP
+    - INDEX:
+        STRING(get)
+    - CONTAINER:
+        READ
+        - TARGET: "jst"
+- <arg0>:
+    STRING(foo)
+- <arg1>:
+    MAP
+    - KEY0:
+        STRING(foo)
+    - VAL0:
+        NULL
+- default:
+    STRING(bar)
+)");
         }
     }
 }
@@ -925,9 +2765,16 @@ TEST_CASE("ast_parser", "[imports]") {
           foo
         )";
         files["bar.jst"] = R"("bar")";
-        auto expect = jsonnetParser(files["foo.jst"], "foo.jst", files);
         auto output = nativeParser(files["foo.jst"], "foo.jst", files);
-        CHECK(output == expect);
+        CHECK(output == R"(LET
+- NAME: foo
+- VALUE:
+    FOREIGN
+      STRING(bar)
+- NEXT:
+    READ
+    - TARGET: "foo"
+)");
     }
 
     SECTION("cycle via self import") {
@@ -936,7 +2783,6 @@ TEST_CASE("ast_parser", "[imports]") {
           local foo = import 'foo.jst';
           foo
         )";
-        CHECK_THROWS(jsonnetParser(files["foo.jst"], "foo.jst", files));
         CHECK_THROWS(nativeParser(files["foo.jst"], "foo.jst", files));
     }
 
@@ -950,7 +2796,6 @@ TEST_CASE("ast_parser", "[imports]") {
           local bar = import 'foo.jst';
           bar
         )";
-        CHECK_THROWS(jsonnetParser(files["foo.jst"], "foo.jst", files));
         CHECK_THROWS(nativeParser(files["foo.jst"], "foo.jst", files));
     }
 }
