@@ -1,6 +1,6 @@
 { "ALL":
   { "type": ["@", "rules", "test", "suite"]
-  , "deps": ["inline", "preprocessor", "ref"]
+  , "deps": ["inline", "preprocessor", "ref", "lexer", "parser"]
   }
 , "inline":
   { "type": ["@", "rules", "CC/test", "test"]
@@ -32,6 +32,29 @@
   , "srcs": ["ref.test.cpp"]
   , "private-deps":
     [ ["@", "justlang", "", "ref"]
+    , ["@", "catch2", "", "catch2"]
+    , ["@", "catch2", "", "catch2-main"]
+    ]
+  }
+, "lexer":
+  { "type": ["@", "rules", "CC/test", "test"]
+  , "name": ["lexer"]
+  , "srcs": ["lexer.test.cpp"]
+  , "private-deps":
+    [ ["@", "json", "", "json"]
+    , ["@", "justlang", "src/justlang/ast/native", "lexer"]
+    , ["@", "catch2", "", "catch2"]
+    , ["@", "catch2", "", "catch2-main"]
+    ]
+  }
+, "parser":
+  { "type": ["@", "rules", "CC/test", "test"]
+  , "name": ["parser"]
+  , "srcs": ["parser.test.cpp"]
+  , "private-deps":
+    [ ["@", "justlang", "src/justlang/ast/jsonnet", "parser"]
+    , ["@", "justlang", "src/justlang/ast/native", "parser"]
+    , ["@", "justlang", "src/justlang/ast", "to_string_visitor"]
     , ["@", "catch2", "", "catch2"]
     , ["@", "catch2", "", "catch2-main"]
     ]

@@ -1,0 +1,22 @@
+{ "lexer":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["lexer"]
+  , "srcs": ["lexer.cpp"]
+  , "hdrs": ["lexer.hpp", "static_error.hpp"]
+  , "deps": [["src/justlang/ast", "ast"], ["src/justlang", "file_data"]]
+  , "stage": ["justlang/ast/native"]
+  }
+, "parser":
+  { "type": ["@", "rules", "CC", "library"]
+  , "name": ["parser"]
+  , "srcs": ["parser.cpp"]
+  , "hdrs": ["parser.hpp"]
+  , "deps":
+    [ "lexer"
+    , ["src/justlang", "file_data"]
+    , ["src/justlang/ast", "ast"]
+    , ["src/justlang/ast", "parser"]
+    ]
+  , "stage": ["justlang/ast/native"]
+  }
+}
