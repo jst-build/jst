@@ -321,7 +321,11 @@
         }
       ]
     }
-  , "private-deps": [["@", "json", "", "json"], ["src/utils/cpp", "json"]]
+  , "private-deps":
+    [ ["@", "fmt", "", "fmt"]
+    , ["@", "json", "", "json"]
+    , ["src/utils/cpp", "json"]
+    ]
   , "stage": ["src", "buildtool", "main"]
   }
 , "constants":
