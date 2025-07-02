@@ -528,9 +528,10 @@
   }
 , "imports":
   [ { "source": "git"
-    , "url": "https://github.com/just-buildsystem/bootstrappable-toolchain"
+    , "url": "https://gitee.com/justbuild/toolchains-cc.git"
     , "branch": "master"
-    , "repos": [{"repo": "clang-18.1.8-native", "alias": "clang-18"}]
+    , "repos":
+      [{"repo": "external_clang18-x86_64-ubuntu", "alias": "clang-18"}]
     }
   , { "source": "git"
     , "branch": "master"
