@@ -64,7 +64,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/rules-cc",
         "branch": "master",
-        "commit": "c9ebda47ea13b78e796b4b0c87ce5eb7549f8406",
+        "commit": "e0a16722aa13d82779ea1297aa63d8be7dff44c5",
         "subdir": "rules"
       }
     },
@@ -72,8 +72,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "master",
-        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
         "subdir": "rules"
       },
       "target_root": "json/defaults",
@@ -101,8 +101,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "master",
-        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
         "subdir": "etc/toolchain"
       },
       "rule_root": "toolchain"
@@ -111,8 +111,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "master",
-        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
         "subdir": "etc/defaults"
       }
     },
@@ -120,8 +120,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "master",
-        "commit": "4ad224fdc83ba535e66a95b32c8c44900faa86c6",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
         "subdir": "etc/import"
       }
     },

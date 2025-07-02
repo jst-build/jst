@@ -6,7 +6,7 @@
     , "repos": [{"repo": "rules"}]
     }
   , { "source": "git"
-    , "branch": "master"
+    , "branch": "v1.6.0"
     , "url": "https://github.com/just-buildsystem/justbuild"
     , "repos":
       [ {"repo": "rules", "alias": "toolchain"}
