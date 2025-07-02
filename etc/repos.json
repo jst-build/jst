@@ -44,6 +44,18 @@
         "justlang": "justlang"
       }
     },
+    "lint": {
+      "repository": {
+        "type": "file",
+        "path": "lint"
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "clang": "clang-18",
+        "justlang": "justlang",
+        "tests": "tests"
+      }
+    },
     "jsonnet": {
       "repository": {
         "type": "archive",
@@ -138,6 +150,32 @@
       "target_file_name": "TARGETS.catch2",
       "bindings": {
         "rules": "toolchain"
+      }
+    },
+    "clang-18": {
+      "repository": {
+        "type": "archive",
+        "fetch": "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
+        "sha256": "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
+        "content": "495971397e90fef8f731a1f1ad3ca1d25e845b9a",
+        "subdir": "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04"
+      },
+      "target_root": "clang-18/externals_root",
+      "target_file_name": "clang.TARGETS",
+      "bindings": {
+        "rules": "rules"
+      }
+    },
+    "clang-18/externals_root": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/toolchains-cc.git",
+        "branch": "master",
+        "commit": "94fb576e398c4c195c19733592c8bc51fb4c3d6b",
+        "mirrors": [
+          "https://gitee.com/justbuild/toolchains-cc.git"
+        ],
+        "subdir": "externals"
       }
     }
   }
