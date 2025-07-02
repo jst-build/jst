@@ -11,6 +11,10 @@
     [ ["LINT: clang-tidy", "clang-tidy"]
     , ["LINT: clang-format", "clang-format"]
     , ["LINT: strict_deps", "strict_deps"]
+    , [["@", "justlang_lint", "", "LINT: clang-tidy"], "justlang_clang-tidy"]
+    , [ ["@", "justlang_lint", "", "LINT: clang-format"]
+      , "justlang_clang-format"
+      ]
     ]
   }
 , "clang":

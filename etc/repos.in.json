@@ -49,6 +49,7 @@
       , "src": "jst"
       , "tests": "tests"
       , "clang": "clang-18"
+      , "justlang_lint": "justlang_lint"
       }
     }
   , "just-distfiles":
@@ -542,6 +543,15 @@
       , { "repo": "tests"
         , "alias": "justlang_tests"
         , "map": {"toolchain": "rules", "json": "json", "catch2": "catch2"}
+        }
+      , { "repo": "lint"
+        , "alias": "justlang_lint"
+        , "map":
+          { "toolchain": "rules"
+          , "json": "json"
+          , "catch2": "catch2"
+          , "clang-18": "clang-18"
+          }
         }
       ]
     }

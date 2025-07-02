@@ -65,7 +65,8 @@
         "rules": "rules-just",
         "src": "jst",
         "tests": "tests",
-        "clang": "clang-18"
+        "clang": "clang-18",
+        "justlang_lint": "justlang_lint"
       }
     },
     "just-distfiles": {
@@ -756,7 +757,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "84823a1dc0911663fde856d4c2e73f25ecd7ac7c",
+        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ]
@@ -795,7 +796,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "84823a1dc0911663fde856d4c2e73f25ecd7ac7c",
+        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
@@ -807,7 +808,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "84823a1dc0911663fde856d4c2e73f25ecd7ac7c",
+        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
@@ -819,7 +820,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/justlang.git",
         "branch": "master",
-        "commit": "84823a1dc0911663fde856d4c2e73f25ecd7ac7c",
+        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
         "mirrors": [
           "https://gitee.com/justbuild/justlang.git"
         ],
@@ -830,6 +831,24 @@
         "json": "json",
         "catch2": "catch2",
         "justlang": "justlang"
+      }
+    },
+    "justlang_lint": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justlang.git",
+        "branch": "master",
+        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
+        "mirrors": [
+          "https://gitee.com/justbuild/justlang.git"
+        ],
+        "subdir": "lint"
+      },
+      "bindings": {
+        "rules": "justlang/rules-justlang",
+        "clang": "clang-18",
+        "justlang": "justlang",
+        "tests": "justlang_tests"
       }
     }
   }
