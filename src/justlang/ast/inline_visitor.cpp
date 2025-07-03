@@ -14,6 +14,7 @@
 
 #include "justlang/ast/inline_visitor.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -312,6 +313,69 @@ auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
         loc,
         var_name,
         std::move(range),
+        body_visitor.InlineFunctions(node->GetBody()));
+}
+
+auto ASTInlineVisitor::operator()(ZipWithNode const* node) const -> ASTNodePtr {
+    auto const& var1_name = node->GetVariable1();
+    auto const& var2_name = node->GetVariable2();
+    auto range1 = InlineFunctions(node->GetRange1());
+    auto range2 = InlineFunctions(node->GetRange2());
+
+    auto const* list1 = ASTNode::Cast<ListNode const*>(range1.get());
+    auto const* list2 = ASTNode::Cast<ListNode const*>(range2.get());
+    if (list1 != nullptr and list2 != nullptr) {
+        // literal arrays -> do unrolling to inline all variable references
+        auto const count =
+            std::min(list1->GetItems().size(), list2->GetItems().size());
+        auto inl_items = ListNode::items_t{};
+        inl_items.reserve(count);
+        for (std::size_t i{}; i < count; ++i) {
+            auto const& item1 = list1->GetItems()[i];
+            auto const& item2 = list2->GetItems()[i];
+            auto body_scope = ScopeDefs{scope_};
+            body_scope.AddDef(var1_name, item1);
+            body_scope.AddDef(var2_name, item2);
+            auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
+            inl_items.emplace_back(
+                body_visitor.InlineFunctions(node->GetBody()));
+        }
+        return std::make_shared<ListNode>(node->GetLocation(),
+                                          std::move(inl_items));
+    }
+    if (list1 != nullptr and list1->GetItems().empty()) {
+        return std::make_shared<ListNode>(node->GetLocation(),
+                                          ListNode::items_t{});
+    }
+    if (list2 != nullptr and list2->GetItems().empty()) {
+        return std::make_shared<ListNode>(node->GetLocation(),
+                                          ListNode::items_t{});
+    }
+
+    // Add iteration variable to scope for inlining the iteration body.
+    auto body_scope = ScopeDefs{scope_};
+    auto const& loc = node->GetLocation();
+    if (partial_inline_) {
+        // For partial inline, add iteration variables to scope as nullptr,
+        // indicating it is yet unknown.
+        body_scope.AddDef(var1_name, nullptr);
+        body_scope.AddDef(var2_name, nullptr);
+    }
+    else {
+        // For full inlining, replace CallNode to iteration variables by VarNode
+        // (runtime variable) with the same name, evaluated during runtime
+        auto runtime_read_expr1 = std::make_shared<VarNode>(loc, var1_name);
+        auto runtime_read_expr2 = std::make_shared<VarNode>(loc, var2_name);
+        body_scope.AddDef(var1_name, std::move(runtime_read_expr1));
+        body_scope.AddDef(var2_name, std::move(runtime_read_expr2));
+    }
+    auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
+    return std::make_shared<ZipWithNode>(
+        loc,
+        var1_name,
+        var2_name,
+        std::move(range1),
+        std::move(range2),
         body_visitor.InlineFunctions(node->GetBody()));
 }
 

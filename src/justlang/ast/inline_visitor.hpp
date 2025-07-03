@@ -107,6 +107,7 @@ class ASTInlineVisitor final {
     [[nodiscard]] auto operator()(MapNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(IfNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(ForEachNode const* node) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(ZipWithNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(FoldLeftNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(UnaryOperationNode const* node) const
         -> ASTNodePtr;

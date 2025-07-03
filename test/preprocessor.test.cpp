@@ -1404,6 +1404,175 @@ TEST_CASE("preprocessor", "[builtin_functions]") {
         }
     }
 
+    SECTION("zip_with() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(
+                    R"([["foo", "fox"], ["bar", "bat"]])");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, ['foo', 'bar', 'bad'], ['fox', 'bat'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(
+                    R"([["foo", "fox"], ["bar", "bat"]])");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, ['foo', 'bar'], ['fox', 'bat', 'bad'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  [ ["foo", "fox"]
+                  , ["bar", {"type": "var", "name": "bat"}]
+                  ]
+                )");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, ['foo', 'bar', 'bad'],
+                                          ['fox', jst.env('bat')])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"([])");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, jst.env('list1'), [])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"([])");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, [], jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_with"
+                  , "range_1": {"type": "var", "name": "list1"}
+                  , "range_2": ["fox", "bat"]
+                  , "var_1": "x"
+                  , "var_2": "y"
+                  , "body":
+                    [{"type": "var", "name": "x"}, {"type": "var", "name": "y"}]
+                  }
+                )");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, jst.env('list1'), ['fox', 'bat'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_with"
+                  , "range_1": ["foo", "bar"]
+                  , "range_2": {"type": "var", "name": "list2"}
+                  , "var_1": "x"
+                  , "var_2": "y"
+                  , "body":
+                    [{"type": "var", "name": "x"}, {"type": "var", "name": "y"}]
+                  }
+                )");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, ['foo', 'bar'], jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_with"
+                  , "range_1": {"type": "var", "name": "list1"}
+                  , "range_2": {"type": "var", "name": "list2"}
+                  , "var_1": "x"
+                  , "var_2": "y"
+                  , "body":
+                    [{"type": "var", "name": "x"}, {"type": "var", "name": "y"}]
+                  }
+                )");
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, jst.env('list1'), jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("type errors") {
+            {
+                auto const* code = R"(
+                  local make_list(x) = [x, x];
+                  jst.zip_with(make_list, [], [])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  local make_list(x, y, z) = [x, y];
+                  jst.zip_with(make_list, [], [])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  local make_list(x, y) = [x, jst.env('x')]; // shadows runtime x
+                  jst.zip_with(make_list, jst.env('list1'), ['fox', 'bat'])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  jst.zip_with('foo', [], []])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, 'bar', [])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  local make_list(x, y) = [x, y];
+                  jst.zip_with(make_list, [], 'baz')
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+    }
+
     SECTION("foldl() with mandatory arguments") {
         SECTION("statically evaluated") {
             {

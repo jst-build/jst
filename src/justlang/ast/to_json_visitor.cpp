@@ -184,6 +184,21 @@ auto ASTToJsonVisitor::operator()(ForEachNode const* node) const
     return root;
 }
 
+auto ASTToJsonVisitor::operator()(ZipWithNode const* node) const
+    -> nlohmann::json {
+    if (json_only_) {
+        throw std::runtime_error{"not allowed"};
+    }
+    auto root = nlohmann::json::object();
+    root["type"] = "zip_with";
+    root["var_1"] = node->GetVariable1();
+    root["var_2"] = node->GetVariable2();
+    root["range_1"] = ToJson(*node->GetRange1());
+    root["range_2"] = ToJson(*node->GetRange2());
+    root["body"] = ToJson(*node->GetBody());
+    return root;
+}
+
 auto ASTToJsonVisitor::operator()(FoldLeftNode const* node) const
     -> nlohmann::json {
     if (json_only_) {

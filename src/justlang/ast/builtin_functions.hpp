@@ -113,6 +113,9 @@ class BuiltIn final {
     [[nodiscard]] static auto foreach (Location const&,
                                        CallNode::params_t const&) -> Result;
 
+    [[nodiscard]] static auto zip_with(Location const&,
+                                       CallNode::params_t const&) -> Result;
+
     [[nodiscard]] static auto foldl(Location const&,
                                     CallNode::params_t const&) -> Result;
 
@@ -156,50 +159,49 @@ class BuiltIn final {
 
 [[nodiscard]] auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr;
 
-auto const kBuiltinFunctions =
-    std::unordered_map<std::string, BuiltIn::Function>{
-        {"env", BuiltIn::env},    // env(name=<string>,default=<any>)
-        {"get", BuiltIn::get},    // get(key=<any>,map=<any>,default=<any>)
-        {"join", BuiltIn::join},  // join(items=<any>,sep=<any>)
-        {"flatten", BuiltIn::flatten},  // flatten(lists=<any>)
-        {"union", BuiltIn::map_union},  // union(maps=<any>, disjoint=<any>)
-        {"keys", BuiltIn::keys},        // keys(map=<any>)
-        {"fail", BuiltIn::fail},        // fail(msg=<any>)
-        {"json_encode", BuiltIn::json_encode},  // json_encode(data=<any>)
-        {"file", BuiltIn::file},                // file(path=<string>)
-        {"symlink", BuiltIn::symlink},          // symlink(path=<string>)
-        {"tree", BuiltIn::tree},                // tree(path=<string>)
-        {"glob", BuiltIn::glob},                // glob(pattern=<string>)
-        {"at", BuiltIn::at},    // at(index=<string>,list=<list>,default=<any>)
-        {"all", BuiltIn::all},  // all(args=<any>)
-        {"any", BuiltIn::any},  // any(args=<any>)
-        {"sum", BuiltIn::sum},  // sum(numbers=<any>)
-        {"prod", BuiltIn::prod},        // prod(numbers=<any>)
-        {"eq", BuiltIn::eq},            // eq(lhs=<any>,rhs=<any>)
-        {"not", BuiltIn::negate},       // not(expr=<any>)
-        {"foreach", BuiltIn::foreach},  // foreach(func=<func>, range=<any>)
-        {"foldl",
-         BuiltIn::foldl},  // foldl(func=<func>, init=<any>, range=<any>)
-        {"nub_right", BuiltIn::nub_right},  // nub_right(list=<list>)
-        {"nub_left", BuiltIn::nub_left},    // nub_left(list=<list>)
-        {"range", BuiltIn::range},          // range(size=<string>)
-        {"reverse", BuiltIn::reverse},      // reverse(list=<list>)
-        {"length", BuiltIn::length},        // length(list=<list>)
-        {"basename", BuiltIn::basename},    // basename(path=<string>)
-        {"join_cmd", BuiltIn::join_cmd},    // join_cmd(args=<list>)
-        {"change_ending",
-         BuiltIn::change_ending},  // change_ending(path=<string>,
-                                   // ending=<string>)
-        {"escape_chars",
-         BuiltIn::escape_chars},  // escape_chars(str=<string>, chars=<string>,
-                                  // prefix=<string>)
-        {"enumerate", BuiltIn::enumerate},  // enumerate(items=<list>)
-        {"to_subdir",
-         BuiltIn::to_subdir},  // to_subdir(map=<map>, subdir=<string>,
-                               // flat=<any>, msg=<any>)
-        {"from_subdir",
-         BuiltIn::from_subdir},  // from_subdir(map=<map>, subdir=<string>)
-    };
+auto const kBuiltinFunctions = std::unordered_map<std::string,
+                                                  BuiltIn::Function>{
+    {"env", BuiltIn::env},          // env(name=<string>,default=<any>)
+    {"get", BuiltIn::get},          // get(key=<any>,map=<any>,default=<any>)
+    {"join", BuiltIn::join},        // join(items=<any>,sep=<any>)
+    {"flatten", BuiltIn::flatten},  // flatten(lists=<any>)
+    {"union", BuiltIn::map_union},  // union(maps=<any>, disjoint=<any>)
+    {"keys", BuiltIn::keys},        // keys(map=<any>)
+    {"fail", BuiltIn::fail},        // fail(msg=<any>)
+    {"json_encode", BuiltIn::json_encode},  // json_encode(data=<any>)
+    {"file", BuiltIn::file},                // file(path=<string>)
+    {"symlink", BuiltIn::symlink},          // symlink(path=<string>)
+    {"tree", BuiltIn::tree},                // tree(path=<string>)
+    {"glob", BuiltIn::glob},                // glob(pattern=<string>)
+    {"at", BuiltIn::at},       // at(index=<string>,list=<list>,default=<any>)
+    {"all", BuiltIn::all},     // all(args=<any>)
+    {"any", BuiltIn::any},     // any(args=<any>)
+    {"sum", BuiltIn::sum},     // sum(numbers=<any>)
+    {"prod", BuiltIn::prod},   // prod(numbers=<any>)
+    {"eq", BuiltIn::eq},       // eq(lhs=<any>,rhs=<any>)
+    {"not", BuiltIn::negate},  // not(expr=<any>)
+    {"foreach", BuiltIn::foreach},  // foreach(func=<func>, range=<any>)
+    {"zip_with",
+     BuiltIn::zip_with},  // zip_with(func=<func>, range1=<any>, range2=<any>)
+    {"foldl", BuiltIn::foldl},  // foldl(func=<func>, init=<any>, range=<any>)
+    {"nub_right", BuiltIn::nub_right},          // nub_right(list=<list>)
+    {"nub_left", BuiltIn::nub_left},            // nub_left(list=<list>)
+    {"range", BuiltIn::range},                  // range(size=<string>)
+    {"reverse", BuiltIn::reverse},              // reverse(list=<list>)
+    {"length", BuiltIn::length},                // length(list=<list>)
+    {"basename", BuiltIn::basename},            // basename(path=<string>)
+    {"join_cmd", BuiltIn::join_cmd},            // join_cmd(args=<list>)
+    {"change_ending", BuiltIn::change_ending},  // change_ending(path=<string>,
+                                                // ending=<string>)
+    {"escape_chars",
+     BuiltIn::escape_chars},  // escape_chars(str=<string>, chars=<string>,
+                              // prefix=<string>)
+    {"enumerate", BuiltIn::enumerate},  // enumerate(items=<list>)
+    {"to_subdir", BuiltIn::to_subdir},  // to_subdir(map=<map>, subdir=<string>,
+                                        // flat=<any>, msg=<any>)
+    {"from_subdir",
+     BuiltIn::from_subdir},  // from_subdir(map=<map>, subdir=<string>)
+};
 
 }  // namespace justlang
 

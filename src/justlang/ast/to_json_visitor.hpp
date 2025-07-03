@@ -52,6 +52,8 @@ class ASTToJsonVisitor final {
     [[nodiscard]] auto operator()(IfNode const* node) const -> nlohmann::json;
     [[nodiscard]] auto operator()(ForEachNode const* node) const
         -> nlohmann::json;
+    [[nodiscard]] auto operator()(ZipWithNode const* node) const
+        -> nlohmann::json;
     [[nodiscard]] auto operator()(FoldLeftNode const* node) const
         -> nlohmann::json;
     [[nodiscard]] auto operator()(RefNode const* node) const -> nlohmann::json;

@@ -255,6 +255,23 @@ auto ASTToStringVisitor::operator()(ForEachNode const* node) const
     return oss.str();
 }
 
+auto ASTToStringVisitor::operator()(ZipWithNode const* node) const
+    -> std::string {
+    auto const space = IndentString(indent_);
+    std::ostringstream oss{};
+    oss << space << "ZIP_WITH\n";
+    oss << space << "- VAR1: " << node->GetVariable1() << "\n";
+    oss << space << "- VAR2: " << node->GetVariable2() << "\n";
+    ASTToStringVisitor const foreach_visitor(indent_ + 2);
+    oss << space << "- RANGE1:\n";
+    oss << foreach_visitor.Dump(*node->GetRange1());
+    oss << space << "- RANGE2:\n";
+    oss << foreach_visitor.Dump(*node->GetRange2());
+    oss << space << "- BODY:\n";
+    oss << foreach_visitor.Dump(*node->GetBody());
+    return oss.str();
+}
+
 auto ASTToStringVisitor::operator()(FoldLeftNode const* node) const
     -> std::string {
     auto const space = IndentString(indent_);

@@ -1081,6 +1081,58 @@ auto BuiltIn::negate(Location const& loc,
         ValueType::Bool);
 }
 
+auto BuiltIn::zip_with(Location const& loc,
+                       CallNode::params_t const& args) -> Result {
+    static const std::array kExpected = {
+        ExpectedParameter{"func", {}, true},
+        ExpectedParameter{"range1", {ValueType::Any, ValueType::List}, true},
+        ExpectedParameter{"range2", {ValueType::Any, ValueType::List}, true},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("zip_with: ") + e.what());
+    }
+
+    auto func_node = RetrieveAs<FuncNode>(named_params, kExpected[0]);
+    if (func_node == nullptr) {
+        throw BuiltInError(loc,
+                           "zip_with: Mandatory parameter \"func\" is missing "
+                           "or not a function");
+    }
+
+    ASTNodePtr range1_node = RetrieveAs(named_params, kExpected[1]);
+    if (range1_node == nullptr) {
+        throw BuiltInError(loc,
+                           "zip_with: Missing mandatory parameter \"range1\"");
+    }
+
+    ASTNodePtr range2_node = RetrieveAs(named_params, kExpected[2]);
+    if (range2_node == nullptr) {
+        throw BuiltInError(loc,
+                           "zip_with: Missing mandatory parameter \"range2\"");
+    }
+
+    if (func_node->GetParams().size() != 2) {
+        throw BuiltInError(
+            loc,
+            "zip_with: Parameter \"func\" must accept exactly two parameters.");
+    }
+
+    auto const& iter1_var = func_node->GetParams().at(0).first;
+    auto const& iter2_var = func_node->GetParams().at(1).first;
+    auto const& body = func_node->GetBody();
+    return {std::make_shared<ZipWithNode>(loc,
+                                          iter1_var,
+                                          iter2_var,
+                                          std::move(range1_node),
+                                          std::move(range2_node),
+                                          body),
+            /*needs_inlining=*/true};
+}
+
 auto BuiltIn::foreach (Location const& loc,
                        CallNode::params_t const& args) -> Result {
     static const std::array kExpected = {
@@ -2092,6 +2144,7 @@ template <typename T>
     entries.emplace_back(MakeBuiltinObjEntry("eq"));
     entries.emplace_back(MakeBuiltinObjEntry("not"));
     entries.emplace_back(MakeBuiltinObjEntry("foreach"));
+    entries.emplace_back(MakeBuiltinObjEntry("zip_with"));
     entries.emplace_back(MakeBuiltinObjEntry("foldl"));
     entries.emplace_back(MakeBuiltinObjEntry("nub_right"));
     entries.emplace_back(MakeBuiltinObjEntry("nub_left"));

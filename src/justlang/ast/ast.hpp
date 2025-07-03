@@ -577,6 +577,54 @@ class ForEachNode : public ASTNode {
     ASTNodePtr body_{};
 };
 
+class ZipWithNode : public ASTNode {
+  public:
+    explicit ZipWithNode(Location loc,
+                         std::string var1,
+                         std::string var2,
+                         ASTNodePtr range1,
+                         ASTNodePtr range2,
+                         ASTNodePtr body) noexcept
+        : ASTNode{std::move(loc), ValueType::List},
+          var1_{std::move(var1)},
+          var2_{std::move(var2)},
+          range1_{std::move(range1)},
+          range2_{std::move(range2)},
+          body_{std::move(body)} {}
+    ZipWithNode(ZipWithNode&&) = delete;
+    ZipWithNode(ZipWithNode const&) = default;
+    auto operator=(ZipWithNode&&) -> ZipWithNode& = delete;
+    auto operator=(ZipWithNode const&) -> ZipWithNode& = delete;
+    ~ZipWithNode() override = default;
+
+    [[nodiscard]] auto GetVariable1() const noexcept -> std::string const& {
+        return var1_;
+    }
+    [[nodiscard]] auto GetVariable2() const noexcept -> std::string const& {
+        return var2_;
+    }
+    [[nodiscard]] auto GetRange1() const noexcept -> ASTNodePtr const& {
+        return range1_;
+    }
+    [[nodiscard]] auto GetRange2() const noexcept -> ASTNodePtr const& {
+        return range2_;
+    }
+    [[nodiscard]] auto GetBody() const noexcept -> ASTNodePtr const& {
+        return body_;
+    }
+
+    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
+        return this;
+    }
+
+  private:
+    std::string var1_{};
+    std::string var2_{};
+    ASTNodePtr range1_{};
+    ASTNodePtr range2_{};
+    ASTNodePtr body_{};
+};
+
 class FoldLeftNode : public ASTNode {
   public:
     explicit FoldLeftNode(Location loc,

@@ -45,6 +45,7 @@ class ASTToStringVisitor final {
     [[nodiscard]] auto operator()(VarNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(IfNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(ForEachNode const* node) const -> std::string;
+    [[nodiscard]] auto operator()(ZipWithNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(FoldLeftNode const* node) const
         -> std::string;
     [[nodiscard]] auto operator()(UnaryOperationNode const* node) const
