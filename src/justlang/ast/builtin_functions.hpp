@@ -116,6 +116,9 @@ class BuiltIn final {
     [[nodiscard]] static auto zip_with(Location const&,
                                        CallNode::params_t const&) -> Result;
 
+    [[nodiscard]] static auto zip_map(Location const&,
+                                      CallNode::params_t const&) -> Result;
+
     [[nodiscard]] static auto foldl(Location const&,
                                     CallNode::params_t const&) -> Result;
 
@@ -183,6 +186,7 @@ auto const kBuiltinFunctions = std::unordered_map<std::string,
     {"foreach", BuiltIn::foreach},  // foreach(func=<func>, range=<any>)
     {"zip_with",
      BuiltIn::zip_with},  // zip_with(func=<func>, range1=<any>, range2=<any>)
+    {"zip_map", BuiltIn::zip_map},  // zip_map(range1=<any>, range2=<any>)
     {"foldl", BuiltIn::foldl},  // foldl(func=<func>, init=<any>, range=<any>)
     {"nub_right", BuiltIn::nub_right},          // nub_right(list=<list>)
     {"nub_left", BuiltIn::nub_left},            // nub_left(list=<list>)

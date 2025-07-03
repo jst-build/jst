@@ -1133,6 +1133,80 @@ auto BuiltIn::zip_with(Location const& loc,
             /*needs_inlining=*/true};
 }
 
+auto BuiltIn::zip_map(Location const& loc,
+                      CallNode::params_t const& args) -> Result {
+    static const std::array kExpected = {
+        ExpectedParameter{"range_key", {ValueType::Any, ValueType::List}, true},
+        ExpectedParameter{"range_val", {ValueType::Any, ValueType::List}, true},
+    };
+    static auto const kKeyTypes =
+        std::unordered_set<ValueType>{ValueType::Any, ValueType::String};
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("zip_map: ") + e.what());
+    }
+
+    ASTNodePtr range_key_node = RetrieveAs(named_params, kExpected[0]);
+    if (range_key_node == nullptr) {
+        throw BuiltInError(
+            loc, "zip_map: Missing mandatory parameter \"range_key\"");
+    }
+
+    ASTNodePtr range_val_node = RetrieveAs(named_params, kExpected[1]);
+    if (range_val_node == nullptr) {
+        throw BuiltInError(
+            loc, "zip_map: Missing mandatory parameter \"range_val\"");
+    }
+
+    // attempt partial evaluation
+    auto const* list_key = ASTNode::Cast<ListNode const*>(range_key_node.get());
+    auto const* list_val = ASTNode::Cast<ListNode const*>(range_val_node.get());
+    if (list_key != nullptr and list_val != nullptr) {
+        // literal arrays -> do unrolling to inline all variable references
+        auto const count =
+            std::min(list_key->GetItems().size(), list_val->GetItems().size());
+        auto out_fields = MapNode::fields_t{};
+        out_fields.reserve(count);
+        for (std::size_t i{}; i < count; ++i) {
+            auto const& key_node = list_key->GetItems()[i];
+            auto const& val_node = list_val->GetItems()[i];
+            if (not kKeyTypes.contains(key_node->EvalType())) {
+                throw BuiltInError(
+                    loc,
+                    "zip_map: List 'range_key' may not contain items of type " +
+                        TypeToString(key_node->EvalType()));
+            }
+            out_fields.emplace_back(key_node, val_node);
+        }
+        return std::make_shared<MapNode>(justlang::Location{},
+                                         std::move(out_fields));
+    }
+    if (list_key != nullptr and list_key->GetItems().empty()) {
+        return std::make_shared<MapNode>(justlang::Location{},
+                                         MapNode::fields_t{});
+    }
+    if (list_val != nullptr and list_val->GetItems().empty()) {
+        return std::make_shared<MapNode>(justlang::Location{},
+                                         MapNode::fields_t{});
+    }
+
+    MapNode::fields_t fields{
+        {std::make_shared<StringNode>(loc, "type"),
+         std::make_shared<StringNode>(loc, "zip_map")},
+        {std::make_shared<StringNode>(loc, "range_key"), range_key_node},
+        {std::make_shared<StringNode>(loc, "range_val"), range_val_node},
+    };
+
+    return std::make_shared<VerbatimNode>(
+        loc,
+        std::make_shared<MapNode>(loc, std::move(fields)),
+        VerbatimType::Flat,
+        ValueType::List);
+}
+
 auto BuiltIn::foreach (Location const& loc,
                        CallNode::params_t const& args) -> Result {
     static const std::array kExpected = {
@@ -2145,6 +2219,7 @@ template <typename T>
     entries.emplace_back(MakeBuiltinObjEntry("not"));
     entries.emplace_back(MakeBuiltinObjEntry("foreach"));
     entries.emplace_back(MakeBuiltinObjEntry("zip_with"));
+    entries.emplace_back(MakeBuiltinObjEntry("zip_map"));
     entries.emplace_back(MakeBuiltinObjEntry("foldl"));
     entries.emplace_back(MakeBuiltinObjEntry("nub_right"));
     entries.emplace_back(MakeBuiltinObjEntry("nub_left"));

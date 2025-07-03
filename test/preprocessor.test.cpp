@@ -1573,6 +1573,185 @@ TEST_CASE("preprocessor", "[builtin_functions]") {
         }
     }
 
+    SECTION("zip_map() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "map_union"
+                  , "$1":
+                    [ { "type": "singleton_map"
+                      , "key": "foo"
+                      , "value": "fox"
+                      }
+                    , { "type": "singleton_map"
+                      , "key": "bar"
+                      , "value": "bat"
+                      }
+                    ]
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(['foo', 'bar', 'bad'], ['fox', 'bat'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "map_union"
+                  , "$1":
+                    [ { "type": "singleton_map"
+                      , "key": "foo"
+                      , "value": "fox"
+                      }
+                    , { "type": "singleton_map"
+                      , "key": "bar"
+                      , "value": "bat"
+                      }
+                    ]
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(['foo', 'bar'], ['fox', 'bat', 'bad'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "map_union"
+                  , "$1":
+                    [ { "type": "singleton_map"
+                      , "key": "foo"
+                      , "value": "fox"
+                      }
+                    , { "type": "singleton_map"
+                      , "key": "bar"
+                      , "value": {"type": "var", "name": "bat"}
+                      }
+                    ]
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(['foo', 'bar'], ['fox', jst.env('bat')])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "map_union"
+                  , "$1":
+                    [ { "type": "singleton_map"
+                      , "key": "foo"
+                      , "value": "fox"
+                      }
+                    , { "type": "singleton_map"
+                      , "key": {"type": "var", "name": "bar"}
+                      , "value": "bat"
+                      }
+                    ]
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(['foo', jst.env('bar')], ['fox', 'bat'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected =
+                    nlohmann::json::parse(R"({"type": "empty_map"})");
+                auto const* code = R"(
+                  jst.zip_map(jst.env('list1'), [])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected =
+                    nlohmann::json::parse(R"({"type": "empty_map"})");
+                auto const* code = R"(
+                  jst.zip_map([], jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_map"
+                  , "range_key": {"type": "var", "name": "list1"}
+                  , "range_val": ["fox", "bat"]
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(jst.env('list1'), ['fox', 'bat'])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_map"
+                  , "range_key": ["foo", "bar"]
+                  , "range_val": {"type": "var", "name": "list2"}
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(['foo', 'bar'], jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "zip_map"
+                  , "range_key": {"type": "var", "name": "list1"}
+                  , "range_val": {"type": "var", "name": "list2"}
+                  }
+                )");
+                auto const* code = R"(
+                  jst.zip_map(jst.env('list1'), jst.env('list2'))
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("type errors") {
+            {
+                auto const* code = R"(
+                  jst.zip_map('foo', [])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  jst.zip_map([], 'bar')
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(
+                  jst.zip_map(['foo', []], ['fox', 'bat'])
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+    }
+
     SECTION("foldl() with mandatory arguments") {
         SECTION("statically evaluated") {
             {
