@@ -801,10 +801,20 @@ auto main(int argc, char* argv[]) -> int {
                 content = std::move(*file_content);
             }
 
-            auto json = root.ReadJustlang(
-                "", eval_args.file_path, std::move(content), eval_args.type);
+            auto json = std::optional<nlohmann::json>{};
+            try {
+                json = nlohmann::json::parse(content);
+            } catch (...) {
+                Logger::Log(LogLevel::Debug,
+                            "Parsing as JSON failed, retrying as Justlang.");
+                json = root.ReadJustlang("",
+                                         eval_args.file_path,
+                                         std::move(content),
+                                         eval_args.type);
+            }
 
             if (not json) {
+                Logger::Log(LogLevel::Error, "Parsing input file failed.");
                 return kExitFailure;
             }
 
