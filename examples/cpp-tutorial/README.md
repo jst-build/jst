@@ -231,10 +231,10 @@ The full list of variables supported by the imported toolchain can be obtained
 from the [General Configuration](https://gitee.com/justbuild/toolchains-cc#general-configuration) section of the toolchain repository.
 
 One of the supported variables is `DEBUG`, which is not set by default. Setting
-it to `true` will result in a debug build.
+it to a non-empty map will result in a debug build.
 
 ```sh
-$ jst build src helloworld -D'{"DEBUG":true}' -v
+$ jst build src helloworld -D'{"DEBUG":{"ENABLE":true}}' -v
 ```
 
 The `-v` flag shows that the compile command now contains debug flags
