@@ -47,6 +47,7 @@ enum class TokenType : std::uint8_t {
     STRING_SINGLE,
     TEXT_BLOCK,
     REF_STRING,
+    VAR_STRING,
 
     // Numbers
     FLOAT,

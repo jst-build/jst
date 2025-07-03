@@ -815,6 +815,32 @@ TEST_CASE("ast_parser", "[special strings]") {
 )");
         }
     }
+
+    SECTION("var-strings") {
+        SECTION("plain variable") {
+            auto const* code = R"($'foo')";
+            auto output = nativeParser(code);
+            CHECK(output == R"(VAR
+- NAME: foo
+)");
+        }
+
+        SECTION("variable with ''") {
+            auto const* code = R"($'foo''bar')";
+            auto output = nativeParser(code);
+            CHECK(output == R"(VAR
+- NAME: foo'bar
+)");
+        }
+
+        SECTION("variable with special chars") {
+            auto const* code = R"($'foo "\n bar')";
+            auto output = nativeParser(code);
+            CHECK(output == R"(VAR
+- NAME: foo "\n bar
+)");
+        }
+    }
 }
 
 TEST_CASE("ast_parser", "[built-in function evaluation]") {

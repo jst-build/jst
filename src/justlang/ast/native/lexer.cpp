@@ -108,6 +108,8 @@ std::array<std::string, 6> const kValidBinaryOperators =
             return "STRING_DOUBLE";
         case TokenType::REF_STRING:
             return "REF_STRING";
+        case TokenType::VAR_STRING:
+            return "VAR_STRING";
         case TokenType::TEXT_BLOCK:
             return "TEXT_BLOCK";
 
@@ -323,7 +325,8 @@ auto Lexer::ScanLiterals() -> std::optional<Token> {
 }
 
 auto Lexer::ScanSpecialString() -> Token {
-    Advance();  // Skip @
+    auto is_var_str = Peek() == '$';
+    Advance();  // Skip @ or $
 
     // Validate quote
     if (IsAtEnd() || (Peek() != '\'')) {
@@ -360,7 +363,7 @@ auto Lexer::ScanSpecialString() -> Token {
     }
 
     return {filename_,
-            TokenType::REF_STRING,
+            is_var_str ? TokenType::VAR_STRING : TokenType::REF_STRING,
             content,
             LineNumber{line_},
             ColumnNumber{column_}};
@@ -606,7 +609,7 @@ auto Lexer::ScanToken() -> std::optional<Token> {
     }
 
     // Handle special strings
-    if (token_char == '@') {
+    if (token_char == '@' || token_char == '$') {
         return ScanSpecialString();
     }
 

@@ -420,6 +420,9 @@ auto NativeParser::ParseData(const FileData& file_data)
             return std::make_shared<justlang::RefNode>(
                 CreateLocation(tok, import_chain_.back()),
                 justlang::DecodeRefString(tok.value, false));
+        case TokenType::VAR_STRING:
+            return std::make_shared<justlang::VarNode>(
+                CreateLocation(tok, import_chain_.back()), tok.value);
         case TokenType::FALSE:
             return std::make_shared<justlang::BoolNode>(
                 CreateLocation(tok, import_chain_.back()), false);
@@ -633,6 +636,7 @@ auto NativeParser::ParseData(const FileData& file_data)
             case TokenType::STRING_SINGLE:
             case TokenType::STRING_DOUBLE:
             case TokenType::REF_STRING:
+            case TokenType::VAR_STRING:
             case TokenType::TEXT_BLOCK: {
                 std::shared_ptr<ASTNode> lhs = nullptr;
                 Location const loc =
@@ -654,6 +658,10 @@ auto NativeParser::ParseData(const FileData& file_data)
                 else if (tok.type == TokenType::REF_STRING) {
                     lhs = std::make_shared<justlang::RefNode>(
                         loc, justlang::DecodeRefString(tok.value, false));
+                    tokens_.Advance();  // skip lhs
+                }
+                else if (tok.type == TokenType::VAR_STRING) {
+                    lhs = std::make_shared<justlang::VarNode>(loc, tok.value);
                     tokens_.Advance();  // skip lhs
                 }
                 else {
