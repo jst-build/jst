@@ -1,0 +1,166 @@
+{
+  "main": "justlang",
+  "repositories": {
+    "defaults": {
+      "repository": {
+        "type": "file",
+        "path": "etc/defaults"
+      }
+    },
+    "externals": {
+      "repository": {
+        "type": "file",
+        "path": "etc/externals"
+      }
+    },
+    "rules-justlang": {
+      "repository": "toolchain",
+      "target_root": "defaults",
+      "rule_root": "toolchain",
+      "bindings": {
+        "toolchain": "toolchain"
+      }
+    },
+    "justlang": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "json": "json"
+      }
+    },
+    "tests": {
+      "repository": {
+        "type": "file",
+        "path": "test"
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "json": "json",
+        "catch2": "catch2",
+        "justlang": "justlang"
+      }
+    },
+    "lint": {
+      "repository": {
+        "type": "file",
+        "path": "lint"
+      },
+      "bindings": {
+        "rules": "rules-justlang",
+        "clang": "clang-18",
+        "justlang": "justlang",
+        "tests": "tests"
+      }
+    },
+    "rules": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/rules-cc",
+        "branch": "master",
+        "commit": "e0a16722aa13d82779ea1297aa63d8be7dff44c5",
+        "subdir": "rules"
+      }
+    },
+    "toolchain": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
+        "subdir": "rules"
+      },
+      "target_root": "json/defaults",
+      "rule_root": "toolchain",
+      "bindings": {
+        "toolchain": "json/toolchain"
+      }
+    },
+    "json": {
+      "repository": {
+        "type": "zip",
+        "content": "733571f96614cc01fcebf76c8359f52706677c61",
+        "fetch": "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip",
+        "sha256": "a22461d13119ac5c78f205d3df1db13403e58ce1bb1794edc9313677313f4a9d",
+        "sha512": "8d923e2586acf736fc1886bf1839ca0126444ec60ce93a4bd18c21eef4475dff6f608203e42bf4968878dc50727a8c20c517dd8c1ac5c6b0bb6a95f2dce5546e",
+        "subdir": "include/nlohmann"
+      },
+      "target_root": "json/import targets",
+      "target_file_name": "TARGETS.json",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "json/toolchain": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
+        "subdir": "etc/toolchain"
+      },
+      "rule_root": "toolchain"
+    },
+    "json/defaults": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
+        "subdir": "etc/defaults"
+      }
+    },
+    "json/import targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/justbuild",
+        "branch": "v1.6.0",
+        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
+        "subdir": "etc/import"
+      }
+    },
+    "catch2": {
+      "repository": {
+        "type": "archive",
+        "content": "5af653af0c54ad580176a8cadb5a1cef8c880372",
+        "fetch": "https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.3.tar.gz",
+        "sha256": "8d723b0535c94860ef8cf6231580fa47d67a3416757ecb10639e40d748ab6c71",
+        "sha512": "57c996f679cbad212cb0fde39e506bade37bd559c0e93e20f407f2a2f029e98b78661e10257f9c8e4cb5fd7d52d0ea1eae3d4a1f989c6d66fcb281e32e1688f6",
+        "subdir": "Catch2-3.5.3"
+      },
+      "target_root": "json/import targets",
+      "target_file_name": "TARGETS.catch2",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "clang-18": {
+      "repository": {
+        "type": "archive",
+        "fetch": "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
+        "sha256": "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
+        "content": "495971397e90fef8f731a1f1ad3ca1d25e845b9a",
+        "subdir": "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04"
+      },
+      "target_root": "clang-18/externals_root",
+      "target_file_name": "clang.TARGETS",
+      "bindings": {
+        "rules": "rules"
+      }
+    },
+    "clang-18/externals_root": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/just-buildsystem/toolchains-cc.git",
+        "branch": "master",
+        "commit": "94fb576e398c4c195c19733592c8bc51fb4c3d6b",
+        "mirrors": [
+          "https://gitee.com/justbuild/toolchains-cc.git"
+        ],
+        "subdir": "externals"
+      }
+    }
+  }
+}
