@@ -23,11 +23,11 @@
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
     shared:
-      if jst.env('BUILD_SHARED') then ['yes'],
+      if $'BUILD_SHARED' then ['yes'],
     'private-cflags':
-      if jst.env('USE_FMTLIB') then ['-DUSE_FMTLIB'],
+      if $'USE_FMTLIB' then ['-DUSE_FMTLIB'],
     'private-deps':
-      if jst.env('USE_FMTLIB') then [@'fmtlib//:fmt-lib'],
+      if $'USE_FMTLIB' then [@'fmtlib//:fmt-lib'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers
