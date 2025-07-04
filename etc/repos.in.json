@@ -534,10 +534,8 @@
     , "repos":
       [{"repo": "external_clang18-x86_64-ubuntu", "alias": "clang-18"}]
     }
-  , { "source": "git"
-    , "branch": "master"
-    , "url": "https://github.com/just-buildsystem/justlang.git"
-    , "mirrors": ["https://gitee.com/justbuild/justlang.git"]
+  , { "source": "file"
+    , "path": "extern/justlang"
     , "repos":
       [ {"alias": "justlang", "map": {"toolchain": "rules", "json": "json"}}
       , { "repo": "tests"

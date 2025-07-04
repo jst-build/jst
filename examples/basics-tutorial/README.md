@@ -197,7 +197,7 @@ from the expression in field `data`. The expression concatenates the string
 `'Hello '` with the value from the configuration variable `GREETEE`, which
 defaults to string `'Universe'` if not set.
 
-> Note: configuration variables are read using the function [`jst.env()`](../../doc/justlang/stdlib.md#jstenvname-defaultnull).
+> Note: configuration variables are read using the function [`jst.env()`](../../extern/justlang/doc/stdlib.md#jstenvname-defaultnull).
 
 Build the `file_gen` target without variables:
 

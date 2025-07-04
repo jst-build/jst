@@ -66,8 +66,8 @@ Hello World!
 
 ## Justlang documentation
 
-- [Getting Started](doc/justlang/getting-started.md)
-- [Standard Library](doc/justlang/stdlib.md)
+- [Getting Started](extern/justlang/doc/getting-started.md)
+- [Standard Library](extern/justlang/doc/stdlib.md)
 - [Troubleshooting](doc/justlang/troubleshoot.md)
 
 ## General documentation

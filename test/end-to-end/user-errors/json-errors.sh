@@ -28,13 +28,13 @@ EOF
 cat msg
 grep -q 'default target' msg
 grep -q 'TARGETS' msg
-grep -q 'TARGETS:1:17' msg # expect  to see a position of the parsing error
+grep -q 'TARGETS:1:19' msg # expect to see a position of the parsing error
 
 
 "${JUST}" build --local-build-root "${LBR}" some-target 2>msg && exit 1 || :
 cat msg
 # expect the error to happen while trying to analyse the default target
 grep -q \''""//:some-target'\' msg
-grep -q 'TARGETS:1:17' msg # expect  to see a position of the parsing error
+grep -q 'TARGETS:1:19' msg # expect to see a position of the parsing error
 
 echo OK

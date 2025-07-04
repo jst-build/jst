@@ -739,7 +739,7 @@
         "type": "git",
         "repository": "https://github.com/just-buildsystem/rules-cc",
         "branch": "master",
-        "commit": "457b1f9dda7366fbb4e6ac4664750bb2bab48e42",
+        "commit": "e0a16722aa13d82779ea1297aa63d8be7dff44c5",
         "subdir": "rules"
       }
     },
@@ -748,39 +748,18 @@
         "type": "git",
         "repository": "https://gitee.com/justbuild/toolchains-cc.git",
         "branch": "master",
-        "commit": "45a10f9ae99e175ac66d2c71fefdc5cca35f2dc4",
+        "commit": "4f20fe6b5d85b3389172bcba9cc2b0c8132a1cc3",
         "subdir": "externals"
       }
     },
     "justlang": {
       "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justlang.git",
-        "branch": "master",
-        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
-        "mirrors": [
-          "https://gitee.com/justbuild/justlang.git"
-        ]
+        "type": "file",
+        "path": "extern/justlang/."
       },
       "bindings": {
         "rules": "justlang/rules-justlang",
-        "json": "json",
-        "jsonnet": "justlang/jsonnet"
-      }
-    },
-    "justlang/jsonnet": {
-      "repository": {
-        "type": "archive",
-        "content": "273ba750b381e3f4d70ffbfd93eeef32d82d7939",
-        "fetch": "https://github.com/google/jsonnet/archive/refs/tags/v0.20.0.tar.gz",
-        "sha256": "77bd269073807731f6b11ff8d7c03e9065aafb8e4d038935deb388325e52511b",
-        "sha512": "d46d2521d4389d05f91a16ecd9f181be1853f674a9264e9fac23e413f1084dee947e80682af59603e15e443061a0beb50a30c14c858853e10ed1ae7187d09730",
-        "subdir": "jsonnet-0.20.0"
-      },
-      "target_root": "justlang/externals",
-      "target_file_name": "jsonnet.TARGETS",
-      "bindings": {
-        "rules": "rules"
+        "json": "json"
       }
     },
     "justlang/rules-justlang": {
@@ -793,38 +772,14 @@
     },
     "justlang/defaults": {
       "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justlang.git",
-        "branch": "master",
-        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
-        "mirrors": [
-          "https://gitee.com/justbuild/justlang.git"
-        ],
-        "subdir": "etc/defaults"
-      }
-    },
-    "justlang/externals": {
-      "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justlang.git",
-        "branch": "master",
-        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
-        "mirrors": [
-          "https://gitee.com/justbuild/justlang.git"
-        ],
-        "subdir": "etc/externals"
+        "type": "file",
+        "path": "extern/justlang/etc/defaults"
       }
     },
     "justlang_tests": {
       "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justlang.git",
-        "branch": "master",
-        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
-        "mirrors": [
-          "https://gitee.com/justbuild/justlang.git"
-        ],
-        "subdir": "test"
+        "type": "file",
+        "path": "extern/justlang/test"
       },
       "bindings": {
         "rules": "justlang/rules-justlang",
@@ -835,14 +790,8 @@
     },
     "justlang_lint": {
       "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justlang.git",
-        "branch": "master",
-        "commit": "193ca1731b291a699d51b97ca731f585ecda00a8",
-        "mirrors": [
-          "https://gitee.com/justbuild/justlang.git"
-        ],
-        "subdir": "lint"
+        "type": "file",
+        "path": "extern/justlang/lint"
       },
       "bindings": {
         "rules": "justlang/rules-justlang",
