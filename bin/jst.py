@@ -33,9 +33,9 @@ from enum import Enum
 # return types of methods and typing vars holding return values of json getters
 Json = Dict[str, Any]
 
-g_JUST: str = "just"
+g_JUST: str = "jst_backend"
 g_JUST_ARGS: Dict[str, str] = {}
-g_ROOT: str = "/justroot"
+g_ROOT: str = "/jstroot"
 SYSTEM_ROOT: str = os.path.abspath(os.sep)
 g_WORKSPACE_ROOT: Optional[str] = None
 g_SETUP_ROOT: Optional[str] = None
@@ -109,7 +109,8 @@ g_CURRENT_SUBCOMMAND: Optional[str] = None
 
 LOCATION_TYPES: List[str] = ["workspace", "home", "system"]
 
-DEFAULT_RC_PATH: str = os.path.join(Path.home(), ".just-mrrc")
+DEFAULT_RC_PATH: str = os.path.join(Path.home(), ".jstrc")
+FALLBACK_RC_PATH: str = os.path.join(Path.home(), ".just-mrrc")
 DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/just")
 DEFAULT_CHECKOUT_LOCATIONS_FILE: str = os.path.join(Path.home(),
                                                     ".just-local.json")
@@ -644,7 +645,7 @@ def file_as_git(fpath: str) -> List[str]:
         if g_CURRENT_SUBCOMMAND:
             log(f"""\
 Warning: Inefficient Git import of file path '{fpath}'.
-         Please consider using 'just-mr setup' and 'just {g_CURRENT_SUBCOMMAND}'
+         Please consider using 'jst setup' and 'jst_backend {g_CURRENT_SUBCOMMAND}'
          separately to cache the output.""")
         target = archive_tmp_checkout_dir(os.path.relpath(fpath, "/"),
                                           repo_type="file")
@@ -1026,6 +1027,8 @@ def read_justmrrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
     if not no_rc:
         if not rcpath:
             rcpath = DEFAULT_RC_PATH
+            if not os.path.isfile(rcpath):
+                rcpath = FALLBACK_RC_PATH
         elif not os.path.isfile(rcpath):
             fail(f"cannot read rc file {rcpath}.")
         if os.path.isfile(rcpath):
@@ -1058,14 +1061,16 @@ def read_justmrrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
                 else:
                     log(f"Warning: Ignoring non-existing distdir {paths[0]}.")
 
-    location = rc.get("just", None)
+    location = rc.get("backend", None)
     just = read_location(location) if location else None
     if just:
         global g_JUST
         g_JUST = just[0]
 
     global g_JUST_ARGS
-    g_JUST_ARGS = rc.get("just args", {})
+    g_JUST_ARGS = rc.get("backend args", {})
+    if not g_JUST_ARGS:
+        g_JUST_ARGS = rc.get("just args", {})
 
     for location in rc.get("config lookup order", DEFAULT_CONFIG_LOCATIONS):
         paths = read_location(cast(Json, location))
@@ -1096,9 +1101,9 @@ def main():
                         default=[],
                         help="Directory to look for distfiles before fetching",
                         metavar="PATH")
-    parser.add_argument("--just",
+    parser.add_argument("--backend", "--just",
                         dest="just",
-                        help="Path to the just binary",
+                        help="Path to the jst_backend binary",
                         metavar="PATH")
     parser.add_argument("--always-file",
                         dest="always_file",
@@ -1112,12 +1117,12 @@ def main():
         help="Main repository to consider from the configuration.")
     parser.add_argument("--rc",
                         dest="rcfile",
-                        help="Use just-mrrc file from custom path.")
+                        help="Use jstrc file from custom path.")
     parser.add_argument("--norc",
                         dest="norc",
                         action="store_true",
                         default=False,
-                        help="Do not use any just-mrrc file.")
+                        help="Do not use any jstrc file.")
     subcommands = parser.add_subparsers(dest="subcommand",
                                         title="subcommands",
                                         required=True)
@@ -1138,7 +1143,7 @@ def main():
 
     subcommands.add_parser("setup",
                            parents=[repo_parser],
-                           help="Setup and generate just configuration.")
+                           help="Setup and generate jst_backend configuration.")
 
     subcommands.add_parser(
         "setup-env",
@@ -1156,20 +1161,21 @@ def main():
 
     update_parser = subcommands.add_parser(
         "update",
-        help="Advance Git commit IDs and print updated just-mr configuration.")
+        help="Advance Git commit IDs and print updated jst configuration.")
     update_parser.add_argument("update_repos",
                                metavar="repo",
                                nargs="*",
                                default=[],
                                help="Repository to update.")
 
-    subcommands.add_parser("do",
-                           help="Canonical way of specifying just subcommands",
-                           add_help=False)
+    subcommands.add_parser(
+        "do",
+        help="Canonical way of specifying jst_backend subcommands",
+        add_help=False)
 
     for cmd in KNOWN_JUST_SUBCOMMANDS:
         subcommands.add_parser(cmd,
-                               help=f"Run setup and call 'just {cmd}'",
+                               help=f"Run setup and call 'jst_backend {cmd}'",
                                add_help=False)
 
     (options, args) = parser.parse_known_args()
