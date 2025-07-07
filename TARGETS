@@ -157,6 +157,7 @@
     , "FINAL_LDFLAGS"
     , "SOURCE_DATE_EPOCH"
     , "VERSION_EXTRA_SUFFIX"
+    , "PKG_CONFIG_ARGS"
     ]
   }
 , "jst":
@@ -298,14 +299,16 @@
     [ [["TREE", null, "rules"], "."]
     , [["TREE", null, "etc"], "."]
     , [["TREE", null, "src/buildtool"], "."]
+    , [["TREE", null, "src/other_tools"], "."]
     , [["TREE", null, "src/utils"], "."]
+    , [["TREE", null, "extern"], "."]
     ]
   , "deps":
     [ "ROOT"
     , "TARGETS"
     , "bin/bootstrap-traverser.py"
     , "bin/bootstrap.py"
-    , "bin/just-mr.py"
+    , "bin/jst.py"
     , "bin/parallel-bootstrap-traverser.py"
     ]
   }

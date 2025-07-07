@@ -50,12 +50,12 @@ ln -s ${UNRELATED_FILE} ${LOCALBASE}/lib/libfoo.so
 
 env LOCALBASE=${LOCALBASE} \
     PACKAGE=YES \
-    JUST_BUILD_CONF='{"TOOLCHAIN_CONFIG":{"FAMILY":"clang"}, "PKG_CONFIG_ARGS":["--define-prefix"]}' \
+    BOOTSTRAP_CONF='{"TOOLCHAIN_CONFIG":{"FAMILY":"clang"}, "PKG_CONFIG_ARGS":["--define-prefix"]}' \
     python3 ${WRKSRC}/bin/bootstrap.py ${WRKSRC} ${WRKDIR} 2>&1
 
 # Do some sanity checks with the binary
 
-JUST=${WRKDIR}/out/bin/just
+JUST=${WRKDIR}/out/bin/jst_backend
 echo Bootstrap finished. Obtained ${JUST}
 
 echo

@@ -53,6 +53,7 @@
     , ["@", "grpc", "", "grpc"]
     , ["@", "grpc", "", "grpc_cpp_plugin"]
     , ["@", "src", "", "libarchive"]
+    , ["@", "src", "", "libcurl"]
     ]
   }
 , "just_other_deps":

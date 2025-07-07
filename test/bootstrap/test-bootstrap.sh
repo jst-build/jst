@@ -33,7 +33,7 @@ echo
 echo Bootstrap
 echo
 python3 ${BOOTSTRAP_BIN} . "${OUTDIR}"/boot distdir
-export JUST=$(realpath "${OUTDIR}"/boot/out/bin/just)
+export JUST=$(realpath "${OUTDIR}"/boot/out/bin/jst_backend)
 
 echo
 echo Testing if we reached the fixed point
@@ -41,9 +41,12 @@ echo
 ./prune-config.py etc/repos.json ${PRUNED_CONFIG} ${EMPTY}
 cat ${PRUNED_CONFIG}
 echo
-readonly CONF=$(./bin/just-mr.py -C ${PRUNED_CONFIG} --distdir=distdir --local-build-root="${LBRDIR}" setup just)
-: ${JUST_BUILD_CONF:="{}"}
-${JUST} install -C ${CONF} -D "${JUST_BUILD_CONF}" -o "${OUTDIR}"/final-out --local-build-root="${LBRDIR}"
+readonly CONF=$(./bin/jst.py -C ${PRUNED_CONFIG} --distdir=distdir --local-build-root="${LBRDIR}" setup jst)
+: ${BOOTSTRAP_CONF:="{}"}
+${JUST} install -C ${CONF} -D "${BOOTSTRAP_CONF}" -o "${OUTDIR}"/final-out --local-build-root="${LBRDIR}"
 
-sha256sum "${OUTDIR}"/boot/out/bin/just "${OUTDIR}"/final-out/bin/just
-cmp "${OUTDIR}"/boot/out/bin/just "${OUTDIR}"/final-out/bin/just
+sha256sum "${OUTDIR}"/boot/out/bin/jst "${OUTDIR}"/final-out/bin/jst
+cmp "${OUTDIR}"/boot/out/bin/jst "${OUTDIR}"/final-out/bin/jst
+
+sha256sum "${OUTDIR}"/boot/out/bin/jst_backend "${OUTDIR}"/final-out/bin/jst_backend
+cmp "${OUTDIR}"/boot/out/bin/jst_backend "${OUTDIR}"/final-out/bin/jst_backend

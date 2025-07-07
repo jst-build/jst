@@ -37,16 +37,18 @@ DEBUG = os.environ.get("DEBUG")
 
 REPOS: str = "etc/repos.in.json"
 MAIN_MODULE: str = ""
-MAIN_TARGET: str = ""
-MAIN_STAGE: str = "bin/just"
+MAIN_TARGET: str = "installed jst_backend"
+MAIN_STAGE: str = "bin/jst_backend"
+BOOTSTRAP_MODULE: str = os.environ.get("BOOTSTRAP_MODULE", "")
+BOOTSTRAP_TARGET: str = os.environ.get("BOOTSTRAP_TARGET", "ALL")
 
 LOCAL_LINK_DIRS_MODULE: str = "src/buildtool/main"
-LOCAL_LINK_DIRS_TARGET: str = "just"
+LOCAL_LINK_DIRS_TARGET: str = "jst_backend"
 
 # architecture related configuration (global variables)
 g_CONF: Json = {}
-if 'JUST_BUILD_CONF' in os.environ:
-    g_CONF = json.loads(os.environ['JUST_BUILD_CONF'])
+if 'BOOTSTRAP_CONF' in os.environ:
+    g_CONF = json.loads(os.environ['BOOTSTRAP_CONF'])
 
 if "PACKAGE" in os.environ:
     g_CONF["ADD_CFLAGS"] = ["-Wno-error", "-Wno-pedantic"] + g_CONF.get(
@@ -308,7 +310,7 @@ def config_to_local(*, repos_file: str, link_targets_file: str) -> None:
 
     repos["repositories"] = dict(repos["repositories"], **backup_layers)
 
-    print("just-mr config rewritten to local:\n%s\n" %
+    print("jst config rewritten to local:\n%s\n" %
           (json.dumps(repos, indent=2)))
     os.unlink(repos_file)
     with open(repos_file, "w") as f:
@@ -383,6 +385,20 @@ def copy_roots(*, repos_file: str, copy_dir: str) -> None:
         json.dump(repos, f, indent=2)
 
 
+def inject_justlang(repos_file : str) -> None:
+    """ add justlang repositories to repos file from lock file (etc/repos.json)
+    """
+    with open(repos_file, 'r') as f:
+        repos = json.load(f)
+    with open(os.path.join(g_SRCDIR, 'etc/repos.json'), 'r') as f:
+        lockfile = json.load(f)
+    os.unlink(repos_file)
+    with open(repos_file, 'w') as f:
+        for r in ['justlang', 'justlang/rules-justlang', 'justlang/defaults']:
+            repos['repositories'][r] = lockfile['repositories'][r]
+        json.dump(repos, f, indent=2)
+
+
 def bootstrap() -> None:
     if g_LOCAL_DEPS:
         print("Bootstrap build in %r from sources %r against LOCALBASE %r" %
@@ -400,6 +416,7 @@ def bootstrap() -> None:
                         link_targets_file=os.path.join(src_wrkdir,
                                                        LOCAL_LINK_DIRS_MODULE,
                                                        "TARGETS"))
+    inject_justlang(repos_file=os.path.join(src_wrkdir, REPOS))
     empty_dir: str = os.path.join(cast(str, g_WRKDIR), "empty_directory")
     os.makedirs(empty_dir)
     prune_config(repos_file=os.path.join(src_wrkdir, REPOS),
@@ -409,7 +426,8 @@ def bootstrap() -> None:
     dep_flags = setup_deps(src_wrkdir)
     # handle proto
     flags = ["-I", src_wrkdir] + dep_flags["include"] + [
-        "-I", os.path.join(g_LOCALBASE, "include")
+        "-I", os.path.join(g_LOCALBASE, "include"),
+        "-I", os.path.join(src_wrkdir, 'extern/justlang/src')
     ]
     cpp_files: List[str] = []
     for root, dirs, files in os.walk(src_wrkdir):
@@ -427,6 +445,10 @@ def bootstrap() -> None:
             dirs.remove('tree_structure')
         if 'tree_operations' in dirs:
             dirs.remove('tree_operations')
+        if 'examples' in dirs:
+            dirs.remove('examples')
+        if 'extern/justlang' in root and not 'src/justlang' in root:
+            continue
         for f in files:
             if f.endswith(".cpp"):
                 cpp_files.append(os.path.join(root, f))
@@ -439,18 +461,18 @@ def bootstrap() -> None:
                 "-c", f, "-o", obj_file_name
             ]
             ts.submit(run, cmd, cwd=src_wrkdir)
-    bootstrap_just: str = os.path.join(cast(str, g_WRKDIR), "bootstrap-just")
+    bootstrap_just: str = os.path.join(cast(str, g_WRKDIR), "bootstrap-jst_backend")
     final_cmd: List[str] = BOOTSTRAP_CC + g_FINAL_LDFLAGS + [
         "-o", bootstrap_just
     ] + object_files + dep_flags["link"]
     run(final_cmd, cwd=src_wrkdir)
     CONF_FILE: str = os.path.join(cast(str, g_WRKDIR), "repo-conf.json")
-    LOCAL_ROOT: str = os.path.join(cast(str, g_WRKDIR), ".just")
+    LOCAL_ROOT: str = os.path.join(cast(str, g_WRKDIR), ".jst")
     os.makedirs(LOCAL_ROOT, exist_ok=True)
     distdirs = " --distdir=".join(g_DISTDIR)
     run([
         "sh", "-c",
-        "cp `./bin/just-mr.py --always-file -C %s --local-build-root=%s --distdir=%s setup just` %s"
+        "cp `./bin/jst.py --always-file -C %s --local-build-root=%s --distdir=%s setup jst` %s"
         % (REPOS, LOCAL_ROOT, distdirs, CONF_FILE)
     ],
         cwd=src_wrkdir)
@@ -475,7 +497,7 @@ def bootstrap() -> None:
     run([
         "./out-boot/%s" %
         (MAIN_STAGE, ), "install", "-C", CONF_FILE, "-D", CONF_STRING, "-o",
-        OUT, "--local-build-root", LOCAL_ROOT, MAIN_MODULE, MAIN_TARGET
+        OUT, "--local-build-root", LOCAL_ROOT, BOOTSTRAP_MODULE, BOOTSTRAP_TARGET
     ],
         cwd=src_wrkdir)
 
