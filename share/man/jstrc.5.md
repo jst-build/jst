@@ -245,6 +245,11 @@ An example jstrc file could look like the following:
 , "git": {"root": "system", "path": "usr/bin/git"}
 , "remote execution": {"address": "10.0.0.1:8980"}
 , "remote-execution properties": ["image:development-v1.2.3"]
+, "authentication":
+  { "ca cert": {"root": "home", "path": ".certs/ca.crt"}
+  , "client cert": {"root": "home", "path": ".certs/client.crt"}
+  , "client key": {"root": "home", "path": ".certs/client.key"}
+  }
 , "backend args":
   { "build": ["-J", "64"]
   , "install": ["-J", "64", "--remember"]
