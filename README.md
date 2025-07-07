@@ -27,6 +27,11 @@ What sets `jst` apart from other build systems:
 - Faster communication with [directories as first-class citizens](doc/specification/remote-protocol.md)
 - Built-in single-node remote execution server: `jst backend execute`
 
+## Installing
+
+This project can be built with `jst` or bootstrapped from scratch using the
+script `./bin/bootstrap.py`. For more details, please see the [build guide](./INSTALL.md).
+
 ## Getting started
 
 In an empty directory, create a file named `TARGETS` with the following content:
