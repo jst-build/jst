@@ -39,7 +39,7 @@ cat > "${RC}" <<EOF
   , "--dump-plain-graph": "plain.json"
   }
 , "rc files": [{"root": "workspace", "path": "rc.json"}]
-, "just": {"root": "system", "path": "${JUST#/}"}
+, "backend": {"root": "system", "path": "${JUST#/}"}
 , "local build root": {"root": "system", "path": "${LBR#/}"}
 , "local launcher": ["env", "PATH=${PATH}"]
 }

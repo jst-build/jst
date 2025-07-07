@@ -254,9 +254,9 @@ namespace {
             }
         }
     }
-    // read just path; overwritten if user provided it already
+    // read backend path; overwritten if user provided it already
     if (not clargs->common.just_path) {
-        auto just = ReadLocation(rc_config["just"],
+        auto just = ReadLocation(rc_config["backend"],
                                  clargs->common.just_mr_paths->workspace_root);
         if (just) {
             clargs->common.just_path = just->first;
@@ -290,13 +290,16 @@ namespace {
             clargs->common.just_mr_paths->workspace_root,
             "'endpoint-configuration' in 'just files'");
     }
-    // read additional just args; user can append, but does not overwrite
-    auto just_args = rc_config["just args"];
+    // read additional backend args; user can append, but does not overwrite
+    auto just_args = rc_config["backend args"];
+    if (not just_args.IsNotNull()) {
+        just_args = rc_config["just args"];
+    }
     if (just_args.IsNotNull()) {
         if (not just_args->IsMap()) {
             Logger::Log(LogLevel::Error,
-                        "Configuration-file provided 'just' arguments has to "
-                        "be a map, but found {}",
+                        "Configuration-file provided 'backend' arguments has "
+                        "to be a map, but found {}",
                         just_args->ToString());
             std::exit(kExitConfigError);
         }
@@ -306,8 +309,8 @@ namespace {
             if (not cmd_args->IsList()) {
                 Logger::Log(
                     LogLevel::Error,
-                    "Configuration-file provided 'just' argument key {} has to "
-                    "have as value a list of strings, but found {}",
+                    "Configuration-file provided 'backend' argument key {} has "
+                    "to have as value a list of strings, but found {}",
                     cmd_name,
                     cmd_args->ToString());
                 std::exit(kExitConfigError);
@@ -318,7 +321,7 @@ namespace {
                 if (not arg->IsString()) {
                     Logger::Log(
                         LogLevel::Error,
-                        "Configuration-file provided 'just' argument key {} "
+                        "Configuration-file provided 'backend' argument key {} "
                         "must have strings in its list value, but found {}",
                         cmd_name,
                         arg->ToString());

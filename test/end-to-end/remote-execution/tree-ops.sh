@@ -28,7 +28,7 @@ readonly WRKDIR="${ROOT}/work"
 mkdir -p "${ETC_DIR}"
 readonly RC="${ETC_DIR}/rc.json"
 cat > "${RC}" <<EOF
-{ "just": {"root": "system", "path": "${JUST#/}"}
+{ "backend": {"root": "system", "path": "${JUST#/}"}
 , "local build root": {"root": "system", "path": "${LBR#/}"}
 , "remote execution":
   { "address": "${REMOTE_EXECUTION_ADDRESS}"

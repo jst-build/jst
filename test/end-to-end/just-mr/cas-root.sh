@@ -51,7 +51,7 @@ cd "${WRKDIR}"
 touch ROOT
 cat > rc.json <<EOF
 { "local build root": {"root": "system", "path": "${LBR_ANALYSE}"}
-, "just": {"root": "system", "path": "${JUST}"}
+, "backend": {"root": "system", "path": "${JUST}"}
 , "remote serve": {"address": "${SERVE}"}
 , "remote execution": {"address": "${REMOTE_EXECUTION_ADDRESS}"}
 }

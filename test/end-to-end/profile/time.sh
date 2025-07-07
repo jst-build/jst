@@ -32,7 +32,7 @@ cat > "${RC}" <<EOF
   , "--profile": "profile.json"
   }
 , "rc files": [{"root": "workspace", "path": "rc.json"}]
-, "just": {"root": "system", "path": "${JUST#/}"}
+, "backend": {"root": "system", "path": "${JUST#/}"}
 , "local build root": {"root": "system", "path": "${LBR#/}"}
 , "local launcher": ["env", "PATH=${PATH}"]
 EOF

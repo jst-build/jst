@@ -68,7 +68,7 @@ The jstrc is given by a JSON object.
    the same order the location objects appear in the list. For more
    details, see **`jst`**(1).
 
- - The value for the key *`"just"`* is a single location object,
+ - The value for the key *`"backend"`* is a single location object,
    specifying the path to the **`jst_backend`** binary to use for execution, if
    **`jst`** is used as a launcher.
 
@@ -149,11 +149,14 @@ The jstrc is given by a JSON object.
    the first matching entry, if any. The supported options are *`"config"`*
    and *`endpoint-configuration`*.
 
- - The value for the key *`"just args"`* is a JSON object. Its keys are
+ - The value for the key *`"backend args"`* is a JSON object. Its keys are
    **`jst_backend`** subcommands and its value is a JSON list of strings. For the
    corresponding subcommand, these strings are prefixed to the **`jst_backend`**
    argument vector (after all other options provided through the rc file),
    if **`jst`** is used as a launcher.
+
+ - The value for the key *`"just args"`* is used as a legacy fallback, in the
+   case that *`"backend args"`* is not set.
 
  - The value for the key *`"rc files"`*, if given, is a list of
    location objects. For those location objects that refer to
@@ -238,11 +241,11 @@ An example jstrc file could look like the following:
 , "restrict stderr log limit": 4
 , "log files": [{"root": "home", "path": ".log/just/latest-invocation"}]
 , "distdirs": [{"root": "home", "path": ".distfiles"}]
-, "just": {"root": "system", "path": "usr/bin/just"}
+, "backend": {"root": "system", "path": "usr/bin/jst_backend"}
 , "git": {"root": "system", "path": "usr/bin/git"}
 , "remote execution": {"address": "10.0.0.1:8980"}
 , "remote-execution properties": ["image:development-v1.2.3"]
-, "just args":
+, "backend args":
   { "build": ["-J", "64"]
   , "install": ["-J", "64", "--remember"]
   , "install-cas": ["--remember"]

@@ -179,7 +179,7 @@ echo Same test using the launcher, with information taken from rc file
 echo
 cat > rc.json <<EOF
 { "local build root": {"root": "system", "path": "${LBR}"}
-, "just": {"root": "system", "path": "${JUST}"}
+, "backend": {"root": "system", "path": "${JUST}"}
 , "restrict stderr log limit": 1
 , "local launcher": ["env", "PATH=${PATH}"]
 }
