@@ -91,7 +91,10 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     std::optional<std::pair<std::filesystem::path, std::string>> mr_config_pair{
         std::nullopt};
 
+    // If gc locks are needed, ensure to keep them alive also for the exec call
     std::optional<LockFile> lock{};
+    std::optional<LockFile> repo_lock{};
+
     auto last_arg = just_cmd_args.additional_just_args.empty()
                         ? std::string{}
                         : *just_cmd_args.additional_just_args.rbegin();
@@ -101,8 +104,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
         auto const& flags = kKnownJustSubcommands.at(*subcommand);
         // Read the config file if needed
         if (flags.config) {
-            auto repo_lock =
-                RepositoryGarbageCollector::SharedLock(storage_config);
+            repo_lock = RepositoryGarbageCollector::SharedLock(storage_config);
             if (not repo_lock) {
                 return kExitGenericFailure;
             }
