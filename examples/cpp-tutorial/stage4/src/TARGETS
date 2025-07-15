@@ -17,7 +17,7 @@
   //   - if 'USE_FMTLIB' is set: add private cflags and dependencies
   // - public headers: 'greet.hpp'
   // - stage 'greet', prefix used for library artifacts and its public headers
-  //   (consumers include this library via '#include "greet/greet.h"')
+  //   (consumers include this library via '#include "greet/greet.hpp"')
   libgreet: {
     type: @'rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],

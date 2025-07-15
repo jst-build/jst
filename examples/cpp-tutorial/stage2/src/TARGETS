@@ -16,7 +16,7 @@
   // - uses rule '//CC:library' from binding 'rules'
   // - public headers: 'greet.hpp'
   // - stage 'greet', prefix used for library artifacts and its public headers
-  //   (consumers include this library via '#include "greet/greet.h"')
+  //   (consumers include this library via '#include "greet/greet.hpp"')
   libgreet: {
     type: @'rules//CC:library',
     name: ['greet'],    // produces libgreet.a
