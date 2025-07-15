@@ -56,8 +56,10 @@ log message:
 $ echo "'foo' + 42 + 'bar'" > snippet.jst
 $ jst eval snippet.jst
 ERROR: AST inlining failed with:
-       [repo ""] snippet.jst:1:1-11: Unsupported types for binary operation. Found String and Number.
+       snippet.jst:1:6-11: Unsupported types for binary operation. Found String and Number.
 
        1 |  'foo' + 42 + 'bar'
-         |  ^^^^^^^^^^^
+         |       ^^^^^^
+
+ERROR: Parsing input file failed.
 ```

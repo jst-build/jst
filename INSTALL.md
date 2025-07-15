@@ -8,15 +8,15 @@ If you have an installation of `jst` already available, `jst` can simply be
 built by:
 
 ```sh
-$ jst build
-$ jst install -o ${DESTDIR}
+$ jst build ALL
+$ jst install ALL -o ${DESTDIR}
 ```
 
 ... or with `just-mr`:
 
 ```sh
-$ just-mr build
-$ just-mr install -o ${DESTDIR}
+$ just-mr build ALL
+$ just-mr install ALL -o ${DESTDIR}
 ```
 
 This will build and install `jst` for Linux on the x86_64 architecture with a dynamic link
@@ -50,7 +50,7 @@ arguments using the command line option `-D`. The following example specifies
 the configuration variable `DEBUG` to obtain a debug build:
 
 ```sh
-$ jst install -o ${DESTDIR} -D '{"DEBUG": {"ENABLE": true}}'
+$ jst install ALL -o ${DESTDIR} -D '{"DEBUG": {"ENABLE": true}}'
 ```
 
 #### Example: Cross-compilation
@@ -61,7 +61,7 @@ specify `arm64` as the target architecture and `gnu` (GCC) as the target
 compiler family:
 
 ```sh
-$ jst install -o ${DESTDIR} \
+$ jst install ALL -o ${DESTDIR} \
     -D '{"TARGET_ARCH": "arm64", "TOOLCHAIN_CONFIG": {"FAMILY": "gnu"}}'
 ```
 
@@ -95,7 +95,7 @@ temporary directory, reported at the end of the bootstrap process.
 
 If you want to avoid fetching archives from the internet, you can pre-download
 the relevant archives listed in [`repos.in.json`](./etc/repos.in.json) and store
-them in a directory "*distdir*" on the local disk. The path to this directory,
+them in a directory (`DISTDIR`) on the local disk. The path to this directory,
 as well as the source and build directory, can be specified as optional
 arguments:
 
