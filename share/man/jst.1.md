@@ -203,6 +203,10 @@ Default: *`"git"`*.
 **`--norc`**  
 Option to prevent reading any **`jstrc`**(5) file.
 
+**`-j`**, **`--jobs`** *`NUM`*  
+Number of jobs to run.  
+Default: Number of cores.  
+
 Authentication options
 ----------------------
 

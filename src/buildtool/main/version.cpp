@@ -28,7 +28,7 @@ auto version() -> std::string {
     static const std::size_t kMajor = 1;
     static const std::size_t kMinor = 6;
     static const std::size_t kRevision = 1;
-    std::string suffix = "~beta";
+    std::string suffix = std::string{};
 
     return fmt::format(
         "justbuild-{}.{}.{}{}", kMajor, kMinor, kRevision, suffix);
