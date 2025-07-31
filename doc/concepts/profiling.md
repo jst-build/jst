@@ -67,7 +67,7 @@ as presenting it in a friendly way.
 In order to keep things simple, for the time being, we only support
 one form of outputting the needed data: writing it to a file. The
 collection and transfer to a central database is a task that can be
-solved by a separate tool (or by using `just add-to-cas` to collect
+solved by a separate tool (or by using `jst add-to-cas` to collect
 in the remote-execution CAS). Nevertheless, we chose paths in such
 a way, that log files can be written to a network file system,
 which is one possible way of central collection. In any case, all
@@ -80,17 +80,17 @@ invocations are much more informative, if the data is complete (or
 at least sampled in an unbiased way). Therefore, the build-data
 collection should be configured in a configuration file. The
 only tool we have that routinely reads a configuration file is
-`just-mr`. As this is also routinely used as a launcher for `just`,
+`jst`. As this is also routinely used as a launcher for `jst_backend`,
 its configuration file is a good place to configure build-insight
-logging. Following the current design, we let `just-mr` do all the
-necessary set up and let `just` strictly follow instructions.
+logging. Following the current design, we let `jst` do all the
+necessary set up and let `jst_backend` strictly follow instructions.
 
 ## Relevant interfaces
 
-### The `--profile` option of `just`
+### The `--profile` option of `jst`
 
-The build tool `just` has an option `--profile` with one file name
-as parameter. This option is accepted by all `just` subcommands
+The build tool `jst` has an option `--profile` with one file name
+as parameter. This option is accepted by all `jst` subcommands
 that depend on analysis-related options (including `"describe"`).
 After completing the attempt for the
 requested task, it writes to the specified file name a file containing
@@ -99,16 +99,16 @@ attempted despite being requested, e.g., due to failure in analysis.
 The file contains a single JSON object, with the following key (and
 more keys possibly added in the future).
 
- - The key `"exit code"` contains the exit value of the `just`
+ - The key `"exit code"` contains the exit value of the `jst_backend`
    process; this allows easy filtering on the build and test results.
  - The key `"target"` contains the target in full-qualified form.
-   The reason we include the target is that `just` allows to also
+   The reason we include the target is that `jst` allows to also
    deduce it from the invocation context (like working directory).
  - The key `"configuration"` contains the configuration in which
    this target is built. The reason this is included is that it
    is a value derived not only from the command line but also from
    the context of a file (given via `-c`) possibly local on the
-   machine `just` was run.
+   machine `jst` was run.
  - The key `"remote"` describes the remote-execution endpoint,
    including the used properties and dispatch list. This allow
    distinguishing builds in different environments (possibly using
@@ -144,18 +144,18 @@ more keys possibly added in the future).
       completing the action can be taken; in this case, the fact
       that this fallback was taken is also recorded.
 
-### `just` options `--dump-graph` and `--dump-plain-graph` are cumulative
+### `jst` options `--dump-graph` and `--dump-plain-graph` are cumulative
 
 From version 1.6 onwards, the options `--dump-graph` and
 `--dump-plain-graph` are no longer "latest wins" but cumulative.
-That is, if these options are given several times then `just` also
+That is, if these options are given several times then `jst` also
 writes the graph file to several destinations. In this way, it is
 possible to have an invocation-specific logging of the action graph
 without interfering with other graph logging.
 
-### `just-mr` to support passing unique log options on each invocation
+### `jst` to support passing unique log options on each invocation
 
-The configuration file for `just-mr` has an entry `"invocation
+The configuration file for `jst` has an entry `"invocation
 log"`. This entry, if given, is a JSON object; rc-file merging is
 done on the individual entries of the `"invocation log"` object.
 It supports the following keys.
@@ -169,11 +169,11 @@ It supports the following keys.
  - `"--profile"`, `"--dump-graph"`, `"--dump-plain-graph"`. Each a
    path fragment specifying the file name for the profile file, the
    graph file, or plain-graph file, respectively. If not given, the
-   respective file will not be requested in the invocation of `just`.
+   respective file will not be requested in the invocation of `jst`.
  - `"meta data"` A path fragment specifying the file name of the
    meta-data file. If not give, no meta-data file will be created.
 
-If invocation logging is requested, `just-mr` will create for each invocation
+If invocation logging is requested, `jst` will create for each invocation
 a directory `<prefix>/<project-id>/<YYYY-mm-DD-HH:MM>-<uuid>` where
 
  - `<prefix>` is the directory specified by the `"directory"`
@@ -193,14 +193,14 @@ a directory `<prefix>/<project-id>/<YYYY-mm-DD-HH:MM>-<uuid>` where
 Inside this directory the requested files with the specified file
 names will be created, in the case of `"--profile"`, `"--dump-graph"`,
 and `"--dump-plain-graph"` by passing the appropriate options to
-the invocation of `just`.
+the invocation of `jst`.
 
-The meta-data will be written just by `just-mr` itself, just before
+The meta-data will be written just by `jst` itself, just before
 doing the `exec` call. The file contains a JSON object with keys
 
  - `"time"` The time stamp in seconds since the epoch as floating-point
    number, possibly rounded down to the nearest integer.
- - `"cmdline"` The command line, as vector of strings, that `just-mr`
+ - `"cmdline"` The command line, as vector of strings, that `jst`
    is about to `exec` to.
  - `"configuration"` The blob-identifier of the multi-repository
    configuration; in this way, the actual repository configuration
