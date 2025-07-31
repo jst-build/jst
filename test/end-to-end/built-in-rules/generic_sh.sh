@@ -33,11 +33,11 @@ EOF
 
 "${JUST}" analyse --local-build-root "${LBRDIR}" \
   --dump-graph null.json 2>&1
-[ $(jq -aM '.actions | .[] | .command == ["sh", "-c", "first\nsecond\n"]' null.json) = true ]
+[ $(jq -aM '.actions | .[] | .command == ["/bin/sh", "-c", "first\nsecond\n"]' null.json) = true ]
 
 "${JUST}" analyse --local-build-root "${LBRDIR}" \
   -D '{"SHC": []}' --dump-graph empty.json 2>&1
-[ $(jq -aM '.actions | .[] | .command == ["sh", "-c", "first\nsecond\n"]' empty.json) = true ]
+[ $(jq -aM '.actions | .[] | .command == ["/bin/sh", "-c", "first\nsecond\n"]' empty.json) = true ]
 
 "${JUST}" analyse --local-build-root "${LBRDIR}" \
   -D '{"SHC": ["custom-shell", "--fancy-option"]}' --dump-graph custom.json 2>&1

@@ -30,7 +30,7 @@ cat > RULES <<'EOI'
     , "artifacts":
       { "type": "ACTION"
       , "outs": ["out.txt"]
-      , "cmd": ["sh", "-c", "echo Hello > out.txt\n"]
+      , "cmd": ["/bin/sh", "-c", "echo Hello > out.txt\n"]
       , "execution properties": {"type": "var", "name": "PROPERTIES"}
       }
     }

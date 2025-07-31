@@ -144,7 +144,7 @@ be a non-empty list of strings. It is an error if one or more paths
 are present in both the `"out_dirs"` and `"outs"`. Finally, the
 strings in `"cmds"` are extended by a newline character and joined,
 and command of the action is the result of evaluating the field
-`"sh -c"` (or `["sh", "-c"]` if `"sh -c"` evaluates to `null` or
+`"sh -c"` (or `["/bin/sh", "-c"]` if `"sh -c"` evaluates to `null` or
 `[]`) extended by this string; the command is executed in the
 subdirectory of the execution root specified by `"cwd"`.
 

@@ -1410,7 +1410,7 @@ void GenericRuleWithDeps(
         }
     }
     static ExpressionPtr const kShC =
-        Expression::FromJson(R"( ["sh", "-c"] )"_json);
+        Expression::FromJson(R"( ["/bin/sh", "-c"] )"_json);
     if (sh_val->List().empty()) {
         sh_val = kShC;
     }
