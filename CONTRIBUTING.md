@@ -20,13 +20,12 @@ and applying the patch `["@", "lint", "", "format.diff"]`; the script
 `bin/format-code.sh` does precisely this.
 
 *NOTE:* In order for everyone to use the same version of the linting
-tools, the `"lint"` repository
-[bootstraps](https://github.com/just-buildsystem/bootstrappable-toolchain)
+tools, the `"lint"` repository brings the
+[prebuilt version](https://gitee.com/justbuild/toolchains-cc) of
 the required tools; the configuration variable `"TOOLCHAIN_CONFIG"`
 is honored. As a consequence, (transitively) depending on the
-`"lint"` repository pulls in quite some sources and linting the
-first time requires a significant amount of time to build the tools
-from first principles. This is also true when calling `bin/format-code.sh`.
+`"lint"` repository pulls in a large binary archive and linting for the
+first time requires some additional time for downloading this archive.
 
 Target, rules, and expression files should be formatted using
 `bin/json-format.py`. The corresponding target is `["@", "format-json", "", ""]`
