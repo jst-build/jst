@@ -15,6 +15,8 @@ Bug fixes on top of `1.6.0`.
   solves the issue that `sh` cannot be found on some remote execution services
   that use an empty environment and without the option to specify a launcher.
 - Merged fixes from upstream version `1.6.3`
+- `jst` no longer crashes if the empty string is specified as
+  path for a `"file"` repository; instead it treats it as `"."`.
 
 ## Release `1.6.0` (2025-07-15)
 
