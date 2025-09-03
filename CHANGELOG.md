@@ -14,6 +14,7 @@ Bug fixes on top of `1.6.0`.
 - Generic actions use the POSIX-mandated shell path `/bin/sh` by default. This
   solves the issue that `sh` cannot be found on some remote execution services
   that use an empty environment and without the option to specify a launcher.
+- Merged fixes from upstream version `1.6.3`
 
 ## Release `1.6.0` (2025-07-15)
 
