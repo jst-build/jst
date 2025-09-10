@@ -39,32 +39,6 @@ auto const kEmptyList =
 auto const kMinusOne =
     std::make_shared<justlang::NumberNode>(justlang::Location{}, -1.0);
 
-[[nodiscard]] auto CallBuiltinWithParams(
-    std::string const& name,
-    justlang::Location const& loc,
-    justlang::CallNode::params_t const& params) -> justlang::BuiltIn::Result {
-    auto bt_it = justlang::kBuiltinFunctions.find(name);
-    if (bt_it == justlang::kBuiltinFunctions.end()) {
-        throw justlang::ASTInlineError{
-            "Unknown builtin function \"" + name + "\".", loc};
-    }
-    try {
-        return std::invoke(bt_it->second, loc, params);
-    } catch (std::exception const& e) {
-        throw justlang::ASTInlineError{e.what()};
-    }
-}
-
-template <std::convertible_to<justlang::ASTNodePtr>... TParams>
-[[nodiscard]] auto CallBuiltin(std::string const& name,
-                               justlang::Location const& loc,
-                               TParams&&... params)
-    -> justlang::BuiltIn::Result {
-    auto call_params = justlang::CallNode::params_t{
-        std::make_pair(std::nullopt, std::forward<TParams>(params))...};
-    return CallBuiltinWithParams(name, loc, call_params);
-}
-
 template <std::same_as<justlang::ValueType>... TTypes>
 [[nodiscard]] auto CheckUnaryType(justlang::ASTNodePtr const& expr,
                                   justlang::ValueType type,
@@ -85,6 +59,21 @@ template <std::same_as<justlang::ValueType>... TTypes>
 }  // namespace
 
 namespace justlang {
+
+auto ASTInlineVisitor::CallBuiltinWithParams(
+    std::string const& name,
+    Location const& loc,
+    CallNode::params_t const& params) const -> ASTNodePtr {
+    auto bt_it = kBuiltinFunctions.find(name);
+    if (bt_it == kBuiltinFunctions.end()) {
+        throw ASTInlineError{"Unknown builtin function \"" + name + "\".", loc};
+    }
+    try {
+        return std::invoke(bt_it->second, loc, inline_callback_, params);
+    } catch (std::exception const& e) {
+        throw ASTInlineError{e.what()};
+    }
+}
 
 auto ASTInlineVisitor::InlineFunctions(ASTNodePtr const& node) const
     -> ASTNodePtr {
@@ -448,14 +437,14 @@ auto ASTInlineVisitor::operator()(UnaryOperationNode const* node) const
             if (CheckUnaryType(inl_expr, ValueType::Any, ValueType::Number)) {
                 auto args = std::make_shared<ListNode>(
                     loc, ListNode::items_t{std::move(inl_expr), kMinusOne});
-                return CallBuiltin("prod", loc, std::move(args)).GetNode();
+                return CallBuiltin("prod", loc, std::move(args));
             }
             throw ASTInlineError{
                 "Unsupported type for unary minus operation: " +
                     TypeToString(inl_expr->EvalType()),
                 loc};
         case UnaryOperationNode::Type::Not:
-            return CallBuiltin("not", loc, std::move(inl_expr)).GetNode();
+            return CallBuiltin("not", loc, std::move(inl_expr));
     }
 
     // unreachable
@@ -472,7 +461,7 @@ auto ASTInlineVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
         auto result =
             CallBuiltin("get", loc, inl_index, inl_container, inl_default);
         // if the result is the default value, it's an error
-        if (result.GetNode() == inl_default) {
+        if (result == inl_default) {
             auto field_name = std::string{};
             if (auto const* lookup_name =
                     ASTNode::Cast<StringNode const*>(inl_index.get())) {
@@ -481,17 +470,17 @@ auto ASTInlineVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
             throw ASTInlineError{"Cannot find field name" + field_name + ".",
                                  loc};
         }
-        return result.GetNode();
+        return result;
     }
 
     if (ASTNode::Cast<ListNode const*>(inl_container.get()) != nullptr) {
         auto result =
             CallBuiltin("at", loc, inl_index, inl_container, inl_default);
         // if the result is the default value, it's an error
-        if (result.GetNode() == inl_default) {
+        if (result == inl_default) {
             throw ASTInlineError{"Invalid index.", loc};
         }
-        return result.GetNode();
+        return result;
     }
 
     throw ASTInlineError{
@@ -530,33 +519,33 @@ auto ASTInlineVisitor::operator()(BinaryOperationNode const* node) const
             }
             if (CheckBinaryTypes(
                     inl_lhs, inl_rhs, ValueType::Any, ValueType::String)) {
-                return CallBuiltin("join", loc, std::move(args)).GetNode();
+                return CallBuiltin("join", loc, std::move(args));
             }
             if (CheckBinaryTypes(
                     inl_lhs, inl_rhs, ValueType::Any, ValueType::Number)) {
-                return CallBuiltin("sum", loc, std::move(args)).GetNode();
+                return CallBuiltin("sum", loc, std::move(args));
             }
             if (CheckBinaryTypes(
                     inl_lhs, inl_rhs, ValueType::Any, ValueType::List)) {
-                return CallBuiltin("flatten", loc, std::move(args)).GetNode();
+                return CallBuiltin("flatten", loc, std::move(args));
             }
             if (CheckBinaryTypes(
                     inl_lhs, inl_rhs, ValueType::Any, ValueType::Map)) {
-                return CallBuiltin("union", loc, std::move(args)).GetNode();
+                return CallBuiltin("union", loc, std::move(args));
             }
             break;
         case BinaryOperationNode::Type::Multiplication:
             if (CheckBinaryTypes(
                     inl_lhs, inl_rhs, ValueType::Any, ValueType::Number)) {
-                return CallBuiltin("prod", loc, std::move(args)).GetNode();
+                return CallBuiltin("prod", loc, std::move(args));
             }
             break;
         case BinaryOperationNode::Type::And:
-            return CallBuiltin("all", loc, std::move(args)).GetNode();
+            return CallBuiltin("all", loc, std::move(args));
         case BinaryOperationNode::Type::Or:
-            return CallBuiltin("any", loc, std::move(args)).GetNode();
+            return CallBuiltin("any", loc, std::move(args));
         case BinaryOperationNode::Type::Equal:
-            return CallBuiltin("eq", loc, inl_lhs, inl_rhs).GetNode();
+            return CallBuiltin("eq", loc, inl_lhs, inl_rhs);
     }
 
     throw ASTInlineError{"Unsupported types for binary operation. Found " +
@@ -676,7 +665,7 @@ auto ASTInlineVisitor::InlineBuiltinCall(CallNode const* caller,
         // will become a runtime variable, potentially shadowing the environment
         // variable referred to via jst.env('foo'). The following code checks
         // for this scenario and throws an error to avoid unexpected behavior.
-        auto const* var = ASTNode::Cast<VarNode const*>(result.GetNode().get());
+        auto const* var = ASTNode::Cast<VarNode const*>(result.get());
         if (var == nullptr) {
             throw ASTInlineError{
                 "Expected var node from env() built-in function.", loc};
@@ -691,11 +680,7 @@ auto ASTInlineVisitor::InlineBuiltinCall(CallNode const* caller,
         }
     }
 
-    if (result.NeedsInlining()) {
-        // control-flow nodes such as ForEach or FoldLeft may need inlining
-        return InlineFunctions(result.GetNode());
-    }
-    return result.GetNode();
+    return result;
 }
 
 }  // namespace justlang
