@@ -869,8 +869,9 @@
             ]
           }
         ]
-      , ["have_ctype", [["HAVE_LONGLONG", "long long"]]]
-      , ["have_ctype", [["HAVE_SUSECONDS_T", "suseconds_t"]]]
+      , [ "have_ctype"
+        , [["HAVE_LONGLONG", "long long"], ["HAVE_SUSECONDS_T", "suseconds_t"]]
+        ]
       , [ "size_ctype"
         , [ ["SIZEOF_SIZE_T", ["size_t", [1, 2, 4, 8, 16]]]
           , ["SIZEOF_SSIZE_T", ["ssize_t", [1, 2, 4, 8, 16]]]
