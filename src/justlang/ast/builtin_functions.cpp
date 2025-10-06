@@ -495,7 +495,7 @@ auto BuiltIn::map_union(Location const& loc,
         loc,
         std::make_shared<MapNode>(loc, std::move(fields)),
         VerbatimType::Flat,
-        ValueType::List);
+        ValueType::Map);
 }
 
 auto BuiltIn::keys(Location const& loc,
