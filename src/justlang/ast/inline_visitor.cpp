@@ -265,8 +265,18 @@ auto ASTInlineVisitor::operator()(IfNode const* node) const -> ASTNodePtr {
 }
 
 auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
+    auto const& loc = node->GetLocation();
     auto const& var_name = node->GetVariable();
     auto range = InlineFunctions(node->GetRange());
+
+    // must be list or runtime variable
+    if (range->EvalType() != ValueType::List and
+        range->EvalType() != ValueType::Any) {
+        throw ASTInlineError{
+            "Expected list expression for foreach range argument, but got: " +
+                TypeToString(range->EvalType()),
+            loc};
+    }
 
     if (auto const* list = ASTNode::Cast<ListNode const*>(range.get())) {
         // literal array -> do unrolling to inline all variable references
@@ -285,7 +295,6 @@ auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
 
     // Add iteration variable to scope for inlining the iteration body.
     auto body_scope = ScopeDefs{scope_};
-    auto const& loc = node->GetLocation();
     if (partial_inline_) {
         // For partial inline, add iteration variable to scope as nullptr,
         // indicating it is yet unknown.

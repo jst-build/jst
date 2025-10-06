@@ -357,13 +357,13 @@ TEST_CASE("ast_inline", "[retain var nodes]") {
             , "value":
               { "type": "foreach"
               , "var": "foo"
-              , "range": null
+              , "range": {"type": "var", "name": "FOO"}
               , "body": {"type": "var", "name": "foo"}
               }
             })");
         auto const* code = R"(
             local foo =               // foo is full inlined, built-in resolved
-              [foo for foo in null];
+              [foo for foo in jst.env('FOO')];
             local bar(x='bar') = foo; // bar() is partially inlined, 'x' unkown
             { baz: bar() }            // on call, bar() is fully inlined
             )";
