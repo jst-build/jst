@@ -220,11 +220,14 @@ auto ASTInlineVisitor::operator()(ForeignNode const* node) const -> ASTNodePtr {
 
 auto ASTInlineVisitor::operator()(VerbatimNode const* node) const
     -> ASTNodePtr {
-    // Inlining verbatim nodes should never happen. Verbatim nodes are only
-    // created during augmentation (after inlining) or during inlining CallNodes
-    // to built-in functions, which should not be inlined a second time.
-    throw ASTInlineError{"Inlining Verbatim nodes is not supported.",
-                         node->GetLocation()};
+    // Verbatim nodes are retained for later serialization.
+    // In case you wonder: inlining verbatim nodes may happen, if they are
+    // created during inlining CallNodes to built-in functions, which may need
+    // to be inlined a second time.
+    return std::make_shared<VerbatimNode>(node->GetLocation(),
+                                          InlineFunctions(node->GetExpr()),
+                                          node->GetType(),
+                                          node->EvalType());
 }
 
 auto ASTInlineVisitor::operator()(ListNode const* node) const -> ASTNodePtr {
