@@ -1,3 +1,0 @@
-{ "public_headers":
-  {"type": "install", "deps": ["libjsonnet.h", "libjsonnet_fmt.h"]}
-}
