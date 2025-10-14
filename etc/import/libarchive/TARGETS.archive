@@ -1398,16 +1398,20 @@
                 , "$2": "windows"
                 }
               , "then":
-                [ ["id_t", "unsigned long"]
-                , ["mode_t", "int"]
-                , ["off_t", "long long"]
-                , { "type": "case*"
-                  , "expr": {"type": "var", "name": "COMPILER_FAMILY"}
-                  , "case":
-                    [["mingw", [["gid_t", "short"], ["uid_t", "short"]]]]
-                  , "default": [["gid_t", "int"], ["uid_t", "int"]]
-                  }
-                ]
+                { "type": "++"
+                , "$1":
+                  [ [ ["id_t", "unsigned long"]
+                    , ["mode_t", "int"]
+                    , ["off_t", "long long"]
+                    ]
+                  , { "type": "case*"
+                    , "expr": {"type": "var", "name": "COMPILER_FAMILY"}
+                    , "case":
+                      [["mingw", [["gid_t", "short"], ["uid_t", "short"]]]]
+                    , "default": [["gid_t", "int"], ["uid_t", "int"]]
+                    }
+                  ]
+                }
               }
             ]
           }
