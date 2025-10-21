@@ -294,7 +294,14 @@
     { "type": "++"
     , "$1":
       [ { "type": "if"
-        , "cond": {"type": "var", "name": "SOURCE_DATE_EPOCH"}
+        , "cond":
+          { "type": "not"
+          , "$1":
+            { "type": "=="
+            , "$1": {"type": "var", "name": "SOURCE_DATE_EPOCH"}
+            , "$2": null
+            }
+          }
         , "then":
           [ { "type": "join"
             , "$1":
