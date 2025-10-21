@@ -22,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "fmt/core.h"
@@ -51,7 +52,20 @@ void PrintDoc(const nlohmann::json& doc, const std::string& indent) {
     }
     for (auto const& line : doc) {
         if (line.is_string()) {
-            std::cout << indent << line.get<std::string>() << "\n";
+            auto const& str = line.get<std::string>();
+            std::size_t start{};
+            auto end = str.find('\n', start);
+            while (end != std::string::npos) {
+                std::cout << indent
+                          << std::string_view{&str[start], end - start} << "\n";
+                start = end + 1;
+                end = str.find('\n', start);
+            }
+            if (start < str.size()) {
+                std::cout << indent
+                          << std::string_view{&str[start], str.size() - start}
+                          << "\n";
+            }
         }
     }
 }
