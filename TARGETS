@@ -1,61 +1,85 @@
-{ "ALL":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "targets": ["justlangc", "ref", "preprocessor"]
-  }
-, "justlangc":
-  { "type": "export"
-  , "target": ["src", "justlangc"]
-  , "flexible_config":
-    [ "OS"
-    , "ARCH"
-    , "TARGET_ARCH"
-    , "TOOLCHAIN_CONFIG"
-    , "DEBUG"
-    , "CXX"
-    , "CXXFLAGS"
-    , "ADD_CXXFLAGS"
-    , "AR"
-    , "ENV"
-    , "PKG_CONFIG_ARGS"
-    ]
-  }
-, "ref":
-  { "type": "export"
-  , "target": ["src/justlang", "ref"]
-  , "flexible_config":
-    [ "OS"
-    , "ARCH"
-    , "TARGET_ARCH"
-    , "TOOLCHAIN_CONFIG"
-    , "DEBUG"
-    , "CXX"
-    , "CXXFLAGS"
-    , "ADD_CXXFLAGS"
-    , "AR"
-    , "ENV"
-    , "PKG_CONFIG_ARGS"
-    ]
-  }
-, "preprocessor":
-  { "type": "export"
-  , "target": ["src/justlang", "preprocessor"]
-  , "flexible_config":
-    [ "OS"
-    , "ARCH"
-    , "TARGET_ARCH"
-    , "TOOLCHAIN_CONFIG"
-    , "DEBUG"
-    , "CXX"
-    , "CXXFLAGS"
-    , "ADD_CXXFLAGS"
-    , "AR"
-    , "ENV"
-    , "PKG_CONFIG_ARGS"
-    ]
-  }
-, "DEV":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "hdrs-only": ["yes"]
-  , "targets": [["@", "json", "", "json"]]
-  }
+// Options supported by this project
+local options_doc = {
+  OS: ['Operating system to build for.'],
+  ARCH: [|||
+    The underlying architecture. Is taken as a default for "HOST_ARCH" and
+    "TARGET_ARCH".
+
+    One of "x86", "x86_64", "arm", "arm64". Defaults to "x86_64".
+  |||],
+  HOST_ARCH: ['The architecture on which the build actions are carried out.'],
+  TARGET_ARCH: ['The architecture for which to build the binary.'],
+  TOOLCHAIN_CONFIG: [|||
+    The toolchain configuration.
+
+    Use field "FAMILY" to specify the compiler family.
+    Supported values are "generic" (the default), "clang", and "gnu".
+
+    Use field "VENDOR" to specify the target triplet vendor. Supported values
+    depend on your system. The default value is the empty string.
+
+    Use field "SYSTEM" to specify the target triplet system. Supported values
+    depend on your system. The default value is "linux-gnu".
+
+    Cross-compilation is only supported for families "clang" and "gnu". The
+    final target triplet used is computed as <TARGET_ARCH>-[<VENDOR>-]<SYSTEM>.
+  |||],
+  ENV: [|||
+    Map from strings to strings. The build environment to be used for
+    build actions. Typically used to include an unusual value of PATH.
+  |||],
+  DEBUG: [|||
+    Map enabling and configuring the debug version. Specify a map that is
+    logically true (e.g., non-null, non-empty map) to enable debug mode.
+  |||],
+  CC: ['The C compiler to use.'],
+  CXX: ['The C++ compiler to use.'],
+  AR: ['The archiver to use.'],
+  DWP: ['The DWARF packaging utility to use.'],
+  ADD_CFLAGS: ['Additional C compiler flags.'],
+  ADD_CXXFLAGS: ['Additional C++ compiler flags.'],
+  PKG_CONFIG_ARGS: ['Additional pkg-config arguments.\n'],
+};
+
+{
+  // Default target, building everything
+  ALL: {
+    type: @'rules//CC:install-with-deps',
+    targets: [
+      'justlangc',
+      'ref',
+      'preprocessor',
+    ],
+  },
+
+  // The justlang compiler binary
+  justlangc: {
+    type: 'export',
+    target: @'//src:justlangc',
+    config_doc: options_doc,
+    flexible_config: jst.keys(options_doc),
+  },
+
+  // The reference library for encoding/decoding target references
+  ref: {
+    type: 'export',
+    target: @'//src/justlang:ref',
+    config_doc: options_doc,
+    flexible_config: jst.keys(options_doc),
+  },
+
+  // The preprocessor library for integrating justlang support
+  preprocessor: {
+    type: 'export',
+    target: @'//src/justlang:preprocessor',
+    config_doc: options_doc,
+    flexible_config: jst.keys(options_doc),
+  },
+
+  // Development target, installs all third-party headers (for code-completion)
+  DEV: {
+    type: @'rules//CC:install-with-deps',
+    'hdrs-only': ['yes'],
+    targets: [@'json//:json'],
+  },
 }

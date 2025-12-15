@@ -1,39 +1,49 @@
-{ "ref":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["ref"]
-  , "hdrs": ["ref.hpp"]
-  , "srcs": ["ref.cpp"]
-  , "private-deps": ["json_string", ["@", "json", "", "json"]]
-  , "stage": ["justlang"]
-  }
-, "preprocessor":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["preprocessor"]
-  , "hdrs": ["preprocessor.hpp"]
-  , "srcs": ["preprocessor.cpp"]
-  , "deps":
-    ["file_data", ["src/justlang/ast", "ast"], ["@", "json", "", "json"]]
-  , "private-deps":
-    [ ["src/justlang/ast", "analyze"]
-    , ["src/justlang/ast", "inline"]
-    , ["src/justlang/ast", "augment"]
-    , ["src/justlang/ast", "to_json_visitor"]
-    , ["src/justlang/ast", "to_string_visitor"]
-    , ["src/justlang/ast/native", "parser"]
-    ]
-  , "stage": ["justlang"]
-  }
-, "json_string":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["json_string"]
-  , "hdrs": ["json_string.hpp"]
-  , "deps": [["@", "json", "", "json"]]
-  , "stage": ["justlang"]
-  }
-, "file_data":
-  { "type": ["@", "rules", "CC", "library"]
-  , "hdrs": ["file_data.hpp"]
-  , "deps": [["", "ref"]]
-  , "stage": ["justlang"]
-  }
+{
+  ref: {
+    type: @'rules//CC:library',
+    name: ['ref'],
+    hdrs: ['ref.hpp'],
+    srcs: ['ref.cpp'],
+    'private-deps': [
+      'json_string',
+      @'json//:json',
+    ],
+    stage: ['justlang'],
+  },
+
+  preprocessor: {
+    type: @'rules//CC:library',
+    name: ['preprocessor'],
+    hdrs: ['preprocessor.hpp'],
+    srcs: ['preprocessor.cpp'],
+    deps: [
+      'file_data',
+      @'//src/justlang/ast:ast',
+      @'json//:json',
+    ],
+    'private-deps': [
+      @'//src/justlang/ast:analyze',
+      @'//src/justlang/ast:inline',
+      @'//src/justlang/ast:augment',
+      @'//src/justlang/ast:to_json_visitor',
+      @'//src/justlang/ast:to_string_visitor',
+      @'//src/justlang/ast/native:parser',
+    ],
+    stage: ['justlang'],
+  },
+
+  json_string: {
+    type: @'rules//CC:library',
+    name: ['json_string'],
+    hdrs: ['json_string.hpp'],
+    deps: [@'json//:json'],
+    stage: ['justlang'],
+  },
+
+  file_data: {
+    type: @'rules//CC:library',
+    hdrs: ['file_data.hpp'],
+    deps: [@'//:ref'],
+    stage: ['justlang'],
+  },
 }

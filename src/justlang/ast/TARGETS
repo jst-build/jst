@@ -1,64 +1,91 @@
-{ "ast":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["ast"]
-  , "hdrs": ["ast.hpp", "node_variant.hpp"]
-  , "deps": [["", "ref"]]
-  , "stage": ["justlang/ast"]
-  }
-, "parser":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["parser"]
-  , "hdrs": ["parser.hpp"]
-  , "deps": ["ast", ["src/justlang", "file_data"]]
-  , "stage": ["justlang/ast"]
-  }
-, "builtins":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["builtins"]
-  , "hdrs": ["builtin_functions.hpp"]
-  , "srcs": ["builtin_functions.cpp"]
-  , "deps": [["", "ref"], "ast", "to_json_visitor"]
-  , "stage": ["justlang/ast"]
-  }
-, "analyze":
-  { "type": ["@", "rules", "CC", "library"]
-  , "hdrs": ["analyze.hpp"]
-  , "deps": ["ast"]
-  , "stage": ["justlang/ast"]
-  }
-, "inline":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["inline"]
-  , "srcs": ["inline.cpp", "inline_visitor.cpp"]
-  , "hdrs": ["inline.hpp"]
-  , "private-hdrs": ["inline_visitor.hpp"]
-  , "deps": ["ast", "builtins"]
-  , "stage": ["justlang/ast"]
-  }
-, "augment":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["augment"]
-  , "hdrs": ["augment.hpp"]
-  , "srcs": ["augment.cpp"]
-  , "deps": [["src/justlang/ast", "ast"]]
-  , "stage": ["justlang/ast"]
-  }
-, "to_json_visitor":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["to_json_visitor"]
-  , "hdrs": ["to_json_visitor.hpp"]
-  , "srcs": ["to_json_visitor.cpp"]
-  , "deps": ["ast", ["@", "json", "", "json"]]
-  , "private-deps": [["", "ref"]]
-  , "stage": ["justlang/ast"]
-  }
-, "to_string_visitor":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["to_string_visitor"]
-  , "hdrs": ["to_string_visitor.hpp"]
-  , "srcs": ["to_string_visitor.cpp"]
-  , "deps": ["ast"]
-  , "private-deps": ["to_json_visitor"]
-  , "stage": ["justlang/ast"]
-  }
+{
+  ast: {
+    type: @'rules//CC:library',
+    name: ['ast'],
+    hdrs: [
+      'ast.hpp',
+      'node_variant.hpp',
+    ],
+    deps: [@'//:ref'],
+    stage: ['justlang/ast'],
+  },
+
+  parser: {
+    type: @'rules//CC:library',
+    name: ['parser'],
+    hdrs: ['parser.hpp'],
+    deps: [
+      'ast',
+      @'//src/justlang:file_data',
+    ],
+    stage: ['justlang/ast'],
+  },
+
+  builtins: {
+    type: @'rules//CC:library',
+    name: ['builtins'],
+    hdrs: ['builtin_functions.hpp'],
+    srcs: ['builtin_functions.cpp'],
+    deps: [
+      @'//:ref',
+      'ast',
+      'to_json_visitor',
+    ],
+    stage: ['justlang/ast'],
+  },
+
+  analyze: {
+    type: @'rules//CC:library',
+    hdrs: ['analyze.hpp'],
+    deps: ['ast'],
+    stage: ['justlang/ast'],
+  },
+
+  inline: {
+    type: @'rules//CC:library',
+    name: ['inline'],
+    srcs: [
+      'inline.cpp',
+      'inline_visitor.cpp',
+    ],
+    hdrs: ['inline.hpp'],
+    'private-hdrs': ['inline_visitor.hpp'],
+    deps: [
+      'ast',
+      'builtins',
+    ],
+    stage: ['justlang/ast'],
+  },
+
+  augment: {
+    type: @'rules//CC:library',
+    name: ['augment'],
+    hdrs: ['augment.hpp'],
+    srcs: ['augment.cpp'],
+    deps: [@'//src/justlang/ast:ast'],
+    stage: ['justlang/ast'],
+  },
+
+  to_json_visitor: {
+    type: @'rules//CC:library',
+    name: ['to_json_visitor'],
+    hdrs: ['to_json_visitor.hpp'],
+    srcs: ['to_json_visitor.cpp'],
+    deps: [
+      'ast',
+      @'json//:json',
+    ],
+    'private-deps': [@'//:ref'],
+    stage: ['justlang/ast'],
+  },
+
+  to_string_visitor: {
+    type: @'rules//CC:library',
+    name: ['to_string_visitor'],
+    hdrs: ['to_string_visitor.hpp'],
+    srcs: ['to_string_visitor.cpp'],
+    deps: ['ast'],
+    'private-deps': ['to_json_visitor'],
+    stage: ['justlang/ast'],
+  },
 }

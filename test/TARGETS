@@ -1,66 +1,89 @@
-{ "ALL":
-  { "type": ["@", "rules", "test", "suite"]
-  , "deps": ["inline", "preprocessor", "ref", "lexer", "parser"]
-  }
-, "inline":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["inline"]
-  , "srcs": ["inline.test.cpp"]
-  , "private-deps":
-    [ ["@", "justlang", "src/justlang/ast", "inline"]
-    , ["@", "justlang", "src/justlang/ast", "builtins"]
-    , ["@", "justlang", "src/justlang/ast", "to_json_visitor"]
-    , ["@", "justlang", "src/justlang/ast/native", "parser"]
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "catch2", "", "catch2-main"]
-    ]
-  }
-, "preprocessor":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["preprocessor"]
-  , "srcs": ["preprocessor.test.cpp"]
-  , "private-deps":
-    [ ["@", "justlang", "", "preprocessor"]
-    , ["@", "json", "", "json"]
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "catch2", "", "catch2-main"]
-    ]
-  }
-, "ref":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["ref"]
-  , "srcs": ["ref.test.cpp"]
-  , "private-deps":
-    [ ["@", "justlang", "", "ref"]
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "catch2", "", "catch2-main"]
-    ]
-  }
-, "lexer":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["lexer"]
-  , "srcs": ["lexer.test.cpp"]
-  , "private-deps":
-    [ ["@", "json", "", "json"]
-    , ["@", "justlang", "src/justlang/ast/native", "lexer"]
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "catch2", "", "catch2-main"]
-    ]
-  }
-, "parser":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["parser"]
-  , "srcs": ["parser.test.cpp"]
-  , "private-deps":
-    [ ["@", "justlang", "src/justlang/ast/native", "parser"]
-    , ["@", "justlang", "src/justlang/ast", "to_string_visitor"]
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "catch2", "", "catch2-main"]
-    ]
-  }
-, "DEV":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "hdrs-only": ["yes"]
-  , "targets": [["@", "json", "", "json"], ["@", "catch2", "", "catch2"]]
-  }
+{
+  // Default target, running all tests
+  ALL: {
+    type: @'rules//test:suite',
+    deps: [
+      'inline',
+      'preprocessor',
+      'ref',
+      'lexer',
+      'parser',
+    ],
+  },
+
+  // AST Inlining tests
+  inline: {
+    type: @'rules//CC/test:test',
+    name: ['inline'],
+    srcs: ['inline.test.cpp'],
+    'private-deps': [
+      @'justlang//src/justlang/ast:inline',
+      @'justlang//src/justlang/ast:builtins',
+      @'justlang//src/justlang/ast:to_json_visitor',
+      @'justlang//src/justlang/ast/native:parser',
+      @'catch2//:catch2',
+      @'catch2//:catch2-main',
+    ],
+  },
+
+  // Preprocessor tests
+  preprocessor: {
+    type: @'rules//CC/test:test',
+    name: ['preprocessor'],
+    srcs: ['preprocessor.test.cpp'],
+    'private-deps': [
+      @'justlang//:preprocessor',
+      @'json//:json',
+      @'catch2//:catch2',
+      @'catch2//:catch2-main',
+    ],
+  },
+
+  // Reference encoding/decoding tests
+  ref: {
+    type: @'rules//CC/test:test',
+    name: ['ref'],
+    srcs: ['ref.test.cpp'],
+    'private-deps': [
+      @'justlang//:ref',
+      @'catch2//:catch2',
+      @'catch2//:catch2-main',
+    ],
+  },
+
+  // Lexer tests
+  lexer: {
+    type: @'rules//CC/test:test',
+    name: ['lexer'],
+    srcs: ['lexer.test.cpp'],
+    'private-deps': [
+      @'json//:json',
+      @'justlang//src/justlang/ast/native:lexer',
+      @'catch2//:catch2',
+      @'catch2//:catch2-main',
+    ],
+  },
+
+  // Parser tests
+  parser: {
+    type: @'rules//CC/test:test',
+    name: ['parser'],
+    srcs: ['parser.test.cpp'],
+    'private-deps': [
+      @'justlang//src/justlang/ast/native:parser',
+      @'justlang//src/justlang/ast:to_string_visitor',
+      @'catch2//:catch2',
+      @'catch2//:catch2-main',
+    ],
+  },
+
+  // Development target, installs all third-party headers (for code-completion)
+  DEV: {
+    type: @'rules//CC:install-with-deps',
+    'hdrs-only': ['yes'],
+    targets: [
+      @'json//:json',
+      @'catch2//:catch2',
+    ],
+  },
 }
