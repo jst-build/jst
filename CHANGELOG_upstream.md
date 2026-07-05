@@ -1,3 +1,32 @@
+## Release `1.6.5` (2026-04-08)
+
+Bug fixes on top of `1.6.4`.
+
+### Fixes
+
+- `just execute` now allows, as demanded by the protocol, instance
+  names having an arbitrary number of segments, possibly none.
+- `just execute` now adds at startup the empty blob to CAS thus
+  fulfilling the assumption by some build tools that the empty blob
+  can always be referenced without ever uploading it.
+- The value of the `instance_name` for the remote-execution endpoint
+  can be set now using the option `--remote-instance-name`, instead
+  of using the hard-coded value `"remote-execution"`. Also, the
+  default value has been set to `""` which is the more common
+  default; use said option to restore previous behaviour.
+
+## Release `1.6.4` (2026-02-14)
+
+Bug fixes on top of `1.6.3`.
+
+### Fixes
+
+- Overlaying the empty list of trees now returns the empty tree
+  instead of causing a segmentation fault.
+- `just-mr` no longer crashes if the empty string is specified as
+  path for a `"file"` repository; instead it treats it as `"."`.
+- Improved documentation.
+
 ## Release `1.6.3` (2025-08-11)
 
 Bug fixes on top of `1.6.2`.

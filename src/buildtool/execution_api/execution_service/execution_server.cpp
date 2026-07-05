@@ -32,6 +32,7 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "google/protobuf/timestamp.pb.h"
 #include "google/rpc/status.pb.h"
+#include "nlohmann/json.hpp"
 #include "src/buildtool/common/artifact.hpp"
 #include "src/buildtool/common/artifact_digest.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
@@ -234,6 +235,11 @@ auto ExecutionServiceImpl::Execute(
         logger_.Emit(LogLevel::Error, "{}", action_digest.error());
         return grpc::Status{grpc::StatusCode::INTERNAL, action_digest.error()};
     }
+    logger_.Emit(LogLevel::Debug, [request, &action_digest]() {
+        return fmt::format("Execute(instance_name={}, action_digest={})",
+                           nlohmann::json(request->instance_name()).dump(),
+                           action_digest->hash());
+    });
 
     auto const lock = GarbageCollector::SharedLock(storage_config_);
     if (not lock) {
@@ -265,6 +271,13 @@ auto ExecutionServiceImpl::Execute(
         return ::grpc::Status{grpc::StatusCode::INTERNAL, str};
     }
 
+    logger_.Emit(LogLevel::Debug, [&action_digest, &command]() {
+        std::vector<std::string> const args(command->arguments().begin(),
+                                            command->arguments().end());
+        return fmt::format("Action {} has command line {}",
+                           action_digest->hash(),
+                           nlohmann::json(args).dump());
+    });
     logger_.Emit(LogLevel::Info, "Execute {}", action_digest->hash());
     // send initial response to the client
     auto op = ::google::longrunning::Operation{};
@@ -340,7 +353,7 @@ auto ExecutionServiceImpl::WaitExecution(
         logger_.Emit(LogLevel::Error, "{}", str);
         return ::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, str};
     }
-    logger_.Emit(LogLevel::Trace, "WaitExecution: {}", hash);
+    logger_.Emit(LogLevel::Debug, "WaitExecution: {}", hash);
     auto op = op_cache_.Query(hash);
     while (op and not op->done()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));

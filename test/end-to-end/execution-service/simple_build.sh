@@ -20,6 +20,7 @@ readonly JUST="${PWD}/bin/tool-under-test"
 readonly LBRDIR="${PWD}/local-build-root"
 readonly ESDIR="${PWD}/service-build-root"
 readonly INFOFILE="${PWD}/info.json"
+readonly LOGFILE="${PWD}/remote.log"
 readonly PIDFILE="${PWD}/pid.txt"
 
 readonly REFERENCE_OUTPUT="FooOOoo"
@@ -38,7 +39,7 @@ echo "will use ${LOCAL_LAUNCHER} as local launcher"
 echo
 
 ${JUST} execute --info-file "$INFOFILE" --pid-file "$PIDFILE" \
-        --log-limit 6 --local-build-root ${ESDIR} \
+        --log-limit 6 -f "${LOGFILE}" --local-build-root ${ESDIR} \
         -L "${LOCAL_LAUNCHER}" 2>&1 &
 
 for _ in `seq 1 60`
@@ -70,14 +71,21 @@ cat <<EOF > TARGETS
 EOF
 
 echo "Build first time with no PATH"
-"${JUST}" install -r localhost:${PORT} --local-build-root="${LBRDIR}" --local-launcher '["env", "--", "PATH=/nonexistent"]' -o . 2>&1
+"${JUST}" install -r localhost:${PORT} --local-build-root="${LBRDIR}" \
+          --local-launcher '["env", "--", "PATH=/nonexistent"]' \
+          --remote-instance-name="MyRBEInstance" \
+          -o . 2>&1
 echo "Verify number of action cache entries"
 # should be two: one for client action and one for the internal LocalAPI action
 [ $(find "${ESDIR}/protocol-dependent/generation-0/git-sha1/ac/" -type f | wc -l) = 2 ]
 echo "SUCCESS"
 
 echo "Build second time with different remote execution property"
-"${JUST}" install -r localhost:${PORT} --remote-execution-property image:foo --local-build-root="${LBRDIR}" --local-launcher '["env", "--", "PATH=/nonexistent"]' -o . 2>&1
+"${JUST}" install -r localhost:${PORT} --local-build-root="${LBRDIR}" \
+          --local-launcher '["env", "--", "PATH=/nonexistent"]' \
+          --remote-execution-property image:foo \
+          --remote-instance-name="MyRBEInstance" \
+          -o . 2>&1
 echo "Verify number of action cache entries"
 # should be two more, due to the new roperty invalidating previous actions
 [ $(find "${ESDIR}/protocol-dependent/generation-0/git-sha1/ac/" -type f | wc -l) = 4 ]
@@ -92,3 +100,14 @@ if ! [ "${OUT}" = "${REFERENCE_OUTPUT}" ]
 then
   printf 'expecting "%s", got "%s"\n' "${REF}" "${OUT}" > /dev/stderr && exit 1
 fi
+
+echo
+# Verify logging and that the client sets the instance name correctly
+grep 'DEBUG' "${LOGFILE}" | grep 'instance_name="MyRBEInstance' > debug-instance.log
+## Actions a correct client cannot avoid
+grep FindMissingBlobs debug-instance.log
+grep GetActionResult debug-instance.log
+grep Execute debug-instance.log
+## We do not expect the old default or the empty string used as instance name
+grep 'instance_name=""' "${LOGFILE}" && exit 1 || :
+grep 'instance_name="remote-execution"' "${LOGFILE}" && exit 1 || :

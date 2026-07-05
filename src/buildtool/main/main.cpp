@@ -178,6 +178,7 @@ void SetupLogging(LogArguments const& clargs) {
     -> std::optional<RemoteExecutionConfig> {
     RemoteExecutionConfig::Builder builder;
     builder.SetRemoteAddress(eargs.remote_execution_address)
+        .SetRemoteInstanceName(eargs.remote_instance_name)
         .SetRemoteExecutionDispatch(eargs.remote_execution_dispatch_file)
         .SetPlatformProperties(eargs.platform_properties)
         .SetCacheAddress(rargs.cache_endpoint);
@@ -913,6 +914,16 @@ auto main(int argc, char* argv[]) -> int {
                     return kExitBuildEnvironment;
                 }
                 auto const storage = Storage::Create(&*storage_config);
+
+                // Add the empty blob to CAS, as some build tools assume that
+                // the empty blob can always be referred to without uploading
+                // it.
+                auto store_empty_blob_result =
+                    storage.CAS().StoreBlob(std::string{});
+                if (not store_empty_blob_result) {
+                    Logger::Log(LogLevel::Warning,
+                                "Failed to store empty blob in CAS.");
+                }
 
                 // pack the local context instances to be passed as needed
                 LocalContext const local_context{

@@ -149,6 +149,9 @@ be used to peer verify archive fetches from remote.
 Address of a remote execution service. This is used as an intermediary fetch
 location for archives, between local CAS (or distdirs) and the network.
 
+**`--remote-instance-name`** *`NAME`*
+Value to pass as `instance_name` in the remote execution API.  
+
 **`-R`**, **`--remote-serve-address`** *`NAME`*:*`PORT`*  
 Address of a **`jst_backend`** **`serve`** service. This is used as intermediary fetch
 location for Git commits, between local CAS and the network.
@@ -339,7 +342,8 @@ The **`--local-launcher`** argument is passed to **`jst_backend`** as early
 argument for those *known* subcommands that accept it (build, install,
 rebuild).
 
-The **`--remote-execution-address`**, **`--compatible`**, and 
+The **`--remote-execution-address`**, **`--remote-instance-name`**,
+**`--compatible`**, and
 **`--remote-serve-address`** arguments are passed to **`jst_backend`** as early
 arguments for those *known* subcommands that accept them
 (analyse, build, install-cas, add-to-cas, install, rebuild, traverse).
