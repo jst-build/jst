@@ -21,10 +21,8 @@
 
 #include "fmt/core.h"
 #include "gsl/gsl"
-#include "nlohmann/json.hpp"
-
-#ifndef BOOTSTRAP_BUILD_TOOL
 #include "justlang/preprocessor.hpp"
+#include "nlohmann/json.hpp"
 
 namespace Frontend {
 
@@ -136,19 +134,11 @@ namespace {
 
 }  // namespace
 
-#endif  // BOOTSTRAP_BUILD_TOOL
-
 [[nodiscard]] auto FileRoot::ReadJustlang(
     std::string const& global_repo_name,
     std::filesystem::path const& file_path,
     std::string file_content,
     JustFileType file_type) const noexcept -> std::optional<nlohmann::json> {
-#ifdef BOOTSTRAP_BUILD_TOOL
-    std::ignore = global_repo_name;
-    std::ignore = file_path;
-    std::ignore = file_content;
-    std::ignore = file_type;
-#else
     auto const& file_proc = file_proc_.SetOnceAndGet(
         [root = this]() { return Frontend::Processor::Create(root); });
     if (file_proc) {
@@ -157,6 +147,5 @@ namespace {
                                   std::move(file_content),
                                   ToFileType(file_type));
     }
-#endif  // BOOTSTRAP_BUILD_TOOL
     return std::nullopt;
 }
