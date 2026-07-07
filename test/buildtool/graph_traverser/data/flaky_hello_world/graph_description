@@ -62,7 +62,7 @@
             "command": [
                 "/bin/sh",
                 "-c",
-                "set -e\nls --full-time --time ctime > ctimes"
+                "set -e\nls --full-time --time=ctime > ctimes"
             ],
             "input": {
                 "stripped_greeting_output": {
