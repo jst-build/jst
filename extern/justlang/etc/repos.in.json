@@ -24,7 +24,6 @@
   ]
 , "repositories":
   { "defaults": {"repository": {"type": "file", "path": "etc/defaults"}}
-  , "externals": {"repository": {"type": "file", "path": "etc/externals"}}
   , "rules-justlang":
     { "repository": "toolchain"
     , "target_root": "defaults"

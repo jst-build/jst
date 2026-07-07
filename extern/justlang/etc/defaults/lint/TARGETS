@@ -1,3 +1,9 @@
-{ "defaults":
-  {"type": "defaults", "base": [["CC", "defaults"], ["shell", "defaults"]]}
+{
+  defaults: {
+    type: 'defaults',
+    base: [
+      @'//CC:defaults',
+      @'//shell:defaults',
+    ],
+  },
 }

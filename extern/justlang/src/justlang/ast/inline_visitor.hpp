@@ -16,7 +16,9 @@
 #define JUSTLANG_AST_INLINE_VISITOR_HPP
 
 #include <concepts>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -77,6 +79,20 @@ class ASTInlineVisitor final {
                                       FuncNode const* callee) const
         -> ASTNodePtr;
 
+    [[nodiscard]] auto CallBuiltinWithParams(
+        std::string const& name,
+        Location const& loc,
+        CallNode::params_t const& params) const -> ASTNodePtr;
+
+    template <std::convertible_to<ASTNodePtr>... TParams>
+    [[nodiscard]] auto CallBuiltin(std::string const& name,
+                                   Location const& loc,
+                                   TParams&&... params) const -> ASTNodePtr {
+        auto call_params = CallNode::params_t{
+            std::make_pair(std::nullopt, std::forward<TParams>(params))...};
+        return CallBuiltinWithParams(name, loc, call_params);
+    }
+
     [[nodiscard]] auto InlineBuiltinCall(CallNode const* caller,
                                          BuiltinNode const* builtin) const
         -> ASTNodePtr;
@@ -84,7 +100,11 @@ class ASTInlineVisitor final {
   public:
     explicit ASTInlineVisitor(ScopeDefs const* scope,
                               bool partial_inline) noexcept
-        : scope_{scope}, partial_inline_{partial_inline} {}
+        : scope_{scope},
+          inline_callback_{[this](ASTNodePtr const& node) -> ASTNodePtr {
+              return this->InlineFunctions(node);
+          }},
+          partial_inline_{partial_inline} {}
 
     [[nodiscard]] auto InlineFunctions(ASTNodePtr const& node) const
         -> ASTNodePtr;
@@ -116,7 +136,10 @@ class ASTInlineVisitor final {
         -> ASTNodePtr;
 
   private:
+    using InlineCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
+
     ScopeDefs const* scope_;
+    InlineCallback inline_callback_;
     bool partial_inline_;
 };
 

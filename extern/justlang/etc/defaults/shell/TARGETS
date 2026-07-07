@@ -1,3 +1,6 @@
-{ "defaults": {"type": "defaults"}
-, "base": [["@", "toolchain", "CC", "defaults"]]
+{
+  defaults: {
+    type: 'defaults',
+    base: [@'toolchain//CC:defaults'],
+  },
 }

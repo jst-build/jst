@@ -1,7 +1,8 @@
-{ "justlangc":
-  { "type": ["@", "rules", "CC", "binary"]
-  , "name": ["justlangc"]
-  , "srcs": ["main.cpp"]
-  , "private-deps": [["", "preprocessor"]]
-  }
+{
+  justlangc: {
+    type: @'rules//CC:binary',
+    name: ['justlangc'],
+    srcs: ['main.cpp'],
+    'private-deps': [@'//:preprocessor'],
+  },
 }

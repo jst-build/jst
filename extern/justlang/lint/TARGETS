@@ -1,47 +1,59 @@
-{ "LINT":
-  { "type": "install"
-  , "tainted": ["lint", "test"]
-  , "dirs":
-    [ ["LINT: clang-tidy", "clang-tidy"]
-    , ["LINT: clang-format", "clang-format"]
-    ]
-  }
-, "clang":
-  { "type": "generic"
-  , "deps": [["@", "clang", "", "install_dir"]]
-  , "cmds":
-    [ "# rename install dir, as linters expect clang in directory 'toolchain'"
-    , "rm -rf toolchain"
-    , "mv installed_clang toolchain"
-    ]
-  , "out_dirs": ["toolchain"]
-  }
-, "LINT: clang-tidy":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "tainted": ["test"]
-  , "name": ["clang-tidy"]
-  , "linter": ["run_clang_tidy.py"]
-  , "summarizer": ["summary.py"]
-  , "config": [["@", "justlang", "", ".clang-tidy"], "clang"]
-  , "targets":
-    [ ["@", "justlang", "src", "justlangc"]
-    , ["@", "justlang", "src/justlang", "ref"]
-    , ["@", "justlang", "src/justlang", "preprocessor"]
-    , ["@", "tests", "", "ALL"]
-    ]
-  }
-, "LINT: clang-format":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "tainted": ["test"]
-  , "name": ["clang-format"]
-  , "linter": ["run_clang_format.py"]
-  , "summarizer": ["summary.py"]
-  , "config": [["@", "justlang", "", ".clang-format"], "clang"]
-  , "targets":
-    [ ["@", "justlang", "src", "justlangc"]
-    , ["@", "justlang", "src/justlang", "ref"]
-    , ["@", "justlang", "src/justlang", "preprocessor"]
-    , ["@", "tests", "", "ALL"]
-    ]
-  }
+{
+  LINT: {
+    type: 'install',
+    tainted: ['lint', 'test'],
+    dirs: [
+      ['run_clang_tidy', 'clang-tidy'],
+      ['run_clang_format', 'clang-format'],
+    ],
+  },
+
+  clang: {
+    type: 'generic',
+    deps: [@'clang//:install_dir'],
+    cmds: [
+      // rename install dir, as linters expect clang in directory 'toolchain'
+      |||
+        rm -rf toolchain
+        mv installed_clang toolchain
+      |||,
+    ],
+    out_dirs: ['toolchain'],
+  },
+
+  run_clang_tidy: {
+    type: @'rules//lint:targets',
+    tainted: ['test'],
+    name: ['clang-tidy'],
+    linter: ['run_clang_tidy.py'],
+    summarizer: ['summary.py'],
+    config: [
+      @'justlang//:.clang-tidy',
+      'clang',
+    ],
+    targets: [
+      @'justlang//src:justlangc',
+      @'justlang//src/justlang:ref',
+      @'justlang//src/justlang:preprocessor',
+      @'tests//:ALL',
+    ],
+  },
+
+  run_clang_format: {
+    type: @'rules//lint:targets',
+    tainted: ['test'],
+    name: ['clang-format'],
+    linter: ['run_clang_format.py'],
+    summarizer: ['summary.py'],
+    config: [
+      @'justlang//:.clang-format',
+      'clang',
+    ],
+    targets: [
+      @'justlang//src:justlangc',
+      @'justlang//src/justlang:ref',
+      @'justlang//src/justlang:preprocessor',
+      @'tests//:ALL',
+    ],
+  },
 }

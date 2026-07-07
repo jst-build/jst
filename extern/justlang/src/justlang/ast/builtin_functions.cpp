@@ -113,7 +113,8 @@ template <typename T = justlang::ASTNode>
 namespace justlang {
 
 auto BuiltIn::env(Location const& loc,
-                  CallNode::params_t const& args) -> Result {
+                  InlineCallback const& /*unused*/,
+                  CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"name", {ValueType::String}, true},
         ExpectedParameter{"default", {}, false},
@@ -136,7 +137,8 @@ auto BuiltIn::env(Location const& loc,
 }
 
 auto BuiltIn::get(Location const& loc,
-                  CallNode::params_t const& args) -> Result {
+                  InlineCallback const& /*unused*/,
+                  CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"key", {ValueType::Any, ValueType::String}, true},
         ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
@@ -220,7 +222,8 @@ auto BuiltIn::get(Location const& loc,
 }
 
 auto BuiltIn::join(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"items", {ValueType::Any, ValueType::List}, true},
         ExpectedParameter{"sep", {ValueType::Any, ValueType::String}, false},
@@ -293,7 +296,8 @@ auto BuiltIn::join(Location const& loc,
 }
 
 auto BuiltIn::flatten(Location const& loc,
-                      CallNode::params_t const& args) -> Result {
+                      InlineCallback const& /*unused*/,
+                      CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"lists", {ValueType::Any, ValueType::List}, true},
     };
@@ -356,7 +360,8 @@ auto BuiltIn::flatten(Location const& loc,
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 auto BuiltIn::map_union(Location const& loc,
-                        CallNode::params_t const& args) -> Result {
+                        InlineCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"maps", {ValueType::Any, ValueType::List}, true},
         ExpectedParameter{"disjoint", {}, false},
@@ -490,11 +495,12 @@ auto BuiltIn::map_union(Location const& loc,
         loc,
         std::make_shared<MapNode>(loc, std::move(fields)),
         VerbatimType::Flat,
-        ValueType::List);
+        ValueType::Map);
 }
 
 auto BuiltIn::keys(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
     };
@@ -533,7 +539,8 @@ auto BuiltIn::keys(Location const& loc,
 }
 
 auto BuiltIn::fail(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"msg", {}, true},
     };
@@ -563,7 +570,8 @@ auto BuiltIn::fail(Location const& loc,
 }
 
 auto BuiltIn::json_encode(Location const& loc,
-                          CallNode::params_t const& args) -> Result {
+                          InlineCallback const& /*unused*/,
+                          CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"data", {}, true},
     };
@@ -601,7 +609,8 @@ auto BuiltIn::json_encode(Location const& loc,
 }
 
 auto BuiltIn::file(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"path", {ValueType::String}, true},
     };
@@ -624,7 +633,8 @@ auto BuiltIn::file(Location const& loc,
 }
 
 auto BuiltIn::symlink(Location const& loc,
-                      CallNode::params_t const& args) -> Result {
+                      InlineCallback const& /*unused*/,
+                      CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"path", {ValueType::String}, true},
     };
@@ -647,7 +657,8 @@ auto BuiltIn::symlink(Location const& loc,
 }
 
 auto BuiltIn::tree(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"path", {ValueType::String}, true},
     };
@@ -671,7 +682,8 @@ auto BuiltIn::tree(Location const& loc,
 }
 
 auto BuiltIn::glob(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"pattern", {ValueType::String}, true},
     };
@@ -697,7 +709,8 @@ auto BuiltIn::glob(Location const& loc,
 }
 
 auto BuiltIn::at(Location const& loc,
-                 CallNode::params_t const& args) -> Result {
+                 InlineCallback const& /*unused*/,
+                 CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{
             "index",
@@ -781,7 +794,8 @@ auto BuiltIn::at(Location const& loc,
 }
 
 auto BuiltIn::all(Location const& loc,
-                  CallNode::params_t const& args) -> Result {
+                  InlineCallback const& /*unused*/,
+                  CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"args", {ValueType::Any, ValueType::List}, true},
     };
@@ -831,7 +845,8 @@ auto BuiltIn::all(Location const& loc,
 }
 
 auto BuiltIn::any(Location const& loc,
-                  CallNode::params_t const& args) -> Result {
+                  InlineCallback const& /*unused*/,
+                  CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"args", {ValueType::Any, ValueType::List}, true},
     };
@@ -881,7 +896,8 @@ auto BuiltIn::any(Location const& loc,
 }
 
 auto BuiltIn::sum(Location const& loc,
-                  CallNode::params_t const& args) -> Result {
+                  InlineCallback const& /*unused*/,
+                  CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"numbers", {ValueType::Any, ValueType::List}, true},
     };
@@ -941,7 +957,8 @@ auto BuiltIn::sum(Location const& loc,
 }
 
 auto BuiltIn::prod(Location const& loc,
-                   CallNode::params_t const& args) -> Result {
+                   InlineCallback const& /*unused*/,
+                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"numbers", {ValueType::Any, ValueType::List}, true},
     };
@@ -1002,7 +1019,8 @@ auto BuiltIn::prod(Location const& loc,
 }
 
 auto BuiltIn::eq(Location const& loc,
-                 CallNode::params_t const& args) -> Result {
+                 InlineCallback const& /*unused*/,
+                 CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"lhs", {}, true},
         ExpectedParameter{"rhs", {}, true},
@@ -1046,7 +1064,8 @@ auto BuiltIn::eq(Location const& loc,
 }
 
 auto BuiltIn::negate(Location const& loc,
-                     CallNode::params_t const& args) -> Result {
+                     InlineCallback const& /*unused*/,
+                     CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"expr", {}, true},
     };
@@ -1082,7 +1101,8 @@ auto BuiltIn::negate(Location const& loc,
 }
 
 auto BuiltIn::zip_with(Location const& loc,
-                       CallNode::params_t const& args) -> Result {
+                       InlineCallback const& inline_callback,
+                       CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"func", {}, true},
         ExpectedParameter{"range1", {ValueType::Any, ValueType::List}, true},
@@ -1124,17 +1144,18 @@ auto BuiltIn::zip_with(Location const& loc,
     auto const& iter1_var = func_node->GetParams().at(0).first;
     auto const& iter2_var = func_node->GetParams().at(1).first;
     auto const& body = func_node->GetBody();
-    return {std::make_shared<ZipWithNode>(loc,
-                                          iter1_var,
-                                          iter2_var,
-                                          std::move(range1_node),
-                                          std::move(range2_node),
-                                          body),
-            /*needs_inlining=*/true};
+    // create ZipWith node and attempt (partial) inline
+    return inline_callback(std::make_shared<ZipWithNode>(loc,
+                                                         iter1_var,
+                                                         iter2_var,
+                                                         std::move(range1_node),
+                                                         std::move(range2_node),
+                                                         body));
 }
 
 auto BuiltIn::zip_map(Location const& loc,
-                      CallNode::params_t const& args) -> Result {
+                      InlineCallback const& /*unused*/,
+                      CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"range_key", {ValueType::Any, ValueType::List}, true},
         ExpectedParameter{"range_val", {ValueType::Any, ValueType::List}, true},
@@ -1208,7 +1229,8 @@ auto BuiltIn::zip_map(Location const& loc,
 }
 
 auto BuiltIn::foreach (Location const& loc,
-                       CallNode::params_t const& args) -> Result {
+                       InlineCallback const& inline_callback,
+                       CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"func", {}, true},
         ExpectedParameter{"range", {ValueType::Any, ValueType::List}, true},
@@ -1242,13 +1264,14 @@ auto BuiltIn::foreach (Location const& loc,
 
     auto const& iter_var = func_node->GetParams().at(0).first;
     auto const& body = func_node->GetBody();
-    return {std::make_shared<ForEachNode>(
-                loc, iter_var, std::move(range_node), body),
-            /*needs_inlining=*/true};
+    // create ForEach node and attempt (partial) inline
+    return inline_callback(std::make_shared<ForEachNode>(
+        loc, iter_var, std::move(range_node), body));
 }
 
 auto BuiltIn::foldl(Location const& loc,
-                    CallNode::params_t const& args) -> Result {
+                    InlineCallback const& inline_callback,
+                    CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"func", {}, true},
         ExpectedParameter{"init", {}, true},
@@ -1288,17 +1311,18 @@ auto BuiltIn::foldl(Location const& loc,
     auto const& iter_var = func_node->GetParams().at(0).first;
     auto const& accu_var = func_node->GetParams().at(1).first;
     auto const& body = func_node->GetBody();
-    return {std::make_shared<FoldLeftNode>(loc,
-                                           iter_var,
-                                           accu_var,
-                                           std::move(init_node),
-                                           std::move(range_node),
-                                           body),
-            /*needs_inlining=*/true};
+    // create FoldLeft node and attempt (partial) inline
+    return inline_callback(std::make_shared<FoldLeftNode>(loc,
+                                                          iter_var,
+                                                          accu_var,
+                                                          std::move(init_node),
+                                                          std::move(range_node),
+                                                          body));
 }
 
 auto BuiltIn::nub_right(Location const& loc,
-                        CallNode::params_t const& args) -> Result {
+                        InlineCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"list", {ValueType::Any, ValueType::List}, true},
     };
@@ -1364,7 +1388,8 @@ auto BuiltIn::nub_right(Location const& loc,
 }
 
 auto BuiltIn::nub_left(Location const& loc,
-                       CallNode::params_t const& args) -> Result {
+                       InlineCallback const& /*unused*/,
+                       CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"list", {ValueType::Any, ValueType::List}, true},
     };
@@ -1427,7 +1452,8 @@ auto BuiltIn::nub_left(Location const& loc,
 }
 
 auto BuiltIn::range(Location const& loc,
-                    CallNode::params_t const& args) -> Result {
+                    InlineCallback const& /*unused*/,
+                    CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"size", {}, true},
     };
@@ -1476,7 +1502,8 @@ auto BuiltIn::range(Location const& loc,
 }
 
 auto BuiltIn::reverse(Location const& loc,
-                      CallNode::params_t const& args) -> Result {
+                      InlineCallback const& /*unused*/,
+                      CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"list", {ValueType::Any, ValueType::List}, true},
     };
@@ -1517,7 +1544,8 @@ auto BuiltIn::reverse(Location const& loc,
 }
 
 auto BuiltIn::length(Location const& loc,
-                     CallNode::params_t const& args) -> Result {
+                     InlineCallback const& /*unused*/,
+                     CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"list", {ValueType::Any, ValueType::List}, true},
     };
@@ -1553,7 +1581,8 @@ auto BuiltIn::length(Location const& loc,
 }
 
 auto BuiltIn::basename(Location const& loc,
-                       CallNode::params_t const& args) -> Result {
+                       InlineCallback const& /*unused*/,
+                       CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"path", {ValueType::Any, ValueType::String}, true},
     };
@@ -1590,7 +1619,8 @@ auto BuiltIn::basename(Location const& loc,
 }
 
 auto BuiltIn::join_cmd(Location const& loc,
-                       CallNode::params_t const& args) -> Result {
+                       InlineCallback const& /*unused*/,
+                       CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"args", {ValueType::Any, ValueType::List}, true},
     };
@@ -1655,7 +1685,8 @@ auto BuiltIn::join_cmd(Location const& loc,
 }
 
 auto BuiltIn::change_ending(Location const& loc,
-                            CallNode::params_t const& args) -> Result {
+                            InlineCallback const& /*unused*/,
+                            CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"path", {ValueType::Any, ValueType::String}, true},
         ExpectedParameter{"ending", {ValueType::Any, ValueType::String}, false},
@@ -1709,7 +1740,8 @@ auto BuiltIn::change_ending(Location const& loc,
 }
 
 auto BuiltIn::escape_chars(Location const& loc,
-                           CallNode::params_t const& args) -> Result {
+                           InlineCallback const& /*unused*/,
+                           CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"str", {ValueType::Any, ValueType::String}, true},
         ExpectedParameter{"chars", {ValueType::Any, ValueType::String}, false},
@@ -1779,7 +1811,8 @@ auto BuiltIn::escape_chars(Location const& loc,
 }
 
 auto BuiltIn::enumerate(Location const& loc,
-                        CallNode::params_t const& args) -> Result {
+                        InlineCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"items", {ValueType::Any, ValueType::List}, true},
     };
@@ -1830,7 +1863,8 @@ auto BuiltIn::enumerate(Location const& loc,
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 auto BuiltIn::to_subdir(Location const& loc,
-                        CallNode::params_t const& args) -> Result {
+                        InlineCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
         ExpectedParameter{"subdir", {ValueType::Any, ValueType::String}, false},
@@ -1955,7 +1989,8 @@ auto BuiltIn::to_subdir(Location const& loc,
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 auto BuiltIn::from_subdir(Location const& loc,
-                          CallNode::params_t const& args) -> Result {
+                          InlineCallback const& /*unused*/,
+                          CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
         ExpectedParameter{"subdir", {ValueType::Any, ValueType::String}, false},

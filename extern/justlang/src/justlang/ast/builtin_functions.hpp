@@ -15,9 +15,7 @@
 #ifndef JUSTLANG_JSONNET_BUILTIN_FUNCTIONS_HPP
 #define JUSTLANG_JSONNET_BUILTIN_FUNCTIONS_HPP
 
-#include <concepts>
 #include <functional>
-#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -27,137 +25,159 @@ namespace justlang {
 
 class BuiltIn final {
   public:
-    class Result {
-        friend class BuiltIn;
-
-      public:
-        [[nodiscard]] auto GetNode() const -> ASTNodePtr const& {
-            return node_;
-        }
-
-        [[nodiscard]] auto NeedsInlining() const -> bool {
-            return needs_inlining_;
-        }
-
-      private:
-        ASTNodePtr node_;
-        bool needs_inlining_;
-
-        template <class TNode>
-            requires(std::derived_from<TNode, ASTNode>)
-        // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
-        Result(std::shared_ptr<TNode> expr, bool needs_inlining = false)
-            : node_{std::move(expr)}, needs_inlining_{needs_inlining} {}
-    };
-
-    using Function =
-        std::function<Result(Location const&, CallNode::params_t const&)>;
+    // inline callback needed for higher order builtin functions
+    using InlineCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
+    using Function = std::function<ASTNodePtr(Location const&,
+                                              InlineCallback const&,
+                                              CallNode::params_t const&)>;
 
     [[nodiscard]] static auto env(Location const&,
-                                  CallNode::params_t const&) -> Result;
+                                  InlineCallback const&,
+                                  CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto get(Location const&,
-                                  CallNode::params_t const&) -> Result;
+                                  InlineCallback const&,
+                                  CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto join(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto flatten(Location const&,
-                                      CallNode::params_t const&) -> Result;
+                                      InlineCallback const&,
+                                      CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto map_union(Location const&,
-                                        CallNode::params_t const&) -> Result;
+                                        InlineCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto keys(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto fail(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto json_encode(Location const&,
-                                          CallNode::params_t const&) -> Result;
+                                          InlineCallback const&,
+                                          CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto file(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto symlink(Location const&,
-                                      CallNode::params_t const&) -> Result;
+                                      InlineCallback const&,
+                                      CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto tree(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto glob(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto at(Location const&,
-                                 CallNode::params_t const&) -> Result;
+                                 InlineCallback const&,
+                                 CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto all(Location const&,
-                                  CallNode::params_t const&) -> Result;
+                                  InlineCallback const&,
+                                  CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto any(Location const&,
-                                  CallNode::params_t const&) -> Result;
+                                  InlineCallback const&,
+                                  CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto sum(Location const&,
-                                  CallNode::params_t const&) -> Result;
+                                  InlineCallback const&,
+                                  CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto prod(Location const&,
-                                   CallNode::params_t const&) -> Result;
+                                   InlineCallback const&,
+                                   CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto eq(Location const&,
-                                 CallNode::params_t const&) -> Result;
+                                 InlineCallback const&,
+                                 CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto negate(Location const&,
-                                     CallNode::params_t const&) -> Result;
+                                     InlineCallback const&,
+                                     CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto foreach (Location const&,
-                                       CallNode::params_t const&) -> Result;
+                                       InlineCallback const&,
+                                       CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto zip_with(Location const&,
-                                       CallNode::params_t const&) -> Result;
+                                       InlineCallback const&,
+                                       CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto zip_map(Location const&,
-                                      CallNode::params_t const&) -> Result;
+                                      InlineCallback const&,
+                                      CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto foldl(Location const&,
-                                    CallNode::params_t const&) -> Result;
+                                    InlineCallback const&,
+                                    CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto nub_right(Location const&,
-                                        CallNode::params_t const&) -> Result;
+                                        InlineCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto nub_left(Location const&,
-                                       CallNode::params_t const&) -> Result;
+                                       InlineCallback const&,
+                                       CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto range(Location const&,
-                                    CallNode::params_t const&) -> Result;
+                                    InlineCallback const&,
+                                    CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto reverse(Location const&,
-                                      CallNode::params_t const&) -> Result;
+                                      InlineCallback const&,
+                                      CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto length(Location const&,
-                                     CallNode::params_t const&) -> Result;
+                                     InlineCallback const&,
+                                     CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto basename(Location const&,
-                                       CallNode::params_t const&) -> Result;
+                                       InlineCallback const&,
+                                       CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto join_cmd(Location const&,
-                                       CallNode::params_t const&) -> Result;
+                                       InlineCallback const&,
+                                       CallNode::params_t const&) -> ASTNodePtr;
 
     [[nodiscard]] static auto change_ending(Location const&,
+                                            InlineCallback const&,
                                             CallNode::params_t const&)
-        -> Result;
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto escape_chars(Location const&,
-                                           CallNode::params_t const&) -> Result;
+                                           InlineCallback const&,
+                                           CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto enumerate(Location const&,
-                                        CallNode::params_t const&) -> Result;
+                                        InlineCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto to_subdir(Location const&,
-                                        CallNode::params_t const&) -> Result;
+                                        InlineCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
 
     [[nodiscard]] static auto from_subdir(Location const&,
-                                          CallNode::params_t const&) -> Result;
+                                          InlineCallback const&,
+                                          CallNode::params_t const&)
+        -> ASTNodePtr;
 };
 
 [[nodiscard]] auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr;
