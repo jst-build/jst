@@ -182,7 +182,7 @@ auto operator<<(std::ostream& output_stream,
 }
 
 auto Lexer::Peek() const {
-    return source_[current_];
+    return current_ < source_.size() ? source_[current_] : '\0';
 }
 
 auto Lexer::IsAtEnd() const {
@@ -629,6 +629,9 @@ auto Lexer::Tokenize() -> Tokens {
     while (!IsAtEnd()) {
         // Handle comments: // and /*
         SkipWhitespace();
+        if (IsAtEnd()) {
+            break;
+        }
         if (Peek() == '/' && (PeekNext() == '/' || PeekNext() == '*')) {
             HandleComments();
             continue;
