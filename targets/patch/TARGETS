@@ -1,0 +1,10 @@
+local toolchain_config = jst.env('TOOLCHAIN_CONFIG', default={});
+
+{
+  defaults: {
+    type: @'//patch:defaults',
+    arguments_config: ['TOOLCHAIN_CONFIG'],
+    PATCH: ['patch'],
+    PATH: jst.get('PATH', toolchain_config, default=['/bin', '/usr/bin']),
+  },
+}

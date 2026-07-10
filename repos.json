@@ -1,0 +1,25 @@
+{
+  "main": "toolchain",
+  "repositories": {
+    "targets": {
+      "repository": {
+        "type": "file",
+        "path": "targets"
+      }
+    },
+    "toolchain": {
+      "repository": "rules",
+      "target_root": "targets",
+      "rule_root": "rules"
+    },
+    "rules": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/rules-cc",
+        "branch": "master",
+        "commit": "c18d9413f8759f8c261a3af06edf0861ee9e2492",
+        "subdir": "rules"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  defaults: {
+    type: @'//CC/foreign:defaults',
+    CMAKE: ['cmake'],
+    MAKE: ['make'],
+  },
+}

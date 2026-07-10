@@ -1,0 +1,34 @@
+local toolchain_config = jst.env('TOOLCHAIN_CONFIG', default={});
+
+{
+  defaults: {
+    type: @'//CC/proto:defaults',
+    arguments_config: ['TOOLCHAIN_CONFIG'],
+    PROTOC: ['protoc'],
+    deps: ['libprotobuf'],
+    PATH: jst.get('PATH', toolchain_config, default=['/bin', '/usr/bin']),
+  },
+
+  'service defaults': {
+    type: @'//CC/proto:defaults',
+    arguments_config: ['TOOLCHAIN_CONFIG'],
+    base: ['defaults'],
+    GRPC_PLUGIN: [
+      jst.get(
+        'GRPC_PLUGIN', toolchain_config, default='/usr/bin/grpc_cpp_plugin',
+      ),
+    ],
+    deps: ['libgrpc++'],
+    PATH: jst.get('PATH', toolchain_config, default=['/bin', '/usr/bin']),
+  },
+
+  libprotobuf: {
+    type: @'//CC/pkgconfig:system_library',
+    name: ['protobuf'],
+  },
+
+  'libgrpc++': {
+    type: @'//CC/pkgconfig:system_library',
+    name: ['grpc++'],
+  },
+}
