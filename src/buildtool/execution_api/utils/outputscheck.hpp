@@ -34,9 +34,11 @@
         for (auto const& file : result.output_files()) {
             actual_output_files.emplace(file.path());
         }
+        // NOLINTNEXTLINE(clang-diagnostic-deprecated-declarations)
         for (auto const& file : result.output_file_symlinks()) {
             actual_output_files.emplace(file.path());
         }
+        // NOLINTNEXTLINE(clang-diagnostic-deprecated-declarations)
         for (auto const& file : result.output_directory_symlinks()) {
             actual_output_files.emplace(file.path());
         }
@@ -74,9 +76,11 @@
         for (auto const& file : result.output_symlinks()) {
             actual_output_paths.emplace(file.path());
         }
+        // NOLINTNEXTLINE(clang-diagnostic-deprecated-declarations)
         for (auto const& file : result.output_file_symlinks()) {
             actual_output_paths.emplace(file.path());
         }
+        // NOLINTNEXTLINE(clang-diagnostic-deprecated-declarations)
         for (auto const& file : result.output_directory_symlinks()) {
             actual_output_paths.emplace(file.path());
         }

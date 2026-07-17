@@ -58,7 +58,6 @@
     std::unordered_set<ArtifactBlob> blobs;
 
     bazel_re::Command cmd;
-    cmd.set_allocated_platform(platform.release());
     std::copy(
         args.begin(), args.end(), pb::back_inserter(cmd.mutable_arguments()));
 
@@ -93,6 +92,7 @@
     action.set_do_not_cache(false);
     (*action.mutable_input_root_digest()) =
         ArtifactDigestFactory::ToBazel(dir_blob->GetDigest());
+    action.set_allocated_platform(platform.release());
 
     auto const action_blob = ArtifactBlob::FromMemory(
         hash_function, ObjectType::File, action.SerializeAsString());

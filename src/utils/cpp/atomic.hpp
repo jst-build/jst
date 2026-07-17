@@ -95,9 +95,27 @@ class atomic {  // NOLINT(readability-identifier-naming)
 };
 
 // Atomic shared_pointer with notify/wait capabilities.
-// TODO(modernize): Replace any use this class by C++20's
-// std::atomic<std::shared_ptr<T>>, once libcxx adds support for it.
-// [https://libcxx.llvm.org/Status/Cxx20.html]
+// TODO(modernize): Replace this class by an alias to C++20's
+// std::atomic<std::shared_ptr<T>>, once its wait() can be relied upon. As of
+// libstdc++ 15, wait(old) compares the stored value against old only once
+// and then blocks on the uintptr_t holding the control-block pointer *and*
+// the implementation's spin-lock bit, without re-checking afterwards. Since
+// any concurrent load()/store()/wait() briefly sets that lock bit, wait()
+// can return while the value still equals old (GCC PR 118757, fix under
+// review as of writing). Through AtomicValue::SetOnceAndGet() this
+// manifested as dereferencing a still-null pointer (confirmed with a minimal
+// example under UBSan, and observed as end-to-end test segfaults). Also,
+// libcxx does not provide atomic<shared_ptr> at all yet
+// [https://libcxx.llvm.org/Status/Cxx20.html].
+//
+// Where available, std::atomic<std::shared_ptr<T>> is still used internally
+// for store()/load() (which are not affected by the above), replacing the
+// atomic_load()/atomic_store() free-function overloads for shared_ptr,
+// which are deprecated since C++20 and warn as of libstdc++ 15. Where it is
+// not available, those free functions are the only option (and predate the
+// deprecation there, so no warning arises). Notify/wait is provided via the
+// mutex + condition variable below, which does not rely on the defective
+// wait().
 template <class T>
 class atomic_shared_ptr {  // NOLINT(readability-identifier-naming)
     using ptr_t = std::shared_ptr<T>;
@@ -114,28 +132,56 @@ class atomic_shared_ptr {  // NOLINT(readability-identifier-naming)
     auto operator=(atomic_shared_ptr&& other) -> atomic_shared_ptr& = delete;
     auto operator=(ptr_t desired) -> ptr_t {  // NOLINT
         std::shared_lock lock(mutex_);
+#if defined(__cpp_lib_atomic_shared_ptr)
+        value_.store(desired);
+#else
         std::atomic_store(&value_, desired);
+#endif
         return desired;
     }
-    operator ptr_t() const { return std::atomic_load(&value_); }  // NOLINT
+    operator ptr_t() const {  // NOLINT
+#if defined(__cpp_lib_atomic_shared_ptr)
+        return value_.load();
+#else
+        return std::atomic_load(&value_);
+#endif
+    }
 
     void store(ptr_t desired) {
         std::shared_lock lock(mutex_);
+#if defined(__cpp_lib_atomic_shared_ptr)
+        value_.store(std::move(desired));
+#else
         std::atomic_store(&value_, std::move(desired));
+#endif
     }
     [[nodiscard]] auto load() const -> ptr_t {
+#if defined(__cpp_lib_atomic_shared_ptr)
+        return value_.load();
+#else
         return std::atomic_load(&value_);
+#endif
     }
 
     void notify_one() { cv_.notify_one(); }
     void notify_all() { cv_.notify_all(); }
     void wait(ptr_t old) const {
         std::unique_lock lock(mutex_);
-        cv_.wait(lock, [this, &old]() { return value_ != old; });
+        cv_.wait(lock, [this, &old]() {
+#if defined(__cpp_lib_atomic_shared_ptr)
+            return value_.load() != old;
+#else
+            return value_ != old;
+#endif
+        });
     }
 
   private:
+#if defined(__cpp_lib_atomic_shared_ptr)
+    std::atomic<ptr_t> value_{};
+#else
     ptr_t value_{};
+#endif
     mutable std::shared_mutex mutex_;
     mutable std::condition_variable_any cv_;
 };
