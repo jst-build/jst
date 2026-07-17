@@ -41,11 +41,15 @@
 # readability-redundant-member-init: Those are not redundant for structs, but
 # clang-tidy keeps reporting this as an error.
 
+# clang-analyzer-optin.core.EnumCastOutOfRange: Triggered by macros from Catch2>=3.7.1
+# see https://github.com/catchorg/Catch2/blob/18df97df00848e91bfe1b63408bba19f8b8237ae/src/catch2/internal/catch_result_type.hpp#L53
+
 FormatStyle: Google
 Checks: >-
   *,-abseil-*,-altera-*,-android-*,-boost-*,-cert-*,-darwin-*,-fuchsia-*,-linuxkernel-*,-llvm-*,-llvmlibc-*,-mpi-*,-objc-*,-zircon-*,
   -bugprone-easily-swappable-parameters,-bugprone-unchecked-optional-access,
   -clang-analyzer-cplusplus.NewDeleteLeaks,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   -clang-diagnostic-unused-command-line-argument,
   -concurrency-mt-unsafe,
   -cppcoreguidelines-avoid-const-or-ref-data-members,-cppcoreguidelines-rvalue-reference-param-not-moved,
