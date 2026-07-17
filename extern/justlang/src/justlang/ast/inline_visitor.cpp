@@ -15,7 +15,6 @@
 #include "justlang/ast/inline_visitor.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <exception>

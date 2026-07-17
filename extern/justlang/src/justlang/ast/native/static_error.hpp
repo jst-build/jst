@@ -15,7 +15,6 @@
 #ifndef JUSTLANG_AST_NATIVE_STATIC_ERROR_HPP
 #define JUSTLANG_AST_NATIVE_STATIC_ERROR_HPP
 
-#include <ctime>
 #include <exception>
 #include <optional>
 #include <ostream>
