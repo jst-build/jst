@@ -1,5 +1,12 @@
 ## Unreleased
 
+### Other changes
+
+- The hasher now uses OpenSSL's algorithm-agnostic `EVP_MD_CTX` digest API
+  instead of the deprecated per-algorithm `SHA1_*`/`SHA256_*`/`SHA512_*`
+  functions, fixing the build against OpenSSL 3.x while remaining compatible
+  with BoringSSL.
+
 ### Fixes
 
 - The `justlang` lexer no longer reads past the end of the source buffer when
