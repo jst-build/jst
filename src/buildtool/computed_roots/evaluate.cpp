@@ -821,7 +821,7 @@ auto EvaluatePrecomputedRoots(
                         std::ostringstream msg{};
                         msg << "Root building completed; top-level computed "
                                "roots";
-                        for (int i = 0; i < roots.size(); i++) {
+                        for (std::size_t i = 0; i < roots.size(); i++) {
                             auto const& root = roots[i];
                             msg << "\n - " << root.ToString()
                                 << " evaluates to " << *values[i];

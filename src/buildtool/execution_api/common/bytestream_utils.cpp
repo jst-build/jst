@@ -91,8 +91,8 @@ auto ByteStreamUtils::ReadRequest::FromString(
     static constexpr std::size_t kReadRequestPartsCountOffset = 3U;
 
     auto const parts = ::SplitRequest(request);
-    int blobs_index = -1;
-    for (int i = 0; i < parts.size(); i++) {
+    std::optional<std::size_t> blobs_index;
+    for (std::size_t i = 0; i < parts.size(); i++) {
         if (parts[i].compare(ByteStreamUtils::kBlobs) == 0) {
             blobs_index = i;
             break;
@@ -106,27 +106,27 @@ auto ByteStreamUtils::ReadRequest::FromString(
             return std::nullopt;
         }
     }
-    if (blobs_index < 0) {
+    if (not blobs_index) {
         return std::nullopt;
     }
 
-    if (parts.size() != blobs_index + kReadRequestPartsCountOffset) {
+    if (parts.size() != *blobs_index + kReadRequestPartsCountOffset) {
         return std::nullopt;
     }
     std::ostringstream instance_name{};
-    for (int i = 0; i < blobs_index; i++) {
+    for (std::size_t i = 0; i < *blobs_index; i++) {
         instance_name << parts[i];
-        if (i + 1 < blobs_index) {
+        if (i + 1 < *blobs_index) {
             instance_name << "/";
         }
     }
 
     ReadRequest result;
     result.instance_name_ = instance_name.str();
-    result.hash_ = std::string(parts[blobs_index + kHashIndexOffset]);
+    result.hash_ = std::string(parts[*blobs_index + kHashIndexOffset]);
     try {
         result.size_ =
-            std::stoul(std::string(parts[blobs_index + kSizeIndexOffset]));
+            std::stoul(std::string(parts[*blobs_index + kSizeIndexOffset]));
     } catch (...) {
         return std::nullopt;
     }
@@ -170,8 +170,8 @@ auto ByteStreamUtils::WriteRequest::FromString(
 
     auto const parts = ::SplitRequest(request);
 
-    int uploads_index = -1;
-    for (int i = 0; i < parts.size(); i++) {
+    std::optional<std::size_t> uploads_index;
+    for (std::size_t i = 0; i < parts.size(); i++) {
         if (parts[i].compare(ByteStreamUtils::kUploads) == 0) {
             uploads_index = i;
             break;
@@ -185,30 +185,30 @@ auto ByteStreamUtils::WriteRequest::FromString(
             return std::nullopt;
         }
     }
-    if (uploads_index < 0) {
+    if (not uploads_index) {
         return std::nullopt;
     }
 
-    if ((parts.size() != uploads_index + kWriteRequestPartsCountOffset) or
-        parts[uploads_index + kBlobsIndexOffset].compare(
+    if ((parts.size() != *uploads_index + kWriteRequestPartsCountOffset) or
+        parts[*uploads_index + kBlobsIndexOffset].compare(
             ByteStreamUtils::kBlobs) != 0) {
         return std::nullopt;
     }
 
     WriteRequest result;
     std::ostringstream instance_name{};
-    for (int i = 0; i < uploads_index; i++) {
+    for (std::size_t i = 0; i < *uploads_index; i++) {
         instance_name << parts[i];
-        if (i + 1 < uploads_index) {
+        if (i + 1 < *uploads_index) {
             instance_name << "/";
         }
     }
     result.instance_name_ = instance_name.str();
-    result.uuid_ = std::string(parts[uploads_index + kUUIDIndexOffset]);
-    result.hash_ = std::string(parts[uploads_index + kHashIndexOffset]);
+    result.uuid_ = std::string(parts[*uploads_index + kUUIDIndexOffset]);
+    result.hash_ = std::string(parts[*uploads_index + kHashIndexOffset]);
     try {
         result.size_ =
-            std::stoul(std::string(parts[uploads_index + kSizeIndexOffset]));
+            std::stoul(std::string(parts[*uploads_index + kSizeIndexOffset]));
     } catch (...) {
         return std::nullopt;
     }

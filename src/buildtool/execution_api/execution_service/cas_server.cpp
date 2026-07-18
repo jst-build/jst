@@ -327,7 +327,8 @@ auto CASServiceImpl::SpliceBlob(::grpc::ServerContext* /*context*/,
                  request->chunk_digests().size());
 
     auto chunk_digests = std::vector<ArtifactDigest>{};
-    chunk_digests.reserve(request->chunk_digests().size());
+    chunk_digests.reserve(
+        gsl::narrow<std::size_t>(request->chunk_digests().size()));
     for (auto const& x : request->chunk_digests()) {
         auto chunk = ArtifactDigestFactory::FromBazel(hash_type, x);
         if (not chunk) {

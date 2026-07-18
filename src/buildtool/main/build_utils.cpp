@@ -161,7 +161,8 @@ void WriteTargetCacheEntries(
     TargetCache<true> const& tc,
     Logger const* logger,
     LogLevel log_level) {
-    std::size_t sqrt_jobs = std::lround(std::ceil(std::sqrt(jobs)));
+    auto sqrt_jobs =
+        gsl::narrow<std::size_t>(std::lround(std::ceil(std::sqrt(jobs))));
     if (strategy == TargetCacheWriteStrategy::Disable) {
         return;
     }

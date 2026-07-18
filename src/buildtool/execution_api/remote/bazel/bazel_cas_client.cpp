@@ -271,7 +271,7 @@ auto BazelCasClient::SplitBlob(std::string const& instance_name,
         return std::nullopt;
     }
     std::vector<bazel_re::Digest> result;
-    result.reserve(response.chunk_digests().size());
+    result.reserve(gsl::narrow<std::size_t>(response.chunk_digests().size()));
     std::move(response.mutable_chunk_digests()->begin(),
               response.mutable_chunk_digests()->end(),
               std::back_inserter(result));
@@ -552,11 +552,12 @@ auto BazelCasClient::BatchUpdateBlobs(std::string const& instance_name,
         // trying that again; instead, we fall back to uploading each blob
         // sequentially.
         logger_.Emit(LogLevel::Debug, "Falling back to sequential blob upload");
-        return std::count_if(blobs.begin(),
-                             blobs.end(),
-                             [this, &instance_name](ArtifactBlob const& blob) {
-                                 return UpdateSingleBlob(instance_name, blob);
-                             });
+        return gsl::narrow_cast<std::size_t>(
+            std::count_if(blobs.begin(),
+                          blobs.end(),
+                          [this, &instance_name](ArtifactBlob const& blob) {
+                              return UpdateSingleBlob(instance_name, blob);
+                          }));
     }
     return updated.size();
 }

@@ -445,7 +445,7 @@ class TestProject {
     }
 }
 
-static void TestBlobsUploadedAndUsed(
+static inline void TestBlobsUploadedAndUsed(
     StorageConfig const& storage_config,
     Storage const& storage,
     gsl::not_null<Auth const*> const& auth,
@@ -503,7 +503,7 @@ static void TestBlobsUploadedAndUsed(
     }
 }
 
-static void TestEnvironmentVariablesSetAndUsed(
+static inline void TestEnvironmentVariablesSetAndUsed(
     StorageConfig const& storage_config,
     Storage const& storage,
     gsl::not_null<Auth const*> const& auth,
@@ -561,7 +561,7 @@ static void TestEnvironmentVariablesSetAndUsed(
     }
 }
 
-static void TestTreesUsed(
+static inline void TestTreesUsed(
     StorageConfig const& storage_config,
     Storage const& storage,
     gsl::not_null<Auth const*> const& auth,
@@ -619,7 +619,7 @@ static void TestTreesUsed(
     }
 }
 
-static void TestNestedTreesUsed(
+static inline void TestNestedTreesUsed(
     StorageConfig const& storage_config,
     Storage const& storage,
     gsl::not_null<Auth const*> const& auth,
@@ -677,7 +677,7 @@ static void TestNestedTreesUsed(
     }
 }
 
-static void TestFlakyHelloWorldDetected(
+static inline void TestFlakyHelloWorldDetected(
     StorageConfig const& storage_config,
     Storage const& storage,
     gsl::not_null<Auth const*> const& auth,

@@ -206,7 +206,8 @@ auto GitApi::RetrieveToCas(
             }
 
             std::vector<Artifact::ObjectInfo> subentries;
-            subentries.reserve(std::distance(tree->begin(), tree->end()));
+            subentries.reserve(gsl::narrow<std::size_t>(
+                std::distance(tree->begin(), tree->end())));
             for (auto const& [path, entry] : *tree) {
                 auto digest = ToArtifactDigest(*entry);
                 if (not digest.has_value()) {

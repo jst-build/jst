@@ -71,7 +71,7 @@ auto BazelNetworkReader::ReadDirectory(ArtifactDigest const& digest)
     }
 
     std::vector<ArtifactBlob> symlinks;
-    symlinks.reserve(dir->symlinks().size());
+    symlinks.reserve(gsl::narrow<std::size_t>(dir->symlinks().size()));
     for (const auto& link : dir->symlinks()) {
         auto blob = ArtifactBlob::FromMemory(
             hash_function_, ObjectType::File, link.target());

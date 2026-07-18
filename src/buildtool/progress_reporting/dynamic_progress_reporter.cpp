@@ -296,11 +296,11 @@ class DynamicProgressReporterImpl {
         return ws.ws_col;
     }
 
-    [[nodiscard]] static auto Green(std::string msg) -> std::string {
+    [[nodiscard]] static auto Green(std::string const& msg) -> std::string {
         return fmt::format(kColorGreen, "{}", msg);
     }
 
-    [[nodiscard]] static auto Blue(std::string msg) -> std::string {
+    [[nodiscard]] static auto Blue(std::string const& msg) -> std::string {
         return fmt::format(kColorBlue, "{}", msg);
     }
 };

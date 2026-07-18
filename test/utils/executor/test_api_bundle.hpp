@@ -21,7 +21,7 @@
 
 /// \brief Creates an ApiBundle that contains a given IExecutionApi
 /// implementation.
-[[nodiscard]] static auto CreateTestApiBundle(
+[[nodiscard]] static inline auto CreateTestApiBundle(
     gsl::not_null<IExecutionApi::Ptr> const& api) noexcept -> ApiBundle {
     return ApiBundle{.local = api, .remote = api};
 }

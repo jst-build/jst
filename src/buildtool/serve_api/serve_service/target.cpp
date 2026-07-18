@@ -231,7 +231,8 @@ auto TargetService::ServeTarget(
 
     std::string download_error;
     std::vector<Artifact::ObjectInfo> required_digests;
-    required_digests.reserve(request->required_digests_size());
+    required_digests.reserve(
+        gsl::narrow<std::size_t>(request->required_digests_size()));
     for (int i = 0; i != request->required_digests_size(); ++i) {
         auto current = ArtifactDigestFactory::FromBazel(
             local_context_.storage_config->hash_function.GetType(),

@@ -1012,12 +1012,12 @@ auto SourceTreeService::ServeDistdirTree(
     }
     // create in-memory tree from distfiles map
     GitRepo::tree_entries_t entries{};
-    entries.reserve(request->distfiles().size());
+    entries.reserve(gsl::narrow<std::size_t>(request->distfiles().size()));
 
     auto const& native_cas = native_context_->storage->CAS();
     std::unordered_map<std::string, std::pair<std::string, bool>>
         content_list{};
-    content_list.reserve(request->distfiles().size());
+    content_list.reserve(gsl::narrow<std::size_t>(request->distfiles().size()));
 
     bool const is_native =
         ProtocolTraits::IsNative(apis_.remote->GetHashType());

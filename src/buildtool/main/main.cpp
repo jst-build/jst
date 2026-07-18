@@ -1164,8 +1164,8 @@ auto main(int argc, char* argv[]) -> int {
                                                         arguments.common,
                                                         arguments.analysis);
 
-        std::size_t eval_root_jobs =
-            std::lround(std::ceil(std::sqrt(arguments.common.jobs)));
+        auto eval_root_jobs = gsl::narrow<std::size_t>(
+            std::lround(std::ceil(std::sqrt(arguments.common.jobs))));
 #ifndef BOOTSTRAP_BUILD_TOOL
         std::optional<ServeApi> serve = ServeApi::Create(
             *serve_config, &local_context, &remote_context, &main_apis);

@@ -234,7 +234,7 @@ auto LocalApi::Upload(std::unordered_set<ArtifactBlob>&& blobs,
     // Blobs could have been received over the network, so a simple failure
     // could result in lost traffic. Try add all blobs and fail if at least
     // one is corrupted.
-    std::size_t const valid_count = std::count_if(
+    auto const valid_count = gsl::narrow_cast<std::size_t>(std::count_if(
         blobs.begin(),
         blobs.end(),
         [&cas = local_context_.storage->CAS()](ArtifactBlob const& blob) {
@@ -253,7 +253,7 @@ auto LocalApi::Upload(std::unordered_set<ArtifactBlob>&& blobs,
                                  : cas.StoreBlob(*content, blob.IsExecutable());
             }
             return cas_digest and *cas_digest == blob.GetDigest();
-        });
+        }));
     return valid_count == blobs.size();
 }
 

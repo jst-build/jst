@@ -238,7 +238,7 @@ auto TargetClient::ServeTargetVariables(std::string const& target_root_id,
         LogStatus(&logger_, LogLevel::Error, status);
         return std::nullopt;
     }
-    auto size = response.flexible_config_size();
+    auto size = gsl::narrow_cast<std::size_t>(response.flexible_config_size());
     if (size == 0) {
         return std::vector<std::string>();
     }

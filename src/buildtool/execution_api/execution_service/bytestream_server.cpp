@@ -91,7 +91,8 @@ auto BytestreamServiceImpl::Read(
     }
 
     ::google::bytestream::ReadResponse response;
-    for (auto it = to_read->make_iterator(request->read_offset());
+    for (auto it = to_read->make_iterator(
+             gsl::narrow<std::size_t>(request->read_offset()));
          it != to_read->end();
          ++it) {
         auto const chunk = *it;

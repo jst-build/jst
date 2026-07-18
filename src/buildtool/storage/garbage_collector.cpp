@@ -183,15 +183,13 @@ auto GarbageCollector::TriggerGarbageCollection(
             // Rename all cache generations starting from the oldest generation.
             // If the process gets interrupted, the youngest cache stays
             // available.
-            for (int i = static_cast<int>(storage_config.num_generations) - 1;
-                 i >= 0;
-                 --i) {
+            for (std::size_t i = storage_config.num_generations; i > 0; --i) {
                 auto remove_me_dir =
                     storage_config.CacheRoot() /
                     fmt::format("{}{}", remove_me_prefix, remove_me_counter++);
                 to_remove.emplace_back(remove_me_dir);
 
-                auto cache_root = storage_config.GenerationCacheRoot(i);
+                auto cache_root = storage_config.GenerationCacheRoot(i - 1);
                 if (FileSystemManager::IsDirectory(cache_root) and
                     not FileSystemManager::Rename(cache_root, remove_me_dir)) {
                     Logger::Log(LogLevel::Error,
