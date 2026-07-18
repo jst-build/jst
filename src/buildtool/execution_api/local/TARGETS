@@ -15,6 +15,7 @@
     , "local_cas_reader.hpp"
     ]
   , "srcs": ["local_api.cpp", "local_action.cpp", "local_cas_reader.cpp"]
+  , "private-cflags": ["-Wno-deprecated-declarations"]
   , "deps":
     [ "context"
     , ["@", "fmt", "", "fmt"]

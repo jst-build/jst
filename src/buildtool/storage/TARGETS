@@ -48,6 +48,7 @@
     , "uplinker.hpp"
     ]
   , "srcs": ["target_cache_entry.cpp", "uplinker.cpp"]
+  , "private-cflags": ["-Wno-deprecated-declarations"]
   , "deps":
     [ "backend_description"
     , "config"

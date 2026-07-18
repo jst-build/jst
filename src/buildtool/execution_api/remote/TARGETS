@@ -73,6 +73,7 @@
     , "bazel/bazel_action.cpp"
     , "bazel/bazel_response.cpp"
     ]
+  , "private-cflags": ["-Wno-deprecated-declarations"]
   , "deps":
     [ "bazel_network"
     , ["@", "grpc", "", "grpc++"]

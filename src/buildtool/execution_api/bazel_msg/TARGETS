@@ -9,6 +9,7 @@
   , "name": ["bazel_msg_factory"]
   , "hdrs": ["bazel_msg_factory.hpp"]
   , "srcs": ["bazel_msg_factory.cpp"]
+  , "private-cflags": ["-Wno-deprecated-declarations"]
   , "deps":
     [ "directory_tree"
     , ["@", "gsl", "", "gsl"]

@@ -3,6 +3,7 @@
   , "name": ["execution_server"]
   , "hdrs": ["execution_server.hpp"]
   , "srcs": ["execution_server.cpp"]
+  , "private-cflags": ["-Wno-deprecated-declarations"]
   , "proto":
     [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
     , ["@", "googleapis", "", "google_longrunning_operations_proto"]

@@ -31,6 +31,7 @@
   { "type": ["@", "rules", "CC/test", "test"]
   , "name": ["execution_server"]
   , "srcs": ["execution_server.test.cpp"]
+  , "private-cflags": ['-Wno-deprecated-declarations']
   , "private-deps":
     [ ["@", "catch2", "", "catch2"]
     , ["@", "fmt", "", "fmt"]

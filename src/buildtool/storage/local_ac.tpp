@@ -89,6 +89,8 @@ auto LocalAC<kDoGlobalUplink>::LocalUplinkEntry(
             return false;
         }
     }
+    // DEPRECATED as of v2.1, kept for backwards compatibility with older
+    // (v2.0) clients
     for (auto const& link : result->output_file_symlinks()) {
         if (not cas_.LocalUplinkBlob(
                 latest.cas_,
@@ -98,6 +100,8 @@ auto LocalAC<kDoGlobalUplink>::LocalUplinkEntry(
             return false;
         }
     }
+    // DEPRECATED as of v2.1, kept for backwards compatibility with older
+    // (v2.0) clients
     for (auto const& link : result->output_directory_symlinks()) {
         if (not cas_.LocalUplinkBlob(
                 latest.cas_,
