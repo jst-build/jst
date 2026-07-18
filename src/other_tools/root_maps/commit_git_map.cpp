@@ -879,100 +879,111 @@ void EnsureCommit(
                             // try to get root tree from remote CAS; use the
                             // digest received from serve; whether native or
                             // compatible, it will either way be imported to Git
-                            if (remote_api != nullptr and remote_digest and
-                                remote_api->RetrieveToCas(
-                                    {Artifact::ObjectInfo{
+                            if (remote_api != nullptr and remote_digest) {
+                                std::vector<Artifact::ObjectInfo> const
+                                    remote_tree_info{Artifact::ObjectInfo{
                                         .digest = *remote_digest,
-                                        .type = ObjectType::Tree}},
-                                    *local_api)) {
-                                progress->TaskTracker().Stop(repo_info.origin);
-                                // Move tree from local CAS to local Git storage
-                                auto tmp_dir =
-                                    native_storage_config->CreateTypedTmpDir(
-                                        "fetch-absent-root");
-                                if (not tmp_dir) {
-                                    (*logger)(
-                                        fmt::format(
-                                            "Failed to create tmp directory "
-                                            "after fetching root tree {} for "
-                                            "absent commit {}",
-                                            root_tree_id,
-                                            repo_info.hash),
-                                        /*fatal=*/true);
-                                    return;
-                                }
-                                if (not local_api->RetrieveToPaths(
-                                        {Artifact::ObjectInfo{
-                                            .digest = *remote_digest,
-                                            .type = ObjectType::Tree}},
-                                        {tmp_dir->GetPath()})) {
-                                    (*logger)(fmt::format(
-                                                  "Failed to copy fetched root "
-                                                  "tree {} to {}",
-                                                  root_tree_id,
-                                                  tmp_dir->GetPath().string()),
-                                              /*fatal=*/true);
-                                    return;
-                                }
-                                CommitInfo c_info{
-                                    tmp_dir->GetPath(), "tree", root_tree_id};
-                                import_to_git_map->ConsumeAfterKeysReady(
-                                    ts,
-                                    {std::move(c_info)},
-                                    [tmp_dir,  // keep tmp_dir alive
-                                     root_tree_id,
-                                     native_storage_config,
-                                     subdir = repo_info.subdir,
-                                     ignore_special = repo_info.ignore_special,
-                                     just_git_cas = op_result.git_cas,
-                                     tree_id_file,
-                                     ws_setter,
-                                     logger](auto const& values) {
-                                        if (not values[0]->second) {
-                                            (*logger)("Importing to git failed",
-                                                      /*fatal=*/true);
-                                            return;
-                                        }
-                                        // sanity check: we should get the
-                                        // expected tree
-                                        if (values[0]->first != root_tree_id) {
-                                            (*logger)(
-                                                fmt::format(
-                                                    "Mismatch in imported git "
-                                                    "tree id:\nexpected {}, "
-                                                    "but got {}",
-                                                    root_tree_id,
-                                                    values[0]->first),
-                                                /*fatal=*/true);
-                                            return;
-                                        }
-                                        // tree is now in Git cache;
-                                        // write association to id file, get
-                                        // subdir tree, and set the workspace
-                                        // root as present
-                                        WriteIdFileAndSetWSRoot(
-                                            root_tree_id,
-                                            subdir,
-                                            ignore_special,
-                                            *native_storage_config,
-                                            just_git_cas,
-                                            tree_id_file,
-                                            ws_setter,
-                                            logger);
-                                    },
-                                    [logger, tmp_dir, root_tree_id](
-                                        auto const& msg, bool fatal) {
+                                        .type = ObjectType::Tree}};
+                                if (remote_api->RetrieveToCas(remote_tree_info,
+                                                              *local_api)) {
+                                    progress->TaskTracker().Stop(
+                                        repo_info.origin);
+                                    // Move tree from local CAS to local Git
+                                    // storage
+                                    auto tmp_dir = native_storage_config
+                                                       ->CreateTypedTmpDir(
+                                                           "fetch-absent-root");
+                                    if (not tmp_dir) {
                                         (*logger)(
                                             fmt::format(
-                                                "While moving root tree {} "
-                                                "from {} to local git:\n{}",
+                                                "Failed to create tmp "
+                                                "directory after fetching "
+                                                "root tree {} for absent "
+                                                "commit {}",
                                                 root_tree_id,
-                                                tmp_dir->GetPath().string(),
-                                                msg),
-                                            fatal);
-                                    });
+                                                repo_info.hash),
+                                            /*fatal=*/true);
+                                        return;
+                                    }
+                                    std::vector<std::filesystem::path> const
+                                        tmp_dir_path{tmp_dir->GetPath()};
+                                    if (not local_api->RetrieveToPaths(
+                                            remote_tree_info, tmp_dir_path)) {
+                                        (*logger)(
+                                            fmt::format(
+                                                "Failed to copy fetched root "
+                                                "tree {} to {}",
+                                                root_tree_id,
+                                                tmp_dir->GetPath().string()),
+                                            /*fatal=*/true);
+                                        return;
+                                    }
+                                    CommitInfo c_info{tmp_dir->GetPath(),
+                                                      "tree",
+                                                      root_tree_id};
+                                    import_to_git_map->ConsumeAfterKeysReady(
+                                        ts,
+                                        {std::move(c_info)},
+                                        [tmp_dir,  // keep tmp_dir alive
+                                         root_tree_id,
+                                         native_storage_config,
+                                         subdir = repo_info.subdir,
+                                         ignore_special =
+                                             repo_info.ignore_special,
+                                         just_git_cas = op_result.git_cas,
+                                         tree_id_file,
+                                         ws_setter,
+                                         logger](auto const& values) {
+                                            if (not values[0]->second) {
+                                                (*logger)(
+                                                    "Importing to git failed",
+                                                    /*fatal=*/true);
+                                                return;
+                                            }
+                                            // sanity check: we should get the
+                                            // expected tree
+                                            if (values[0]->first !=
+                                                root_tree_id) {
+                                                (*logger)(
+                                                    fmt::format(
+                                                        "Mismatch in imported "
+                                                        "git tree id:\n"
+                                                        "expected {}, but got "
+                                                        "{}",
+                                                        root_tree_id,
+                                                        values[0]->first),
+                                                    /*fatal=*/true);
+                                                return;
+                                            }
+                                            // tree is now in Git cache;
+                                            // write association to id file,
+                                            // get subdir tree, and set the
+                                            // workspace root as present
+                                            WriteIdFileAndSetWSRoot(
+                                                root_tree_id,
+                                                subdir,
+                                                ignore_special,
+                                                *native_storage_config,
+                                                just_git_cas,
+                                                tree_id_file,
+                                                ws_setter,
+                                                logger);
+                                        },
+                                        [logger, tmp_dir, root_tree_id](
+                                            auto const& msg, bool fatal) {
+                                            (*logger)(
+                                                fmt::format(
+                                                    "While moving root tree "
+                                                    "{} from {} to local "
+                                                    "git:\n{}",
+                                                    root_tree_id,
+                                                    tmp_dir->GetPath().string(),
+                                                    msg),
+                                                fatal);
+                                        });
 
-                                return;
+                                    return;
+                                }
                             }
                             // just serve did not make the tree available in
                             // the remote CAS, so fall back to network

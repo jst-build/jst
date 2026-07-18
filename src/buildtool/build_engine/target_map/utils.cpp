@@ -269,9 +269,10 @@ auto BuildMaps::Target::Utils::createAction(
     hasher.Update(hash_vector(hash_function, command));
     hasher.Update(hash_vector(hash_function, std::vector<std::string>{cwd}));
     hasher.Update(env->ToHash());
-    hasher.Update(hash_vector(hash_function,
-                              may_fail ? std::vector<std::string>{*may_fail}
-                                       : std::vector<std::string>{}));
+    std::vector<std::string> const may_fail_vec =
+        may_fail ? std::vector<std::string>{*may_fail}
+                 : std::vector<std::string>{};
+    hasher.Update(hash_vector(hash_function, may_fail_vec));
     hasher.Update(no_cache ? std::string{"N"} : std::string{"Y"});
     hasher.Update(fmt::format("{:+24a}", timeout_scale));
     hasher.Update(execution_properties_exp->ToHash());

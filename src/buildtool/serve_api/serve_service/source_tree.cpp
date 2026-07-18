@@ -843,11 +843,10 @@ auto SourceTreeService::ServeArchiveTree(
     }
     if (digest and not content_cas_path) {
         // try to retrieve it from remote CAS
+        std::vector<Artifact::ObjectInfo> const digest_info{
+            Artifact::ObjectInfo{.digest = *digest, .type = ObjectType::File}};
         if (not(apis_.remote->IsAvailable(*digest) and
-                apis_.remote->RetrieveToCas(
-                    {Artifact::ObjectInfo{.digest = *digest,
-                                          .type = ObjectType::File}},
-                    *apis_.local))) {
+                apis_.remote->RetrieveToCas(digest_info, *apis_.local))) {
             // content could not be found
             response->set_status(ServeArchiveTreeResponse::NOT_FOUND);
             return ::grpc::Status::OK;

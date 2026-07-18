@@ -431,11 +431,10 @@ auto TargetService::ServeTargetImpl(
         return ::grpc::Status{::grpc::StatusCode::INTERNAL,
                               repo_key_dgst.error()};
     }
+    std::vector<Artifact::ObjectInfo> const repo_key_info{Artifact::ObjectInfo{
+        .digest = *repo_key_dgst, .type = ObjectType::File}};
     if (not apis_.local->IsAvailable(*repo_key_dgst) and
-        not apis_.remote->RetrieveToCas(
-            {Artifact::ObjectInfo{.digest = *repo_key_dgst,
-                                  .type = ObjectType::File}},
-            *apis_.local)) {
+        not apis_.remote->RetrieveToCas(repo_key_info, *apis_.local)) {
         auto msg = fmt::format(
             "Could not retrieve blob {} from remote-execution endpoint",
             repo_key->String());

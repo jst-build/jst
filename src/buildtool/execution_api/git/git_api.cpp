@@ -70,12 +70,16 @@ auto GitApi::RetrieveToPaths(
             }
             for (auto const& [path, entry] : *tree) {
                 auto digest = ToArtifactDigest(*entry);
-                if (not digest or
-                    not RetrieveToPaths(
-                        {Artifact::ObjectInfo{.digest = *std::move(digest),
-                                              .type = entry->Type(),
-                                              .failed = false}},
-                        {output_paths[i] / path})) {
+                if (not digest) {
+                    return false;
+                }
+                std::vector<Artifact::ObjectInfo> const sub_info{
+                    Artifact::ObjectInfo{.digest = *std::move(digest),
+                                         .type = entry->Type(),
+                                         .failed = false}};
+                std::vector<std::filesystem::path> const sub_path{
+                    output_paths[i] / path};
+                if (not RetrieveToPaths(sub_info, sub_path)) {
                     return false;
                 }
             }

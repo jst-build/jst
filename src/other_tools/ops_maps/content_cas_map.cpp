@@ -276,73 +276,79 @@ auto CreateContentCASMap(
                     auto const remote_digest =
                         serve->ContentInRemoteCAS(key.content_hash.Hash());
                     // try to get content from remote CAS
-                    if (remote_digest and
-                        remote_api->RetrieveToCas(
-                            {Artifact::ObjectInfo{.digest = *remote_digest,
-                                                  .type = ObjectType::File}},
-                            *local_api)) {
-                        progress->TaskTracker().Stop(key.origin);
-                        if (remote_digest->hash() == key.content_hash.Hash()) {
-                            // content is in native local CAS, so all done
+                    if (remote_digest) {
+                        std::vector<Artifact::ObjectInfo> const
+                            remote_content_info{
+                                Artifact::ObjectInfo{.digest = *remote_digest,
+                                                     .type = ObjectType::File}};
+                        if (remote_api->RetrieveToCas(remote_content_info,
+                                                      *local_api)) {
+                            progress->TaskTracker().Stop(key.origin);
+                            if (remote_digest->hash() ==
+                                key.content_hash.Hash()) {
+                                // content is in native local CAS, so all done
+                                (*setter)(nullptr);
+                                return;
+                            }
+                            // if content is in compatible local CAS, rehash it
+                            if (compat_storage_config == nullptr or
+                                compat_storage == nullptr) {
+                                // sanity check
+                                (*logger)("No compatible local storage set up!",
+                                          /*fatal=*/true);
+                                return;
+                            }
+                            auto const& compat_cas = compat_storage->CAS();
+                            auto const cas_path = compat_cas.BlobPath(
+                                *remote_digest, /*is_executable=*/false);
+                            if (not cas_path) {
+                                (*logger)(fmt::format("Expected content {} not "
+                                                      "found in "
+                                                      "compatible local CAS",
+                                                      remote_digest->hash()),
+                                          /*fatal=*/true);
+                                return;
+                            }
+                            auto rehashed_digest = native_cas.StoreBlob(
+                                *cas_path, /*is_executable=*/false);
+                            if (not rehashed_digest or
+                                rehashed_digest->hash() !=
+                                    key.content_hash.Hash()) {
+                                (*logger)(
+                                    fmt::format("Failed to rehash content {} "
+                                                "into native local CAS",
+                                                remote_digest->hash()),
+                                    /*fatal=*/true);
+                                return;
+                            }
+                            // cache association between digests
+                            auto error_msg = RehashUtils::StoreRehashedDigest(
+                                native_digest,
+                                *rehashed_digest,
+                                ObjectType::File,
+                                *native_storage_config,
+                                *compat_storage_config);
+                            if (error_msg) {
+                                (*logger)(fmt::format("Failed to cache digests "
+                                                      "mapping with:\n{}",
+                                                      *error_msg),
+                                          /*fatal=*/true);
+                                return;
+                            }
+                            // content is in native local CAS now
                             (*setter)(nullptr);
                             return;
                         }
-                        // if content is in compatible local CAS, rehash it
-                        if (compat_storage_config == nullptr or
-                            compat_storage == nullptr) {
-                            // sanity check
-                            (*logger)("No compatible local storage set up!",
-                                      /*fatal=*/true);
-                            return;
-                        }
-                        auto const& compat_cas = compat_storage->CAS();
-                        auto const cas_path = compat_cas.BlobPath(
-                            *remote_digest, /*is_executable=*/false);
-                        if (not cas_path) {
-                            (*logger)(fmt::format("Expected content {} not "
-                                                  "found in "
-                                                  "compatible local CAS",
-                                                  remote_digest->hash()),
-                                      /*fatal=*/true);
-                            return;
-                        }
-                        auto rehashed_digest = native_cas.StoreBlob(
-                            *cas_path, /*is_executable=*/false);
-                        if (not rehashed_digest or
-                            rehashed_digest->hash() !=
-                                key.content_hash.Hash()) {
-                            (*logger)(fmt::format("Failed to rehash content {} "
-                                                  "into native local CAS",
-                                                  remote_digest->hash()),
-                                      /*fatal=*/true);
-                            return;
-                        }
-                        // cache association between digests
-                        auto error_msg = RehashUtils::StoreRehashedDigest(
-                            native_digest,
-                            *rehashed_digest,
-                            ObjectType::File,
-                            *native_storage_config,
-                            *compat_storage_config);
-                        if (error_msg) {
-                            (*logger)(fmt::format("Failed to cache digests "
-                                                  "mapping with:\n{}",
-                                                  *error_msg),
-                                      /*fatal=*/true);
-                            return;
-                        }
-                        // content is in native local CAS now
-                        (*setter)(nullptr);
-                        return;
                     }
                 }
                 // check if content is on remote, if given and native
+                std::vector<Artifact::ObjectInfo> const native_content_info{
+                    Artifact::ObjectInfo{.digest = native_digest,
+                                         .type = ObjectType::File}};
                 if (compat_storage_config == nullptr and
                     remote_api != nullptr and
-                    remote_api->RetrieveToCas(
-                        {Artifact::ObjectInfo{.digest = native_digest,
-                                              .type = ObjectType::File}},
-                        *local_api)) {
+                    remote_api->RetrieveToCas(native_content_info,
+                                              *local_api)) {
                     progress->TaskTracker().Stop(key.origin);
                     (*setter)(nullptr);
                     return;

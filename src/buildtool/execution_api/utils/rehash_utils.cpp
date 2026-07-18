@@ -262,10 +262,10 @@ auto RehashDigest(std::vector<Artifact::ObjectInfo> const& digests,
         if (apis) {
             auto const& local = *(*apis)->local;
             auto const& remote = *(*apis)->remote;
+            std::vector<Artifact::ObjectInfo> const info{
+                Artifact::ObjectInfo{.digest = digest, .type = type}};
             if (not local.IsAvailable(digest) and
-                not remote.RetrieveToCas(
-                    {Artifact::ObjectInfo{.digest = digest, .type = type}},
-                    local)) {
+                not remote.RetrieveToCas(info, local)) {
                 return std::nullopt;
             }
         }

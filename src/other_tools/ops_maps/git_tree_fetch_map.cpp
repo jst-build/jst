@@ -448,38 +448,43 @@ auto CreateGitTreeFetchMap(
                 if (serve != nullptr and remote_api != nullptr) {
                     auto const remote_digest =
                         serve->TreeInRemoteCAS(key.tree_hash.Hash());
-                    // try to get content from remote CAS into local CAS;
-                    // whether it is retrieved locally in native or
-                    // compatible CAS, it will be imported to Git either way
-                    if (remote_digest and
-                        remote_api->RetrieveToCas(
-                            {Artifact::ObjectInfo{.digest = *remote_digest,
-                                                  .type = ObjectType::Tree}},
-                            *local_api)) {
-                        progress->TaskTracker().Stop(key.origin);
-                        MoveCASTreeToGit(key.tree_hash,
-                                         *remote_digest,
-                                         import_to_git_map,
-                                         native_storage_config,
-                                         compat_storage_config,
-                                         local_api,
-                                         remote_api,
-                                         false,  // tree already on remote,
-                                                 // so ignore backing up
-                                         ts,
-                                         setter,
-                                         logger);
-                        // done!
-                        return;
+                    if (remote_digest) {
+                        // try to get content from remote CAS into local CAS;
+                        // whether it is retrieved locally in native or
+                        // compatible CAS, it will be imported to Git either
+                        // way
+                        std::vector<Artifact::ObjectInfo> const
+                            remote_tree_info{
+                                Artifact::ObjectInfo{.digest = *remote_digest,
+                                                     .type = ObjectType::Tree}};
+                        if (remote_api->RetrieveToCas(remote_tree_info,
+                                                      *local_api)) {
+                            progress->TaskTracker().Stop(key.origin);
+                            MoveCASTreeToGit(key.tree_hash,
+                                             *remote_digest,
+                                             import_to_git_map,
+                                             native_storage_config,
+                                             compat_storage_config,
+                                             local_api,
+                                             remote_api,
+                                             false,  // tree already on
+                                                     // remote, so ignore
+                                                     // backing up
+                                             ts,
+                                             setter,
+                                             logger);
+                            // done!
+                            return;
+                        }
                     }
                 }
                 // check if tree is on remote, if given and native
+                std::vector<Artifact::ObjectInfo> const native_tree_info{
+                    Artifact::ObjectInfo{.digest = native_digest,
+                                         .type = ObjectType::Tree}};
                 if (compat_storage_config == nullptr and
                     remote_api != nullptr and
-                    remote_api->RetrieveToCas(
-                        {Artifact::ObjectInfo{.digest = native_digest,
-                                              .type = ObjectType::Tree}},
-                        *local_api)) {
+                    remote_api->RetrieveToCas(native_tree_info, *local_api)) {
                     progress->TaskTracker().Stop(key.origin);
                     MoveCASTreeToGit(key.tree_hash,
                                      native_digest,

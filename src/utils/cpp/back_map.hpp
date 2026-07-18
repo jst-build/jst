@@ -137,7 +137,14 @@ class BackMap final {
         result.reserve(keys.size());
         for (auto const& key : keys) {
             if (auto value = GetReference(key)) {
-                result.emplace(*value.value());
+                // GCC15's escape analysis loses track of a std::variant's
+                // active alternative when copy-constructing a shared_ptr member
+                // through the hashtable's emplace/rehash machinery, and warns
+                // that the shared_ptr's control-block pointer may be used
+                // uninitialized; it is always properly initialized here. Using
+                // a local variable as an intermediate step avoids this issue.
+                auto wrapped_value = **value;
+                result.emplace(std::move(wrapped_value));
             }
         }
         return result;
