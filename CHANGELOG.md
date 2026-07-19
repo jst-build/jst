@@ -5,6 +5,10 @@
 - The `justlang` lexer no longer reads past the end of the source buffer when
   the input ends in trailing whitespace or an unterminated comment.
 - Merged fixes from upstream version `1.6.6`
+- The output-content check for actions (`OutputsCheck`) now also considers
+  `output_symlinks` when collecting actual output paths, so actions producing
+  plain (non-file, non-directory) symlinks are no longer incorrectly flagged
+  as missing outputs.
 
 ## Release `1.6.1` (2025-09-03)
 

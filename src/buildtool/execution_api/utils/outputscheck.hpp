@@ -71,6 +71,9 @@
         for (auto const& file : result.output_files()) {
             actual_output_paths.emplace(file.path());
         }
+        for (auto const& file : result.output_symlinks()) {
+            actual_output_paths.emplace(file.path());
+        }
         for (auto const& file : result.output_file_symlinks()) {
             actual_output_paths.emplace(file.path());
         }
