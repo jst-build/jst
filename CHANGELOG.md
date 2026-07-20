@@ -2,6 +2,10 @@
 
 ### Other changes
 
+- `jst-lock` now derives the default output file name from the input file
+  name: an input of the form `<path>/<name>.in.json` results in output
+  `<path>/<name>.json`. If the input name does not end in `.in.json`, the
+  output file must be specified explicitly via `-o`.
 - The hasher now uses OpenSSL's algorithm-agnostic `EVP_MD_CTX` digest API
   instead of the deprecated per-algorithm `SHA1_*`/`SHA256_*`/`SHA512_*`
   functions, fixing the build against OpenSSL 3.x while remaining compatible

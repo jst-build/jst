@@ -3068,13 +3068,17 @@ def main():
     if args.output_file:
         output_file = cast(str, args.output_file)
     else:
-        # search usual paths in workspace root
-        output_file = get_repository_config_file(DEFAULT_JUSTMR_CONFIG_NAME)
-        if not output_file:
-            # set it next to the input file
-            parent_path = Path(input_file).parent
-            output_file = os.path.realpath(
-                os.path.join(parent_path, DEFAULT_JUSTMR_CONFIG_NAME))
+        # derive it from the input file name: an input of the form
+        # "<path>/<name>.in.json" results in output "<path>/<name>.json"
+        input_dir, input_name = os.path.split(input_file)
+        in_suffix = ".in.json"
+        if not input_name.endswith(in_suffix):
+            fail(
+                "Cannot derive output file name from input file '%s': "
+                "name does not end in '%s'; specify -o explicitly" %
+                (input_file, in_suffix))
+        output_name = input_name[:-len(in_suffix)] + ".json"
+        output_file = os.path.realpath(os.path.join(input_dir, output_name))
 
     # Process the rest of the command line; use globals for simplicity
     global g_ROOT, g_JUST, g_GIT, g_LAUNCHER, g_CLONE_MAP

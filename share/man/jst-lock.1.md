@@ -50,9 +50,10 @@ searching for its configuration file.
 
 **`-o`** *`CONFIGFILE`*  
 Use the specified file as the output **`jst-repo-config`**(5) file.
-If not specified, a file is searched for in the same way **`jst`** does
-when invoked with **`--norc`**. If none found, it is a file with filename
-`repos.json` in the parent directory of the input configuration file.
+If not specified, it is derived from the input configuration file: an input
+file of the form `<path>/<name>.in.json` results in output file
+`<path>/<name>.json`. It is an error to not specify this option if the input
+file name does not end in `.in.json`.
 
 **`--local-build-root`** *`PATH`*  
 Root for local CAS, cache, and build directories. The path will be created if
