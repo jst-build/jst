@@ -27,7 +27,7 @@ namespace upstream {
 auto version() -> std::string {
     static const std::size_t kMajor = 1;
     static const std::size_t kMinor = 6;
-    static const std::size_t kRevision = 5;
+    static const std::size_t kRevision = 6;
     std::string suffix = std::string{};
 
     return fmt::format(

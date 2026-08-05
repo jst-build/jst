@@ -20,7 +20,7 @@
 #include <tuple>    //std::ignore
 #include <utility>  // std::move
 
-#include "fmt/core.h"
+#include "fmt/format.h"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/common/artifact_digest_factory.hpp"
 #include "src/buildtool/common/bazel_types.hpp"
@@ -40,7 +40,7 @@ auto LocalAC<kDoGlobalUplink>::CachedResult(ArtifactDigest const& action_id)
     const noexcept -> std::optional<bazel_re::ActionResult> {
     auto const cas_key = ReadActionKey(action_id);
     if (not cas_key) {
-        logger_->Emit(LogLevel::Debug, cas_key.error());
+        logger_->Emit(LogLevel::Trace, cas_key.error());
         return std::nullopt;
     }
     auto result = ReadAction(*cas_key);

@@ -33,7 +33,7 @@
 #include <utility>
 #include <vector>
 
-#include "fmt/core.h"
+#include "fmt/format.h"
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
@@ -813,7 +813,11 @@ class ExecutorImpl {
             }
             message += nlohmann::json(action->Command()).dump() +
                        " in environment " +
-                       nlohmann::json(action->Env()).dump() + "\n";
+                       nlohmann::json(action->Env()).dump();
+            if (response->IsCached()) {
+                message += " (cached)";
+            }
+            message += "\n";
             if (response->HasStdOut()) {
                 if (has_both) {
                     message += "Stdout:\n";

@@ -37,7 +37,7 @@
 #include <variant>
 #include <vector>
 
-#include "fmt/core.h"
+#include "fmt/format.h"
 #include "src/buildtool/build_engine/analysed_target/target_graph_information.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
@@ -1752,7 +1752,7 @@ void TreeTarget(
 
                 auto analysis_result = std::make_shared<AnalysedTarget const>(
                     TargetResult{.artifact_stage = tree,
-                                 .provides = {},
+                                 .provides = Expression::kEmptyMap,
                                  .runfiles = tree},
                     std::vector<ActionDescription::Ptr>{},
                     std::vector<std::string>{},
@@ -1841,7 +1841,7 @@ void TreeTarget(
                     auto analysis_result =
                         std::make_shared<AnalysedTarget const>(
                             TargetResult{.artifact_stage = tree_map,
-                                         .provides = {},
+                                         .provides = Expression::kEmptyMap,
                                          .runfiles = tree_map},
                             std::vector<ActionDescription::Ptr>{},
                             std::vector<std::string>{},
