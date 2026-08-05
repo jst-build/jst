@@ -1,3 +1,11 @@
+## Unreleased
+
+### Fixes
+
+- The `justlang` lexer no longer reads past the end of the source buffer when
+  the input ends in trailing whitespace or an unterminated comment.
+- Merged fixes from upstream version `1.6.6`
+
 ## Release `1.6.1` (2025-09-03)
 
 Bug fixes on top of `1.6.0`.
