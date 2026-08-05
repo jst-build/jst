@@ -148,6 +148,11 @@
       , [ "test_env"
         , {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
         ]
+      , [ "action_label",
+          { "type": "join"
+          , "$1": ["Running test ", {"type": "var", "name": "name"}]
+          }
+        ]
       ]
     , "body":
       { "type": "if"
@@ -159,6 +164,7 @@
         , "out_dirs": {"type": "var", "name": "out_dirs"}
         , "inputs": {"type": "var", "name": "inputs"}
         , "cmd": {"type": "var", "name": "cmd"}
+        , "label": {"type": "var", "name": "action_label"}
         , "env": {"type": "var", "name": "test_env"}
         , "timeout scaling":
           {"type": "var", "name": "TIMEOUT_SCALE", "default": 1.0}
@@ -186,6 +192,7 @@
         , "out_dirs": {"type": "var", "name": "out_dirs"}
         , "inputs": {"type": "var", "name": "inputs"}
         , "cmd": {"type": "var", "name": "cmd"}
+        , "label": {"type": "var", "name": "action_label"}
         , "env": {"type": "var", "name": "test_env"}
         , "timeout scaling":
           {"type": "var", "name": "TIMEOUT_SCALE", "default": 1.0}
