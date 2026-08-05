@@ -22,7 +22,6 @@
 #include <utility>  // std::move
 #include <vector>
 
-#include "fmt/base.h"
 #include "fmt/format.h"
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"

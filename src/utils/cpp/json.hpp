@@ -26,7 +26,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "fmt/base.h"
 #include "fmt/ostream.h"
 #include "nlohmann/json.hpp"
 #include "src/utils/cpp/gsl.hpp"

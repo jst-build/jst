@@ -29,7 +29,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include "fmt/base.h"
 #include "fmt/chrono.h"
 #include "fmt/format.h"
 #include "gsl/gsl"

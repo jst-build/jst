@@ -24,7 +24,6 @@
 #include <sstream>
 #include <string>
 
-#include "fmt/base.h"
 #include "fmt/color.h"
 #include "fmt/format.h"
 #include "src/buildtool/logging/log_level.hpp"
