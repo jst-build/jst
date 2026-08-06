@@ -81,7 +81,7 @@
     }
   , "toolchain":
     { "repository":
-      {"type": "file", "path": "etc/toolchain", "pragma": {"to_git": true}}
+      {"type": "file", "path": "etc/toolchain_minimal", "pragma": {"to_git": true}}
     , "rule_root": "rules"
     }
   , "defaults":

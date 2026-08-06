@@ -99,7 +99,7 @@
     "toolchain": {
       "repository": {
         "type": "file",
-        "path": "etc/toolchain",
+        "path": "etc/toolchain_minimal",
         "pragma": {
           "to_git": true
         }
