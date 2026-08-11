@@ -1,0 +1,61 @@
+{ "main": "rules"
+, "repositories":
+  { "rules": {"repository": {"type": "file", "path": "rules"}}
+  , "defaults": {"repository": {"type": "file", "path": "etc/defaults"}}
+  , "tests":
+    { "repository": {"type": "file", "path": "tests"}
+    , "bindings":
+      { "test-rules": "test-rules"
+      , "test-libs": "test-libs"
+      , "rules": "rules"
+      }
+    }
+  , "imports": {"repository": {"type": "file", "path": "etc/imports"}}
+  , "test-rules":
+    { "repository": {"type": "file", "path": "rules"}
+    , "target_root": "imports"
+    , "target_file_name": "rules.TARGETS"
+    }
+  , "test-libs":
+    { "repository": "imports"
+    , "target_file_name": "libs.TARGETS"
+    , "bindings": {"gtest": "gtest", "libz": "libz", "libcurl": "libcurl"}
+    }
+  , "gtest":
+    { "repository":
+      { "type": "archive"
+      , "fetch": "https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz"
+      , "content": "cbd19f97df3ab86b174520cd850d238617c156e0"
+      , "sha256": "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363"
+      , "subdir": "googletest-1.13.0"
+      }
+    , "target_root": "imports"
+    , "target_file_name": "gtest.TARGETS"
+    }
+  , "libz":
+    { "repository":
+      { "type": "archive"
+      , "content": "e20198e326d2a4210937e92c030ff3ea25a7e9db"
+      , "fetch": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.xz"
+      , "sha256": "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3"
+      , "sha512": "cf3d49fbabddc57cca99858feeca8f910e9de42a16014cddd406814d2d24ee33fee2af3805d7efbb1b04b05f55818092b000daf82502b675df65f2512c353f73"
+      , "subdir": "zlib-1.3.2"
+      }
+    , "target_root": "imports"
+    , "target_file_name": "libz.TARGETS"
+    }
+  , "libcurl":
+    { "repository":
+      { "type": "archive"
+      , "content": "540b4de2edfa015b894ad86d51b33a55f451ac99"
+      , "fetch": "https://github.com/curl/curl/releases/download/curl-8_0_1/curl-8.0.1.tar.gz"
+      , "sha256": "5fd29000a4089934f121eff456101f0a5d09e2a3e89da1d714adf06c4be887cb"
+      , "sha512": "87d945e65176613c6296f8b130bd6c5355e3ca3c62ee4010edd481950cad9760482fd3be8a84e51501c118c29ebc284b8f87c49b06f9d248e9da5819fda38f8f"
+      , "subdir": "curl-8.0.1"
+      }
+    , "target_root": "imports"
+    , "target_file_name": "libcurl.TARGETS"
+    , "bindings": {"libz": "libz"}
+    }
+  }
+}

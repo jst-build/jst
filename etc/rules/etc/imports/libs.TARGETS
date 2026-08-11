@@ -1,0 +1,10 @@
+{ "tree":
+  { "type": "tree"
+  , "deps":
+    [ ["@", "gtest", "", "tree"]
+    , ["@", "libz", "", "tree"]
+    , ["@", "libcurl", "", "tree"]
+    ]
+  , "tainted": ["test"]
+  }
+}

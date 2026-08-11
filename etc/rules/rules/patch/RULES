@@ -1,0 +1,377 @@
+{ "defaults":
+  { "doc":
+    [ "A rule to provide defaults."
+    , "All targets take their defaults for PATCH from the target"
+    , "[\"patch\", \"defaults\"]. This is probably the only sensible"
+    , "use of this rule. As targets form a different root, the defaults"
+    , "can be provided without changing this directory."
+    ]
+  , "target_fields": ["base", "toolchain"]
+  , "string_fields": ["PATCH", "PATH", "SYSTEM_TOOLS"]
+  , "field_doc":
+    { "base": ["Other targets (using the same rule) to inherit values from."]
+    , "toolchain":
+      [ "Optional toolchain directory. A collection of artifacts that provide"
+      , "the tool PATCH. Note that only artifacts of"
+      , "the specified targets are considered (no runfiles etc.). Specifying"
+      , "this field extends artifacts from \"base\"."
+      ]
+    , "PATCH": ["The patch binary to use"]
+    , "SYSTEM_TOOLS":
+      [ "List of tools (\"PATCH\") that should be taken from"
+      , "the system instead of from \"toolchain\" (if specified)."
+      ]
+    , "PATH":
+      [ "Path for looking up the compilers. Individual paths are joined"
+      , "with \":\". Specifying this field extends values from \"base\"."
+      ]
+    }
+  , "config_vars": ["ARCH", "HOST_ARCH"]
+  , "imports":
+    { "base-provides": ["CC", "defaults-base-provides"]
+    , "base-provides-++": ["CC", "defaults-base-provides-++"]
+    , "base-provides-list": ["CC", "defaults-base-provides-list"]
+    , "artifacts_list": ["", "field_artifacts_list"]
+    , "for host": ["transitions", "for host"]
+    }
+  , "config_transitions":
+    {"toolchain": [{"type": "CALL_EXPRESSION", "name": "for host"}]}
+  , "expression":
+    { "type": "let*"
+    , "bindings":
+      [ ["PATCH", {"type": "FIELD", "name": "PATCH"}]
+      , ["PATH", {"type": "FIELD", "name": "PATH"}]
+      , ["provider", "PATCH"]
+      , [ "PATCH"
+        , { "type": "if"
+          , "cond": {"type": "var", "name": "PATCH"}
+          , "then": {"type": "var", "name": "PATCH"}
+          , "else": {"type": "CALL_EXPRESSION", "name": "base-provides"}
+          }
+        ]
+      , ["provider", "PATH"]
+      , [ "PATH"
+        , { "type": "nub_left"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ {"type": "var", "name": "PATH"}
+              , {"type": "CALL_EXPRESSION", "name": "base-provides-++"}
+              ]
+            }
+          }
+        ]
+      , ["provider", "ENV"]
+      , ["default", {"type": "empty_map"}]
+      , ["ENV", {"type": "CALL_EXPRESSION", "name": "base-provides"}]
+      , ["provider", "NON_SYSTEM_TOOLS"]
+      , ["default", {"type": "empty_map"}]
+      , [ "NON_SYSTEM_TOOLS"
+        , { "type": "map_union"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ [{"type": "CALL_EXPRESSION", "name": "base-provides"}]
+              , { "type": "if"
+                , "cond": {"type": "FIELD", "name": "PATCH"}
+                , "then":
+                  [ { "type": "singleton_map"
+                    , "key": "PATCH"
+                    , "value":
+                      { "type": "if"
+                      , "cond": {"type": "FIELD", "name": "toolchain"}
+                      , "then": true
+                      , "else": false
+                      }
+                    }
+                  ]
+                }
+              , { "type": "foreach"
+                , "range": {"type": "FIELD", "name": "SYSTEM_TOOLS"}
+                , "var": "tool"
+                , "body":
+                  { "type": "singleton_map"
+                  , "key": {"type": "var", "name": "tool"}
+                  , "value": false
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      , ["provider", "TOOLCHAIN"]
+      , ["default", {"type": "empty_map"}]
+      , [ "TOOLCHAIN"
+        , { "type": "disjoint_map_union"
+          , "msg": "toolchain artifacts may not overlap"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ {"type": "CALL_EXPRESSION", "name": "base-provides-list"}
+              , { "type": "if"
+                , "cond": {"type": "FIELD", "name": "toolchain"}
+                , "then":
+                  { "type": "let*"
+                  , "bindings":
+                    [ ["fieldname", "toolchain"]
+                    , [ "transition"
+                      , {"type": "CALL_EXPRESSION", "name": "for host"}
+                      ]
+                    ]
+                  , "body":
+                    {"type": "CALL_EXPRESSION", "name": "artifacts_list"}
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    , "body":
+      { "type": "RESULT"
+      , "provides":
+        { "type": "env"
+        , "vars": ["PATCH", "PATH", "ENV", "TOOLCHAIN", "NON_SYSTEM_TOOLS"]
+        }
+      }
+    }
+  }
+, "file":
+  { "doc": ["Replace a file, logically in place, by a patched version"]
+  , "target_fields": ["src", "patch"]
+  , "config_vars": ["PATCH", "ENV"]
+  , "implicit":
+    {"patch-defaults": ["defaults"], "defaults": [["shell", "defaults"]]}
+  , "field_doc":
+    { "src":
+      [ "The single source file to patch, typically an explicit file reference."
+      ]
+    , "patch": ["The patch to apply."]
+    , "patch-defaults": ["The patch binary (and toolchain) to use"]
+    , "defaults": ["The shell toolchain to use"]
+    }
+  , "artifacts_doc":
+    ["The patched file, staged to the position the of the original file"]
+  , "runfiles_doc": ["Same as artifacts"]
+  , "imports":
+    { "stage_field": ["./", "..", "stage_singleton_field"]
+    , "stage_artifact": ["./", "..", "stage_artifact_to_singleton_field"]
+    , "default-PATCH": "default-PATCH"
+    , "default-TOOLCHAIN": "default-TOOLCHAIN"
+    , "default-ENV": "default-ENV"
+    , "default-PATH": "default-PATH"
+    , "default-NON_SYSTEM_TOOLS": "default-NON_SYSTEM_TOOLS"
+    , "sh-TOOLCHAIN": ["CC", "default-TOOLCHAIN"]
+    , "sh-PATH": ["CC", "default-PATH"]
+    , "sh": ["shell", "sh"]
+    , "list_provider": ["./", "..", "field_list_provider"]
+    }
+  , "expression":
+    { "type": "let*"
+    , "bindings":
+      [ ["TOOLCHAIN_DIR", "toolchain"]
+      , [ "TOOLCHAIN"
+        , { "type": "disjoint_map_union"
+          , "msg": "Staging conflict between patch and sh toolchain"
+          , "$1":
+            [ {"type": "CALL_EXPRESSION", "name": "default-TOOLCHAIN"}
+            , {"type": "CALL_EXPRESSION", "name": "sh-TOOLCHAIN"}
+            ]
+          }
+        ]
+      , [ "TOOLCHAIN"
+        , { "type": "to_subdir"
+          , "subdir": {"type": "var", "name": "TOOLCHAIN_DIR"}
+          , "$1": {"type": "var", "name": "TOOLCHAIN"}
+          }
+        ]
+      , [ "bin dirs"
+        , { "type": "let*"
+          , "bindings": [["fieldname", "defaults"], ["provider", "bin dirs"]]
+          , "body": {"type": "CALL_EXPRESSION", "name": "list_provider"}
+          }
+        ]
+      , [ "bin dirs"
+        , { "type": "foreach"
+          , "range": {"type": "var", "name": "bin dirs"}
+          , "body":
+            { "type": "join"
+            , "$1":
+              [ "./"
+              , {"type": "var", "name": "TOOLCHAIN_DIR"}
+              , "/"
+              , {"type": "var", "name": "_"}
+              ]
+            }
+          }
+        ]
+      , [ "NON_SYSTEM_TOOLS"
+        , {"type": "CALL_EXPRESSION", "name": "default-NON_SYSTEM_TOOLS"}
+        ]
+      , [ "PATCH"
+        , { "type": "var"
+          , "name": "PATCH"
+          , "default":
+            { "type": "join"
+            , "$1":
+              { "type": "++"
+              , "$1":
+                [ { "type": "if"
+                  , "cond":
+                    { "type": "lookup"
+                    , "key": "PATCH"
+                    , "map": {"type": "var", "name": "NON_SYSTEM_TOOLS"}
+                    }
+                  , "then":
+                    ["./", {"type": "var", "name": "TOOLCHAIN_DIR"}, "/"]
+                  }
+                , {"type": "CALL_EXPRESSION", "name": "default-PATCH"}
+                ]
+              }
+            }
+          }
+        ]
+      , [ "ENV"
+        , { "type": "map_union"
+          , "$1":
+            [ {"type": "CALL_EXPRESSION", "name": "default-ENV"}
+            , {"type": "var", "name": "ENV", "default": {"type": "empty_map"}}
+            ]
+          }
+        ]
+      , [ "ENV_PATH"
+        , { "type": "lookup"
+          , "map": {"type": "var", "name": "ENV"}
+          , "key": "PATH"
+          }
+        ]
+      , [ "ENV"
+        , { "type": "map_union"
+          , "$1":
+            [ {"type": "var", "name": "ENV"}
+            , { "type": "singleton_map"
+              , "key": "PATH"
+              , "value":
+                { "type": "join"
+                , "separator": ":"
+                , "$1":
+                  { "type": "++"
+                  , "$1":
+                    [ {"type": "CALL_EXPRESSION", "name": "default-PATH"}
+                    , {"type": "CALL_EXPRESSION", "name": "sh-PATH"}
+                    , {"type": "var", "name": "bin dirs"}
+                    , { "type": "if"
+                      , "cond": {"type": "var", "name": "ENV_PATH"}
+                      , "then": [{"type": "var", "name": "ENV_PATH"}]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      , ["sh", {"type": "CALL_EXPRESSION", "name": "sh"}]
+      , [ "orig"
+        , { "type": "let*"
+          , "bindings": [["fieldname", "src"], ["location", "orig"]]
+          , "body": {"type": "CALL_EXPRESSION", "name": "stage_field"}
+          }
+        ]
+      , [ "patch"
+        , { "type": "let*"
+          , "bindings": [["fieldname", "patch"], ["location", "patch"]]
+          , "body": {"type": "CALL_EXPRESSION", "name": "stage_field"}
+          }
+        ]
+      , [ "script"
+        , { "type": "singleton_map"
+          , "key": "run_patch.sh"
+          , "value":
+            { "type": "BLOB"
+            , "data":
+              { "type": "join"
+              , "separator": "\n"
+              , "$1":
+                [ "set -e"
+                , "cp orig patched"
+                , "chmod +w patched"
+                , { "type": "join"
+                  , "$1":
+                    [ { "type": "join_cmd"
+                      , "$1":
+                        [ {"type": "var", "name": "PATCH", "default": "patch"}
+                        , "patched"
+                        , "patch"
+                        ]
+                      }
+                    , " >log || (cat log && exit 1)"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      , [ "inputs"
+        , { "type": "map_union"
+          , "$1":
+            [ {"type": "var", "name": "orig"}
+            , {"type": "var", "name": "patch"}
+            , {"type": "var", "name": "TOOLCHAIN"}
+            , {"type": "var", "name": "script"}
+            ]
+          }
+        ]
+      , [ "patched"
+        , { "type": "ACTION"
+          , "inputs": {"type": "var", "name": "inputs"}
+          , "outs": ["patched"]
+          , "cmd": [{"type": "var", "name": "sh"}, "./run_patch.sh"]
+          , "label":
+            { "type": "join"
+            , "$1":
+              [ "Patching file "
+              , { "type": "basename"
+                , "$1":
+                  { "type": "join"
+                  , "$1":
+                    { "type": "keys"
+                    , "$1":
+                      { "type": "map_union"
+                      , "$1":
+                        { "type": "foreach"
+                        , "var": "dep"
+                        , "range": {"type": "FIELD", "name": "src"}
+                        , "body":
+                          { "type": "DEP_ARTIFACTS"
+                          , "dep": {"type": "var", "name": "dep"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          , "env": {"type": "var", "name": "ENV"}
+          }
+        ]
+      , [ "result"
+        , { "type": "let*"
+          , "bindings":
+            [ ["artifact", {"type": "var", "name": "patched"}]
+            , ["fieldname", "src"]
+            ]
+          , "body": {"type": "CALL_EXPRESSION", "name": "stage_artifact"}
+          }
+        ]
+      ]
+    , "body":
+      { "type": "RESULT"
+      , "artifacts": {"type": "var", "name": "result"}
+      , "runfiles": {"type": "var", "name": "result"}
+      }
+    }
+  }
+}

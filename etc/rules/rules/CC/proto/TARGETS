@@ -1,0 +1,16 @@
+{ "defaults":
+  { "type": ["CC/proto", "defaults"]
+  , "PROTOC": ["protoc"]
+  , "PATH": ["/bin", "/usr/bin"]
+  , "deps": ["libprotobuf"]
+  }
+, "service defaults":
+  { "type": ["CC/proto", "defaults"]
+  , "base": ["defaults"]
+  , "GRPC_PLUGIN": ["/usr/bin/grpc_cpp_plugin"]
+  , "deps": ["libgrpc++"]
+  }
+, "libprotobuf":
+  {"type": ["CC/pkgconfig", "system_library"], "name": ["protobuf"]}
+, "libgrpc++": {"type": ["CC/pkgconfig", "system_library"], "name": ["grpc++"]}
+}

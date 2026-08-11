@@ -1,0 +1,244 @@
+{ "test_case":
+  { "doc":
+    [ "Define a test case for rule tests."
+    , "The config variables \"ENV\", \"ARCH\", \"HOST_ARCH\", \"TARGET_ARCH\","
+    , "\"BUILD_ARCH\", \"OS\" are collected in a file named \"conf_vars.json\"."
+    , "The test runner will pass that file as argument to \"-c\" to the \"jst\""
+    , "binary, which is internally called."
+    ]
+  , "string_fields": ["name", "libs", "targets", "asserts"]
+  , "target_fields": ["data"]
+  , "field_doc":
+    { "name": ["Name of the test (multiple entries are joined)."]
+    , "libs":
+      [ "Paths to external libraries' trees provided by the \"test-libs\""
+      , "repository. From within a test cases, the library's tree can be"
+      , "accessed via [\"@\", \"<libpath>\", \"\", \"tree\"]."
+      ]
+    , "targets":
+      [ "Target names to build and install. Each target name is prefixed by"
+      , "\"+\" or \"-\", indicating if the build should fail or not."
+      , "Targets that build successfully will be installed to a directory"
+      , "named identical to the target name (without the prefix)."
+      ]
+    , "asserts":
+      [ "List of commands to execute after all targets were processed. To"
+      , "access artifacts from installed targets, use the corresponding target"
+      , "name as prefix dir (e.g., target \"+foo\" installs to \"./foo/\")."
+      ]
+    , "data":
+      ["The directory that contains the project with the targets to test."]
+    }
+  , "tainted": ["test"]
+  , "config_vars":
+    [ "ENV"
+    , "ARCH"
+    , "HOST_ARCH"
+    , "TARGET_ARCH"
+    , "BUILD_ARCH"
+    , "OS"
+    , "TOOLCHAIN_CONFIG"
+    ]
+  , "implicit":
+    { "runner": ["test_runner.py"]
+    , "rules": [["@", "test-rules", "", "tree"]]
+    , "libs_tree": [["@", "test-libs", "", "tree"]]
+    }
+  , "imports": {"stage_artifact": "stage_singleton_field"}
+  , "expression":
+    { "type": "let*"
+    , "bindings":
+      [ ["name", {"type": "join", "$1": {"type": "FIELD", "name": "name"}}]
+      , ["fieldname", "rules"]
+      , ["location", "rules"]
+      , ["rules", {"type": "CALL_EXPRESSION", "name": "stage_artifact"}]
+      , [ "imports"
+        , { "type": "singleton_map"
+          , "key": "imports/TARGETS"
+          , "value":
+            { "type": "BLOB"
+            , "data": "{\"tree\":{\"type\":\"install\",\"dirs\":[[[\"TREE\",null,\".\"],\".\"]]}}"
+            }
+          }
+        ]
+      , ["fieldname", "libs_tree"]
+      , ["location", "libs"]
+      , ["libs", {"type": "CALL_EXPRESSION", "name": "stage_artifact"}]
+      , ["fieldname", "data"]
+      , ["location", "work"]
+      , ["work", {"type": "CALL_EXPRESSION", "name": "stage_artifact"}]
+      , ["fieldname", "runner"]
+      , ["location", "runner"]
+      , ["runner", {"type": "CALL_EXPRESSION", "name": "stage_artifact"}]
+      , ["targets", {"type": "FIELD", "name": "targets"}]
+      , ["asserts", {"type": "FIELD", "name": "asserts"}]
+      , [ "work_bindings"
+        , { "type": "map_union"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ [{"type": "singleton_map", "key": "rules", "value": "rules"}]
+              , { "type": "foreach"
+                , "range": {"type": "FIELD", "name": "libs"}
+                , "var": "libpath"
+                , "body":
+                  { "type": "singleton_map"
+                  , "key": {"type": "var", "name": "libpath"}
+                  , "value": {"type": "var", "name": "libpath"}
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      , [ "work_deps"
+        , { "type": "map_union"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ [ { "type": "let*"
+                  , "bindings":
+                    [ ["workspace_root", ["file", "rules"]]
+                    , ["rules", {"type": "env", "vars": ["workspace_root"]}]
+                    ]
+                  , "body": {"type": "env", "vars": ["rules"]}
+                  }
+                ]
+              , { "type": "foreach"
+                , "range": {"type": "FIELD", "name": "libs"}
+                , "var": "libpath"
+                , "body":
+                  { "type": "let*"
+                  , "bindings":
+                    [ [ "workspace_root"
+                      , [ "file"
+                        , { "type": "join"
+                          , "$1": ["libs/", {"type": "var", "name": "libpath"}]
+                          }
+                        ]
+                      ]
+                    , ["target_root", ["file", "imports"]]
+                    ]
+                  , "body":
+                    { "type": "singleton_map"
+                    , "key": {"type": "var", "name": "libpath"}
+                    , "value":
+                      { "type": "env"
+                      , "vars": ["workspace_root", "target_root"]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      , [ "repos"
+        , { "type": "singleton_map"
+          , "key": "repos.json"
+          , "value":
+            { "type": "BLOB"
+            , "data":
+              { "type": "json_encode"
+              , "$1":
+                { "type": "let*"
+                , "bindings":
+                  [ ["workspace_root", ["file", "work"]]
+                  , ["bindings", {"type": "var", "name": "work_bindings"}]
+                  , [ "work"
+                    , {"type": "env", "vars": ["workspace_root", "bindings"]}
+                    ]
+                  , [ "repositories"
+                    , { "type": "map_union"
+                      , "$1":
+                        [ {"type": "env", "vars": ["work"]}
+                        , {"type": "var", "name": "work_deps"}
+                        ]
+                      }
+                    ]
+                  , ["main", "work"]
+                  ]
+                , "body": {"type": "env", "vars": ["main", "repositories"]}
+                }
+              }
+            }
+          }
+        ]
+      , [ "config"
+        , { "type": "singleton_map"
+          , "key": "config.json"
+          , "value":
+            { "type": "BLOB"
+            , "data":
+              { "type": "json_encode"
+              , "$1": {"type": "env", "vars": ["targets", "asserts"]}
+              }
+            }
+          }
+        ]
+      , [ "conf_vars"
+        , { "type": "singleton_map"
+          , "key": "conf_vars.json"
+          , "value":
+            { "type": "BLOB"
+            , "data":
+              { "type": "json_encode"
+              , "$1":
+                { "type": "env"
+                , "vars":
+                  [ "ENV"
+                  , "ARCH"
+                  , "HOST_ARCH"
+                  , "TARGET_ARCH"
+                  , "BUILD_ARCH"
+                  , "OS"
+                  , "TOOLCHAIN_CONFIG"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      , [ "results"
+        , { "type": "ACTION"
+          , "inputs":
+            { "type": "map_union"
+            , "$1":
+              [ {"type": "var", "name": "runner"}
+              , {"type": "var", "name": "rules"}
+              , {"type": "var", "name": "imports"}
+              , {"type": "var", "name": "libs"}
+              , {"type": "var", "name": "repos"}
+              , {"type": "var", "name": "work"}
+              , {"type": "var", "name": "config"}
+              , {"type": "var", "name": "conf_vars"}
+              ]
+            }
+          , "outs": ["stdout", "stderr", "result", "time-start", "time-stop"]
+          , "cmd": ["./runner"]
+          , "label":
+            { "type": "join"
+            , "$1": ["Running rule test ", {"type": "var", "name": "name"}]
+            }
+          , "may_fail": ["test"]
+          , "fail_message":
+            { "type": "join"
+            , "$1": ["Rule test ", {"type": "var", "name": "name"}, " failed"]
+            }
+          , "env":
+            {"type": "var", "name": "ENV", "default": {"type": "empty_map"}}
+          }
+        ]
+      ]
+    , "body":
+      { "type": "RESULT"
+      , "artifacts": {"type": "var", "name": "results"}
+      , "runfiles":
+        { "type": "singleton_map"
+        , "key": {"type": "var", "name": "name"}
+        , "value": {"type": "TREE", "$1": {"type": "var", "name": "results"}}
+        }
+      }
+    }
+  }
+}

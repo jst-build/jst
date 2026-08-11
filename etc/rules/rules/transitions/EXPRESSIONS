@@ -1,0 +1,136 @@
+{ "for host":
+  { "vars": ["ARCH", "HOST_ARCH", "TARGET_ARCH"]
+  , "expression":
+    { "type": "let*"
+    , "bindings":
+      [ [ "BUILD_ARCH"
+        , { "type": "var"
+          , "name": "TARGET_ARCH"
+          , "default": {"type": "var", "name": "ARCH"}
+          }
+        ]
+      , [ "TARGET_ARCH"
+        , { "type": "var"
+          , "name": "HOST_ARCH"
+          , "default": {"type": "var", "name": "ARCH"}
+          }
+        ]
+      ]
+    , "body": {"type": "env", "vars": ["BUILD_ARCH", "TARGET_ARCH"]}
+    }
+  }
+, "with fPIC":
+  { "doc":
+    [ "Transition that enables BUILD_POSITION_INDEPENDENT if config_field"
+    , "\"shared\" is not empty."
+    ]
+  , "var": ["BUILD_OBJECT_ONLY"]
+  , "expression":
+    { "type": "if"
+    , "cond":
+      { "type": "and"
+      , "$1":
+        [ {"type": "FIELD", "name": "shared"}
+        , {"type": "not", "$1": {"type": "var", "name": "BUILD_OBJECT_ONLY"}}
+        ]
+      }
+    , "then":
+      { "type": "singleton_map"
+      , "key": "BUILD_POSITION_INDEPENDENT"
+      , "value": true
+      }
+    , "else": {"type": "empty_map"}
+    }
+  }
+, "with fPIC, not object-only":
+  { "doc": ["Like \"with fPIC\", but also clearing BUILD_OBJECT_ONLY"]
+  , "var": ["BUILD_OBJECT_ONLY"]
+  , "imports": {"with fPIC": "with fPIC"}
+  , "expression":
+    { "type": "map_union"
+    , "$1":
+      [ {"type": "CALL_EXPRESSION", "name": "with fPIC"}
+      , {"type": "singleton_map", "key": "BUILD_OBJECT_ONLY", "value": null}
+      , { "type": "singleton_map"
+        , "key": "BUILD_OBJECT_ONLY_DROP_OBJECT_LINKING"
+        , "value": null
+        }
+      ]
+    }
+  }
+, "with fPIC, object-only":
+  { "doc":
+    ["Like \"with fPIC\", but also unconditionally setting BUILD_OBJECT_ONLY"]
+  , "var": ["BUILD_OBJECT_ONLY"]
+  , "imports": {"with fPIC": "with fPIC"}
+  , "expression":
+    { "type": "map_union"
+    , "$1":
+      [ {"type": "CALL_EXPRESSION", "name": "with fPIC"}
+      , {"type": "singleton_map", "key": "BUILD_OBJECT_ONLY", "value": true}
+      , { "type": "singleton_map"
+        , "key": "BUILD_OBJECT_ONLY_DROP_OBJECT_LINKING"
+        , "value": true
+        }
+      ]
+    }
+  }
+, "target properties":
+  { "vars": ["ARCH", "TARGET_ARCH", "ARCH_DISPATCH"]
+  , "expression":
+    { "type": "let*"
+    , "bindings":
+      [ [ "TARGET_ARCH"
+        , { "type": "var"
+          , "name": "TARGET_ARCH"
+          , "default": {"type": "var", "name": "ARCH"}
+          }
+        ]
+      ]
+    , "body":
+      { "type": "if"
+      , "cond":
+        { "type": "=="
+        , "$1": {"type": "var", "name": "TARGET_ARCH"}
+        , "$2": null
+        }
+      , "then": {"type": "empty_map"}
+      , "else":
+        { "type": "lookup"
+        , "map":
+          { "type": "var"
+          , "name": "ARCH_DISPATCH"
+          , "default": {"type": "empty_map"}
+          }
+        , "key": {"type": "var", "name": "TARGET_ARCH"}
+        , "default": {"type": "empty_map"}
+        }
+      }
+    }
+  }
+, "maybe for host":
+  { "vars": ["ARCH", "HOST_ARCH", "TARGET_ARCH", "ARCH_DISPATCH"]
+  , "imports":
+    {"target properties": "target properties", "for host": "for host"}
+  , "expression":
+    { "type": "if"
+    , "cond": {"type": "CALL_EXPRESSION", "name": "target properties"}
+    , "then": {"type": "empty_map"}
+    , "else": {"type": "CALL_EXPRESSION", "name": "for host"}
+    }
+  }
+, "include_scan_build":
+  { "vars": ["ARCH", "HOST_ARCH", "TARGET_ARCH"]
+  , "imports": {"for host": "for host"}
+  , "expression":
+    { "type": "map_union"
+    , "$1":
+      [ {"type": "CALL_EXPRESSION", "name": "for host"}
+      , { "type": "singleton_map"
+        , "key": "FORCE_DISABLE_INCLUDE_SCAN"
+        , "value": true
+        }
+      ]
+    }
+  }
+}

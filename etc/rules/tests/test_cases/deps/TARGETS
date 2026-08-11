@@ -1,0 +1,419 @@
+{ "private":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_private"]
+  , "targets":
+    [ "+foo"
+    , "-main_includes_foo"
+    , "+main_links_foo"
+    , "+main_links_bar_foo"
+    , "+install_bar"
+    ]
+  , "asserts":
+    [ "test -f foo/foo/libfoo.a"
+    , "test -f foo/foo/foo.hpp"
+    , "! test -f foo/bar/bar.hpp"
+    , "./main_links_foo/main | grep foo"
+    , "./main_links_bar_foo/main | grep bar"
+    , "./main_links_bar_foo/main | grep foo"
+    , "test -f install_bar/lib/bar/libbar.a"
+    , "test -f install_bar/include/bar/bar.hpp"
+    , "test -f install_bar/lib/foo/libfoo.a"
+    , "! test -f install_bar/include/foo/foo.hpp"
+    ]
+  , "data": [["TREE", null, "private"]]
+  }
+, "public":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_public"]
+  , "targets":
+    [ "+foo"
+    , "+main_includes_foo"
+    , "+main_links_foo"
+    , "+main_links_bar_foo"
+    , "+install_bar"
+    ]
+  , "asserts":
+    [ "test -f foo/foo/libfoo.a"
+    , "test -f foo/foo/foo.hpp"
+    , "! test -f foo/bar/bar.hpp"
+    , "./main_includes_foo/main | grep main"
+    , "./main_links_foo/main | grep foo"
+    , "./main_links_bar_foo/main | grep bar"
+    , "./main_links_bar_foo/main | grep foo"
+    , "test -f install_bar/lib/bar/libbar.a"
+    , "test -f install_bar/include/bar/bar.hpp"
+    , "test -f install_bar/lib/foo/libfoo.a"
+    , "test -f install_bar/include/foo/foo.hpp"
+    ]
+  , "data": [["TREE", null, "public"]]
+  }
+, "shared":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_shared"]
+  , "targets":
+    [ "+foo"
+    , "+bar"
+    , "+main_uses_foo"
+    , "+test_uses_foo"
+    , "+main_uses_bar"
+    , "+test_uses_bar"
+    , "+test_uses_bar_s"
+    , "+test_uses_baz"
+    , "+test_uses_main"
+    , "+test_diamond"
+    , "+install_foo"
+    , "+install_bar_s"
+    , "+install_baz"
+    , "+install_main"
+    ]
+  , "asserts":
+    [ "test -f foo/libfoo.so.1.2.3"
+    , "test -f foo/foo/foo.hpp"
+    , "test -f bar/libbar.so"
+    , "test -f bar/bar/bar.hpp"
+    , "! test -f bar/foo/foo.hpp"
+    , "test -f install_foo/lib/libfoo.so.1.2.3"
+    , "test -f install_foo/include/foo/foo.hpp"
+    , "grep 'Name: foo' install_foo/lib/pkgconfig/foo.pc"
+    , "grep 'Version: 1.2.3' install_foo/lib/pkgconfig/foo.pc"
+    , "grep -- '-L${libdir}' install_foo/lib/pkgconfig/foo.pc"
+    , "grep -- '-l:libfoo.so.1.2.3' install_foo/lib/pkgconfig/foo.pc"
+    , "test -f install_bar_s/lib/bar/libbar.a"
+    , "test -f install_bar_s/include/bar/bar.hpp"
+    , "test -f install_bar_s/lib/libfoo.so.1.2.3"
+    , "! test -f install_bar_s/include/foo/foo.hpp"
+    , "grep 'Name: bar' install_bar_s/lib/pkgconfig/bar.pc"
+    , "grep '${libdir}/bar/libbar.a' install_bar_s/lib/pkgconfig/bar.pc"
+    , "grep '${libdir}/libfoo.so.1.2.3' install_bar_s/lib/pkgconfig/bar.pc"
+    , "test -f install_baz/lib/libbaz.so"
+    , "test -f install_baz/include/baz/baz.hpp"
+    , "! test -f install_baz/lib/foo/libfoo.a"
+    , "! test -f install_baz/include/foo/foo.hpp"
+    , "./install_main/bin/main_uses_bar | grep main"
+    , "./install_main/bin/main_uses_bar | grep bar"
+    , "./install_main/bin/main_uses_bar | grep foo"
+    , "! test -d install_main/include"
+    ]
+  , "data": [["TREE", null, "shared"]]
+  }
+, "object":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_object"]
+  , "targets": ["+foo", "+bar", "+baz", "+main", "+test_main", "+install_main"]
+  , "asserts":
+    [ "[ -f ./foo/libfoo.so ]"
+    , "[ -f ./bar/bar/bar.o ]"
+    , "[ -f ./baz/libbaz.so ]"
+    , "[ -f ./install_main/lib/libfoo.so ]"
+    , "[ ! -f ./install_main/lib/bar/bar.o ]"
+    , "[ \"$(./install_main/bin/main)\" = 'Hello World and Galaxy' ]"
+    ]
+  , "data": [["TREE", null, "object"]]
+  }
+, "prebuilt_tests":
+  { "type": "tree"
+  , "deps":
+    [ ["test_cases/deps/prebuilt", "foo.hpp"]
+    , ["test_cases/deps/prebuilt", "bar.hpp"]
+    , ["test_cases/deps/prebuilt", "TARGETS"]
+    , ["TREE", null, "shared"]
+    ]
+  }
+, "prebuilt":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_prebuilt"]
+  , "targets":
+    [ "+foo"
+    , "+bar"
+    , "+main_uses_foo"
+    , "+test_uses_foo"
+    , "+main_uses_bar"
+    , "+test_uses_bar"
+    , "+test_uses_bar_s"
+    , "+test_uses_main"
+    , "+install_foo"
+    , "+install_bar"
+    , "+install_main"
+    , "+test_uses_foobar"
+    , "+test_uses_foobar_s"
+    , "+install_foobar"
+    ]
+  , "asserts":
+    [ "test -f foo/libfoo.so.1.2.3"
+    , "test -f foo/foo/foo.hpp"
+    , "test -f bar/libbar.so"
+    , "test -f bar/bar/bar.hpp"
+    , "grep -- 'Cflags:.*-DUSE_FOO=1' install_foo/lib/pkgconfig/foo.pc"
+    , "grep -- 'Libs:.*${libdir}/libfoo.so.1.2.3 -lpthread' install_foo/lib/pkgconfig/foo.pc"
+    , "grep -- 'Cflags:.*-DUSE_BAR=1' install_bar/lib/pkgconfig/bar.pc"
+    , "grep -- 'Libs:.*${libdir}/libbar.so .*-lpthread -lm' install_bar/lib/pkgconfig/bar.pc"
+    , "./install_main/bin/main_uses_bar | grep main"
+    , "./install_main/bin/main_uses_bar | grep bar"
+    , "./install_main/bin/main_uses_bar | grep foo"
+    , "test -f install_foobar/lib/libfoo.so.1.2.3"
+    , "test -f install_foobar/lib/libbar.so"
+    , "test -f install_foobar/lib/pkgconfig/foobar.pc"
+    , "grep -- 'Cflags:.*-DUSE_BAR=1 -DUSE_FOO=1' install_foobar/lib/pkgconfig/foobar.pc"
+    , "grep -- 'Libs:.*-lm -lpthread' install_foobar/lib/pkgconfig/foobar.pc"
+    ]
+  , "data": ["prebuilt_tests"]
+  }
+, "cmake":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_cmake"]
+  , "libs": ["googletest", "libz", "libcurl"]
+  , "targets":
+    [ "+gtest"
+    , "+test"
+    , "+gtest_main"
+    , "+testbin"
+    , "+shell_test"
+    , "+install_gtest"
+    , "+install_gtest_main"
+    , "+install_testbin"
+    , "+install_libcurl"
+    ]
+  , "asserts":
+    [ "test -f gtest/libgtest.a"
+    , "test -f gtest/gtest/gtest.h"
+    , "grep 'PASSED.*1 test' test/stdout"
+    , "test -f gtest_main/libgtest.so.1.13.0"
+    , "test -f gtest_main/libgtest_main.so.1.13.0"
+    , "test -f gtest_main/gtest/gtest.h"
+    , "test -f ./testbin/test"
+    , "grep 'PASSED.*1 test' shell_test/stdout"
+    , "test -f install_gtest/lib/libgtest.a"
+    , "test -f install_gtest/include/gtest/gtest.h"
+    , "! test -e install_gtest/lib/pkgconfig/gtest.cflags"
+    , "! test -e install_gtest/lib/pkgconfig/gtest.ldflags"
+    , "grep -- 'Cflags:.*-DGTEST_HAS_PTHREAD=1' install_gtest/lib/pkgconfig/gtest.pc"
+    , "grep 'Libs.*libgtest.a' install_gtest/lib/pkgconfig/gtest.pc"
+    , "! grep -q '@' install_gtest/lib/pkgconfig/gtest.pc"
+    , "test -f install_gtest_main/lib/libgtest.so.1.13.0"
+    , "test -f install_gtest_main/lib/libgtest_main.so.1.13.0"
+    , "test -f install_gtest_main/include/gtest/gtest.h"
+    , "! test -e install_gtest_main/lib/pkgconfig/gtest_main.cflags"
+    , "! test -e install_gtest_main/lib/pkgconfig/gtest_main.ldflags"
+    , "grep -- 'Cflags:.*-DGTEST_HAS_PTHREAD=1' install_gtest_main/lib/pkgconfig/gtest_main.pc"
+    , "grep 'Libs.*libgtest.so.1.13.0' install_gtest_main/lib/pkgconfig/gtest_main.pc"
+    , "grep 'Libs.*libgtest_main.so.1.13.0' install_gtest_main/lib/pkgconfig/gtest_main.pc"
+    , "! grep -q '@' install_gtest_main/lib/pkgconfig/gtest_main.pc"
+    , "./install_testbin/bin/test | grep 'PASSED.*1 test'"
+    , "path=$(ldd install_libcurl/lib/libcurl.so.4.8.0 | awk '/libz/{print $3}') && test -z \"${path##$(pwd)*}\""
+    ]
+  , "data": [["TREE", null, "cmake"]]
+  }
+, "install":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_install"]
+  , "targets":
+    [ "+install_bar_release"
+    , "+install_main_release"
+    , "+install_bar_debug"
+    , "+install_main_debug"
+    , "+install_bar_debug_slim"
+    , "+install_main_debug_slim"
+    ]
+  , "asserts":
+    [ "test -f install_bar_release/lib/bar/libbar.a"
+    , "test -f install_bar_release/lib/foo/libfoo.a"
+    , "test -f install_bar_release/lib/baz/libbaz.a"
+    , "test -f install_bar_release/lib/pkgconfig/bar.pc"
+    , "test -f install_bar_release/include/bar/bar.hpp"
+    , "test -f install_bar_release/include/foo/foo.hpp"
+    , "! test -f install_bar_release/include/baz/baz.hpp"
+    , "! test -d install_bar_release/work"
+    , "test -f install_main_release/bin/main"
+    , "! test -f install_main_release/lib/bar/libbar.a"
+    , "! test -f install_main_release/lib/foo/libfoo.a"
+    , "! test -f install_main_release/lib/baz/libbaz.a"
+    , "! test -d install_main_release/lib/pkgconfig"
+    , "! test -d install_main_release/include"
+    , "! test -d install_main_release/work"
+    , "test -f install_bar_debug/lib/bar/libbar.a"
+    , "test -f install_bar_debug/lib/foo/libfoo.a"
+    , "test -f install_bar_debug/lib/baz/libbaz.a"
+    , "test -f install_bar_debug/lib/pkgconfig/bar.pc"
+    , "test -f install_bar_debug/include/bar/bar.hpp"
+    , "test -f install_bar_debug/include/foo/foo.hpp"
+    , "test -f install_bar_debug/include/baz/baz.hpp"
+    , "test -f install_bar_debug/work/bar/bar.cpp"
+    , "test -f install_bar_debug/work/bar/bar.hpp"
+    , "test -f install_bar_debug/work/foo/foo.cpp"
+    , "test -f install_bar_debug/work/foo/foo.hpp"
+    , "test -f install_bar_debug/work/foo/qux.hpp"
+    , "test -f install_bar_debug/work/baz/baz.cpp"
+    , "test -f install_bar_debug/work/baz/baz.hpp"
+    , "test -f install_main_debug/bin/main"
+    , "test -f install_main_debug/include/bar/bar.hpp"
+    , "test -f install_main_debug/include/foo/foo.hpp"
+    , "test -f install_main_debug/include/baz/baz.hpp"
+    , "test -f install_main_debug/work/bar/bar.cpp"
+    , "test -f install_main_debug/work/bar/bar.hpp"
+    , "test -f install_main_debug/work/foo/foo.cpp"
+    , "test -f install_main_debug/work/foo/foo.hpp"
+    , "test -f install_main_debug/work/foo/qux.hpp"
+    , "test -f install_main_debug/work/baz/baz.cpp"
+    , "test -f install_main_debug/work/baz/baz.hpp"
+    , "test -f install_main_debug/work/main.cpp"
+    , "! test -f install_main_debug/lib/bar/libbar.a"
+    , "! test -f install_main_debug/lib/foo/libfoo.a"
+    , "! test -f install_main_debug/lib/baz/libbaz.a"
+    , "! test -d install_main_debug/lib/pkgconfig"
+    , "test -f install_bar_debug_slim/lib/bar/libbar.a"
+    , "test -f install_bar_debug_slim/lib/foo/libfoo.a"
+    , "test -f install_bar_debug_slim/lib/baz/libbaz.a"
+    , "test -f install_bar_debug_slim/lib/pkgconfig/bar.pc"
+    , "test -f install_bar_debug_slim/include/bar/bar.hpp"
+    , "test -f install_bar_debug_slim/include/foo/foo.hpp"
+    , "! test -f install_bar_debug_slim/include/baz/baz.hpp"
+    , "! test -d install_bar_debug_slim/work"
+    , "test -f install_main_debug_slim/bin/main"
+    , "! test -f install_main_debug_slim/lib/bar/libbar.a"
+    , "! test -f install_main_debug_slim/lib/foo/libfoo.a"
+    , "! test -f install_main_debug_slim/lib/baz/libbaz.a"
+    , "! test -d install_main_debug_slim/lib/pkgconfig"
+    , "! test -d install_main_debug_slim/include"
+    , "! test -d install_main_debug_slim/work"
+    ]
+  , "data": [["TREE", null, "install"]]
+  }
+, "components":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_components"]
+  , "targets":
+    [ "+foo"
+    , "+bar"
+    , "+combined_static_lib"
+    , "+combined_shared_lib"
+    , "+main"
+    , "+main-dynamic"
+    , "+installed_static"
+    , "+installed_shared"
+    ]
+  , "asserts":
+    [ "test -f foo/foo.hpp"
+    , "test -f foo/libfoo.a"
+    , "! test -e foo/libfoo.so"
+    , "test -f bar/bar.hpp"
+    , "test -f bar/libbar.a"
+    , "! test -e bar/libbar.so"
+    , "test -f combined_static_lib/libcombstatic.a"
+    , "test -f combined_static_lib/foo.hpp"
+    , "test -f combined_static_lib/bar.hpp"
+    , "! test -f combined_static_lib/libfoo.a"
+    , "! test -f combined_static_lib/libbar.a"
+    , "! test -f combined_static_lib/foodep.hpp"
+    , "! test -f combined_static_lib/foo.o"
+    , "! test -f combined_static_lib/bar.o"
+    , "test -f combined_shared_lib/libcombshared.so"
+    , "test -f combined_shared_lib/foo.hpp"
+    , "test -f combined_shared_lib/bar.hpp"
+    , "! test -f combined_shared_lib/foodep.hpp"
+    , "! test -f combined_shared_lib/libfoo.a"
+    , "! test -f combined_shared_lib/libbar.a"
+    , "! test -f combined_shared_lib/libfoo.so"
+    , "! test -f combined_shared_lib/libbar.so"
+    , "! test -f combined_shared_lib/foo.o"
+    , "! test -f combined_shared_lib/bar.o"
+    , "./main/main"
+    , "./main/main | grep 'Hello-from-main'"
+    , "./main/main | grep 'bar.3'"
+    , "./main/main | grep 'foo.15'"
+    , "./main-dynamic/bin/main"
+    , "./main-dynamic/bin/main | grep 'Hello-from-main'"
+    , "./main-dynamic/bin/main | grep 'bar.3'"
+    , "./main-dynamic/bin/main | grep 'foo.15'"
+    , "test -f installed_static/include/bar.hpp"
+    , "test -f installed_static/include/foo.hpp"
+    , "test -f installed_static/include/foodep.hpp"
+    , "test -f installed_static/lib/libcombstatic.a"
+    , "test -f installed_static/lib/libfoodep.a"
+    , "! test -f installed_static/lib/libbar.a"
+    , "! test -f installed_static/lib/libfoo.a"
+    , "test -f installed_shared/include/bar.hpp"
+    , "test -f installed_shared/include/foo.hpp"
+    , "test -f installed_shared/include/foodep.hpp"
+    , "test -f installed_shared/lib/libcombshared.so"
+    , "! test -f installed_shared/lib/libfoodep.a"
+    , "! test -f installed_shared/lib/libfoodep.so"
+    , "! test -f installed_shared/lib/libbar.a"
+    , "! test -f installed_shared/lib/libbar.so"
+    , "! test -f installed_shared/lib/libfoo.a"
+    , "! test -f installed_shared/lib/libfoo.so"
+    ]
+  , "data": [["TREE", null, "components"]]
+  }
+, "transitive-components":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["deps_transitive_components"]
+  , "targets":
+    ["+baz", "+bar", "+foo", "+main", "+shared-foo", "+installed-shared-main"]
+  , "asserts":
+    [ "test -f foo/libfoo.a"
+    , "test -f foo/foo.hpp"
+    , "test -f foo/bar.hpp"
+    , "test -f foo/baz.hpp"
+    , "! test -f foo/foodep.hpp"
+    , "! test -f foo/bardep.hpp"
+    , "! test -f foo/bazdep.hpp"
+    , "./main/main"
+    , "./main/main | grep main"
+    , "./main/main | grep foodep"
+    , "./main/main | grep bardep"
+    , "./main/main | grep bazdep"
+    , "test -f shared-foo/libfoo.so"
+    , "test -f shared-foo/foo.hpp"
+    , "test -f shared-foo/bar.hpp"
+    , "test -f shared-foo/baz.hpp"
+    , "! test -f shared-foo/foodep.hpp"
+    , "! test -f shared-foo/bardep.hpp"
+    , "! test -f shared-foo/bazdep.hpp"
+    , "./installed-shared-main/bin/main"
+    , "./installed-shared-main/bin/main | grep main"
+    , "./installed-shared-main/bin/main | grep foodep"
+    , "./installed-shared-main/bin/main | grep bardep"
+    , "./installed-shared-main/bin/main | grep bazdep"
+    ]
+  , "data": [["TREE", null, "transitive-components"]]
+  }
+, "lint":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["lint"]
+  , "targets": ["+test", "+test-shared", "+verifier", "+lint", "+lint-shared"]
+  , "asserts":
+    [ "cat lint/report"
+    , "cat lint-shared/report"
+    , "./verifier/expect lint/out/invocations.json foo.hpp foo.cpp foodep.hpp foodep.cpp bar.hpp bar.cpp bardep.hpp bardep.cpp plain.hpp  plain.cpp main.cpp"
+    , "./verifier/expect lint-shared/out/invocations.json foo.hpp foo.cpp foodep.hpp foodep.cpp bar.hpp bar.cpp bardep.hpp bardep.cpp plain.hpp  plain.cpp main.cpp"
+    ]
+  , "data": [["TREE", null, "lint"]]
+  }
+, "chain":
+  { "type": ["test_rules", "test_case"]
+  , "name": ["chain"]
+  , "targets": ["+main", "+main-with-deps"]
+  , "asserts":
+    [ "./main-with-deps/bin/main | grep 'foo.*fine'"
+    , "./main-with-deps/bin/main | grep 'qux.*ok'"
+    ]
+  , "data": [["TREE", null, "chain"]]
+  }
+, "ALL":
+  { "type": "install"
+  , "deps":
+    [ "private"
+    , "public"
+    , "shared"
+    , "object"
+    , "prebuilt"
+    , "cmake"
+    , "install"
+    , "components"
+    , "transitive-components"
+    , "lint"
+    , "chain"
+    ]
+  , "tainted": ["test"]
+  }
+}

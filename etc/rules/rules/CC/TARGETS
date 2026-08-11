@@ -1,0 +1,12 @@
+{ "defaults":
+  { "type": ["CC", "defaults"]
+  , "CC": ["cc"]
+  , "CXX": ["c++"]
+  , "CFLAGS": []
+  , "CXXFLAGS": []
+  , "LDFLAGS": []
+  , "AR": ["ar"]
+  , "DWP": ["dwp"]
+  , "PATH": ["/bin", "/usr/bin"]
+  }
+}
