@@ -1,0 +1,71 @@
+local toolchain_config = jst.env('TOOLCHAIN_CONFIG', default={});
+local family = jst.get('FAMILY', toolchain_config, default='generic');
+
+local target_arch = jst.env('TARGET_ARCH', default=jst.env('ARCH', default='x86_64'));
+local mach =
+  if target_arch == 'arm64' then 'aarch64'
+  else if target_arch == 'amd64' then 'x86_64'
+  else if target_arch == 'x86' then 'i686'
+  else target_arch;
+local vendor = jst.get('VENDOR', toolchain_config, default='');
+local system = jst.get('SYSTEM', toolchain_config, default='linux-gnu');
+local triplet = jst.join([mach] + (if vendor then [vendor]) + [system], sep='-');
+
+{
+  defaults: {
+    type: @'//CC:defaults',
+    arguments_config: ['DEBUG', 'TOOLCHAIN_CONFIG'],
+    base:
+      if family == 'gnu' then ['gcc']
+      else if family == 'clang' then ['clang']
+      else if family == 'generic' then ['generic']
+      else jst.fail('Unknown toolchain family: ' + jst.json_encode(family)),
+    CC:
+      local force_cc = jst.get('FORCE_CC', toolchain_config);
+      if force_cc then [force_cc],
+    CXX:
+      local force_cxx = jst.get('FORCE_CXX', toolchain_config);
+      if force_cxx then [force_cxx],
+    AR:
+      local force_ar = jst.get('FORCE_AR', toolchain_config);
+      if force_ar then [force_ar],
+    DWP:
+      local force_dwp = jst.get('FORCE_DWP', toolchain_config);
+      if force_dwp then [force_dwp],
+    ADD_COMPILE_FLAGS:
+      if jst.env('DEBUG') then ['-O0', '-g']
+      else ['-O2', '-DNDEBUG'],
+    ADD_CFLAGS: jst.get('CFLAGS', toolchain_config, default=[]),
+    ADD_CXXFLAGS: jst.get('CXXFLAGS', toolchain_config, default=[]),
+    ADD_LDFLAGS: jst.get('LDFLAGS', toolchain_config, default=[]),
+    PATH: jst.get('PATH', toolchain_config, default=['/bin', '/usr/bin']),
+  },
+
+  generic: {
+    type: @'//CC:defaults',
+    AR: ['ar'],
+    CC: ['cc'],
+    CXX: ['c++'],
+    DWP: ['dwp'],
+  },
+
+  gcc: {
+    type: @'//CC:defaults',
+    arguments_config: ['ARCH', 'TARGET_ARCH', 'TOOLCHAIN_CONFIG'],
+    CC: [triplet + '-gcc'],
+    CXX: [triplet + '-g++'],
+    AR: [triplet + '-ar'],
+    DWP: [triplet + '-dwp'],
+  },
+
+  clang: {
+    type: @'//CC:defaults',
+    arguments_config: ['ARCH', 'TARGET_ARCH', 'TOOLCHAIN_CONFIG'],
+    CC: ['clang'],
+    CXX: ['clang++'],
+    AR: [triplet + '-ar'],
+    DWP: ['llvm-dwp'],
+    CFLAGS: ['-target', triplet],
+    CXXFLAGS: ['-target', triplet],
+  },
+}
