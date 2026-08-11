@@ -792,9 +792,13 @@
       }
     }
   }
-, "pkg-prefix-flag-paths":
-  { "doc": ["Detect flags referring to local flag files and prefix them."]
-  , "vars": ["flags", "pkg-flag-files", "flag-prefix"]
+, "pkg-flag-print-cmds":
+  { "doc":
+    [ "Create shell commands that print the given flags. Flags referring to"
+    , "local flag files are replaced by a command that inlines the content of"
+    , "the respective flag file."
+    ]
+  , "vars": ["flags", "pkg-flag-files"]
   , "expression":
     { "type": "let*"
     , "bindings":
@@ -833,22 +837,26 @@
           { "type": "if"
           , "cond": {"type": "var", "name": "flag-file"}
           , "then":
-            { "type": "join"
-            , "$1":
-              [ "@"
-              , {"type": "var", "name": "flag-prefix"}
-              , "/"
-              , {"type": "var", "name": "flag-file"}
-              ]
+            { "type": "join_cmd"
+            , "$1": ["inline_flags", {"type": "var", "name": "flag-file"}]
             }
-          , "else": {"type": "var", "name": "item"}
+          , "else":
+            { "type": "join_cmd"
+            , "$1": ["put_flags", {"type": "var", "name": "item"}]
+            }
           }
         }
       }
     }
   }
 , "pkg-config":
-  { "vars":
+  { "doc":
+    [ "Generate a pkg-config file. As the content of flag files is only known"
+    , "at build time, the file is created by an action running a generated"
+    , "POSIX shell script, which inlines the content of any flag file that is"
+    , "referred to by the collected compile or link flags."
+    ]
+  , "vars":
     [ "pkg-name"
     , "pkg-prefix"
     , "pkg-version"
@@ -857,11 +865,13 @@
     , "pkg-flag-files"
     , "pkg-libs"
     , "flat-libs"
-    , "pc-install-dir"
+    , "sh"
+    , "shell TOOLCHAIN"
+    , "shell env"
     ]
   , "imports":
     { "pkg-prefix-lib-paths": "pkg-prefix-lib-paths"
-    , "pkg-prefix-flag-paths": "pkg-prefix-flag-paths"
+    , "pkg-flag-print-cmds": "pkg-flag-print-cmds"
     }
   , "expression":
     { "type": "let*"
@@ -870,83 +880,139 @@
       , [ "pkg-ldflags"
         , {"type": "CALL_EXPRESSION", "name": "pkg-prefix-lib-paths"}
         ]
-      , [ "flag-prefix"
-        , { "type": "join"
-          , "$1": ["${prefix}/", {"type": "var", "name": "pc-install-dir"}]
+      , [ "pc-filename"
+        , {"type": "join", "$1": [{"type": "var", "name": "pkg-name"}, ".pc"]}
+        ]
+      , [ "flags"
+        , { "type": "++"
+          , "$1": [["-I${includedir}"], {"type": "var", "name": "pkg-cflags"}]
           }
         ]
-      , ["flags", {"type": "var", "name": "pkg-cflags"}]
-      , [ "pkg-cflags"
-        , {"type": "CALL_EXPRESSION", "name": "pkg-prefix-flag-paths"}
+      , [ "cflags-cmds"
+        , {"type": "CALL_EXPRESSION", "name": "pkg-flag-print-cmds"}
         ]
-      , ["flags", {"type": "var", "name": "pkg-ldflags"}]
-      , [ "pkg-ldflags"
-        , {"type": "CALL_EXPRESSION", "name": "pkg-prefix-flag-paths"}
+      , [ "flags"
+        , { "type": "++"
+          , "$1":
+            [ { "type": "if"
+              , "cond": {"type": "var", "name": "flat-libs"}
+              , "then": ["-L${libdir}"]
+              }
+            , {"type": "var", "name": "pkg-ldflags"}
+            ]
+          }
+        ]
+      , [ "ldflags-cmds"
+        , {"type": "CALL_EXPRESSION", "name": "pkg-flag-print-cmds"}
+        ]
+      , [ "script"
+        , { "type": "join"
+          , "separator": "\n"
+          , "$1":
+            { "type": "++"
+            , "$1":
+              [ [ "# Print the given flags, separated by a single space."
+                , "put_flags() { printf ' %s' \"$@\"; }"
+                , "# Print the flags read from the given flag file. Lines are"
+                , "# read and printed verbatim, except for leading blanks, so"
+                , "# that any quoting produced by pkg-config is preserved."
+                , "inline_flags() {"
+                , "  while IFS= read -r line || [ -n \"$line\" ]; do"
+                , "    while :; do"
+                , "      case \"$line\" in"
+                , "        ' '*|'\t'*) line=${line#?} ;;"
+                , "        *) break ;;"
+                , "      esac"
+                , "    done"
+                , "    if [ -n \"$line\" ]; then printf ' %s' \"$line\"; fi"
+                , "  done < \"$1\""
+                , "}"
+                , { "type": "join"
+                  , "$1":
+                    [ "exec > "
+                    , { "type": "join_cmd"
+                      , "$1": [{"type": "var", "name": "pc-filename"}]
+                      }
+                    ]
+                  }
+                , { "type": "join_cmd"
+                  , "$1":
+                    { "type": "++"
+                    , "$1":
+                      [ ["printf", "%s\\n"]
+                      , [ { "type": "join"
+                          , "$1":
+                            [ "prefix="
+                            , { "type": "var"
+                              , "name": "pkg-prefix"
+                              , "default": "/"
+                              }
+                            ]
+                          }
+                        , "libdir=${prefix}/lib"
+                        , "includedir=${prefix}/include"
+                        , { "type": "join"
+                          , "$1":
+                            ["Name: ", {"type": "var", "name": "pkg-name"}]
+                          }
+                        , { "type": "join"
+                          , "$1":
+                            [ "Version: "
+                            , { "type": "var"
+                              , "name": "pkg-version"
+                              , "default": "unknown"
+                              }
+                            ]
+                          }
+                        , { "type": "join"
+                          , "$1":
+                            [ "Description: Pkg-config for "
+                            , {"type": "var", "name": "pkg-name"}
+                            , ", generated by jst-build"
+                            ]
+                          }
+                        , "URL: unknown"
+                        ]
+                      ]
+                    }
+                  }
+                , {"type": "join_cmd", "$1": ["printf", "%s", "Cflags:"]}
+                ]
+              , {"type": "var", "name": "cflags-cmds"}
+              , [ {"type": "join_cmd", "$1": ["printf", "\\n"]}
+                , {"type": "join_cmd", "$1": ["printf", "%s", "Libs:"]}
+                ]
+              , {"type": "var", "name": "ldflags-cmds"}
+              , [{"type": "join_cmd", "$1": ["printf", "\\n"]}]
+              ]
+            }
+          }
         ]
       ]
     , "body":
-      { "type": "singleton_map"
-      , "key":
-        {"type": "join", "$1": [{"type": "var", "name": "pkg-name"}, ".pc"]}
-      , "value":
-        { "type": "BLOB"
-        , "data":
-          { "type": "join"
-          , "separator": "\n"
-          , "$1":
-            [ { "type": "join"
-              , "$1":
-                [ "prefix="
-                , {"type": "var", "name": "pkg-prefix", "default": "/"}
-                ]
-              }
-            , "libdir=${prefix}/lib"
-            , "includedir=${prefix}/include"
-            , { "type": "join"
-              , "$1": ["Name: ", {"type": "var", "name": "pkg-name"}]
-              }
-            , { "type": "join"
-              , "$1":
-                [ "Version: "
-                , {"type": "var", "name": "pkg-version", "default": "unknown"}
-                ]
-              }
-            , { "type": "join"
-              , "$1":
-                [ "Description: Pkg-config for "
-                , {"type": "var", "name": "pkg-name"}
-                , ", generated by jst-build"
-                ]
-              }
-            , "URL: unknown"
-            , { "type": "join"
-              , "separator": " "
-              , "$1":
-                { "type": "++"
-                , "$1":
-                  [ ["Cflags:", "-I${includedir}"]
-                  , {"type": "var", "name": "pkg-cflags"}
-                  ]
-                }
-              }
-            , { "type": "join"
-              , "separator": " "
-              , "$1":
-                { "type": "++"
-                , "$1":
-                  [ ["Libs:"]
-                  , { "type": "if"
-                    , "cond": {"type": "var", "name": "flat-libs"}
-                    , "then": ["-L${libdir}"]
-                    }
-                  , {"type": "var", "name": "pkg-ldflags"}
-                  ]
-                }
-              }
-            , ""
-            ]
-          }
+      { "type": "ACTION"
+      , "inputs":
+        { "type": "map_union"
+        , "$1":
+          [ {"type": "var", "name": "pkg-flag-files"}
+          , {"type": "var", "name": "shell TOOLCHAIN"}
+          , { "type": "singleton_map"
+            , "key": "gen_pkg_config.sh"
+            , "value":
+              {"type": "BLOB", "data": {"type": "var", "name": "script"}}
+            }
+          ]
         }
+      , "cmd": [{"type": "var", "name": "sh"}, "gen_pkg_config.sh"]
+      , "label":
+        { "type": "join"
+        , "$1":
+          [ "Generating pkg-config file "
+          , {"type": "var", "name": "pc-filename"}
+          ]
+        }
+      , "env": {"type": "var", "name": "shell env"}
+      , "outs": [{"type": "var", "name": "pc-filename"}]
       }
     }
   }
@@ -4167,11 +4233,56 @@
     , "run-libs-deps": "run-libs-deps"
     , "run-libs-args-deps": "run-libs-args-deps"
     , "pkg-config": "pkg-config"
+    , "map_provider": ["", "field_map_provider"]
+    , "sh": ["shell", "sh"]
+    , "sh-PATH": ["shell", "PATH"]
     }
   , "expression":
     { "type": "let*"
     , "bindings":
-      [ [ "install-stage"
+      [ ["TOOLCHAIN_DIR", "toolchain"]
+      , [ "shell TOOLCHAIN"
+        , { "type": "to_subdir"
+          , "subdir": {"type": "var", "name": "TOOLCHAIN_DIR"}
+          , "$1":
+            { "type": "let*"
+            , "bindings":
+              [ ["fieldname", "shell defaults"]
+              , ["provider", "TOOLCHAIN"]
+              , ["default", {"type": "empty_map"}]
+              ]
+            , "body": {"type": "CALL_EXPRESSION", "name": "map_provider"}
+            }
+          }
+        ]
+      , [ "sh"
+        , { "type": "let*"
+          , "bindings": [["fieldname", "shell defaults"]]
+          , "body": {"type": "CALL_EXPRESSION", "name": "sh"}
+          }
+        ]
+      , [ "sh-PATH"
+        , { "type": "let*"
+          , "bindings": [["fieldname", "shell defaults"]]
+          , "body": {"type": "CALL_EXPRESSION", "name": "sh-PATH"}
+          }
+        ]
+      , [ "shell env"
+        , { "type": "if"
+          , "cond": {"type": "var", "name": "sh-PATH"}
+          , "then":
+            { "type": "singleton_map"
+            , "key": "PATH"
+            , "value":
+              { "type": "join"
+              , "separator": ":"
+              , "$1": {"type": "var", "name": "sh-PATH"}
+              }
+            }
+          , "else": {"type": "empty_map"}
+          }
+        ]
+      , [ "install-stage"
         , { "type": "disjoint_map_union"
           , "msg": "install stages may not overlap"
           , "$1":
@@ -4375,14 +4486,7 @@
                               ]
                             ]
                           , "body":
-                            { "type": "map_union"
-                            , "$1":
-                              [ { "type": "CALL_EXPRESSION"
-                                , "name": "pkg-config"
-                                }
-                              , {"type": "var", "name": "pkg-flag-files"}
-                              ]
-                            }
+                            {"type": "CALL_EXPRESSION", "name": "pkg-config"}
                           }
                         , "else": {"type": "empty_map"}
                         }

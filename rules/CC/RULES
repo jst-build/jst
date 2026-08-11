@@ -1175,6 +1175,7 @@
   , "config_vars": ["PREFIX"]
   , "target_fields": ["targets"]
   , "string_fields": ["flat-libs", "prefix", "hdrs-only", "skip-debug-stage"]
+  , "implicit": {"shell defaults": [["shell", "defaults"]]}
   , "imports": {"install result": "install-with-deps result"}
   , "field_doc":
     { "targets": ["Targets to install artifacts from."]
@@ -1194,6 +1195,8 @@
       [ "If in debug mode, skip installing additional artifacts gathered if no"
       , "local debugging is needed, but debug targets are nonetheless desired."
       ]
+    , "shell defaults":
+      ["The shell toolchain used for generating the pkg-config file."]
     }
   , "config_doc":
     { "PREFIX":
