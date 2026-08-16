@@ -447,6 +447,8 @@ def bootstrap() -> None:
             dirs.remove('tree_operations')
         if 'examples' in dirs:
             dirs.remove('examples')
+        if 'etc/rules' in root:
+            continue
         if 'extern/justlang' in root and not 'src/justlang' in root:
             continue
         for f in files:
