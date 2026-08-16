@@ -54,21 +54,21 @@ TEST_CASE("accumulating") {
 
 TEST_CASE("local-merge") {
     auto conf = Configuration{Expression::FromJson(R"(
-      {"backend args":
+      {"jst args":
         {"build": ["-J", "8"], "install": ["-J", "8", "--remember"]}
       ,"invocation log": {"directory": {"root": "system"
                                        , "path": "/var/log/just-mr"}}
       }
     )"_json)};
     auto delta = Configuration{Expression::FromJson(R"(
-      {"backend args":
+      {"jst args":
         {"build": ["-J", "128"], "install-cas": ["--remember"]}
       ,"invocation log": {"project id": "unicorn"}
       }
     )"_json)};
 
     auto merged = MergeMRRC(conf, delta);
-    CHECK(merged["backend args"] == Expression::FromJson(R"(
+    CHECK(merged["jst args"] == Expression::FromJson(R"(
       { "build": ["-J", "128"]
       , "install-cas": ["--remember"]
       , "install": ["-J", "8", "--remember"]

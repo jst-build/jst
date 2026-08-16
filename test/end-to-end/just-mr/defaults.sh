@@ -36,7 +36,7 @@ cat > "${SAMPLE_RC}" <<EOF
   , {"root": "system", "path": "${LOG_DIR#/}/rc2.log"}
   ]
 , "local launcher": ["env", "SET_IN_RC=true"]
-, "just files":
+, "jst files":
   { "config": [{"root": "workspace", "path": "sample-config.json"}]
   , "endpoint-configuration": [{"root": "workspace", "path": "endpoint.json"}]
   }
@@ -219,7 +219,7 @@ rm -f sample-config.json
 
 # not considered, if key not present in rc
 cat > tmprc.json <<'EOF'
-{"just files": {"unrelated": 123}}
+{"jst files": {"unrelated": 123}}
 EOF
 "${JUST_MR}" --local-build-root "${LBR}" --just "${PARSE}" \
              --rc tmprc.json build "${PARSE_DIR}" 2>&1
@@ -246,7 +246,7 @@ rm -f endpoint.json
 
 # not considered, if key not present in rc
 cat > tmprc.json <<'EOF'
-{"just files": {"unrelated": 123}}
+{"jst files": {"unrelated": 123}}
 EOF
 "${JUST_MR}" --local-build-root "${LBR}" --just "${PARSE}" \
              --rc tmprc.json build "${PARSE_DIR}" 2>&1

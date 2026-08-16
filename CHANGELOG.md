@@ -8,7 +8,9 @@
   `~/.jst-local.json`, and the repository configuration is looked up as
   `~/.jst-repos.json` and `/etc/jst-repos.json`.
 - The rc-file fallback to `~/.just-mrrc` has been dropped; only `~/.jstrc` is
-  read now.
+  read now. The rc-file keys for the backend have been renamed and the legacy
+  spellings dropped: `"just files"` is now `"jst files"`, and `"just args"` is
+  now `"jst args"`.
 
 ### Other changes
 

@@ -1073,9 +1073,7 @@ def read_jstrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
         g_JUST = just[0]
 
     global g_JUST_ARGS
-    g_JUST_ARGS = rc.get("backend args", {})
-    if not g_JUST_ARGS:
-        g_JUST_ARGS = rc.get("just args", {})
+    g_JUST_ARGS = rc.get("jst args", {})
 
     for location in rc.get("config lookup order", DEFAULT_CONFIG_LOCATIONS):
         paths = read_location(cast(Json, location))

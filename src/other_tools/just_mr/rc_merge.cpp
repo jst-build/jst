@@ -25,10 +25,8 @@
 namespace {
 
 auto const kAccumulating = std::vector<std::string>{"distdirs"};
-auto const kLocalMerge = std::vector<std::string>{"backend args",
-                                                  "just args",
-                                                  "just files",
-                                                  "invocation log"};
+auto const kLocalMerge =
+    std::vector<std::string>{"jst args", "jst files", "invocation log"};
 
 }  // namespace
 

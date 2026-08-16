@@ -267,12 +267,12 @@ namespace {
             clargs->common.git_path = git->first;
         }
     }
-    // read the just file-arguments
-    auto just_files = rc_config["just files"];
+    // read the backend file-arguments
+    auto just_files = rc_config["jst files"];
     if (just_files.IsNotNull()) {
         if (not just_files->IsMap()) {
             Logger::Log(LogLevel::Error,
-                        "Configuration-file provided 'just files' has to be a "
+                        "Configuration-file provided 'jst files' has to be a "
                         "map, but found {}.",
                         just_files->ToString());
             std::exit(kExitConfigError);
@@ -281,22 +281,19 @@ namespace {
         clargs->just_cmd.config = ReadOptionalLocationList(
             files["config"],
             clargs->common.just_mr_paths->workspace_root,
-            "'config' in 'just files'");
+            "'config' in 'jst files'");
         clargs->just_cmd.endpoint_configuration = ReadOptionalLocationList(
             files["endpoint-configuration"],
             clargs->common.just_mr_paths->workspace_root,
-            "'endpoint-configuration' in 'just files'");
+            "'endpoint-configuration' in 'jst files'");
     }
     // read additional backend args; user can append, but does not overwrite
-    auto just_args = rc_config["backend args"];
-    if (not just_args.IsNotNull()) {
-        just_args = rc_config["just args"];
-    }
+    auto just_args = rc_config["jst args"];
     if (just_args.IsNotNull()) {
         if (not just_args->IsMap()) {
             Logger::Log(LogLevel::Error,
-                        "Configuration-file provided 'backend' arguments has "
-                        "to be a map, but found {}",
+                        "Configuration-file provided 'jst args' has to be a "
+                        "map, but found {}",
                         just_args->ToString());
             std::exit(kExitConfigError);
         }
@@ -304,12 +301,11 @@ namespace {
             // get list of string args for current command
             std::vector<std::string> args{};
             if (not cmd_args->IsList()) {
-                Logger::Log(
-                    LogLevel::Error,
-                    "Configuration-file provided 'backend' argument key {} has "
-                    "to have as value a list of strings, but found {}",
-                    cmd_name,
-                    cmd_args->ToString());
+                Logger::Log(LogLevel::Error,
+                            "Configuration-file provided 'jst args' key {} has "
+                            "to have as value a list of strings, but found {}",
+                            cmd_name,
+                            cmd_args->ToString());
                 std::exit(kExitConfigError);
             }
             auto const& args_list = cmd_args->List();
@@ -318,7 +314,7 @@ namespace {
                 if (not arg->IsString()) {
                     Logger::Log(
                         LogLevel::Error,
-                        "Configuration-file provided 'backend' argument key {} "
+                        "Configuration-file provided 'jst args' key {} "
                         "must have strings in its list value, but found {}",
                         cmd_name,
                         arg->ToString());
