@@ -104,9 +104,6 @@ namespace {
     if (not clargs->common.norc) {
         if (not rc_path) {
             rc_path = std::filesystem::weakly_canonical(kDefaultRCPath);
-            if (not FileSystemManager::IsFile(*rc_path)) {
-                rc_path = std::filesystem::weakly_canonical(kFallbackRCPath);
-            }
         }
         else {
             if (not FileSystemManager::IsFile(*rc_path)) {
@@ -144,7 +141,7 @@ namespace {
 
 }  // namespace
 
-/// \brief Read just-mrrc file and set up various configs. Return the path to
+/// \brief Read jstrc file and set up various configs. Return the path to
 /// the repository config file, if any is provided.
 [[nodiscard]] auto ReadJustMRRC(
     gsl::not_null<CommandLineArguments*> const& clargs)

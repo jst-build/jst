@@ -48,10 +48,10 @@ struct StorageConfig final {
     class Builder;
 
     static inline auto const kDefaultBuildRoot =
-        FileSystemManager::GetUserHome() / ".cache" / "just";
+        FileSystemManager::GetUserHome() / ".cache" / "jst";
 
     // Build root directory. All the storage dirs are subdirs of build_root.
-    // By default, build_root is set to $HOME/.cache/just.
+    // By default, build_root is set to $HOME/.cache/jst.
     // If the user uses --local-build-root PATH,
     // then build_root will be set to PATH.
     std::filesystem::path const build_root = kDefaultBuildRoot;

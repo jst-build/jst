@@ -21,7 +21,7 @@
 #include "gsl/gsl"
 #include "src/other_tools/just_mr/cli.hpp"
 
-/// \brief Read just-mrrc file and set up various configs. Return the path to
+/// \brief Read jstrc file and set up various configs. Return the path to
 /// the repository config file, if any is provided.
 [[nodiscard]] auto ReadJustMRRC(
     gsl::not_null<CommandLineArguments*> const& clargs)

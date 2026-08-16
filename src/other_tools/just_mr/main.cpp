@@ -293,7 +293,7 @@ auto main(int argc, char* argv[]) -> int {
             arguments.common.just_mr_paths->setup_root = kDefaultSetupRoot;
         }
 
-        // if optional args were not read from just-mrrc or given by user, use
+        // if optional args were not read from the jstrc or given by user, use
         // the defaults
         if (not arguments.common.just_path) {
             arguments.common.just_path = kDefaultBackendPath;

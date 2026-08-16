@@ -1,5 +1,15 @@
 ## Unreleased
 
+### Breaking changes
+
+- All default paths inherited from upstream *justbuild* have been renamed to
+  their `jst` equivalents, with no fallback to the old locations: the local
+  build root is now `$HOME/.cache/jst`, the checkout-locations file
+  `~/.jst-local.json`, and the repository configuration is looked up as
+  `~/.jst-repos.json` and `/etc/jst-repos.json`.
+- The rc-file fallback to `~/.just-mrrc` has been dropped; only `~/.jstrc` is
+  read now.
+
 ### Other changes
 
 - `jst-lock` now derives the default output file name from the input file

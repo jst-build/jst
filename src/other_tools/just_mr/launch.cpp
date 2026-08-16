@@ -270,7 +270,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
             cmd.emplace_back(prop);
         }
     }
-    // add args read from just-mrrc
+    // add args read from the jstrc file
     if (subcommand and just_cmd_args.just_args.contains(*subcommand)) {
         for (auto const& subcmd_arg : just_cmd_args.just_args.at(*subcommand)) {
             cmd.emplace_back(subcmd_arg);

@@ -32,15 +32,14 @@
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/storage/config.hpp"
 
-/* Paths and constants required by just-mr */
+/* Paths and constants required by jst */
 
 auto const kDefaultBackendPath = "jst_backend";
 auto const kDefaultGitPath = "git";
 auto const kDefaultRCPath = FileSystemManager::GetUserHome() / ".jstrc";
-auto const kFallbackRCPath = FileSystemManager::GetUserHome() / ".just-mrrc";
 auto const kDefaultBuildRoot = StorageConfig::kDefaultBuildRoot;
 auto const kDefaultCheckoutLocationsFile =
-    FileSystemManager::GetUserHome() / ".just-local.json";
+    FileSystemManager::GetUserHome() / ".jst-local.json";
 auto const kDefaultDistdirs = FileSystemManager::GetUserHome() / ".distfiles";
 
 std::vector<std::string> const kTakeOver = {"bindings",
@@ -167,8 +166,8 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
 nlohmann::json const kDefaultConfigLocations = nlohmann::json::array(
     {{{"root", "workspace"}, {"path", "repos.json"}},
      {{"root", "workspace"}, {"path", "etc/repos.json"}},
-     {{"root", "home"}, {"path", ".just-repos.json"}},
-     {{"root", "system"}, {"path", "etc/just-repos.json"}}});
+     {{"root", "home"}, {"path", ".jst-repos.json"}},
+     {{"root", "system"}, {"path", "etc/jst-repos.json"}}});
 
 /// \brief Checkout type enum
 enum class CheckoutType : std::uint8_t {

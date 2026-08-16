@@ -110,10 +110,9 @@ g_CURRENT_SUBCOMMAND: Optional[str] = None
 LOCATION_TYPES: List[str] = ["workspace", "home", "system"]
 
 DEFAULT_RC_PATH: str = os.path.join(Path.home(), ".jstrc")
-FALLBACK_RC_PATH: str = os.path.join(Path.home(), ".just-mrrc")
-DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/just")
+DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/jst")
 DEFAULT_CHECKOUT_LOCATIONS_FILE: str = os.path.join(Path.home(),
-                                                    ".just-local.json")
+                                                    ".jst-local.json")
 DEFAULT_DISTDIRS: List[str] = [os.path.join(Path.home(), ".distfiles")]
 DEFAULT_CONFIG_LOCATIONS: List[Json] = [{
     "root": "workspace",
@@ -123,10 +122,10 @@ DEFAULT_CONFIG_LOCATIONS: List[Json] = [{
     "path": "etc/repos.json"
 }, {
     "root": "home",
-    "path": ".just-repos.json"
+    "path": ".jst-repos.json"
 }, {
     "root": "system",
-    "path": "etc/just-repos.json"
+    "path": "etc/jst-repos.json"
 }]
 
 
@@ -1021,14 +1020,12 @@ def read_location(location: Json) -> Optional[Tuple[str, str]]:
         str, path))), os.path.realpath(os.path.join(cast(str, root), base))
 
 
-# read settings from just-mrrc and return config path
-def read_justmrrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
+# read settings from the jstrc file and return config path
+def read_jstrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
     rc: Json = {}
     if not no_rc:
         if not rcpath:
             rcpath = DEFAULT_RC_PATH
-            if not os.path.isfile(rcpath):
-                rcpath = FALLBACK_RC_PATH
         elif not os.path.isfile(rcpath):
             fail(f"cannot read rc file {rcpath}.")
         if os.path.isfile(rcpath):
@@ -1188,7 +1185,7 @@ def main():
     g_SETUP_ROOT = os.path.curdir
     g_WORKSPACE_ROOT = find_workspace_root()
 
-    config_file = read_justmrrc(options.rcfile, options.norc)
+    config_file = read_jstrc(options.rcfile, options.norc)
     if options.repository_config:
         config_file = options.repository_config
 

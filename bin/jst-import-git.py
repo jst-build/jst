@@ -50,10 +50,10 @@ DEFAULT_CONFIG_LOCATIONS: List[Dict[str, str]] = [{
     "path": "etc/repos.json"
 }, {
     "root": "home",
-    "path": ".just-repos.json"
+    "path": ".jst-repos.json"
 }, {
     "root": "system",
-    "path": "etc/just-repos.json"
+    "path": "etc/jst-repos.json"
 }]
 
 

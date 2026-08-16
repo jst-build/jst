@@ -49,7 +49,7 @@ REPO_KEYS_TO_KEEP: List[str] = [
     "target_file_name", "rule_file_name", "expression_file_name", "bindings"
 ] + ALT_DIRS
 
-DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/just")
+DEFAULT_BUILD_ROOT: str = os.path.join(Path.home(), ".cache/jst")
 DEFAULT_GIT_BIN: str = "git"  # to be taken from PATH
 DEFAULT_LAUNCHER: List[str] = ["env", "--"]
 
