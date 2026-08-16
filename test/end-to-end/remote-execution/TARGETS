@@ -1,128 +1,129 @@
-{ "native-protocol":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["native-protocol"]
-  , "test": ["native-protocol.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "large-blobs":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["large-blobs"]
-  , "test": ["large-blobs.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "upload-test":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["upload-test"]
-  , "test": ["upload-test.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "install":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["install"]
-  , "test": ["install.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "execute":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["execute"]
-  , "test": ["execute.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "install-cas":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["install-cas"]
-  , "test": ["install-cas.sh"]
-  , "deps": [["", "tool-under-test"]]
-  , "keep":
-    [ "out/stdout/remote"
-    , "out/stdout/remote-raw"
-    , "out/stdout/local"
-    , "out/stdout/local-raw"
-    ]
-  }
-, "install-cas-local":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["install-cas-local"]
-  , "test": ["install-cas-local.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "dispatch":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["dispatch"]
-  , "test": ["dispatch.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "split-splice (raw)":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["split-splice"]
-  , "test": ["split-splice.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "split-splice":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": "split-splice (raw)"
-  , "arguments_config": ["TIMEOUT_SCALE"]
-  , "config":
-    { "type": "singleton_map"
-    , "key": "TIMEOUT_SCALE"
-    , "value":
-      { "type": "*"
-      , "$1": [10, {"type": "var", "name": "TIMEOUT_SCALE", "default": 1.0}]
-      }
-    }
-  }
-, "add-to-cas":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["add-to-cas"]
-  , "test": ["add-to-cas.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "tree-ops":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["tree-ops"]
-  , "test": ["tree-ops.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "keep": ["out/graph.json", "out/artifacts.json", "out/log"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["remote-execution"]
-  , "arguments_config":
-    ["TEST_COMPATIBLE_REMOTE", "TEST_BOOTSTRAP_JUST_MR", "DROP_IO_HEAVY_TESTS"]
-  , "deps":
-    { "type": "++"
-    , "$1":
-      [ [ "native-protocol"
-        , "large-blobs"
-        , "upload-test"
-        , "install"
-        , "install-cas"
-        , "install-cas-local"
-        , "dispatch"
-        , "execute"
-        ]
-      , { "type": "if"
-        , "cond":
-          { "type": "or"
-          , "$1":
-            [ {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-            , {"type": "var", "name": "TEST_COMPATIBLE_REMOTE"}
-            ]
-          }
-        , "then": []
-        , "else": ["add-to-cas"]
-        }
-      , { "type": "if"
-        , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-        , "then": []
-        , "else": ["tree-ops"]
-        }
-      , { "type": "if"
-        , "cond": {"type": "var", "name": "DROP_IO_HEAVY_TESTS"}
-        , "else": ["split-splice"]
-        }
+{
+  'native-protocol': {
+    type: @'//end-to-end:with remote',
+    name: ['native-protocol'],
+    test: ['native-protocol.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'large-blobs': {
+    type: @'//end-to-end:with remote',
+    name: ['large-blobs'],
+    test: ['large-blobs.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'upload-test': {
+    type: @'//end-to-end:with remote',
+    name: ['upload-test'],
+    test: ['upload-test.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  install: {
+    type: @'//end-to-end:with remote',
+    name: ['install'],
+    test: ['install.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  execute: {
+    type: @'//end-to-end:with remote',
+    name: ['execute'],
+    test: ['execute.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'install-cas': {
+    type: @'//end-to-end:with remote',
+    name: ['install-cas'],
+    test: ['install-cas.sh'],
+    deps: [@'//:tool-under-test'],
+    keep: [
+      'out/stdout/remote',
+      'out/stdout/remote-raw',
+      'out/stdout/local',
+      'out/stdout/local-raw',
+    ],
+  },
+
+  'install-cas-local': {
+    type: @'//end-to-end:with remote',
+    name: ['install-cas-local'],
+    test: ['install-cas-local.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  dispatch: {
+    type: @'//end-to-end:with remote',
+    name: ['dispatch'],
+    test: ['dispatch.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'split-splice (raw)': {
+    type: @'//end-to-end:with remote',
+    name: ['split-splice'],
+    test: ['split-splice.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'split-splice': {
+    type: 'configure',
+    tainted: ['test'],
+    target: 'split-splice (raw)',
+    arguments_config: ['TIMEOUT_SCALE'],
+    config: { TIMEOUT_SCALE: 10 * jst.env('TIMEOUT_SCALE', default=1.0) },
+  },
+
+  'add-to-cas': {
+    type: @'//end-to-end:with remote',
+    name: ['add-to-cas'],
+    test: ['add-to-cas.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'tree-ops': {
+    type: @'//end-to-end:with remote',
+    name: ['tree-ops'],
+    test: ['tree-ops.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    keep: [
+      'out/graph.json',
+      'out/artifacts.json',
+      'out/log',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['remote-execution'],
+    arguments_config: ['TEST_COMPATIBLE_REMOTE', 'TEST_BOOTSTRAP_JUST_MR', 'DROP_IO_HEAVY_TESTS'],
+    deps:
+      [
+        'native-protocol',
+        'large-blobs',
+        'upload-test',
+        'install',
+        'install-cas',
+        'install-cas-local',
+        'dispatch',
+        'execute',
       ]
-    }
-  }
+      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') && !jst.env('TEST_COMPATIBLE_REMOTE') then
+           ['add-to-cas'])
+      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+           ['tree-ops'])
+      + (if !jst.env('DROP_IO_HEAVY_TESTS') then
+           ['split-splice']),
+  },
 }

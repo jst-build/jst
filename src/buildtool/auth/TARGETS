@@ -1,13 +1,14 @@
-{ "auth":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["auth"]
-  , "hdrs": ["authentication.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "auth"]
-  }
+{
+  auth: {
+    type: @'rules//CC:library',
+    name: ['auth'],
+    hdrs: ['authentication.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'auth'],
+  },
 }

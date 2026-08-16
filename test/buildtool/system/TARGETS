@@ -1,18 +1,20 @@
-{ "system_command":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["system_command"]
-  , "srcs": ["system_command.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/system", "system_command"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "system"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["system"]
-  , "deps": ["system_command"]
-  }
+{
+  system_command: {
+    type: @'rules//CC/test:test',
+    name: ['system_command'],
+    srcs: ['system_command.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/system:system_command',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'system'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['system'],
+    deps: ['system_command'],
+  },
 }

@@ -1,0 +1,244 @@
+{
+  "main": "jst",
+  "keep": ["tests", "lint"],
+  "imports": [
+    {
+      "source": "file",
+      "path": ".",
+      "repos": [
+        {"repo": "toolchain"},
+        {"repo": "google_apis"},
+        {"repo": "bazel_remote_apis"}
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "absl/v20240722.0",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "absl", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "boringssl/dec0d8f6",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "ssl", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "bzip2/v1.0.8",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "bzip2", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "catch2/v3.5.3",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "catch2", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "cares/v1.19.1",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "cares", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "cli11/v2.5.0",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "cli11", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "fmt/v12.2.0",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "fmt", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "lzma/v5.6.3",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "lzma", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "microsoft_gsl/v4.0.0",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "gsl", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "nlohmann_json/v3.11.3",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "json", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "re2/v2022-04-01",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "re2", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "zlib/v1.3.1",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [{"alias": "zlib", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "branch": "curl/v8.6.0",
+      "url": "https://github.com/jst-build/imports-cc.git",
+      "repos": [
+        {
+          "alias": "curl",
+          "map": {
+            "toolchain": "toolchain",
+            "zlib": "zlib",
+            "ssl": "ssl",
+            "cares": "cares"
+          }
+        }
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "libarchive/v3.7.7",
+      "url": "https://github.com/jst-build/imports-cc.git",
+      "repos": [
+        {
+          "alias": "libarchive",
+          "map": {
+            "toolchain": "toolchain",
+            "zlib": "zlib",
+            "ssl": "ssl",
+            "lzma": "lzma",
+            "bzip2": "bzip2"
+          }
+        }
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "libgit2/v1.7.2",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [
+        {
+          "alias": "libgit2",
+          "map": {"toolchain": "toolchain", "zlib": "zlib", "ssl": "ssl"}
+        }
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "protobuf/v29.0",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [
+        {
+          "alias": "protobuf",
+          "map": {"toolchain": "toolchain", "zlib": "zlib", "absl": "absl"}
+        }
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "grpc/v1.70.2",
+      "url": "https://github.com/jst-build/imports-cc",
+      "repos": [
+        {
+          "alias": "grpc",
+          "map": {
+            "toolchain": "toolchain",
+            "protobuf": "protobuf",
+            "ssl": "ssl",
+            "absl": "absl",
+            "zlib": "zlib",
+            "re2": "re2",
+            "cares": "cares"
+          }
+        }
+      ]
+    },
+    {
+      "source": "git",
+      "branch": "grpc/v1.70.2",
+      "url": "https://github.com/jst-build/toolchains-cc",
+      "repos": [
+        {
+          "alias": "grpc_toolchain",
+          "map": {
+            "base_toolchain": "toolchain",
+            "protobuf": "protobuf",
+            "grpc": "grpc"
+          }
+        }
+      ]
+    },
+    {
+      "source": "file",
+      "path": ".",
+      "repos": [
+        {
+          "repo": "justlang",
+          "map": {"toolchain": "toolchain", "json": "json"}
+        },
+        {
+          "repo": "justlang_tests",
+          "map": {"toolchain": "toolchain", "json": "json", "catch2": "catch2"}
+        },
+        {
+          "repo": "justlang_lint",
+          "map": {
+            "toolchain": "toolchain",
+            "json": "json",
+            "catch2": "catch2"
+          }
+        },
+        {
+          "repo": "jst",
+          "map": {
+            "toolchain": "grpc_toolchain",
+            "gsl": "gsl",
+            "cli11": "cli11",
+            "json": "json",
+            "fmt": "fmt",
+            "ssl": "ssl",
+            "grpc": "grpc",
+            "google_apis": "google_apis",
+            "bazel_remote_apis": "bazel_remote_apis",
+            "libgit2": "libgit2",
+            "protobuf": "protobuf",
+            "curl": "curl",
+            "libarchive": "libarchive",
+            "justlang": "justlang"
+          }
+        },
+        {
+          "repo": "tests",
+          "map": {
+            "toolchain": "grpc_toolchain",
+            "catch2": "catch2",
+            "gsl": "gsl",
+            "cli11": "cli11",
+            "json": "json",
+            "fmt": "fmt",
+            "ssl": "ssl",
+            "grpc": "grpc",
+            "google_apis": "google_apis",
+            "bazel_remote_apis": "bazel_remote_apis",
+            "libgit2": "libgit2",
+            "protobuf": "protobuf",
+            "justlang_tests": "justlang_tests"
+          }
+        },
+        {
+          "repo": "lint",
+          "map": {
+            "toolchain": "grpc_toolchain",
+            "jst": "jst",
+            "tests": "tests",
+            "justlang_lint": "justlang_lint"
+          }
+        }
+      ]
+    }
+  ]
+}

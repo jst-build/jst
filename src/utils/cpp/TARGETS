@@ -1,132 +1,160 @@
-{ "hash_combine":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["hash_combine"]
-  , "hdrs": ["hash_combine.hpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "type_safe_arithmetic":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["type_safe_arithmetic"]
-  , "hdrs": ["type_safe_arithmetic.hpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "json":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["json"]
-  , "hdrs": ["json.hpp"]
-  , "deps": ["gsl", ["@", "fmt", "", "fmt"], ["@", "json", "", "json"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "concepts":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["concepts"]
-  , "hdrs": ["concepts.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "atomic":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["atomic"]
-  , "hdrs": ["atomic.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "hex_string":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["hex_string"]
-  , "hdrs": ["hex_string.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "path":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["path"]
-  , "hdrs": ["path.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "path_rebase":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["path_rebase"]
-  , "hdrs": ["path_rebase.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "vector":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["vector"]
-  , "hdrs": ["vector.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "tmp_dir":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["tmp_dir"]
-  , "hdrs": ["tmp_dir.hpp"]
-  , "srcs": ["tmp_dir.cpp"]
-  , "stage": ["src", "utils", "cpp"]
-  , "private-deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
-, "file_locking":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_locking"]
-  , "hdrs": ["file_locking.hpp"]
-  , "srcs": ["file_locking.cpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "utils", "cpp"]
-  , "private-deps":
-    [ ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "path"]
-    ]
-  }
-, "gsl":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["gsl"]
-  , "hdrs": ["gsl.hpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "path_hash":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["path_hash"]
-  , "hdrs": ["path_hash.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "prefix":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["prefix"]
-  , "hdrs": ["prefix.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "expected":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["expected"]
-  , "hdrs": ["expected.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "back_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["back_map"]
-  , "hdrs": ["back_map.hpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "in_place_visitor":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["in_place_visitor"]
-  , "hdrs": ["in_place_visitor.hpp"]
-  , "stage": ["src", "utils", "cpp"]
-  }
-, "incremental_reader":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["incremental_reader"]
-  , "hdrs": ["incremental_reader.hpp"]
-  , "srcs": ["incremental_reader.cpp"]
-  , "deps": ["expected", ["@", "gsl", "", "gsl"]]
-  , "private-deps": ["in_place_visitor", ["@", "fmt", "", "fmt"]]
-  , "stage": ["src", "utils", "cpp"]
-  }
+{
+  hash_combine: {
+    type: @'rules//CC:library',
+    name: ['hash_combine'],
+    hdrs: ['hash_combine.hpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  type_safe_arithmetic: {
+    type: @'rules//CC:library',
+    name: ['type_safe_arithmetic'],
+    hdrs: ['type_safe_arithmetic.hpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  json: {
+    type: @'rules//CC:library',
+    name: ['json'],
+    hdrs: ['json.hpp'],
+    deps: [
+      'gsl',
+      @'fmt//:fmt',
+      @'json//:json',
+    ],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  concepts: {
+    type: @'rules//CC:library',
+    name: ['concepts'],
+    hdrs: ['concepts.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  atomic: {
+    type: @'rules//CC:library',
+    name: ['atomic'],
+    hdrs: ['atomic.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  hex_string: {
+    type: @'rules//CC:library',
+    name: ['hex_string'],
+    hdrs: ['hex_string.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  path: {
+    type: @'rules//CC:library',
+    name: ['path'],
+    hdrs: ['path.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  path_rebase: {
+    type: @'rules//CC:library',
+    name: ['path_rebase'],
+    hdrs: ['path_rebase.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  vector: {
+    type: @'rules//CC:library',
+    name: ['vector'],
+    hdrs: ['vector.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  tmp_dir: {
+    type: @'rules//CC:library',
+    name: ['tmp_dir'],
+    hdrs: ['tmp_dir.hpp'],
+    srcs: ['tmp_dir.cpp'],
+    stage: ['src', 'utils', 'cpp'],
+    'private-deps': [
+      @'gsl//:gsl',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
+
+  file_locking: {
+    type: @'rules//CC:library',
+    name: ['file_locking'],
+    hdrs: ['file_locking.hpp'],
+    srcs: ['file_locking.cpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'utils', 'cpp'],
+    'private-deps': [
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:path',
+    ],
+  },
+
+  gsl: {
+    type: @'rules//CC:library',
+    name: ['gsl'],
+    hdrs: ['gsl.hpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  path_hash: {
+    type: @'rules//CC:library',
+    name: ['path_hash'],
+    hdrs: ['path_hash.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  prefix: {
+    type: @'rules//CC:library',
+    name: ['prefix'],
+    hdrs: ['prefix.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  expected: {
+    type: @'rules//CC:library',
+    name: ['expected'],
+    hdrs: ['expected.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  back_map: {
+    type: @'rules//CC:library',
+    name: ['back_map'],
+    hdrs: ['back_map.hpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  in_place_visitor: {
+    type: @'rules//CC:library',
+    name: ['in_place_visitor'],
+    hdrs: ['in_place_visitor.hpp'],
+    stage: ['src', 'utils', 'cpp'],
+  },
+
+  incremental_reader: {
+    type: @'rules//CC:library',
+    name: ['incremental_reader'],
+    hdrs: ['incremental_reader.hpp'],
+    srcs: ['incremental_reader.cpp'],
+    deps: [
+      'expected',
+      @'gsl//:gsl',
+    ],
+    'private-deps': [
+      'in_place_visitor',
+      @'fmt//:fmt',
+    ],
+    stage: ['src', 'utils', 'cpp'],
+  },
 }

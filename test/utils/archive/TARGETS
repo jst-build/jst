@@ -1,19 +1,21 @@
-{ "archive_usage":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["archive_usage"]
-  , "srcs": ["archive_usage.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "", "libarchive"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/utils/archive", "archive_ops"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "utils", "archive"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["archive"]
-  , "deps": ["archive_usage"]
-  }
+{
+  archive_usage: {
+    type: @'rules//CC/test:test',
+    name: ['archive_usage'],
+    srcs: ['archive_usage.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//:libarchive',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/utils/archive:archive_ops',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'utils', 'archive'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['archive'],
+    deps: ['archive_usage'],
+  },
 }

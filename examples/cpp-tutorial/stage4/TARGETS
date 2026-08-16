@@ -1,7 +1,7 @@
 // Variables supported by this project (with documentation)
 local config_doc = {
   // Variables used to parameterize the system toolchain,
-  // see https://gitee.com/justbuild/toolchains-cc#general-configuration
+  // see https://github.com/jst-build/toolchains-cc/blob/system/README.md#general-configuration
   DEBUG: ['Build in debug mode (default: false)'],
   ARCH: ['General architecture for build (default: "x86_64")'],
   HOST_ARCH: ['Host architecture for build (default: ARCH)'],
@@ -83,7 +83,7 @@ local config_vars = jst.keys(config_doc);
     type: @'rules//CC:install-with-deps',
     'hdrs-only': ['yes'],
     targets: [
-      @'fmtlib//:fmt-lib',
+      @'fmtlib//:fmt',
       @'gtest//:gtest_main',
     ],
   },

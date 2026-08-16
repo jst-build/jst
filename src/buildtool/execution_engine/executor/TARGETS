@@ -1,63 +1,63 @@
-{ "executor":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["executor"]
-  , "hdrs": ["executor.hpp"]
-  , "deps":
-    [ "context"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/target_map", "configured_target"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common", "git_hashes_converter"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/common/remote", "remote_common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/bazel_msg", "execution_config"]
-    , ["src/buildtool/execution_api/common", "api_bundle"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/execution_api/common", "common_api"]
-    , ["src/buildtool/execution_api/remote", "bazel_api"]
-    , ["src/buildtool/execution_api/remote", "config"]
-    , ["src/buildtool/execution_api/remote", "context"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
-    , [ "src/buildtool/execution_engine/tree_operations"
-      , "tree_operations_utils"
-      ]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "git_tree"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/profile", "profile"]
-    , ["src/buildtool/progress_reporting", "progress"]
-    , ["src/buildtool/progress_reporting", "task_tracker"]
-    , ["src/utils/cpp", "back_map"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "path_rebase"]
-    , ["src/utils/cpp", "prefix"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "stage": ["src", "buildtool", "execution_engine", "executor"]
-  }
-, "context":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["context"]
-  , "hdrs": ["context.hpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/execution_api/common", "api_bundle"]
-    , ["src/buildtool/execution_api/remote", "context"]
-    , ["src/buildtool/profile", "profile"]
-    , ["src/buildtool/progress_reporting", "progress"]
-    ]
-  , "stage": ["src", "buildtool", "execution_engine", "executor"]
-  }
+{
+  executor: {
+    type: @'rules//CC:library',
+    name: ['executor'],
+    hdrs: ['executor.hpp'],
+    deps: [
+      'context',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/target_map:configured_target',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common:git_hashes_converter',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/common/remote:remote_common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/bazel_msg:execution_config',
+      @'//src/buildtool/execution_api/common:api_bundle',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/execution_api/common:common_api',
+      @'//src/buildtool/execution_api/remote:bazel_api',
+      @'//src/buildtool/execution_api/remote:config',
+      @'//src/buildtool/execution_api/remote:context',
+      @'//src/buildtool/execution_engine/dag:dag',
+      @'//src/buildtool/execution_engine/tree_operations:tree_operations_utils',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:git_tree',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/profile:profile',
+      @'//src/buildtool/progress_reporting:progress',
+      @'//src/buildtool/progress_reporting:task_tracker',
+      @'//src/utils/cpp:back_map',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:path_rebase',
+      @'//src/utils/cpp:prefix',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    stage: ['src', 'buildtool', 'execution_engine', 'executor'],
+  },
+
+  context: {
+    type: @'rules//CC:library',
+    name: ['context'],
+    hdrs: ['context.hpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/execution_api/common:api_bundle',
+      @'//src/buildtool/execution_api/remote:context',
+      @'//src/buildtool/profile:profile',
+      @'//src/buildtool/progress_reporting:progress',
+    ],
+    stage: ['src', 'buildtool', 'execution_engine', 'executor'],
+  },
 }

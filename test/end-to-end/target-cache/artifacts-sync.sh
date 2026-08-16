@@ -17,7 +17,7 @@ set -eu
 
 readonly JUST="${PWD}/bin/tool-under-test"
 readonly JUST_MR="${PWD}/bin/mr-tool-under-test"
-readonly RULES_DIR="${PWD}/src/rules"
+readonly RULES_DIR="${PWD}/src/etc/rules/rules"
 readonly LOCAL_CACHE="${TMPDIR}/local_cache"
 readonly REMOTE_CACHE="${TMPDIR}/remote_cache"
 readonly INFOFILE="${TMPDIR}/info.json"

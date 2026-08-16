@@ -1,0 +1,11 @@
+{
+  defaults: {
+    type: @'//CC/proto:defaults',
+    base: [@'base//CC/proto:defaults']
+  },
+
+  'service defaults': {
+    type: @'//CC/proto:defaults',
+    base: [@'base//CC/proto:service defaults'],
+  },
+}

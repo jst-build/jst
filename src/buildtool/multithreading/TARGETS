@@ -1,66 +1,95 @@
-{ "task":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["task"]
-  , "hdrs": ["task.hpp"]
-  , "stage": ["src", "buildtool", "multithreading"]
-  , "private-ldflags":
-    ["-pthread", "-Wl,--whole-archive,-lpthread,--no-whole-archive"]
-  }
-, "notification_queue":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["notification_queue"]
-  , "hdrs": ["notification_queue.hpp"]
-  , "deps": ["task", ["@", "gsl", "", "gsl"], ["src/utils/cpp", "atomic"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
-, "task_system":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["task_system"]
-  , "hdrs": ["task_system.hpp"]
-  , "srcs": ["task_system.cpp"]
-  , "deps": ["notification_queue", ["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  , "private-deps": ["task"]
-  }
-, "async_map_node":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["async_map_node"]
-  , "hdrs": ["async_map_node.hpp"]
-  , "deps":
-    ["task", "task_system", ["@", "gsl", "", "gsl"], ["src/utils/cpp", "gsl"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
-, "async_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["async_map"]
-  , "hdrs": ["async_map.hpp"]
-  , "deps": ["async_map_node", "task_system", ["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
-, "async_map_consumer":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["async_map_consumer"]
-  , "hdrs": ["async_map_consumer.hpp"]
-  , "deps": ["async_map", "task_system", ["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
-, "atomic_value":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["atomic_value"]
-  , "hdrs": ["atomic_value.hpp"]
-  , "deps": [["src/utils/cpp", "atomic"]]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
-, "async_map_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["async_map_utils"]
-  , "hdrs": ["async_map_utils.hpp"]
-  , "deps":
-    [ "async_map_consumer"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "multithreading"]
-  }
+{
+  task: {
+    type: @'rules//CC:library',
+    name: ['task'],
+    hdrs: ['task.hpp'],
+    stage: ['src', 'buildtool', 'multithreading'],
+    'private-ldflags': [
+      '-pthread',
+      '-Wl,--whole-archive,-lpthread,--no-whole-archive',
+    ],
+  },
+
+  notification_queue: {
+    type: @'rules//CC:library',
+    name: ['notification_queue'],
+    hdrs: ['notification_queue.hpp'],
+    deps: [
+      'task',
+      @'gsl//:gsl',
+      @'//src/utils/cpp:atomic',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
+
+  task_system: {
+    type: @'rules//CC:library',
+    name: ['task_system'],
+    hdrs: ['task_system.hpp'],
+    srcs: ['task_system.cpp'],
+    deps: [
+      'notification_queue',
+      @'gsl//:gsl',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+    'private-deps': ['task'],
+  },
+
+  async_map_node: {
+    type: @'rules//CC:library',
+    name: ['async_map_node'],
+    hdrs: ['async_map_node.hpp'],
+    deps: [
+      'task',
+      'task_system',
+      @'gsl//:gsl',
+      @'//src/utils/cpp:gsl',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
+
+  async_map: {
+    type: @'rules//CC:library',
+    name: ['async_map'],
+    hdrs: ['async_map.hpp'],
+    deps: [
+      'async_map_node',
+      'task_system',
+      @'gsl//:gsl',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
+
+  async_map_consumer: {
+    type: @'rules//CC:library',
+    name: ['async_map_consumer'],
+    hdrs: ['async_map_consumer.hpp'],
+    deps: [
+      'async_map',
+      'task_system',
+      @'gsl//:gsl',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
+
+  atomic_value: {
+    type: @'rules//CC:library',
+    name: ['atomic_value'],
+    hdrs: ['atomic_value.hpp'],
+    deps: [@'//src/utils/cpp:atomic'],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
+
+  async_map_utils: {
+    type: @'rules//CC:library',
+    name: ['async_map_utils'],
+    hdrs: ['async_map_utils.hpp'],
+    deps: [
+      'async_map_consumer',
+      @'fmt//:fmt',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'multithreading'],
+  },
 }

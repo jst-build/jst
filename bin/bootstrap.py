@@ -16,7 +16,6 @@
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,7 +24,7 @@ import platform
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from typing import Any, Callable, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, cast
 
 # generic JSON type that avoids getter issues; proper use is being enforced by
 # return types of methods and typing vars holding return values of json getters
@@ -35,10 +34,10 @@ Json = Dict[str, Any]
 
 DEBUG = os.environ.get("DEBUG")
 
-REPOS: str = "etc/repos.in.json"
+REPOS: str = "etc/repos.json"
 MAIN_MODULE: str = ""
-MAIN_TARGET: str = "installed jst_backend"
-MAIN_STAGE: str = "bin/jst_backend"
+MAIN_TARGET: str = "jst_backend"
+MAIN_STAGE: str = "src/buildtool/main/jst_backend"
 BOOTSTRAP_MODULE: str = os.environ.get("BOOTSTRAP_MODULE", "")
 BOOTSTRAP_TARGET: str = os.environ.get("BOOTSTRAP_TARGET", "ALL")
 
@@ -50,7 +49,7 @@ g_CONF: Json = {}
 if 'BOOTSTRAP_CONF' in os.environ:
     g_CONF = json.loads(os.environ['BOOTSTRAP_CONF'])
 
-if "PACKAGE" in os.environ:
+if "BUNDLED" not in os.environ:
     g_CONF["ADD_CFLAGS"] = ["-Wno-error", "-Wno-pedantic"] + g_CONF.get(
         "ADD_CFLAGS", [])
     g_CONF["ADD_CXXFLAGS"] = ["-Wno-error", "-Wno-pedantic"] + g_CONF.get(
@@ -82,12 +81,14 @@ if 'PKG_CONFIG_PATH' in ENV:
 g_LOCALBASE: str = "/"
 if 'LOCALBASE' in os.environ:
     g_LOCALBASE = os.environ['LOCALBASE']
+    g_CONF["LOCALBASE"] = g_LOCALBASE
     pkg_paths = ['lib/pkgconfig', 'share/pkgconfig']
     if 'PKG_PATHS' in os.environ:
         pkg_paths = json.loads(os.environ['PKG_PATHS'])
     g_CONFIG_PATHS += [os.path.join(g_LOCALBASE, p) for p in pkg_paths]
 
-ENV['PKG_CONFIG_PATH'] = ":".join(g_CONFIG_PATHS)
+if g_CONFIG_PATHS:
+    ENV['PKG_CONFIG_PATH'] = ":".join(g_CONFIG_PATHS)
 
 CONF_STRING: str = json.dumps(g_CONF)
 
@@ -130,11 +131,6 @@ BOOTSTRAP_CC: List[str] = [g_CXX] + g_CXXFLAGS + [
 g_SRCDIR: str = os.getcwd()
 g_WRKDIR: Optional[str] = None
 g_DISTDIR: List[str] = []
-g_NON_LOCAL_DEPS: List[str] = []
-
-# other global variables
-
-g_LOCAL_DEPS: bool = False
 
 
 def git_hash(content: bytes) -> str:
@@ -174,10 +170,10 @@ def run(cmd: List[str], *, cwd: str, **kwargs: Any) -> None:
     subprocess.run(cmd, cwd=cwd, check=True, **kwargs)
 
 
-def setup_deps(src_wrkdir: str) -> Json:
+def setup_deps(repos_config: str) -> Json:
     # unpack all dependencies and return a list of
     # additional C++ flags required
-    with open(os.path.join(src_wrkdir, REPOS)) as f:
+    with open(repos_config) as f:
         config = json.load(f)["repositories"]
     include_location: str = os.path.join(cast(str, g_WRKDIR), "dep_includes")
     link_flags: List[str] = []
@@ -189,8 +185,10 @@ def setup_deps(src_wrkdir: str) -> Json:
             # resolved place, which also has to be part of the global
             # repository description.
             continue
-        hints = total_desc.get("bootstrap", {})
-        if desc.get("type") in ["archive", "zip"]:
+        name = repo
+        if repo.startswith("jst/"):
+            name = repo.split('/')[1]
+        if name in ["ssl", "fmt", "gsl", "json", "cli11", "libgit2"] and desc.get("type") in ["archive", "zip"]:
             fetch = desc["fetch"]
             distfile = desc.get("distfile") or os.path.basename(fetch)
             archive = get_archive(distfile=distfile, fetch=fetch)
@@ -199,9 +197,9 @@ def setup_deps(src_wrkdir: str) -> Json:
             if actual_checksum != expected_checksum:
                 print("Checksum mismatch for %r. Expected %r, found %r" %
                       (archive, expected_checksum, actual_checksum))
-            print("Unpacking %r from %r" % (repo, archive))
+            print("Unpacking %r from %r" % (name, archive))
             unpack_location: str = os.path.join(cast(str, g_WRKDIR), "deps",
-                                                repo)
+                                                name)
             os.makedirs(unpack_location)
             if desc["type"] == "zip":
                 subprocess.run(["unzip", "-d", ".", archive],
@@ -210,21 +208,41 @@ def setup_deps(src_wrkdir: str) -> Json:
             else:
                 subprocess.run(["tar", "xf", archive], cwd=unpack_location)
             subdir = os.path.join(unpack_location, desc.get("subdir", "."))
-            include_dir = os.path.join(subdir, hints.get("include_dir", "."))
-            include_name = hints.get("include_name", repo)
-            if include_name == ".":
-                for entry in os.listdir(include_dir):
-                    os.symlink(
-                        os.path.normpath(os.path.join(include_dir, entry)),
-                        os.path.join(include_location, entry))
-            else:
+            os_map = {}
+            arch_map = {}
+            build = ""
+
+            if name == "ssl":
+                include_dir = os.path.join(subdir, "src/include/openssl")
                 os.symlink(os.path.normpath(include_dir),
-                           os.path.join(include_location, include_name))
-            os_map = hints.get("os_map", dict())
-            arch_map = hints.get("arch_map", dict())
-            if "build" in hints:
-                run([
-                    "sh", "-c", hints["build"].format(
+                           os.path.join(include_location, "openssl"))
+                arch_map = {"arm64": "aarch64"}
+                build = "{cxx} {cxxflags} -I . -I src/include -c `find . '(' -ipath './src/crypto/*.cc' -o -ipath './src/gen/crypto/*.cc' -o -ipath './src/crypto/*.S' -o -ipath './src/gen/bcm/*.S' -o -ipath './src/gen/crypto/*.S' -o -ipath './src/third_party/fiat/asm/*.S' ')' -type f ! -ipath '*_test.*' ! -ipath '*/test/*'` && {ar} cqs libcrypto.a *.o"
+            elif name == "fmt":
+                include_dir = os.path.join(subdir, "include/fmt")
+                os.symlink(os.path.normpath(include_dir),
+                           os.path.join(include_location, "fmt"))
+                build = "cd src && {cxx} {cxxflags} -I ../include -c os.cc format.cc && {ar} cqs ../libfmt.a *.o"
+            elif name == "gsl":
+                os.symlink(os.path.normpath(subdir),
+                           os.path.join(include_location, "gsl"))
+            elif name == "json":
+                os.symlink(os.path.normpath(subdir),
+                           os.path.join(include_location, "nlohmann"))
+            elif name == "cli11":
+                include_dir = os.path.join(subdir, "include/CLI")
+                os.symlink(os.path.normpath(include_dir),
+                           os.path.join(include_location, "CLI"))
+            elif name == "libgit2":
+                include_dir = os.path.join(subdir, "include/git2")
+                include_file = os.path.join(subdir, "include/git2.h")
+                os.symlink(os.path.normpath(include_dir),
+                           os.path.join(include_location, "git2"))
+                os.symlink(os.path.normpath(include_file),
+                           os.path.join(include_location, "git2.h"))
+
+            run([
+                    "sh", "-c", build.format(
                         os=os_map.get(OS, OS),
                         arch=arch_map.get(ARCH, ARCH),
                         cc=g_CC,
@@ -234,173 +252,16 @@ def setup_deps(src_wrkdir: str) -> Json:
                         cxxflags=quote(g_CXXFLAGS),
                     )
                 ],
-                    cwd=subdir)
-            if "link" in hints:
-                link_flags.extend(["-L", subdir])
-        if "link" in hints:
-            link_flags.extend(hints["link"])
+                cwd=subdir)
+            link_flags.extend(["-L", subdir])
+
+    link_flags += ["-lfmt", "-lcrypto", "-pthread"]
 
     return {"include": ["-I", include_location], "link": link_flags}
 
 
-def config_to_local(*, repos_file: str, link_targets_file: str) -> None:
-    with open(repos_file) as f:
-        repos = json.load(f)
-    global_link_dirs: Set[str] = set()
-    changed_file_roots: Dict[str, str] = {}
-    backup_layers: Json = {}
-    for repo in repos["repositories"]:
-        if repo in g_NON_LOCAL_DEPS:
-            continue
-        desc = repos["repositories"][repo]
-        repo_desc: Optional[Json] = desc.get("repository")
-        if not isinstance(repo_desc, dict):
-            repo_desc = {}
-        if repo_desc.get("type") in ["archive", "zip"]:
-            pkg_bootstrap: Json = desc.get("pkg_bootstrap", {})
-            desc["repository"] = {
-                "type":
-                "file",
-                "path":
-                os.path.normpath(
-                    os.path.join(g_LOCALBASE,
-                                 pkg_bootstrap.get("local_path", ".")))
-            }
-            if "link_dirs" in pkg_bootstrap:
-                link: List[str] = []
-                for entry in pkg_bootstrap["link_dirs"]:
-                    link += ["-L", os.path.join(g_LOCALBASE, entry)]
-                    global_link_dirs.add(entry)
-                link += pkg_bootstrap.get("link", [])
-                pkg_bootstrap["link"] = link
-            desc["bootstrap"] = pkg_bootstrap
-            if "pkg_bootstrap" in desc:
-                del desc["pkg_bootstrap"]
-        if repo_desc.get("type") == "file":
-            pkg_bootstrap = desc.get("pkg_bootstrap", {})
-            if pkg_bootstrap.get("local_path") and g_NON_LOCAL_DEPS:
-                # local layer gets changed, keep a copy
-                backup_name: str = "ORIGINAL: " + repo
-                backup_layers[backup_name] = {
-                    "repository": {
-                        "type": "file",
-                        "path": repo_desc.get("path")
-                    }
-                }
-                changed_file_roots[repo] = backup_name
-            desc["repository"] = {
-                "type":
-                "file",
-                "path":
-                pkg_bootstrap.get("local_path", desc["repository"].get("path"))
-            }
-            desc["bootstrap"] = pkg_bootstrap
-            if "pkg_bootstrap" in desc:
-                del desc["pkg_bootstrap"]
-
-    # For repos that we didn't change to local, make file roots point
-    # to the original version, so that, in particular, the original
-    # target root will be used.
-    for repo in g_NON_LOCAL_DEPS:
-        for layer in ["target_root", "rule_root", "expression_root"]:
-            layer_ref: str = repos["repositories"][repo].get(layer)
-            if layer_ref in changed_file_roots:
-                repos["repositories"][repo][layer] = changed_file_roots[
-                    layer_ref]
-
-    repos["repositories"] = dict(repos["repositories"], **backup_layers)
-
-    print("jst config rewritten to local:\n%s\n" %
-          (json.dumps(repos, indent=2)))
-    os.unlink(repos_file)
-    with open(repos_file, "w") as f:
-        json.dump(repos, f, indent=2)
-
-    with open(link_targets_file) as f:
-        target = json.load(f)
-    main = target[LOCAL_LINK_DIRS_TARGET]
-    link_external = [
-        "-L%s" % (os.path.join(g_LOCALBASE, d), ) for d in global_link_dirs
-    ]
-    print("External link arguments %r" % (link_external, ))
-    main["private-ldflags"] = link_external
-    target[LOCAL_LINK_DIRS_TARGET] = main
-    os.unlink(link_targets_file)
-    with open(link_targets_file, "w") as f:
-        json.dump(target, f, indent=2)
-
-
-def prune_config(*, repos_file: str, empty_dir: str) -> None:
-    with open(repos_file) as f:
-        repos = json.load(f)
-    for repo in repos["repositories"]:
-        if repo in g_NON_LOCAL_DEPS:
-            continue
-        desc = repos["repositories"][repo]
-        if desc.get("bootstrap", {}).get("drop"):
-            desc["repository"] = {"type": "file", "path": empty_dir}
-    os.unlink(repos_file)
-    with open(repos_file, "w") as f:
-        json.dump(repos, f, indent=2)
-
-
-def ignore_dst(dst: str) -> Callable[[str, List[str]], List[str]]:
-    def ignore_(path: str, names: List[str]) -> List[str]:
-        if os.path.normpath(path) == dst:
-            return names
-        for n in names:
-            if os.path.normpath(os.path.join(path, n)) == dst:
-                return [n]
-        return []
-
-    return ignore_
-
-
-def copy_roots(*, repos_file: str, copy_dir: str) -> None:
-    with open(repos_file) as f:
-        repos = json.load(f)
-    for repo in repos["repositories"]:
-        desc: Json = repos["repositories"][repo]
-        to_copy = desc.get("bootstrap", {}).get("copy")
-        if to_copy:
-            old_root: str = desc["repository"]["path"]
-            new_root: str = os.path.join(copy_dir, repo)
-            for x in to_copy:
-                src: str = os.path.join(old_root, x)
-                dst: str = os.path.normpath(os.path.join(new_root, x))
-
-                if os.path.isdir(src):
-                    shutil.copytree(src,
-                                    dst,
-                                    ignore=ignore_dst(dst),
-                                    symlinks=False,
-                                    dirs_exist_ok=True)
-                elif os.path.isfile(src):
-                    os.makedirs(os.path.dirname(dst), exist_ok=True)
-                    shutil.copyfile(src, dst, follow_symlinks=True)
-                    shutil.copymode(src, dst, follow_symlinks=True)
-            desc["repository"]["path"] = new_root
-    os.unlink(repos_file)
-    with open(repos_file, "w") as f:
-        json.dump(repos, f, indent=2)
-
-
-def inject_justlang(repos_file : str) -> None:
-    """ add justlang repositories to repos file from lock file (etc/repos.json)
-    """
-    with open(repos_file, 'r') as f:
-        repos = json.load(f)
-    with open(os.path.join(g_SRCDIR, 'etc/repos.json'), 'r') as f:
-        lockfile = json.load(f)
-    os.unlink(repos_file)
-    with open(repos_file, 'w') as f:
-        for r in ['justlang', 'justlang/rules-justlang', 'justlang/defaults']:
-            repos['repositories'][r] = lockfile['repositories'][r]
-        json.dump(repos, f, indent=2)
-
-
-def bootstrap() -> None:
-    if g_LOCAL_DEPS:
+def bootstrap(repos_config : str, is_system_build: bool) -> None:
+    if is_system_build:
         print("Bootstrap build in %r from sources %r against LOCALBASE %r" %
               (g_WRKDIR, g_SRCDIR, g_LOCALBASE))
     else:
@@ -409,28 +270,22 @@ def bootstrap() -> None:
     os.makedirs(cast(str, g_WRKDIR), exist_ok=True)
     with open(os.path.join(cast(str, g_WRKDIR), "build-conf.json"), 'w') as f:
         json.dump(g_CONF, f, indent=2)
-    src_wrkdir: str = os.path.normpath(os.path.join(cast(str, g_WRKDIR), "src"))
-    shutil.copytree(g_SRCDIR, src_wrkdir, ignore=ignore_dst(src_wrkdir))
-    if g_LOCAL_DEPS:
-        config_to_local(repos_file=os.path.join(src_wrkdir, REPOS),
-                        link_targets_file=os.path.join(src_wrkdir,
-                                                       LOCAL_LINK_DIRS_MODULE,
-                                                       "TARGETS"))
-    inject_justlang(repos_file=os.path.join(src_wrkdir, REPOS))
+    ro_srcdir: str = g_SRCDIR
+    objdir: str = os.path.normpath(os.path.join(cast(str, g_WRKDIR), "src"))
+    os.makedirs(objdir)
     empty_dir: str = os.path.join(cast(str, g_WRKDIR), "empty_directory")
     os.makedirs(empty_dir)
-    prune_config(repos_file=os.path.join(src_wrkdir, REPOS),
-                 empty_dir=empty_dir)
-    copy_dir: str = os.path.join(cast(str, g_WRKDIR), "copied_roots")
-    copy_roots(repos_file=os.path.join(src_wrkdir, REPOS), copy_dir=copy_dir)
-    dep_flags = setup_deps(src_wrkdir)
+
+    # Phase 1: build minimal bootstrap-jst_backend
+    #          (for analysing targets and dumping action graph)
+    dep_flags = setup_deps(os.path.join(ro_srcdir, repos_config))
     # handle proto
-    flags = ["-I", src_wrkdir] + dep_flags["include"] + [
+    flags = ["-I", ro_srcdir] + dep_flags["include"] + [
         "-I", os.path.join(g_LOCALBASE, "include"),
-        "-I", os.path.join(src_wrkdir, 'extern/justlang/src')
+        "-I", os.path.join(ro_srcdir, 'extern/justlang/src')
     ]
     cpp_files: List[str] = []
-    for root, dirs, files in os.walk(src_wrkdir):
+    for root, dirs, files in os.walk(ro_srcdir):
         if 'test' in dirs:
             dirs.remove('test')
         if 'execution_api' in dirs:
@@ -451,23 +306,30 @@ def bootstrap() -> None:
             continue
         if 'extern/justlang' in root and not 'src/justlang' in root:
             continue
+        base = os.path.relpath(root, ro_srcdir)
         for f in files:
             if f.endswith(".cpp"):
-                cpp_files.append(os.path.join(root, f))
+                cpp_files.append(os.path.join(base, f))
     object_files: List[str] = []
     with ThreadPoolExecutor(max_workers=1 if DEBUG else None) as ts:
         for f in cpp_files:
             obj_file_name = f[:-len(".cpp")] + ".o"
             object_files.append(obj_file_name)
+            os.makedirs(os.path.dirname(os.path.join(objdir, obj_file_name)), exist_ok=True)
             cmd: List[str] = BOOTSTRAP_CC + flags + [
-                "-c", f, "-o", obj_file_name
+                "-c", os.path.join(ro_srcdir, f), "-o", obj_file_name
             ]
-            ts.submit(run, cmd, cwd=src_wrkdir)
-    bootstrap_just: str = os.path.join(cast(str, g_WRKDIR), "bootstrap-jst_backend")
+            ts.submit(run, cmd, cwd=objdir)
+    bootstrap_jst_backend: str = os.path.join(cast(str, g_WRKDIR), "bootstrap-jst_backend")
     final_cmd: List[str] = BOOTSTRAP_CC + g_FINAL_LDFLAGS + [
-        "-o", bootstrap_just
+        "-o", bootstrap_jst_backend
     ] + object_files + dep_flags["link"]
-    run(final_cmd, cwd=src_wrkdir)
+    run(final_cmd, cwd=objdir)
+
+    # Phase 2:
+    # - run ./bin/jst.py to setup dependencies and generate backend config
+    # - run bootstrap-jst_backend to transform generate action graph
+    # - run bootstrap traverser to build feature-complete jst_backend
     CONF_FILE: str = os.path.join(cast(str, g_WRKDIR), "repo-conf.json")
     LOCAL_ROOT: str = os.path.join(cast(str, g_WRKDIR), ".jst")
     os.makedirs(LOCAL_ROOT, exist_ok=True)
@@ -475,42 +337,110 @@ def bootstrap() -> None:
     run([
         "sh", "-c",
         "cp `./bin/jst.py --always-file -C %s --local-build-root=%s --distdir=%s setup jst` %s"
-        % (REPOS, LOCAL_ROOT, distdirs, CONF_FILE)
+        % (repos_config, LOCAL_ROOT, distdirs, CONF_FILE)
     ],
-        cwd=src_wrkdir)
+        cwd=ro_srcdir)
     GRAPH: str = os.path.join(cast(str, g_WRKDIR), "graph.json")
     TO_BUILD: str = os.path.join(cast(str, g_WRKDIR), "to_build.json")
     run([
-        bootstrap_just, "analyse", "-C", CONF_FILE, "-D", CONF_STRING,
+        bootstrap_jst_backend, "analyse", "-C", CONF_FILE, "-D", CONF_STRING,
         "--dump-graph", GRAPH, "--dump-artifacts-to-build", TO_BUILD,
         MAIN_MODULE, MAIN_TARGET
     ],
-        cwd=src_wrkdir)
+        cwd=ro_srcdir)
     if DEBUG:
         traverser = "./bin/bootstrap-traverser.py"
     else:
         traverser = "./bin/parallel-bootstrap-traverser.py"
+    traverser = os.path.join(ro_srcdir, traverser)
     run([
-        traverser, "-C", CONF_FILE, "--default-workspace", src_wrkdir, GRAPH,
+        traverser, "-C", CONF_FILE, "--default-workspace", objdir, GRAPH,
         TO_BUILD
     ],
-        cwd=src_wrkdir)
+        cwd=objdir)
+
+    # Phase 3: run feature-complete jst_backend on backend config build final jst
     OUT: str = os.path.join(cast(str, g_WRKDIR), "out")
     run([
         "./out-boot/%s" %
         (MAIN_STAGE, ), "install", "-C", CONF_FILE, "-D", CONF_STRING, "-o",
-        OUT, "--local-build-root", LOCAL_ROOT, BOOTSTRAP_MODULE, BOOTSTRAP_TARGET
+        OUT, BOOTSTRAP_MODULE, BOOTSTRAP_TARGET
     ],
-        cwd=src_wrkdir)
+        cwd=objdir)
+
+def write_bootstrap_config(system_deps : set[str]) -> str:
+    # write a bootstrap repository config based on the bundled configuration
+    # with specified dependencies remapped to the system
+    imports : list[str] = []
+    bundled_file = os.path.join(g_SRCDIR, 'etc/bundled.json')
+    with open(bundled_file) as f:
+        repos_data = json.load(f)
+        for name, repo in cast(dict[str, Any], repos_data["repositories"]).items():
+            if "/" in name or name in ["google_apis", "bazel_remote_apis"]:
+                continue
+            if isinstance(repo["repository"], dict) and repo["repository"]["type"] in ["archive","zip"]:
+                imports.append(name)
+
+    # verify system deps
+    unknown_deps = system_deps.difference(imports)
+    if unknown_deps:
+        print(f"ERROR: unknown system deps: {', '.join(unknown_deps)}")
+        print(f"       known system deps: {', '.join(imports)}")
+        exit(1)
+    if ('grpc' in system_deps) != ('protobuf' in system_deps):
+        print("ERROR: 'grpc' and 'protobuf' must both be either system deps or bundled.")
+        exit(1)
+
+    def file_import(name : str) -> dict[str, Any]:
+        return dict(source="file", path=".", repos=[dict(repo=name)])
+
+    def git_import(name : str) -> dict[str, Any]:
+        return dict(source="git",
+                    branch=f"{name}/system",
+                    url="https://github.com/jst-build/imports-cc",
+                    repos=[dict(repo=name)])
+
+    # generate system imports and remappings
+    system_imports : list[dict[str,Any]] = [file_import("toolchain")]
+    jst_remapping : dict[str, str] = {}
+    for name in system_deps.intersection(imports):
+        if os.path.exists(os.path.join(g_SRCDIR, f"etc/imports/{name}.TARGETS")):
+            # imports from etc/repos.json (system dependencies)
+            system_imports.append(file_import(name))
+        else:
+            # imports from github.com/jst-build/imports-cc (system branch)
+            system_imports.append(git_import(name))
+        jst_remapping[name] = name
+        if name == "grpc":
+            # grpc requires remapping the grpc_toolchain to the system toolchain
+            jst_remapping["grpc_toolchain"] = "toolchain"
+
+    # write bootstrap.in.json and generate lock file
+    bootstrap_data = dict(
+        main="jst",
+        imports=system_imports + [
+            # import from etc/bundled.json: bundled jst with remappings
+            dict(
+                source="file",
+                path=".",
+                config="etc/bundled.json",
+                repos=[dict(repo="jst", map=jst_remapping)],
+            ),
+        ]
+    )
+    in_file = os.path.join(cast(str, g_WRKDIR), 'bootstrap.in.json')
+    lock_file = os.path.join(cast(str, g_WRKDIR), 'bootstrap.json')
+    with open(in_file, 'w') as f:
+        json.dump(bootstrap_data, f, indent=2)
+    run(['./bin/jst-lock.py', '-C', in_file, '-o', lock_file], cwd=g_SRCDIR)
+
+    return lock_file
 
 
 def main(args: List[str]):
     global g_SRCDIR
     global g_WRKDIR
     global g_DISTDIR
-    global g_LOCAL_DEPS
-    global g_LOCALBASE
-    global g_NON_LOCAL_DEPS
     if len(args) > 1:
         g_SRCDIR = os.path.abspath(args[1])
     if len(args) > 2:
@@ -523,9 +453,12 @@ def main(args: List[str]):
     if not g_DISTDIR:
         g_DISTDIR = [os.path.join(Path.home(), ".distfiles")]
 
-    g_LOCAL_DEPS = "PACKAGE" in os.environ
-    g_NON_LOCAL_DEPS = json.loads(os.environ.get("NON_LOCAL_DEPS", "[]"))
-    bootstrap()
+    repos_config = REPOS
+    is_system_build = "BUNDLED" not in os.environ
+    if not is_system_build:
+        system_deps = json.loads(os.environ.get("SYSTEM_DEPS", "[]"))
+        repos_config = write_bootstrap_config(set(system_deps))
+    bootstrap(repos_config, is_system_build)
 
 
 if __name__ == "__main__":

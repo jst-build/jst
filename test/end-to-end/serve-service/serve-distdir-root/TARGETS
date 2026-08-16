@@ -1,62 +1,78 @@
-{ "serve-distdir (data)":
-  { "type": "install"
-  , "files":
-    { "src.tar": ["end-to-end/serve-service", "serve-tree (archive)"]
-    , "src-syms.tar":
-      [ "end-to-end/serve-service/serve-archive-root"
-      , "serve-tree-syms (archive)"
-      ]
-    , "unrelated.txt": "unrelated file"
-    }
-  }
-, "unrelated file":
-  {"type": "file_gen", "name": "unrelated", "data": "unrelated content"}
-, "present":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["present"]
-  , "test": ["present.sh"]
-  , "deps":
-    [ "serve-distdir (data)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos": ["serve-distdir (data)"]
-  }
-, "absent":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["absent"]
-  , "test": ["absent.sh"]
-  , "deps":
-    [ "serve-distdir (data)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos": ["serve-distdir (data)"]
-  }
-, "upload":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["upload"]
-  , "test": ["upload.sh"]
-  , "deps":
-    [ "serve-distdir (data)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  }
-, "foreign-file":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["foreign-file"]
-  , "test": ["foreign-file.sh"]
-  , "deps":
-    [ ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    , ["TREE", null, "foreign-file-data"]
-    ]
-  , "repos": [["TREE", null, "foreign-file-data"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["serve-distdir-root"]
-  , "deps": ["absent", "foreign-file", "present", "upload"]
-  }
+{
+  'serve-distdir (data)': {
+    type: 'install',
+    files: {
+      'src.tar': @'//end-to-end/serve-service:serve-tree (archive)',
+      'src-syms.tar': @'//end-to-end/serve-service/serve-archive-root:serve-tree-syms (archive)',
+      'unrelated.txt': 'unrelated file',
+    },
+  },
+
+  'unrelated file': {
+    type: 'file_gen',
+    name: 'unrelated',
+    data: 'unrelated content',
+  },
+
+  present: {
+    type: @'//end-to-end:with serve',
+    name: ['present'],
+    test: ['present.sh'],
+    deps: [
+      'serve-distdir (data)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['serve-distdir (data)'],
+  },
+
+  absent: {
+    type: @'//end-to-end:with serve',
+    name: ['absent'],
+    test: ['absent.sh'],
+    deps: [
+      'serve-distdir (data)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['serve-distdir (data)'],
+  },
+
+  upload: {
+    type: @'//end-to-end:with serve',
+    name: ['upload'],
+    test: ['upload.sh'],
+    deps: [
+      'serve-distdir (data)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'foreign-file': {
+    type: @'//end-to-end:with serve',
+    name: ['foreign-file'],
+    test: ['foreign-file.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+      jst.tree('foreign-file-data'),
+    ],
+    repos: [[
+      'TREE',
+      null,
+      'foreign-file-data',
+    ]],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['serve-distdir-root'],
+    deps: [
+      'absent',
+      'foreign-file',
+      'present',
+      'upload',
+    ],
+  },
 }

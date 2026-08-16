@@ -1,25 +1,27 @@
-{ "traverser":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["traverser"]
-  , "srcs": ["traverser.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/common", "action_description"]
-    , ["@", "src", "src/buildtool/common", "artifact_description"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/execution_engine/dag", "dag"]
-    , ["@", "src", "src/buildtool/execution_engine/traverser", "traverser"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    , ["utils", "test_hash_function_type"]
-    ]
-  , "stage": ["test", "buildtool", "execution_engine", "traverser"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["traverser"]
-  , "deps": ["traverser"]
-  }
+{
+  traverser: {
+    type: @'rules//CC/test:test',
+    name: ['traverser'],
+    srcs: ['traverser.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'src//src/buildtool/common:action_description',
+      @'src//src/buildtool/common:artifact_description',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/execution_engine/dag:dag',
+      @'src//src/buildtool/execution_engine/traverser:traverser',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+      @'//utils:test_hash_function_type',
+    ],
+    stage: ['test', 'buildtool', 'execution_engine', 'traverser'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['traverser'],
+    deps: ['traverser'],
+  },
 }

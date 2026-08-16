@@ -1,6 +1,0 @@
-{ "hdrs":
-  { "type": ["@", "rules", "data", "staged"]
-  , "stage": ["fmt"]
-  , "srcs": [["TREE", null, "."]]
-  }
-}

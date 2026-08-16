@@ -1,0 +1,11 @@
+{
+  catch2: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['catch2'],
+  },
+
+  catch2_main: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['catch2-with-main'],
+  },
+}

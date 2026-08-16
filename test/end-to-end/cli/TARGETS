@@ -1,123 +1,169 @@
-{ "defaults":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["defaults"]
-  , "test": ["defaults.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "pwd":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["pwd"]
-  , "test": ["pwd.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "install":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["install"]
-  , "test": ["install.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "analyse":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["analyse"]
-  , "test": ["analyse.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "build -P":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["build-P"]
-  , "test": ["build-p.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "git cas -P":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["git-cas-P"]
-  , "test": ["git-cas-p.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "git cas fallback":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["git-cas-fallback"]
-  , "test": ["git-cas-fallback.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "just-mr reporting":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["just-mr-reporting"]
-  , "test": ["just-mr-reporting.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "keep": ["log/warning.txt"]
-  }
-, "install --archive":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["install-archive"]
-  , "test": ["install-archive.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "keep": ["src.tar", "reconstructed.tar", "fromstdout.tar"]
-  }
-, "install archived repo":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["install-archived-repo"]
-  , "test": ["install-archived-repo.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "keep": ["src.tar", "reconstructed.tar", "fromstdout.tar"]
-  }
-, "conflict report":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["conflict-report"]
-  , "test": ["conflict-report.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "log limit":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["log-limit"]
-  , "test": ["log-limit.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "describe":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["describe"]
-  , "test": ["describe.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "output":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["output"]
-  , "test": ["output.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "keep": ["log"]
-  }
-, "cas-resolve-special":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["cas-resolve-special"]
-  , "test": ["cas-resolve-special.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "arguments_config": ["TEST_BOOTSTRAP_JUST_MR"]
-  , "stage": ["cli"]
-  , "deps":
-    { "type": "++"
-    , "$1":
-      [ [ "defaults"
-        , "pwd"
-        , "install"
-        , "build -P"
-        , "analyse"
-        , "git cas -P"
-        , "git cas fallback"
-        , "install --archive"
-        , "install archived repo"
-        , "conflict report"
-        , "describe"
-        ]
-      , { "type": "if"
-        , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-        , "then": []
-        , "else":
-          ["just-mr reporting", "log limit", "output", "cas-resolve-special"]
-        }
+{
+  defaults: {
+    type: @'rules//shell/test:script',
+    name: ['defaults'],
+    test: ['defaults.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  pwd: {
+    type: @'rules//shell/test:script',
+    name: ['pwd'],
+    test: ['pwd.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  install: {
+    type: @'rules//shell/test:script',
+    name: ['install'],
+    test: ['install.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  analyse: {
+    type: @'rules//shell/test:script',
+    name: ['analyse'],
+    test: ['analyse.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'build -P': {
+    type: @'rules//shell/test:script',
+    name: ['build-P'],
+    test: ['build-p.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'git cas -P': {
+    type: @'rules//shell/test:script',
+    name: ['git-cas-P'],
+    test: ['git-cas-p.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'git cas fallback': {
+    type: @'//end-to-end:with remote',
+    name: ['git-cas-fallback'],
+    test: ['git-cas-fallback.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'just-mr reporting': {
+    type: @'rules//shell/test:script',
+    name: ['just-mr-reporting'],
+    test: ['just-mr-reporting.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    keep: ['log/warning.txt'],
+  },
+
+  'install --archive': {
+    type: @'rules//shell/test:script',
+    name: ['install-archive'],
+    test: ['install-archive.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    keep: [
+      'src.tar',
+      'reconstructed.tar',
+      'fromstdout.tar',
+    ],
+  },
+
+  'install archived repo': {
+    type: @'rules//shell/test:script',
+    name: ['install-archived-repo'],
+    test: ['install-archived-repo.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    keep: [
+      'src.tar',
+      'reconstructed.tar',
+      'fromstdout.tar',
+    ],
+  },
+
+  'conflict report': {
+    type: @'rules//shell/test:script',
+    name: ['conflict-report'],
+    test: ['conflict-report.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'log limit': {
+    type: @'rules//shell/test:script',
+    name: ['log-limit'],
+    test: ['log-limit.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  describe: {
+    type: @'rules//shell/test:script',
+    name: ['describe'],
+    test: ['describe.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  output: {
+    type: @'rules//shell/test:script',
+    name: ['output'],
+    test: ['output.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    keep: ['log'],
+  },
+
+  'cas-resolve-special': {
+    type: @'rules//shell/test:script',
+    name: ['cas-resolve-special'],
+    test: ['cas-resolve-special.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
+    stage: ['cli'],
+    deps:
+      [
+        'defaults',
+        'pwd',
+        'install',
+        'build -P',
+        'analyse',
+        'git cas -P',
+        'git cas fallback',
+        'install --archive',
+        'install archived repo',
+        'conflict report',
+        'describe',
       ]
-    }
-  }
+      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+           [
+             'just-mr reporting',
+             'log limit',
+             'output',
+             'cas-resolve-special',
+           ]),
+  },
 }

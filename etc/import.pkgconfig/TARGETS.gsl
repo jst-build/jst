@@ -1,3 +1,0 @@
-{ "gsl":
-  {"type": ["@", "rules", "CC/pkgconfig", "system_library"], "name": ["gsl"]}
-}

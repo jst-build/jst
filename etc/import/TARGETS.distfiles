@@ -1,4 +1,0 @@
-{ "distdir": {"type": "export", "target": "distdir (unexported)"}
-, "distdir (unexported)":
-  {"type": "install", "dirs": [[["TREE", null, "."], "distdir"]]}
-}

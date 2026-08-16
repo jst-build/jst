@@ -1,6 +1,0 @@
-{ "address_sorting_headers":
-  { "type": ["@", "rules", "data", "staged"]
-  , "stage": ["address_sorting"]
-  , "srcs": ["address_sorting.h"]
-  }
-}

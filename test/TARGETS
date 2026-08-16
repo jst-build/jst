@@ -1,241 +1,184 @@
-{ "tested jst_backend":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "skip-debug-stage": ["yes"]
-  , "targets": [["@", "src", "", "jst_backend"]]
-  }
-, "tool-under-test":
-  { "type": "install"
-  , "dirs": [["tested jst_backend", "."]]
-  , "files": {"bin/tool-under-test": ["@", "src", "", "jst_backend"]}
-  }
-, "tested jst":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "skip-debug-stage": ["yes"]
-  , "targets": [["@", "src", "", "jst"]]
-  }
-, "mr-tool-under-test":
-  { "type": "install"
-  , "arguments_config": ["TEST_BOOTSTRAP_JUST_MR"]
-  , "dirs":
-    { "type": "if"
-    , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-    , "then": []
-    , "else": [["tested jst", "."]]
-    }
-  , "files":
-    { "bin/mr-tool-under-test":
-      { "type": "if"
-      , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-      , "then": ["@", "src", "", "bin/jst.py"]
-      , "else": ["@", "src", "", "jst"]
-      }
-    }
-  }
-, "catch-main":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["catch-main"]
-  , "srcs": ["main.cpp"]
-  , "deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/file_system", "git_context"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["@", "src", "src/buildtool/storage", "file_chunker"]
-    , ["utils", "log_config"]
-    , ["utils", "test_env"]
-    ]
-  , "stage": ["test"]
-  }
-, "unit tests with compatibility (unconfigured)":
-  { "type": ["@", "rules", "test", "suite"]
-  , "arguments_config": ["TEST_COMPATIBLE_REMOTE"]
-  , "stage":
-    [ { "type": "if"
-      , "cond": {"type": "var", "name": "TEST_COMPATIBLE_REMOTE"}
-      , "then": "compatible"
-      , "else": "native"
-      }
-    ]
-  , "deps": [["./", "buildtool", "TESTS"]]
-  }
-, "unit tests with compatibility, compatible":
-  { "type": "configure"
-  , "arguments_config": ["TEST_ENV"]
-  , "tainted": ["test"]
-  , "target": "unit tests with compatibility (unconfigured)"
-  , "config":
-    { "type": "`"
-    , "$1":
-      { "TEST_COMPATIBLE_REMOTE": true
-      , "TEST_ENV":
-        { "type": ","
-        , "$1":
-          { "type": "map_union"
-          , "$1":
-            [ { "type": "var"
-              , "name": "TEST_ENV"
-              , "default": {"type": "empty_map"}
-              }
-            , {"type": "'", "$1": {"COMPATIBLE": "YES"}}
-            ]
-          }
-        }
-      }
-    }
-  }
-, "unit tests with compatibility, native":
-  { "type": "configure"
-  , "arguments_config": ["TEST_ENV"]
-  , "tainted": ["test"]
-  , "target": "unit tests with compatibility (unconfigured)"
-  , "config":
-    { "type": "`"
-    , "$1":
-      { "TEST_COMPATIBLE_REMOTE": false
-      , "TEST_ENV":
-        { "type": ","
-        , "$1":
-          { "type": "map_union"
-          , "$1":
-            { "type": "foreach_map"
-            , "var_key": "name"
-            , "var_val": "value"
-            , "range":
-              { "type": "var"
-              , "name": "TEST_ENV"
-              , "default": {"type": "empty_map"}
-              }
-            , "body":
-              { "type": "case"
-              , "expr": {"type": "var", "name": "name"}
-              , "case": {"COMPATIBLE": {"type": "empty_map"}}
-              , "default":
-                { "type": "singleton_map"
-                , "key": {"type": "var", "name": "name"}
-                , "value": {"type": "var", "name": "value"}
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-, "unit tests with compatibility":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["using-remote"]
-  , "deps":
-    [ "unit tests with compatibility, compatible"
-    , "unit tests with compatibility, native"
-    ]
-  }
-, "justlang_tests":
-  { "type": "install"
-  , "tainted": ["test"]
-  , "dirs": [[["@", "justlang_tests", "", "ALL"], "other_tools/justlang"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "matrix"]
-  , "arguments_config": ["DROP_LARGE_TESTS", "DROP_END_TO_END_TESTS"]
-  , "deps":
-    { "type": "`"
-    , "$1":
-      [ "unit tests with compatibility"
-      , ["./", "utils", "TESTS"]
-      , ["./", "other_tools", "TESTS"]
-      , "justlang_tests"
-      , { "type": ",@"
-        , "$1":
-          { "type": "if"
-          , "cond": {"type": "var", "name": "DROP_END_TO_END_TESTS"}
-          , "then": []
-          , "else": [["./", "end-to-end", "TESTS"]]
-          }
-        }
-      , { "type": ",@"
-        , "$1":
-          { "type": "if"
-          , "cond":
-            { "type": "or"
-            , "$1":
-              [ {"type": "var", "name": "DROP_END_TO_END_TESTS"}
-              , {"type": "var", "name": "DROP_LARGE_TESTS", "default": true}
-              ]
-            }
-          , "then": []
-          , "else": ["bootstrap-test"]
-          }
-        }
+// unset entry for given key from map
+local unset_key(key, map) =
+  local make_map(name) =
+    if name == key then {}
+    else { [name]: jst.get(key, map) };
+  jst.union([make_map(k) for k in jst.keys(map)]);
+
+{
+  // Runs all tests with mandatory config variables being set
+  ALL: {
+    type: 'configure',
+    arguments_config: ['OS', 'ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
+    tainted: ['test'],
+    target: 'TESTS',
+    config:
+      local arch = jst.env('ARCH', default='x86_64');
+      {
+        OS: jst.env('OS', default='linux'),
+        ARCH: arch,
+        HOST_ARCH: jst.env('HOST_ARCH', default=arch),
+        TARGET_ARCH: jst.env('TARGET_ARCH', default=arch),
+      },
+  },
+
+  // Defines test matrix selectively via config variables
+  TESTS: {
+    type: @'rules//test:matrix',
+    arguments_config: ['DROP_LARGE_TESTS', 'DROP_END_TO_END_TESTS'],
+    deps:
+      [
+        'unit tests with compatibility',
+        @'./utils:TESTS',
+        @'./other_tools:TESTS',
+        'justlang_tests',
       ]
-    }
-  }
-, "ALL":
-  { "type": "configure"
-  , "arguments_config": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]
-  , "tainted": ["test"]
-  , "target": "TESTS"
-  , "config":
-    { "type": "let*"
-    , "bindings":
-      [ ["OS", {"type": "var", "name": "OS", "default": "linux"}]
-      , ["ARCH", {"type": "var", "name": "ARCH", "default": "x86_64"}]
-      , [ "HOST_ARCH"
-        , { "type": "var"
-          , "name": "HOST_ARCH"
-          , "default": {"type": "var", "name": "ARCH"}
-          }
-        ]
-      , [ "TARGET_ARCH"
-        , { "type": "var"
-          , "name": "TARGET_ARCH"
-          , "default": {"type": "var", "name": "ARCH"}
-          }
-        ]
-      ]
-    , "body":
-      {"type": "env", "vars": ["OS", "ARCH", "HOST_ARCH", "TARGET_ARCH"]}
-    }
-  }
-, "UNIT_TESTS":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": "ALL"
-  , "config": {"type": "'", "$1": {"DROP_END_TO_END_TESTS": true}}
-  }
-, "bootstrap-test":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": ["./", "bootstrap", "TESTS"]
-  , "arguments_config": ["TIMEOUT_SCALE"]
-  , "config":
-    { "type": "singleton_map"
-    , "key": "TIMEOUT_SCALE"
-    , "value":
-      { "type": "*"
-      , "$1": [40, {"type": "var", "name": "TIMEOUT_SCALE", "default": 1.0}]
-      }
-    }
-  }
-, "test-deps-headers":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "hdrs-only": ["yes"]
-  , "targets": [["@", "catch2", "", "catch2"]]
-  }
-, "just-ext-hdrs (unconfigured)":
-  { "type": "install"
-  , "dirs":
-    [[["@", "src", "", "just-ext-hdrs"], "."], ["test-deps-headers", "."]]
-  }
-, "just-ext-hdrs":
-  { "type": "configure"
-  , "arguments_config": ["OS", "ARCH"]
-  , "target": "just-ext-hdrs (unconfigured)"
-  , "config":
-    { "type": "let*"
-    , "bindings":
-      [ ["OS", {"type": "var", "name": "OS", "default": "linux"}]
-      , ["ARCH", {"type": "var", "name": "ARCH", "default": "x86_64"}]
-      ]
-    , "body": {"type": "env", "vars": ["OS", "ARCH"]}
-    }
-  }
+      + (if !jst.env('DROP_END_TO_END_TESTS') then
+           [@'./end-to-end:TESTS'])
+      + (if !jst.env('DROP_END_TO_END_TESTS') && !jst.env('DROP_LARGE_TESTS', default=true) then
+           ['bootstrap-test']),
+  },
+
+  // Runs unit tests only
+  UNIT_TESTS: {
+    type: 'configure',
+    tainted: ['test'],
+    target: 'ALL',
+    config: { DROP_END_TO_END_TESTS: true },
+  },
+
+  // Development target installing all public headers from external libraries,
+  // if they are bundled and not available in the local system. Useful for
+  // setting up IDE code completion.
+  DEV: {
+    type: 'configure',
+    arguments_config: ['OS', 'ARCH'],
+    target: 'all_extern_hdrs',
+    config:
+      {
+        OS: jst.env('OS', default='linux'),
+        ARCH: jst.env('ARCH', default='x86_64'),
+      },
+  },
+
+  'tested jst_backend': {
+    type: @'rules//CC:install-with-deps',
+    'skip-debug-stage': ['yes'],
+    targets: [@'src//:jst_backend'],
+  },
+
+  'tool-under-test': {
+    type: 'install',
+    dirs: [['tested jst_backend', '.']],
+    files: {
+      'bin/tool-under-test': @'src//:jst_backend',
+    },
+  },
+
+  'tested jst': {
+    type: @'rules//CC:install-with-deps',
+    'skip-debug-stage': ['yes'],
+    targets: [@'src//:jst'],
+  },
+
+  'mr-tool-under-test': {
+    type: 'install',
+    arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
+    dirs:
+      if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+        [['tested jst', '.']],
+    files: {
+      'bin/mr-tool-under-test':
+        if jst.env('TEST_BOOTSTRAP_JUST_MR') then
+          @'src//:bin/jst.py'
+        else
+          @'src//:jst',
+    },
+  },
+
+  'catch-main': {
+    type: @'rules//CC:library',
+    name: ['catch-main'],
+    srcs: ['main.cpp'],
+    deps: [
+      @'catch2//:catch2',
+      @'src//src/buildtool/file_system:git_context',
+      @'src//src/buildtool/storage:config',
+      @'src//src/buildtool/storage:file_chunker',
+      @'//utils:log_config',
+      @'//utils:test_env',
+    ],
+    stage: ['test'],
+  },
+
+  'unit tests with compatibility (unconfigured)': {
+    type: @'rules//test:suite',
+    arguments_config: ['TEST_COMPATIBLE_REMOTE'],
+    stage: [
+      if jst.env('TEST_COMPATIBLE_REMOTE') then
+        'compatible'
+      else
+        'native',
+    ],
+    deps: [@'./buildtool:TESTS'],
+  },
+
+  'unit tests with compatibility, compatible': {
+    type: 'configure',
+    arguments_config: ['TEST_ENV'],
+    tainted: ['test'],
+    target: 'unit tests with compatibility (unconfigured)',
+    config: {
+      TEST_COMPATIBLE_REMOTE: true,
+      TEST_ENV: jst.env('TEST_ENV', default={}) + { COMPATIBLE: 'YES' },
+    },
+  },
+
+  'unit tests with compatibility, native': {
+    type: 'configure',
+    arguments_config: ['TEST_ENV'],
+    tainted: ['test'],
+    target: 'unit tests with compatibility (unconfigured)',
+    config: {
+      TEST_COMPATIBLE_REMOTE: false,
+      TEST_ENV: unset_key('COMPATIBLE', jst.env('TEST_ENV', default={})),
+    },
+  },
+
+  'unit tests with compatibility': {
+    type: @'rules//test:suite',
+    stage: ['using-remote'],
+    deps: [
+      'unit tests with compatibility, compatible',
+      'unit tests with compatibility, native',
+    ],
+  },
+
+  justlang_tests: {
+    type: 'install',
+    tainted: ['test'],
+    dirs: [[@'justlang_tests//:ALL', 'other_tools/justlang']],
+  },
+
+  'bootstrap-test': {
+    type: 'configure',
+    tainted: ['test'],
+    target: @'./bootstrap:TESTS',
+    arguments_config: ['TIMEOUT_SCALE'],
+    config: { TIMEOUT_SCALE: 40 * jst.env('TIMEOUT_SCALE', default=1.0) },
+  },
+
+  test_extern_hdrs: {
+    type: @'rules//CC:install-with-deps',
+    'hdrs-only': ['yes'],
+    targets: [@'catch2//:catch2'],
+  },
+
+  all_extern_hdrs: {
+    type: 'install',
+    dirs: [
+      [@'src//:DEV', '.'],
+      ['test_extern_hdrs', '.'],
+    ],
+  },
 }

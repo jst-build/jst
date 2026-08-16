@@ -70,7 +70,7 @@ support different fields. Please consider the following example:
 }
 ```
 
-The target with name `example` uses the rule [`//CC:binary`](https://github.com/just-buildsystem/rules-cc#rule-cc-binary) from repository
+The target with name `example` uses the rule [`//CC:binary`](https://github.com/jst-build/rules-cc#rule-cc-binary) from repository
 `rules`, which is used to build executable binaries from C++ sources. This rule
 supports the additional fields `name`, `srcs`, and many more.
 
@@ -101,7 +101,7 @@ $ cd cpp-tutorial/stage1
 To set up the project, we need to do two things:
 
 1. Specify the *main repository* and the location of targets and sources
-2. Import a [toolchain for C/C++](https://gitee.com/justbuild/toolchains-cc), which includes a [rule set for C/C++](https://github.com/just-buildsystem/rules-cc)
+2. Import a [toolchain for C/C++](https://github.com/jst-build/toolchains-cc/blob/system/README.md), which includes a [rule set for C/C++](https://github.com/jst-build/rules-cc)
 
 Let's start setting up the project by creating the `repos.in.json` file, next
 to the `ROOT` file that marks the workspace root.
@@ -123,23 +123,25 @@ Here, we specify the *main repository* to be `"stage1"`. This repository is
 defined as a *file repository* located at *path* `"."`. We furthermore specify a
 *binding* from the name `"rules"` to the repository `"toolchain"`.
 
-The `"toolchain"` repository itself is just an *alias* for the
-`"system_toolchain"` repository that is imported from the *master branch* of the
-Git repository [toolchains-cc](https://gitee.com/justbuild/toolchains-cc).
+The `"toolchain"` repository is imported directly from the *`system` branch*
+of the Git repository [toolchains-cc](https://github.com/jst-build/toolchains-cc),
+a companion repository that hosts one toolchain profile per branch (e.g.
+`system` for a plain system-compiler toolchain, `clang-amd64-gnu/v18.1.8`
+for a prebuilt Clang toolchain).
 
 ``` jsonc
 { // ...
   "imports": [{
     "source": "git",
-    "branch": "master",
-    "url": "https://gitee.com/justbuild/toolchains-cc.git",
-    "repos": [{"repo": "system_toolchain", "alias": "toolchain"}]
+    "branch": "system",
+    "url": "https://github.com/jst-build/toolchains-cc",
+    "repos": [{"alias": "toolchain"}]
   }],
   // ...
 }
 ```
 
-This repository already includes a suitable [rule set for C/C++](https://github.com/just-buildsystem/rules-cc),
+This repository already includes a suitable [rule set for C/C++](https://github.com/jst-build/rules-cc),
 so it can be directly used as rules for repository `"stage1"`.
 
 Now, the last missing piece is the `repos.json` file. It serves as a
@@ -172,7 +174,7 @@ the binary target in the `src/TARGETS` file.
 }
 ```
 
-The target `helloworld` uses the rule [`//CC:binary`](https://github.com/just-buildsystem/rules-cc#rule-cc-binary) from `rules` and
+The target `helloworld` uses the rule [`//CC:binary`](https://github.com/jst-build/rules-cc#rule-cc-binary) from `rules` and
 specifies the binary `name` and the `srcs` to use.
 
 Use subcommand `build` to build the binary:
@@ -188,12 +190,12 @@ build: `helloworld`.
 `jst` will produce an output similar to this:
 
 ``` plaintext
-INFO: Found 4 repositories to set up
+INFO: Found 4 repositories involved
 INFO: Requested target 'stage1//src:helloworld' with config: {}
-INFO: Discovered 2 actions, 1 trees, 0 blobs
+INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
-        helloworld [6b4830b02b80974739f58659f44e464ee69abc08:16928:x]
+        helloworld [5f64f4c3e9e9c0e66876b3622af84049d2b7d403:16152:x]
 ```
 
 By default, the subcommand `build` will not pollute the local source tree with
@@ -228,7 +230,7 @@ be set by providing a JSON object via the following `jst` options:
 - `-D,--define` for specifying inline JSON on the command line
 
 The full list of variables supported by the imported toolchain can be obtained
-from the [General Configuration](https://gitee.com/justbuild/toolchains-cc#general-configuration) section of the toolchain repository.
+from the [General Configuration](https://github.com/jst-build/toolchains-cc/blob/system/README.md#general-configuration) section of the toolchain repository.
 
 One of the supported variables is `DEBUG`, which is not set by default. Setting
 it to a non-empty map will result in a debug build.
@@ -241,7 +243,7 @@ The `-v` flag shows that the compile command now contains debug flags
 `[..., "-O0", "-g", ...]`.
 
 Similarly, the variables `TARGET_ARCH` and toolchain `FAMILY` must be specified
-for cross-compilation, according to the [system toolchain documentation](https://gitee.com/justbuild/toolchains-cc#system-toolchain).
+for cross-compilation, according to the same [General Configuration](https://github.com/jst-build/toolchains-cc/blob/system/README.md#general-configuration) section.
 
 ```sh
 $ jst build src helloworld -D'{"TARGET_ARCH":"arm64","TOOLCHAIN_CONFIG":{"FAMILY":"gnu"}}' -v
@@ -268,9 +270,8 @@ examples
     └── stage2
         ├── ROOT
         ├── repos.in.json
-        ├── etc
-        │   └── settings
-        │       └── CC/TARGETS
+        ├── config
+        │   └── CC/TARGETS
         └── src
             ├── greet.cpp
             ├── greet.hpp
@@ -309,7 +310,7 @@ description in file `src/TARGETS`:
 }
 ```
 
-The target `libgreet` uses the rule [`//CC:library`](https://github.com/just-buildsystem/rules-cc#rule-cc-library)
+The target `libgreet` uses the rule [`//CC:library`](https://github.com/jst-build/rules-cc#rule-cc-library)
 from binding `rules` to produce the static library `libgreet.a`. To link the
 `helloworld` binary with this library, you only need to add the library target
 to the private dependencies specified in the field `private-deps`.
@@ -345,18 +346,18 @@ targets, we need to add two new repositories to the `repos.in.json` file:
 ``` jsonc
 { // ...
   "repositories": {
-    "etc/settings": {
-      "repository": {"type": "file", "path": "etc/settings"}
+    "config": {
+      "repository": {"type": "file", "path": "config"}
     },
-    "settings": {
+    "rules": {
       "repository": "toolchain",
-      "target_root": "etc/settings",
+      "target_root": "config",
       "rule_root": "toolchain",
       "bindings": {"base": "toolchain"}
     },
     "stage2": {
       "repository": {"type": "file", "path": "."},
-      "bindings": {"rules": "settings"}
+      "bindings": {"rules": "rules"}
     }
   }
 }
@@ -364,22 +365,22 @@ targets, we need to add two new repositories to the `repos.in.json` file:
 
 Those two repositories are:
 
-1. `"etc/settings"` is a *file repository* pointing to *path* `etc/settings`,
+1. `"config"` is a *file repository* pointing to *path* `config`,
     which contains the actual settings in `TARGETS` files.
-2. `"settings"` is a repository based on the previously imported `"toolchain"`
-    repository. Additionally, its `target_root` is replaced to pickup the
-    `TARGETS` files from the `"etc/settings"` *file repository*. However, with
+2. `"rules"` is a repository based on the previously imported `"toolchain"`
+    repository. Additionally, its `target_root` is replaced to pick up the
+    `TARGETS` files from the `"config"` *file repository*. However, with
     the new `target_root`, we cannot access the toolchain's targets anymore,
     which are needed for inheriting the toolchain settings. Therefore, we define
     the binding `"base"` as a way to reference targets from the toolchain.
 
-Finally, the *main repository* `"stage2"` can now use the new `"settings"`
+Finally, the *main repository* `"stage2"` can now use the new `"rules"`
 repository as a binding for rules.
 
 Now run `jst-lock` to apply these changes to the `repos.json` lock-file.
 
 The actual C/C++ settings are defined in target `defaults` of submodule `CC` in
-the settings target root: `etc/settings/CC/TARGETS`.
+the project's own rules target root: `config/CC/TARGETS`.
 
 ``` jsonnet
 // Project flags, common for C and C++
@@ -395,8 +396,8 @@ local common_flags = ['-Wall', '-Werror', '-pedantic'];
 }
 ```
 
-This target uses the rule [`//CC:defaults`](https://github.com/just-buildsystem/rules-cc#rule-cc-defaults)
-to inherit the toolchain settings from `base//CC:defaults` and extend it by
+This target uses the rule [`//CC:defaults`](https://github.com/jst-build/rules-cc#rule-cc-defaults)
+to inherit the toolchain settings from `base//CC:defaults` and extend them with
 project-wide compile flags using the fields `ADD_CFLAGS` and `ADD_CXXFLAGS`.
 
 Now build the `helloworld` target again with the verbose flag `-v`.
@@ -431,10 +432,9 @@ examples
     └── stage3
         ├── ROOT
         ├── repos.in.json
-        ├── etc
-        │   └── settings
-        │       ├── CC/TARGETS
-        │       └── shell/TARGETS
+        ├── config
+        │   ├── CC/TARGETS
+        │   └── shell/TARGETS
         ├── src/
         └── test
             ├── TARGETS
@@ -471,11 +471,11 @@ to define which strings their targets are tainted with.
 
 ### Supported test rules
 
-The [C/C++ rule set](https://github.com/just-buildsystem/rules-cc) supports two
+The [C/C++ rule set](https://github.com/jst-build/rules-cc) supports two
 types of test rules:
 
-1. *Binary test* rule [`//CC/test:test`](https://github.com/just-buildsystem/rules-cc#rule-cctest-test) for testing native libraries
-2. *Shell test* rule [`//shell/test:script`](https://github.com/just-buildsystem/rules-cc#rule-shelltest-script) for running shell tests
+1. *Binary test* rule [`//CC/test:test`](https://github.com/jst-build/rules-cc#rule-cctest-test) for testing native libraries
+2. *Shell test* rule [`//shell/test:script`](https://github.com/jst-build/rules-cc#rule-shelltest-script) for running shell tests
 
 The test report produced by these rules will contain the artifacts `result`,
 `stderr`, `stdout`, `time-start`, and `time-stop`.
@@ -510,7 +510,7 @@ $ jst build test test_libgreet -P stdout
 
 From the output you should see that the test was run successfully.
 
-> Note: you need to create a module in `etc/settings/CC/test/TARGETS` to run
+> Note: you need to create a module in `config/CC/test/TARGETS` to run
 > the toolchain's test launchers.
 
 Now try to change the `test_libgreet.cpp` source file to produce a test failure
@@ -537,7 +537,7 @@ Let's create the shell test for the `helloworld` binary in `test/TARGETS`.
 
 Shell tests contain no sources but a shell script, specified via field `test`.
 The shebang of this script will be ignored. Instead, it will be run with the
-default shell configured in `etc/settings/shell/TARGETS` (typically `/bin/sh`).
+default shell configured in `config/shell/TARGETS` (typically `/bin/sh`).
 For building the report, the test has access to the artifacts produced by the
 targets listed as dependencies in field `deps`, the binary target
 `//src:helloworld`.
@@ -550,12 +550,12 @@ $ jst build test test_helloworld -P stdout
 
 From the output you should see that the test was run successfully.
 
-> Note: you need to create a module in `etc/settings/shell/test/TARGETS` to run
+> Note: you need to create a module in `config/shell/test/TARGETS` to run
 > the toolchain's test launchers.
 
 ### Define a test suite
 
-To not run every test individually, the rule [`//test:suite`](https://github.com/just-buildsystem/rules-cc/tree/master#rule-test-suite)
+To not run every test individually, the rule [`//test:suite`](https://github.com/jst-build/rules-cc#rule-test-suite)
 can be used to combine multiple tests in a single target, the test suite.
 
 Let's create the test suite target `ALL`:
@@ -610,7 +610,7 @@ examples
         ├── TARGETS
         ├── gtest.TARGETS
         ├── repos.in.json
-        ├── etc/
+        ├── config/
         ├── src/
         └── test/
 ```
@@ -638,12 +638,11 @@ is define a new import in `repos.in.json`:
     {/* toolchain */},
     {
       "source": "git",
-      "branch": "v1.4.2",
-      "url": "https://github.com/just-buildsystem/justbuild.git",
+      "branch": "fmt/v12.2.0",
+      "url": "https://github.com/jst-build/imports-cc",
       "repos": [{
-        "repo": "fmt",
         "alias": "fmtlib",
-        "map": {"rules": "toolchain"}
+        "map": {"toolchain": "toolchain"}
       }]
     }
   ],
@@ -651,18 +650,23 @@ is define a new import in `repos.in.json`:
 }
 ```
 
-In this example, we import the repository [`fmt`](https://github.com/just-buildsystem/justbuild/blob/v1.4.2/etc/repos.json#L215) from the Justbuild tag `v1.4.2`.
-The local alias name for this repository is `fmtlib` and we additionally
-specify a `map` to replace their `rules` by our `toolchain`.
+In this example, we import the `fmt/v12.2.0` branch of [imports-cc](https://github.com/jst-build/imports-cc/blob/fmt/v12.2.0/README.md),
+a companion repository that hosts one branch per importable C/C++
+dependency — a `<dep>/<version>` branch (used here) that builds the
+dependency from source, and a `<dep>/system` branch that instead builds
+against the system-installed library via pkg-config. Every dependency
+branch defaults to a standalone system toolchain, so it can be built and
+tested on its own, and exposes that default as its own `"toolchain"`
+repository for remapping. We `map` it to our own already-imported
+`toolchain`, so `fmt` is compiled with the exact same toolchain as the rest
+of this project instead of pulling in a second, undeduped one. The local
+alias name for this repository is `fmtlib`.
 
-> Note: we deliberately not specify `settings` as rules, because we do not
-> want to force the local project settings on the imported project.
-
-Finally, we can add the new `fmtlib` repository to the bindings of the `stage3`
+Finally, we can add the new `fmtlib` repository to the bindings of the `stage4`
 main repository and run `jst-lock`.
 
-Now the `libgreet` target can access the top-level target `fmt-lib` from
-`fmtlib` via `fmtlib//:fmt-lib`.
+Now the `libgreet` target can access the top-level target `fmt` from
+`fmtlib` via `fmtlib//:fmt`.
 
 ``` jsonnet
 { // ...
@@ -675,7 +679,7 @@ Now the `libgreet` target can access the top-level target `fmt-lib` from
     'private-cflags':
       if $'USE_FMTLIB' then ['-DUSE_FMTLIB'],
     'private-deps':
-      if $'USE_FMTLIB' then [@'fmtlib//:fmt-lib'],
+      if $'USE_FMTLIB' then [@'fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers
@@ -769,7 +773,7 @@ The last missing piece is providing the target description in file
 }
 ```
 
-Due to googletest being a CMake project, the rule [`//CC/foreign/cmake:library`](https://github.com/just-buildsystem/rules-cc/tree/master#rule-ccforeigncmake-library) is used.
+As googletest is a CMake project, the rule [`//CC/foreign/cmake:library`](https://github.com/jst-build/rules-cc#rule-ccforeigncmake-library) is used.
 As a project directory, we specify the entire local tree `"."`. Depending on
 the `DEBUG` variable, slightly different CMake defines are used. The output
 artifacts collected for this target are the libraries `libgtest_main.a` and
@@ -871,9 +875,9 @@ Please see the top-level `TARGETS` file.
 }
 ```
 
-The install targets `APPS` and `LIBS` use the rule [`//CC:install-with-deps`](https://github.com/just-buildsystem/rules-cc#rule-cc-install-with-deps)
-to install the export targets listed in the field `targets` including their
-required transient dependencies.
+The install targets `APPS` and `LIBS` use the rule [`//CC:install-with-deps`](https://github.com/jst-build/rules-cc#rule-cc-install-with-deps)
+to install the export targets listed in the field `targets`, including their
+required transitive dependencies.
 
 For instance, building target `APPS` (`helloworld`) with `BUILD_SHARED` will
 install the binary `helloworld` and the shared library `libgreet.so`, because it
@@ -928,9 +932,9 @@ the file `~/.jst-local.json` with content analogous to:
 ``` json
 {
   "local mirrors": {
-    "https://gitee.com/justbuild/toolchains-cc.git": [
-      "https://local-mirror1/justbuild/toolchains-cc.git",
-      "ssh://git@local-mirror2/justbuild/toolchains-cc.git"
+    "https://github.com/jst-build/toolchains-cc.git": [
+      "https://local-mirror1/jst-build/toolchains-cc.git",
+      "ssh://git@local-mirror2/jst-build/toolchains-cc.git"
     ]
   }
 }
@@ -942,6 +946,6 @@ To configure redirections for repositories fetched by shelling out to `git`,
 provide a Git config, e.g., `~/.gitconfig` with content analogous to:
 
 ``` plaintext
-[url "https://local-mirror1/justbuild/toolchains-cc.git"]
-    insteadOf = https://gitee.com/justbuild/toolchains-cc.git
+[url "https://local-mirror1/jst-build/toolchains-cc.git"]
+    insteadOf = https://github.com/jst-build/toolchains-cc.git
 ```

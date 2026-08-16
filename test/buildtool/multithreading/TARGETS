@@ -1,76 +1,82 @@
-{ "task":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["task"]
-  , "srcs": ["task.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/multithreading", "task"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "multithreading"]
-  }
-, "task_system":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["task_system"]
-  , "srcs": ["task_system.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/utils/cpp", "atomic"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    ]
-  , "stage": ["test", "buildtool", "multithreading"]
-  }
-, "async_map_node":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["async_map_node"]
-  , "srcs": ["async_map_node.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/multithreading", "async_map_node"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    ]
-  , "stage": ["test", "buildtool", "multithreading"]
-  }
-, "async_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["async_map"]
-  , "srcs": ["async_map.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/multithreading", "async_map"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    ]
-  , "stage": ["test", "buildtool", "multithreading"]
-  }
-, "async_map_consumer":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["async_map_consumer"]
-  , "srcs": ["async_map_consumer.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/multithreading", "async_map_consumer"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    ]
-  , "stage": ["test", "buildtool", "multithreading"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["multithreading"]
-  , "deps":
-    [ "async_map"
-    , "async_map_consumer"
-    , "async_map_node"
-    , "task"
-    , "task_system"
-    ]
-  }
+{
+  task: {
+    type: @'rules//CC/test:test',
+    name: ['task'],
+    srcs: ['task.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/multithreading:task',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'multithreading'],
+  },
+
+  task_system: {
+    type: @'rules//CC/test:test',
+    name: ['task_system'],
+    srcs: ['task_system.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/utils/cpp:atomic',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+    ],
+    stage: ['test', 'buildtool', 'multithreading'],
+  },
+
+  async_map_node: {
+    type: @'rules//CC/test:test',
+    name: ['async_map_node'],
+    srcs: ['async_map_node.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/multithreading:async_map_node',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+    ],
+    stage: ['test', 'buildtool', 'multithreading'],
+  },
+
+  async_map: {
+    type: @'rules//CC/test:test',
+    name: ['async_map'],
+    srcs: ['async_map.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/multithreading:async_map',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+    ],
+    stage: ['test', 'buildtool', 'multithreading'],
+  },
+
+  async_map_consumer: {
+    type: @'rules//CC/test:test',
+    name: ['async_map_consumer'],
+    srcs: ['async_map_consumer.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/multithreading:async_map_consumer',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+    ],
+    stage: ['test', 'buildtool', 'multithreading'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['multithreading'],
+    deps: [
+      'async_map',
+      'async_map_consumer',
+      'async_map_node',
+      'task',
+      'task_system',
+    ],
+  },
 }

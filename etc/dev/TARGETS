@@ -1,29 +1,31 @@
-{ "proto_bindings":
-  { "type": ["@", "rules", "CC", "library"]
-  , "proto":
-    [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
-    , ["@", "googleapis", "", "google_bytestream_proto"]
-    , ["@", "googleapis", "", "google_api_httpbody_proto"]
-    , ["@", "googleapis", "", "google_api_expr_v1alpha1_checked_proto"]
-    , ["@", "googleapis", "", "google_api_expr_v1alpha1_syntax_proto"]
-    , ["src/buildtool/serve_api/serve_service", "just_serve_proto"]
-    ]
-  }
-, "just-ext-hdrs":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "hdrs-only": ["yes"]
-  , "targets":
-    [ ["@", "ssl", "", "crypto"]
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "cli11", "", "cli11"]
-    , ["@", "json", "", "json"]
-    , ["@", "justlang", "", "preprocessor"]
-    , ["", "libgit2"]
-    , ["", "libcurl"]
-    , ["", "libarchive"]
-    , "proto_bindings"
-    ]
-  }
+{
+  proto_bindings: {
+    type: @'rules//CC:library',
+    proto: [
+      @'bazel_remote_apis//:remote_execution_proto',
+      @'googleapis//:google_bytestream_proto',
+      @'googleapis//:google_api_httpbody_proto',
+      @'googleapis//:google_api_expr_v1alpha1_checked_proto',
+      @'googleapis//:google_api_expr_v1alpha1_syntax_proto',
+      @'//src/buildtool/serve_api/serve_service:just_serve_proto',
+    ],
+  },
+
+  jst_extern_hdrs: {
+    type: @'rules//CC:install-with-deps',
+    'hdrs-only': ['yes'],
+    targets: [
+      @'ssl//:crypto',
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'fmt//:fmt',
+      @'cli11//:cli11',
+      @'json//:json',
+      @'justlang//:preprocessor',
+      @'//:libgit2',
+      @'//:libcurl',
+      @'//:libarchive',
+      'proto_bindings',
+    ],
+  },
 }

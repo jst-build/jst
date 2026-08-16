@@ -1,10 +1,11 @@
-{ "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["build_engine"]
-  , "deps":
-    [ ["./", "base_maps", "TESTS"]
-    , ["./", "expression", "TESTS"]
-    , ["./", "target_map", "TESTS"]
-    ]
-  }
+{
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['build_engine'],
+    deps: [
+      @'./base_maps:TESTS',
+      @'./expression:TESTS',
+      @'./target_map:TESTS',
+    ],
+  },
 }

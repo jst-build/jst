@@ -1,21 +1,23 @@
-{ "test_data":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs":
-    [ "data/executable_file"
-    , "data/non_executable_file"
-    , "data/subdir1/file1"
-    , "data/subdir1/subdir2/file2"
-    ]
-  , "stage": ["test", "buildtool", "execution_api"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["execution_api"]
-  , "deps":
-    [ ["./", "bazel", "TESTS"]
-    , ["./", "common", "TESTS"]
-    , ["./", "execution_service", "TESTS"]
-    , ["./", "local", "TESTS"]
-    ]
-  }
+{
+  test_data: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data/executable_file',
+      'data/non_executable_file',
+      'data/subdir1/file1',
+      'data/subdir1/subdir2/file2',
+    ],
+    stage: ['test', 'buildtool', 'execution_api'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['execution_api'],
+    deps: [
+      @'./bazel:TESTS',
+      @'./common:TESTS',
+      @'./execution_service:TESTS',
+      @'./local:TESTS',
+    ],
+  },
 }

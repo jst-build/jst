@@ -1,267 +1,361 @@
-{ "serve-target-remote-build":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-target-remote-build"]
-  , "test": ["serve_target_remote_build.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos":
-    [ "serve-target-remote-build (repo)"
-    , "serve-target-remote-build (rule)"
-    , "serve-target-remote-build (target)"
-    ]
-  }
-, "serve-target-failed-build":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-target-failed-build"]
-  , "test": ["serve_target_failed_build.sh"]
-  , "deps":
-    [ "data/rules/RULES"
-    , "data/rules/RULES.dummy"
-    , "data/targets/TARGETS"
-    , "serve-tree (archive)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos":
-    [ "serve-target-remote-build (repo)"
-    , "serve-target-failed-build (rule)"
-    , "serve-target-remote-build (target)"
-    ]
-  }
-, "serve-target-remote-build (repo)":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "out_dirs": ["src"]
-  , "cmds":
-    [ "mkdir -p src"
-    , "for i in `seq 1 5` ; do echo $i > src/$i.txt ; done"
-    , "mkdir src/subdir"
-    , "for i in `seq 6 10` ; do echo $i > src/subdir/sub-$i.txt ; done"
-    ]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "serve-target-remote-build (target)":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data/targets/TARGETS"]
-  , "stage": ["test", "end-to-end", "serve-service"]
-  }
-, "serve-target-remote-build (rule)":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data/rules/RULES"]
-  , "stage": ["test", "end-to-end", "serve-service"]
-  }
-, "serve-target-failed-build (rule)":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data/rules/RULES.dummy"]
-  , "stage": ["test", "end-to-end", "serve-service"]
-  }
-, "serve-target-cache-hit":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-target-cache-hit"]
-  , "test": ["serve_target_cache_hit.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "serve-start-execute":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["serve-start-execute"]
-  , "test": ["serve_start_execute.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "serve-start-execute-sharding":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["serve-start-execute-sharding"]
-  , "test": ["serve_start_execute_sharding.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "serve-export-deps":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-export-deps"]
-  , "test": ["serve_export_deps.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "serve-tree (data)":
-  {"type": "install", "dirs": [["serve-target-remote-build (repo)", "repo"]]}
-, "serve-tree (archive)":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "outs": ["src.tar"]
-  , "cmds": ["tar cf src.tar repo"]
-  , "deps": ["serve-tree (data)"]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "serve-tree":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-tree"]
-  , "test": ["serve-tree.sh"]
-  , "deps":
-    [ "data/targets/TARGETS.tree"
-    , "serve-tree (archive)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos": ["serve-tree (archive)"]
-  }
-, "serve-target-remote-build-dispatch (data)":
-  { "type": "install"
-  , "tainted": ["test"]
-  , "files": {"TARGETS": "data/targets/TARGETS.dispatch"}
-  }
-, "serve-target-remote-build-dispatch":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-target-remote-build-dispatch"]
-  , "test": ["serve_target_remote_build_dispatch.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": ["serve-target-remote-build-dispatch (data)"]
-  }
-, "serve-query-target-cache-value":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-query-target-cache-value"]
-  , "test": ["serve_query_target_cache_value.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "describe (data)":
-  { "type": "install"
-  , "files": {"ROOT": "data/ROOT", "TARGETS": "data/targets/TARGETS.describe"}
-  }
-, "describe (locally installed)":
-  {"type": "install", "dirs": [["describe (data)", "repo"]]}
-, "describe":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["describe"]
-  , "test": ["describe.sh"]
-  , "deps":
-    [ "describe (locally installed)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos": ["describe (data)"]
-  , "keep": ["out/describe.orig", "out/describe"]
-  }
-, "failure-report (data)":
-  { "type": "install"
-  , "files": {"ROOT": "data/ROOT", "TARGETS": "data/targets/TARGETS.fail"}
-  }
-, "failure-report":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["failure-report"]
-  , "test": ["failure-report.sh"]
-  , "deps":
-    [ "describe (locally installed)"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    ]
-  , "repos": ["failure-report (data)"]
-  , "keep": ["out/log", "out/serve.log", "out/failure.log"]
-  }
-, "deep tree (data)":
-  { "type": "install"
-  , "files":
-    { "ROOT": "data/ROOT"
-    , "TARGETS": "data/targets/TARGETS.deep"
-    , "deep-output.py": "data/deep-output.py"
-    }
-  }
-, "deep tree":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["deep-tree"]
-  , "test": ["deep-tree.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": ["deep tree (data)"]
-  , "keep-dirs": ["out"]
-  }
-, "interruption-test (data)":
-  { "type": "install"
-  , "files": {"ROOT": "data/ROOT", "TARGETS": "data/targets/TARGETS.slow"}
-  }
-, "interruption-test":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["interruption-test"]
-  , "test": ["interruption-test.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": ["interruption-test (data)"]
-  , "keep-dirs": ["out"]
-  }
-, "load test (data)":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "outs": ["ROOT", "TARGETS"]
-  , "cmds": ["touch ROOT", "python3 wide-deep-targets.py"]
-  , "deps": ["wide-deep-targets.py"]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "load test":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["load-test"]
-  , "test": ["load-test.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": ["load test (data)"]
-  , "keep-dirs": ["out"]
-  }
-, "serve-many-targets (data)":
-  { "type": "install"
-  , "files": {"ROOT": "data/ROOT", "TARGETS": "data/targets/TARGETS.transform"}
-  }
-, "serve-many-targets (data in module)":
-  { "type": "install"
-  , "files":
-    {"ROOT": "data/ROOT", "module/TARGETS": "data/targets/TARGETS.transform"}
-  }
-, "serve-many-targets":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-many-targets"]
-  , "test": ["serve_many_targets.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos":
-    ["serve-many-targets (data)", "serve-many-targets (data in module)"]
-  }
-, "deduplication-of-serve-requests":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["deduplication-of-serve-requests"]
-  , "test": ["deduplication_of_serve_requests.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": ["serve-many-targets (data)"]
-  }
-, "TESTS (unconfigured)":
-  { "type": ["@", "rules", "test", "matrix"]
-  , "stage": ["serve-service"]
-  , "deps":
-    [ "deduplication-of-serve-requests"
-    , "deep tree"
-    , "describe"
-    , "failure-report"
-    , "interruption-test"
-    , "load test"
-    , "serve-export-deps"
-    , "serve-many-targets"
-    , "serve-query-target-cache-value"
-    , "serve-start-execute"
-    , "serve-start-execute-sharding"
-    , "serve-target-cache-hit"
-    , "serve-target-failed-build"
-    , "serve-target-remote-build"
-    , "serve-target-remote-build-dispatch"
-    , "serve-tree"
-    , ["./", "serve-archive-root", "TESTS"]
-    , ["./", "serve-distdir-root", "TESTS"]
-    , ["./", "serve-file-root", "TESTS"]
-    , ["./", "serve-git-root", "TESTS"]
-    , ["./", "serve-git-tree-root", "TESTS"]
-    ]
-  }
-, "TESTS":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": "TESTS (unconfigured)"
-  , "config":
-    { "type": "'"
-    , "$1":
-      { "TEST_MATRIX":
-        { "TEST_STANDALONE_SERVE":
-          {"standalone-serve": true, "separate-remote": false}
-        }
-      }
-    }
-  }
+{
+  'serve-target-remote-build': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-target-remote-build'],
+    test: ['serve_target_remote_build.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: [
+      'serve-target-remote-build (repo)',
+      'serve-target-remote-build (rule)',
+      'serve-target-remote-build (target)',
+    ],
+  },
+
+  'serve-target-failed-build': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-target-failed-build'],
+    test: ['serve_target_failed_build.sh'],
+    deps: [
+      'data/rules/RULES',
+      'data/rules/RULES.dummy',
+      'data/targets/TARGETS',
+      'serve-tree (archive)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: [
+      'serve-target-remote-build (repo)',
+      'serve-target-failed-build (rule)',
+      'serve-target-remote-build (target)',
+    ],
+  },
+
+  'serve-target-remote-build (repo)': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    out_dirs: ['src'],
+    cmds: [|||
+      mkdir -p src
+      for i in `seq 1 5` ; do echo $i > src/$i.txt ; done
+      mkdir src/subdir
+      for i in `seq 6 10` ; do echo $i > src/subdir/sub-$i.txt ; done
+    |||],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  'serve-target-remote-build (target)': {
+    type: @'rules//data:staged',
+    srcs: ['data/targets/TARGETS'],
+    stage: ['test', 'end-to-end', 'serve-service'],
+  },
+
+  'serve-target-remote-build (rule)': {
+    type: @'rules//data:staged',
+    srcs: ['data/rules/RULES'],
+    stage: ['test', 'end-to-end', 'serve-service'],
+  },
+
+  'serve-target-failed-build (rule)': {
+    type: @'rules//data:staged',
+    srcs: ['data/rules/RULES.dummy'],
+    stage: ['test', 'end-to-end', 'serve-service'],
+  },
+
+  'serve-target-cache-hit': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-target-cache-hit'],
+    test: ['serve_target_cache_hit.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'serve-start-execute': {
+    type: @'rules//shell/test:script',
+    name: ['serve-start-execute'],
+    test: ['serve_start_execute.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'serve-start-execute-sharding': {
+    type: @'rules//shell/test:script',
+    name: ['serve-start-execute-sharding'],
+    test: ['serve_start_execute_sharding.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'serve-export-deps': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-export-deps'],
+    test: ['serve_export_deps.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'serve-tree (data)': {
+    type: 'install',
+    dirs: [['serve-target-remote-build (repo)', 'repo']],
+  },
+
+  'serve-tree (archive)': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    outs: ['src.tar'],
+    cmds: ['tar cf src.tar repo'],
+    deps: ['serve-tree (data)'],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  'serve-tree': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-tree'],
+    test: ['serve-tree.sh'],
+    deps: [
+      'data/targets/TARGETS.tree',
+      'serve-tree (archive)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['serve-tree (archive)'],
+  },
+
+  'serve-target-remote-build-dispatch (data)': {
+    type: 'install',
+    tainted: ['test'],
+    files: {
+      TARGETS: 'data/targets/TARGETS.dispatch',
+    },
+  },
+
+  'serve-target-remote-build-dispatch': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-target-remote-build-dispatch'],
+    test: ['serve_target_remote_build_dispatch.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['serve-target-remote-build-dispatch (data)'],
+  },
+
+  'serve-query-target-cache-value': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-query-target-cache-value'],
+    test: ['serve_query_target_cache_value.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'describe (data)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      TARGETS: 'data/targets/TARGETS.describe',
+    },
+  },
+
+  'describe (locally installed)': {
+    type: 'install',
+    dirs: [['describe (data)', 'repo']],
+  },
+
+  describe: {
+    type: @'//end-to-end:with serve',
+    name: ['describe'],
+    test: ['describe.sh'],
+    deps: [
+      'describe (locally installed)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['describe (data)'],
+    keep: [
+      'out/describe.orig',
+      'out/describe',
+    ],
+  },
+
+  'failure-report (data)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      TARGETS: 'data/targets/TARGETS.fail',
+    },
+  },
+
+  'failure-report': {
+    type: @'//end-to-end:with serve',
+    name: ['failure-report'],
+    test: ['failure-report.sh'],
+    deps: [
+      'describe (locally installed)',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['failure-report (data)'],
+    keep: [
+      'out/log',
+      'out/serve.log',
+      'out/failure.log',
+    ],
+  },
+
+  'deep tree (data)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      TARGETS: 'data/targets/TARGETS.deep',
+      'deep-output.py': 'data/deep-output.py',
+    },
+  },
+
+  'deep tree': {
+    type: @'//end-to-end:with serve',
+    name: ['deep-tree'],
+    test: ['deep-tree.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['deep tree (data)'],
+    'keep-dirs': ['out'],
+  },
+
+  'interruption-test (data)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      TARGETS: 'data/targets/TARGETS.slow',
+    },
+  },
+
+  'interruption-test': {
+    type: @'//end-to-end:with serve',
+    name: ['interruption-test'],
+    test: ['interruption-test.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['interruption-test (data)'],
+    'keep-dirs': ['out'],
+  },
+
+  'load test (data)': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    outs: ['ROOT', 'TARGETS'],
+    cmds: [|||
+      touch ROOT
+      python3 wide-deep-targets.py
+    |||],
+    deps: ['wide-deep-targets.py'],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  'load test': {
+    type: @'//end-to-end:with serve',
+    name: ['load-test'],
+    test: ['load-test.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['load test (data)'],
+    'keep-dirs': ['out'],
+  },
+
+  'serve-many-targets (data)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      TARGETS: 'data/targets/TARGETS.transform',
+    },
+  },
+
+  'serve-many-targets (data in module)': {
+    type: 'install',
+    files: {
+      ROOT: 'data/ROOT',
+      'module/TARGETS': 'data/targets/TARGETS.transform',
+    },
+  },
+
+  'serve-many-targets': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-many-targets'],
+    test: ['serve_many_targets.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: [
+      'serve-many-targets (data)',
+      'serve-many-targets (data in module)',
+    ],
+  },
+
+  'deduplication-of-serve-requests': {
+    type: @'//end-to-end:with serve',
+    name: ['deduplication-of-serve-requests'],
+    test: ['deduplication_of_serve_requests.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: ['serve-many-targets (data)'],
+  },
+
+  'TESTS (unconfigured)': {
+    type: @'rules//test:matrix',
+    stage: ['serve-service'],
+    deps: [
+      'deduplication-of-serve-requests',
+      'deep tree',
+      'describe',
+      'failure-report',
+      'interruption-test',
+      'load test',
+      'serve-export-deps',
+      'serve-many-targets',
+      'serve-query-target-cache-value',
+      'serve-start-execute',
+      'serve-start-execute-sharding',
+      'serve-target-cache-hit',
+      'serve-target-failed-build',
+      'serve-target-remote-build',
+      'serve-target-remote-build-dispatch',
+      'serve-tree',
+      @'./serve-archive-root:TESTS',
+      @'./serve-distdir-root:TESTS',
+      @'./serve-file-root:TESTS',
+      @'./serve-git-root:TESTS',
+      @'./serve-git-tree-root:TESTS',
+    ],
+  },
+
+  TESTS: {
+    type: 'configure',
+    tainted: ['test'],
+    target: 'TESTS (unconfigured)',
+    config: {
+      TEST_MATRIX: {
+        TEST_STANDALONE_SERVE: {
+          'standalone-serve': true,
+          'separate-remote': false,
+        },
+      },
+    },
+  },
 }

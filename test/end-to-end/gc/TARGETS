@@ -1,49 +1,71 @@
-{ "basic":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["basic"]
-  , "test": ["basic.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "compactification":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["compactification"]
-  , "test": ["compactification.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "export":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["export"]
-  , "test": ["export.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "tc-deps":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["tc-deps"]
-  , "test": ["tc-deps.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "reconstruct-executable":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["reconstruct-executable"]
-  , "test": ["reconstruct-executable.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "gc-all":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["gc-all"]
-  , "test": ["gc-all.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["gc"]
-  , "deps":
-    [ "basic"
-    , "compactification"
-    , "export"
-    , "gc-all"
-    , "reconstruct-executable"
-    , "tc-deps"
-    ]
-  }
+{
+  basic: {
+    type: @'rules//shell/test:script',
+    name: ['basic'],
+    test: ['basic.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  compactification: {
+    type: @'rules//shell/test:script',
+    name: ['compactification'],
+    test: ['compactification.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  export: {
+    type: @'rules//shell/test:script',
+    name: ['export'],
+    test: ['export.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'tc-deps': {
+    type: @'rules//shell/test:script',
+    name: ['tc-deps'],
+    test: ['tc-deps.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'reconstruct-executable': {
+    type: @'rules//shell/test:script',
+    name: ['reconstruct-executable'],
+    test: ['reconstruct-executable.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'gc-all': {
+    type: @'rules//shell/test:script',
+    name: ['gc-all'],
+    test: ['gc-all.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['gc'],
+    deps: [
+      'basic',
+      'compactification',
+      'export',
+      'gc-all',
+      'reconstruct-executable',
+      'tc-deps',
+    ],
+  },
 }

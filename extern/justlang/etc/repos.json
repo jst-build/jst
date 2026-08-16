@@ -1,15 +1,15 @@
 {
   "main": "justlang",
   "repositories": {
-    "defaults": {
+    "config": {
       "repository": {
         "type": "file",
-        "path": "etc/defaults"
+        "path": "etc/config"
       }
     },
-    "rules-justlang": {
+    "rules": {
       "repository": "toolchain",
-      "target_root": "defaults",
+      "target_root": "config",
       "rule_root": "toolchain",
       "bindings": {
         "toolchain": "toolchain"
@@ -21,7 +21,7 @@
         "path": "."
       },
       "bindings": {
-        "rules": "rules-justlang",
+        "rules": "rules",
         "json": "json"
       }
     },
@@ -31,7 +31,7 @@
         "path": "test"
       },
       "bindings": {
-        "rules": "rules-justlang",
+        "rules": "rules",
         "json": "json",
         "catch2": "catch2",
         "justlang": "justlang"
@@ -43,33 +43,56 @@
         "path": "lint"
       },
       "bindings": {
-        "rules": "rules-justlang",
+        "rules": "rules",
         "clang": "clang-18",
         "justlang": "justlang",
         "tests": "tests"
       }
     },
-    "rules": {
+    "toolchain": {
+      "repository": "toolchain/rules",
+      "target_root": "toolchain/targets",
+      "rule_root": "toolchain/rules"
+    },
+    "toolchain/rules": {
       "repository": {
         "type": "git",
-        "repository": "https://github.com/just-buildsystem/rules-cc",
+        "repository": "https://github.com/jst-build/rules-cc",
         "branch": "master",
-        "commit": "e0a16722aa13d82779ea1297aa63d8be7dff44c5",
+        "commit": "c18d9413f8759f8c261a3af06edf0861ee9e2492",
         "subdir": "rules"
       }
     },
-    "toolchain": {
+    "toolchain/targets": {
       "repository": {
         "type": "git",
-        "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "v1.6.0",
-        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
-        "subdir": "rules"
+        "repository": "https://github.com/jst-build/toolchains-cc.git",
+        "branch": "system",
+        "commit": "5505965c61432dea016055d0f12f483df40eb9ff",
+        "subdir": "targets"
+      }
+    },
+    "clang-18": {
+      "repository": {
+        "type": "archive",
+        "fetch": "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
+        "sha256": "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
+        "content": "495971397e90fef8f731a1f1ad3ca1d25e845b9a",
+        "subdir": "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04"
       },
-      "target_root": "json/defaults",
-      "rule_root": "toolchain",
+      "target_root": "clang-18/targets",
+      "target_file_name": "clang.TARGETS",
       "bindings": {
-        "toolchain": "json/toolchain"
+        "rules": "toolchain"
+      }
+    },
+    "clang-18/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/toolchains-cc.git",
+        "branch": "clang-amd64-gnu/v18.1.8",
+        "commit": "edbde570e42a23221098d41801575981f3a84ba7",
+        "subdir": "targets"
       }
     },
     "json": {
@@ -81,38 +104,18 @@
         "sha512": "8d923e2586acf736fc1886bf1839ca0126444ec60ce93a4bd18c21eef4475dff6f608203e42bf4968878dc50727a8c20c517dd8c1ac5c6b0bb6a95f2dce5546e",
         "subdir": "include/nlohmann"
       },
-      "target_root": "json/import targets",
-      "target_file_name": "TARGETS.json",
+      "target_root": "json/targets",
       "bindings": {
         "rules": "toolchain"
       }
     },
-    "json/toolchain": {
+    "json/targets": {
       "repository": {
         "type": "git",
-        "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "v1.6.0",
-        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
-        "subdir": "etc/toolchain"
-      },
-      "rule_root": "toolchain"
-    },
-    "json/defaults": {
-      "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "v1.6.0",
-        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
-        "subdir": "etc/defaults"
-      }
-    },
-    "json/import targets": {
-      "repository": {
-        "type": "git",
-        "repository": "https://github.com/just-buildsystem/justbuild",
-        "branch": "v1.6.0",
-        "commit": "7e5752fc8d56faedc661d1056bc7ec45ea59e704",
-        "subdir": "etc/import"
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "nlohmann_json/v3.11.3",
+        "commit": "f4208d0cda1dbf9a770a52afbf06078058db71e3",
+        "subdir": "targets"
       }
     },
     "catch2": {
@@ -124,36 +127,18 @@
         "sha512": "57c996f679cbad212cb0fde39e506bade37bd559c0e93e20f407f2a2f029e98b78661e10257f9c8e4cb5fd7d52d0ea1eae3d4a1f989c6d66fcb281e32e1688f6",
         "subdir": "Catch2-3.5.3"
       },
-      "target_root": "json/import targets",
-      "target_file_name": "TARGETS.catch2",
+      "target_root": "catch2/targets",
       "bindings": {
         "rules": "toolchain"
       }
     },
-    "clang-18": {
-      "repository": {
-        "type": "archive",
-        "fetch": "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
-        "sha256": "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
-        "content": "495971397e90fef8f731a1f1ad3ca1d25e845b9a",
-        "subdir": "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04"
-      },
-      "target_root": "clang-18/externals_root",
-      "target_file_name": "clang.TARGETS",
-      "bindings": {
-        "rules": "rules"
-      }
-    },
-    "clang-18/externals_root": {
+    "catch2/targets": {
       "repository": {
         "type": "git",
-        "repository": "https://github.com/just-buildsystem/toolchains-cc.git",
-        "branch": "master",
-        "commit": "94fb576e398c4c195c19733592c8bc51fb4c3d6b",
-        "mirrors": [
-          "https://gitee.com/justbuild/toolchains-cc.git"
-        ],
-        "subdir": "externals"
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "catch2/v3.5.3",
+        "commit": "e35bbc561cc40d0d89c401ebf58e7e2da6c7ddbb",
+        "subdir": "targets"
       }
     }
   }

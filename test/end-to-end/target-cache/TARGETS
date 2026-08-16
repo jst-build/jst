@@ -1,64 +1,79 @@
-{ "target-cache-hit":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["target-cache-hit"]
-  , "test": ["target-cache-hit.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "artifacts-sync":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["artifacts-sync"]
-  , "test": ["artifacts-sync.sh"]
-  , "deps":
-    [ "bootstrap-src-staged"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    , ["./", "data", "greetlib"]
-    , ["./", "data", "pydicts"]
-    ]
-  }
-, "serve-sync":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["serve-sync"]
-  , "test": ["serve-sync.sh"]
-  , "deps":
-    [ "bootstrap-src-staged"
-    , ["", "mr-tool-under-test"]
-    , ["", "tool-under-test"]
-    , ["./", "data", "lib with generated hdr"]
-    ]
-  , "repos": [["./", "data", "lib with generated hdr"]]
-  }
-, "export-extern":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["export-extern"]
-  , "test": ["export-extern.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "bootstrap-src-staged":
-  { "type": "install"
-  , "tainted": ["test"]
-  , "dirs": [[["@", "src", "", "bootstrap-src"], "src"]]
-  }
-, "check-sharding":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["check-sharding"]
-  , "test": ["check-sharding.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["target-cache"]
-  , "arguments_config": ["TEST_BOOTSTRAP_JUST_MR"]
-  , "deps":
-    { "type": "++"
-    , "$1":
-      [ ["target-cache-hit"]
-      , { "type": "if"
-        , "cond": {"type": "var", "name": "TEST_BOOTSTRAP_JUST_MR"}
-        , "then": []
-        , "else": ["artifacts-sync", "serve-sync", "check-sharding"]
-        }
+{
+  'target-cache-hit': {
+    type: @'//end-to-end:with remote',
+    name: ['target-cache-hit'],
+    test: ['target-cache-hit.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'artifacts-sync': {
+    type: @'rules//shell/test:script',
+    name: ['artifacts-sync'],
+    test: ['artifacts-sync.sh'],
+    deps: [
+      'bootstrap-src-staged',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+      @'./data:greetlib',
+      @'./data:pydicts',
+    ],
+  },
+
+  'serve-sync': {
+    type: @'//end-to-end:with serve',
+    name: ['serve-sync'],
+    test: ['serve-sync.sh'],
+    deps: [
+      'bootstrap-src-staged',
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+      @'./data:lib with generated hdr',
+    ],
+    repos: [@'./data:lib with generated hdr'],
+  },
+
+  'export-extern': {
+    type: @'rules//shell/test:script',
+    name: ['export-extern'],
+    test: ['export-extern.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  'bootstrap-src-staged': {
+    type: 'install',
+    tainted: ['test'],
+    dirs: [[@'src//:bootstrap-src', 'src']],
+  },
+
+  'check-sharding': {
+    type: @'rules//shell/test:script',
+    name: ['check-sharding'],
+    test: ['check-sharding.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['target-cache'],
+    arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
+    deps:
+      [
+        'target-cache-hit',
       ]
-    }
-  }
+      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+           [
+             'artifacts-sync',
+             'serve-sync',
+             'check-sharding',
+           ]),
+  },
 }

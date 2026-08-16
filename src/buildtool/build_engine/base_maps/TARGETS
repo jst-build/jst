@@ -1,204 +1,216 @@
-{ "module_name":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["module_name"]
-  , "hdrs": ["module_name.hpp"]
-  , "deps": [["src/utils/cpp", "hash_combine"]]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "directory_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["directory_map"]
-  , "hdrs": ["directory_map.hpp"]
-  , "srcs": ["directory_map.cpp"]
-  , "deps":
-    [ "module_name"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  , "private-deps": [["@", "fmt", "", "fmt"]]
-  }
-, "json_file_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["json_file_map"]
-  , "hdrs": ["json_file_map.hpp"]
-  , "deps":
-    [ "module_name"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "targets_file_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["targets_file_map"]
-  , "hdrs": ["targets_file_map.hpp"]
-  , "deps":
-    [ "json_file_map"
-    , "module_name"
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "entity_name_data":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["entity_name_data"]
-  , "hdrs": ["entity_name_data.hpp"]
-  , "srcs": ["entity_name_data.cpp"]
-  , "deps":
-    [ "module_name"
-    , ["@", "json", "", "json"]
-    , ["@", "justlang", "", "ref"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "entity_name":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["entity_name"]
-  , "hdrs": ["entity_name.hpp"]
-  , "deps":
-    [ "entity_name_data"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/common", "config"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "source_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["source_map"]
-  , "hdrs": ["source_map.hpp"]
-  , "srcs": ["source_map.cpp"]
-  , "deps":
-    [ "directory_map"
-    , "entity_name_data"
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  , "private-deps":
-    [ "module_name"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/build_engine/analysed_target", "graph_information"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "tree"]
-    , ["src/buildtool/common", "tree_overlay"]
-    ]
-  }
-, "field_reader":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["field_reader"]
-  , "hdrs": ["field_reader.hpp"]
-  , "deps":
-    [ "entity_name"
-    , "entity_name_data"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "expression_function":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["expression_function"]
-  , "hdrs": ["expression_function.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/build_engine/expression", "linked_map"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "gsl"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "expression_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["expression_map"]
-  , "hdrs": ["expression_map.hpp"]
-  , "srcs": ["expression_map.cpp"]
-  , "deps":
-    [ "entity_name_data"
-    , "expression_function"
-    , "json_file_map"
-    , "module_name"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  , "private-deps": ["field_reader"]
-  }
-, "user_rule":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["user_rule"]
-  , "hdrs": ["user_rule.hpp"]
-  , "deps":
-    [ "entity_name_data"
-    , "expression_function"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/utils/cpp", "concepts"]
-    , ["src/utils/cpp", "gsl"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  }
-, "rule_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["rule_map"]
-  , "hdrs": ["rule_map.hpp"]
-  , "srcs": ["rule_map.cpp"]
-  , "deps":
-    [ "entity_name_data"
-    , "expression_map"
-    , "json_file_map"
-    , "module_name"
-    , "user_rule"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "base_maps"]
-  , "private-deps":
-    [ "entity_name"
-    , "expression_function"
-    , "field_reader"
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    ]
-  }
+{
+  module_name: {
+    type: @'rules//CC:library',
+    name: ['module_name'],
+    hdrs: ['module_name.hpp'],
+    deps: [@'//src/utils/cpp:hash_combine'],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  directory_map: {
+    type: @'rules//CC:library',
+    name: ['directory_map'],
+    hdrs: ['directory_map.hpp'],
+    srcs: ['directory_map.cpp'],
+    deps: [
+      'module_name',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+    'private-deps': [@'fmt//:fmt'],
+  },
+
+  json_file_map: {
+    type: @'rules//CC:library',
+    name: ['json_file_map'],
+    hdrs: ['json_file_map.hpp'],
+    deps: [
+      'module_name',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  targets_file_map: {
+    type: @'rules//CC:library',
+    name: ['targets_file_map'],
+    hdrs: ['targets_file_map.hpp'],
+    deps: [
+      'json_file_map',
+      'module_name',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  entity_name_data: {
+    type: @'rules//CC:library',
+    name: ['entity_name_data'],
+    hdrs: ['entity_name_data.hpp'],
+    srcs: ['entity_name_data.cpp'],
+    deps: [
+      'module_name',
+      @'json//:json',
+      @'justlang//:ref',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  entity_name: {
+    type: @'rules//CC:library',
+    name: ['entity_name'],
+    hdrs: ['entity_name.hpp'],
+    deps: [
+      'entity_name_data',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/common:config',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  source_map: {
+    type: @'rules//CC:library',
+    name: ['source_map'],
+    hdrs: ['source_map.hpp'],
+    srcs: ['source_map.cpp'],
+    deps: [
+      'directory_map',
+      'entity_name_data',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+    'private-deps': [
+      'module_name',
+      @'fmt//:fmt',
+      @'//src/buildtool/build_engine/analysed_target:graph_information',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:tree',
+      @'//src/buildtool/common:tree_overlay',
+    ],
+  },
+
+  field_reader: {
+    type: @'rules//CC:library',
+    name: ['field_reader'],
+    hdrs: ['field_reader.hpp'],
+    deps: [
+      'entity_name',
+      'entity_name_data',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  expression_function: {
+    type: @'rules//CC:library',
+    name: ['expression_function'],
+    hdrs: ['expression_function.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/build_engine/expression:linked_map',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:gsl',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  expression_map: {
+    type: @'rules//CC:library',
+    name: ['expression_map'],
+    hdrs: ['expression_map.hpp'],
+    srcs: ['expression_map.cpp'],
+    deps: [
+      'entity_name_data',
+      'expression_function',
+      'json_file_map',
+      'module_name',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+    'private-deps': ['field_reader'],
+  },
+
+  user_rule: {
+    type: @'rules//CC:library',
+    name: ['user_rule'],
+    hdrs: ['user_rule.hpp'],
+    deps: [
+      'entity_name_data',
+      'expression_function',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/utils/cpp:concepts',
+      @'//src/utils/cpp:gsl',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  rule_map: {
+    type: @'rules//CC:library',
+    name: ['rule_map'],
+    hdrs: ['rule_map.hpp'],
+    srcs: ['rule_map.cpp'],
+    deps: [
+      'entity_name_data',
+      'expression_map',
+      'json_file_map',
+      'module_name',
+      'user_rule',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+    'private-deps': [
+      'entity_name',
+      'expression_function',
+      'field_reader',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+    ],
+  },
 }

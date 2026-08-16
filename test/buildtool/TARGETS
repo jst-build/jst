@@ -1,21 +1,22 @@
-{ "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["buildtool"]
-  , "deps":
-    [ ["./", "build_engine", "TESTS"]
-    , ["./", "common", "TESTS"]
-    , ["./", "crypto", "TESTS"]
-    , ["./", "execution_api", "TESTS"]
-    , ["./", "execution_engine", "TESTS"]
-    , ["./", "file_system", "TESTS"]
-    , ["./", "graph_traverser", "TESTS"]
-    , ["./", "logging", "TESTS"]
-    , ["./", "main", "TESTS"]
-    , ["./", "multithreading", "TESTS"]
-    , ["./", "serve_api", "TESTS"]
-    , ["./", "storage", "TESTS"]
-    , ["./", "system", "TESTS"]
-    , ["./", "tree_structure", "TESTS"]
-    ]
-  }
+{
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['buildtool'],
+    deps: [
+      @'./build_engine:TESTS',
+      @'./common:TESTS',
+      @'./crypto:TESTS',
+      @'./execution_api:TESTS',
+      @'./execution_engine:TESTS',
+      @'./file_system:TESTS',
+      @'./graph_traverser:TESTS',
+      @'./logging:TESTS',
+      @'./main:TESTS',
+      @'./multithreading:TESTS',
+      @'./serve_api:TESTS',
+      @'./storage:TESTS',
+      @'./system:TESTS',
+      @'./tree_structure:TESTS',
+    ],
+  },
 }

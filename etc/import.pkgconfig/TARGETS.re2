@@ -1,3 +1,0 @@
-{ "re2":
-  {"type": ["@", "rules", "CC/pkgconfig", "system_library"], "name": ["re2"]}
-}

@@ -8,17 +8,10 @@
     ],
   },
 
+  // Restage Clang installation (linters expect clang in directory 'toolchain')
   clang: {
-    type: 'generic',
-    deps: [@'clang//:install_dir'],
-    cmds: [
-      // rename install dir, as linters expect clang in directory 'toolchain'
-      |||
-        rm -rf toolchain
-        mv installed_clang toolchain
-      |||,
-    ],
-    out_dirs: ['toolchain'],
+    type: 'install',
+    dirs: [[@'clang//:INSTALL', 'toolchain']],
   },
 
   run_clang_tidy: {

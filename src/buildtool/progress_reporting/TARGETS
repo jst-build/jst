@@ -1,88 +1,94 @@
-{ "progress":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["progress"]
-  , "hdrs": ["progress.hpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "deps":
-    [ "task_tracker"
-    , ["src/buildtool/build_engine/target_map", "configured_target"]
-    ]
-  }
-, "task_tracker":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["task_tracker"]
-  , "hdrs": ["task_tracker.hpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "deps":
-    [ ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
-, "progress_reporter":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["progress_reporter"]
-  , "hdrs": ["progress_reporter.hpp"]
-  , "srcs": ["progress_reporter.cpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "deps":
-    [ "base_progress_reporter"
-    , "progress"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "private-deps":
-    [ "task_tracker"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/target_map", "configured_target"]
-    , ["src/buildtool/logging", "log_level"]
-    ]
-  }
-, "base_progress_reporter":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["base_progress_reporter"]
-  , "hdrs": ["base_progress_reporter.hpp"]
-  , "srcs": ["base_progress_reporter.cpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "private-deps":
-    [ ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
-, "exports_progress_reporter":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["exports_progress_reporter"]
-  , "hdrs": ["exports_progress_reporter.hpp"]
-  , "srcs": ["exports_progress_reporter.cpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "deps":
-    [ "base_progress_reporter"
-    , "progress"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "private-deps":
-    [ "task_tracker"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/logging", "log_level"]
-    ]
-  }
-, "dynamic_progress_reporter":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["dynamic_progress_reporter"]
-  , "hdrs": ["dynamic_progress_reporter.hpp"]
-  , "srcs": ["dynamic_progress_reporter.cpp"]
-  , "stage": ["src", "buildtool", "progress_reporting"]
-  , "deps":
-    [ "progress"
-    , "base_progress_reporter"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "private-deps": [["@", "fmt", "", "fmt"]]
-  }
+{
+  progress: {
+    type: @'rules//CC:library',
+    name: ['progress'],
+    hdrs: ['progress.hpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      'task_tracker',
+      @'//src/buildtool/build_engine/target_map:configured_target',
+    ],
+  },
+
+  task_tracker: {
+    type: @'rules//CC:library',
+    name: ['task_tracker'],
+    hdrs: ['task_tracker.hpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
+
+  progress_reporter: {
+    type: @'rules//CC:library',
+    name: ['progress_reporter'],
+    hdrs: ['progress_reporter.hpp'],
+    srcs: ['progress_reporter.cpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      'base_progress_reporter',
+      'progress',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/logging:logging',
+    ],
+    'private-deps': [
+      'task_tracker',
+      @'fmt//:fmt',
+      @'json//:json',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/target_map:configured_target',
+      @'//src/buildtool/logging:log_level',
+    ],
+  },
+
+  base_progress_reporter: {
+    type: @'rules//CC:library',
+    name: ['base_progress_reporter'],
+    hdrs: ['base_progress_reporter.hpp'],
+    srcs: ['base_progress_reporter.cpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    'private-deps': [
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
+
+  exports_progress_reporter: {
+    type: @'rules//CC:library',
+    name: ['exports_progress_reporter'],
+    hdrs: ['exports_progress_reporter.hpp'],
+    srcs: ['exports_progress_reporter.cpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      'base_progress_reporter',
+      'progress',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/logging:logging',
+    ],
+    'private-deps': [
+      'task_tracker',
+      @'fmt//:fmt',
+      @'//src/buildtool/logging:log_level',
+    ],
+  },
+
+  dynamic_progress_reporter: {
+    type: @'rules//CC:library',
+    name: ['dynamic_progress_reporter'],
+    hdrs: ['dynamic_progress_reporter.hpp'],
+    srcs: ['dynamic_progress_reporter.cpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      'progress',
+      'base_progress_reporter',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/logging:logging',
+    ],
+    'private-deps': [@'fmt//:fmt'],
+  },
 }

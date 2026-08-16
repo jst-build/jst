@@ -1,0 +1,11 @@
+{
+  'grpc++': {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['grpc++'],
+  },
+
+  grpc: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['grpc'],
+  },
+}

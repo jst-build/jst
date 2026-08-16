@@ -1,15 +1,16 @@
-{ "traverser":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["traverser"]
-  , "hdrs": ["traverser.hpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/multithreading", "task_system"]
-    ]
-  , "stage": ["src", "buildtool", "execution_engine", "traverser"]
-  }
+{
+  traverser: {
+    type: @'rules//CC:library',
+    name: ['traverser'],
+    hdrs: ['traverser.hpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/execution_engine/dag:dag',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/multithreading:task_system',
+    ],
+    stage: ['src', 'buildtool', 'execution_engine', 'traverser'],
+  },
 }

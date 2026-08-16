@@ -1,6 +1,0 @@
-{ "headers":
-  { "type": ["@", "rules", "CC", "library"]
-  , "hdrs":
-    ["delta_encoder.h", "delta_decoder.h", "delta_common.h", "delta_private.h"]
-  }
-}

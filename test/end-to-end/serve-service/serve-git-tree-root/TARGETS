@@ -1,20 +1,38 @@
-{ "present":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["present"]
-  , "test": ["present.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": [["end-to-end/serve-service", "serve-tree (data)"]]
-  }
-, "absent":
-  { "type": ["end-to-end", "with serve"]
-  , "name": ["absent"]
-  , "test": ["absent.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  , "repos": [["end-to-end/serve-service", "serve-tree (data)"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["serve-git-tree-root"]
-  , "deps": ["absent", "present"]
-  }
+{
+  present: {
+    type: @'//end-to-end:with serve',
+    name: ['present'],
+    test: ['present.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: [[
+      'end-to-end/serve-service',
+      'serve-tree (data)',
+    ]],
+  },
+
+  absent: {
+    type: @'//end-to-end:with serve',
+    name: ['absent'],
+    test: ['absent.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+    repos: [[
+      'end-to-end/serve-service',
+      'serve-tree (data)',
+    ]],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['serve-git-tree-root'],
+    deps: [
+      'absent',
+      'present',
+    ],
+  },
 }

@@ -1,0 +1,97 @@
+{
+  "imports": [
+    {
+      "source": "git",
+      "branch": "system",
+      "url": "https://github.com/jst-build/toolchains-cc",
+      "repos": [{"alias": "toolchain"}]
+    }
+  ],
+  "repositories": {
+    "imports": {"repository": {"type": "file", "path": "."}},
+    "json": {
+      "repository": "imports",
+      "target_file_name": "json.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "cli11": {
+      "repository": "imports",
+      "target_file_name": "cli11.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "fmt": {
+      "repository": "imports",
+      "target_file_name": "fmt.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "ssl": {
+      "repository": "imports",
+      "target_file_name": "ssl.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "libgit2": {
+      "repository": "imports",
+      "target_file_name": "libgit2.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "protobuf": {
+      "repository": "imports",
+      "target_file_name": "protobuf.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "gsl": {
+      "repository": "imports",
+      "target_file_name": "gsl.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "catch2": {
+      "repository": "imports",
+      "target_file_name": "catch2.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "grpc": {
+      "repository": "imports",
+      "target_file_name": "grpc.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "libarchive": {
+      "repository": "imports",
+      "target_file_name": "libarchive.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "curl": {
+      "repository": "imports",
+      "target_file_name": "curl.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "google_apis": {
+      "repository": {
+        "type": "archive",
+        "content": "db3c51a8fd9c923a4e4908d8bcd7dd4642cc4664",
+        "fetch": "https://github.com/googleapis/googleapis/archive/fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0.tar.gz",
+        "sha256": "0513f0f40af63bd05dc789cacc334ab6cec27cc89db596557cb2dfe8919463e4",
+        "sha512": "d77ea83f8e68e3c0b667e7de43c2cd28b0ca7b969b2cf127b3873fc19f330ad85afb314bef4174a4e11ed68b620e43853d8b44eb833c5eca7e820ca21c1c3e15",
+        "subdir": "googleapis-fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0",
+        "mirrors": [
+          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/googleapis/googleapis/archive/fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0.tar.gz"
+        ]
+      },
+      "target_root": "imports",
+      "target_file_name": "google_apis.TARGETS",
+      "bindings": {"rules": "toolchain"}
+    },
+    "bazel_remote_apis": {
+      "repository": {
+        "type": "archive",
+        "content": "b2c8d2624519413a67d354d8e2b1b707e29482b1",
+        "fetch": "https://github.com/bazelbuild/remote-apis/archive/9ef19c6b5fbf77d6dd9d84d75fbb5a20a6b62ef1.tar.gz",
+        "sha256": "ccf57539b6347ceb0aa7e93ee43b9fff1aeb496d36cc097da918c4a35ef65839",
+        "sha512": "6fc84bc0b3f0730651ec9f7fe03e343c02acaabfef80cd3057343b6c6b935820e4fea27e0c8f0f0d86ccd9c3cbf82461e75b66740326113cf647339007fb3c0c",
+        "subdir": "remote-apis-9ef19c6b5fbf77d6dd9d84d75fbb5a20a6b62ef1"
+      },
+      "target_root": "imports",
+      "target_file_name": "bazel_remote_apis.TARGETS",
+      "bindings": {"rules": "toolchain", "google_apis": "google_apis"}
+    }
+  }
+}

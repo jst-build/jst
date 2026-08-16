@@ -1,19 +1,24 @@
-{ "dag":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["dag"]
-  , "srcs": ["dag.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "src", "src/buildtool/common", "action_description"]
-    , ["@", "src", "src/buildtool/common", "artifact_description"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/execution_engine/dag", "dag"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    ]
-  , "stage": ["test", "buildtool", "execution_engine", "dag"]
-  }
-, "TESTS":
-  {"type": ["@", "rules", "test", "suite"], "stage": ["dag"], "deps": ["dag"]}
+{
+  dag: {
+    type: @'rules//CC/test:test',
+    name: ['dag'],
+    srcs: ['dag.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'gsl//:gsl',
+      @'src//src/buildtool/common:action_description',
+      @'src//src/buildtool/common:artifact_description',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/execution_engine/dag:dag',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+    ],
+    stage: ['test', 'buildtool', 'execution_engine', 'dag'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['dag'],
+    deps: ['dag'],
+  },
 }

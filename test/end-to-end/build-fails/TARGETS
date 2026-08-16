@@ -1,12 +1,14 @@
-{ "single_fail_dep":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["single_fail_dep"]
-  , "test": ["single_fail_dep.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["build-fails"]
-  , "deps": ["single_fail_dep"]
-  }
+{
+  single_fail_dep: {
+    type: @'rules//shell/test:script',
+    name: ['single_fail_dep'],
+    test: ['single_fail_dep.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['build-fails'],
+    deps: ['single_fail_dep'],
+  },
 }

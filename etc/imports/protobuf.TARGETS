@@ -1,0 +1,6 @@
+{
+  libprotobuf: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['protobuf'],
+  },
+}

@@ -1,3 +1,0 @@
-{ "cli11":
-  {"type": ["@", "rules", "CC/pkgconfig", "system_library"], "name": ["CLI11"]}
-}

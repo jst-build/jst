@@ -1,19 +1,21 @@
-{ "install_cas":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["install_cas"]
-  , "srcs": ["install_cas.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/main", "install_cas"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "main"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["main"]
-  , "deps": ["install_cas"]
-  }
+{
+  install_cas: {
+    type: @'rules//CC/test:test',
+    name: ['install_cas'],
+    srcs: ['install_cas.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/main:install_cas',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'main'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['main'],
+    deps: ['install_cas'],
+  },
 }

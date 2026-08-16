@@ -1,151 +1,165 @@
-{ "configured_target":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["configured_target"]
-  , "hdrs": ["configured_target.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/utils/cpp", "hash_combine"]
-    , ["src/utils/cpp", "json"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "target_map"]
-  }
-, "result_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["result_map"]
-  , "hdrs": ["result_map.hpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/analysed_target", "graph_information"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/target_map", "configured_target"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/common", "tree"]
-    , ["src/buildtool/common", "tree_overlay"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/progress_reporting", "progress"]
-    , ["src/buildtool/storage", "storage"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "target_map"]
-  }
-, "target_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["target_map"]
-  , "hdrs": ["target_map.hpp"]
-  , "srcs": ["utils.cpp", "built_in_rules.cpp", "export.cpp", "target_map.cpp"]
-  , "private-hdrs": ["built_in_rules.hpp", "export.hpp", "utils.hpp"]
-  , "deps":
-    [ "absent_target_map"
-    , "configured_target"
-    , "result_map"
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/build_engine/base_maps", "directory_map"]
-    , ["src/buildtool/build_engine/base_maps", "rule_map"]
-    , ["src/buildtool/build_engine/base_maps", "source_map"]
-    , ["src/buildtool/build_engine/base_maps", "targets_file_map"]
-    , ["src/buildtool/main", "analyse_context"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "target_map"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/build_engine/analysed_target", "graph_information"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/base_maps", "expression_function"]
-    , ["src/buildtool/build_engine/base_maps", "field_reader"]
-    , ["src/buildtool/build_engine/base_maps", "module_name"]
-    , ["src/buildtool/build_engine/base_maps", "user_rule"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/build_engine/expression", "linked_map"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "artifact_description"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/common", "tree"]
-    , ["src/buildtool/common", "tree_overlay"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/crypto", "hasher"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/progress_reporting", "progress"]
-    , ["src/buildtool/progress_reporting", "task_tracker"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/utils/cpp", "gsl"]
-    , ["src/utils/cpp", "json"]
-    , ["src/utils/cpp", "path"]
-    , ["src/utils/cpp", "path_hash"]
-    , ["src/utils/cpp", "vector"]
-    ]
-  }
-, "target_map_testable_internals":
-  { "type": ["@", "rules", "CC", "library"]
-  , "tainted": ["test"]
-  , "name": ["target_map_testable_internals"]
-  , "hdrs": ["utils.hpp"]
-  , "deps":
-    [ "configured_target"
-    , "target_map"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common", "tree"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "target_map"]
-  }
-, "absent_target_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["absent_target_map"]
-  , "hdrs": ["absent_target_map.hpp"]
-  , "srcs": ["absent_target_map.cpp"]
-  , "deps":
-    [ "configured_target"
-    , "result_map"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/main", "analyse_context"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "buildtool", "build_engine", "target_map"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/build_engine/analysed_target", "graph_information"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common", "statistics"]
-    , ["src/buildtool/common", "tree"]
-    , ["src/buildtool/common", "tree_overlay"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/progress_reporting", "progress"]
-    , ["src/buildtool/progress_reporting", "task_tracker"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/utils/cpp", "json"]
-    ]
-  }
+{
+  configured_target: {
+    type: @'rules//CC:library',
+    name: ['configured_target'],
+    hdrs: ['configured_target.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/utils/cpp:hash_combine',
+      @'//src/utils/cpp:json',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'target_map'],
+  },
+
+  result_map: {
+    type: @'rules//CC:library',
+    name: ['result_map'],
+    hdrs: ['result_map.hpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/analysed_target:graph_information',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/target_map:configured_target',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/common:tree',
+      @'//src/buildtool/common:tree_overlay',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/progress_reporting:progress',
+      @'//src/buildtool/storage:storage',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'target_map'],
+  },
+
+  target_map: {
+    type: @'rules//CC:library',
+    name: ['target_map'],
+    hdrs: ['target_map.hpp'],
+    srcs: [
+      'utils.cpp',
+      'built_in_rules.cpp',
+      'export.cpp',
+      'target_map.cpp',
+    ],
+    'private-hdrs': [
+      'built_in_rules.hpp',
+      'export.hpp',
+      'utils.hpp',
+    ],
+    deps: [
+      'absent_target_map',
+      'configured_target',
+      'result_map',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/build_engine/base_maps:directory_map',
+      @'//src/buildtool/build_engine/base_maps:rule_map',
+      @'//src/buildtool/build_engine/base_maps:source_map',
+      @'//src/buildtool/build_engine/base_maps:targets_file_map',
+      @'//src/buildtool/main:analyse_context',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'target_map'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/build_engine/analysed_target:graph_information',
+      @'//src/buildtool/build_engine/base_maps:entity_name',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/base_maps:expression_function',
+      @'//src/buildtool/build_engine/base_maps:field_reader',
+      @'//src/buildtool/build_engine/base_maps:module_name',
+      @'//src/buildtool/build_engine/base_maps:user_rule',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/build_engine/expression:linked_map',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:artifact_description',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/common:tree',
+      @'//src/buildtool/common:tree_overlay',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/crypto:hasher',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/progress_reporting:progress',
+      @'//src/buildtool/progress_reporting:task_tracker',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:storage',
+      @'//src/utils/cpp:gsl',
+      @'//src/utils/cpp:json',
+      @'//src/utils/cpp:path',
+      @'//src/utils/cpp:path_hash',
+      @'//src/utils/cpp:vector',
+    ],
+  },
+
+  target_map_testable_internals: {
+    type: @'rules//CC:library',
+    tainted: ['test'],
+    name: ['target_map_testable_internals'],
+    hdrs: ['utils.hpp'],
+    deps: [
+      'configured_target',
+      'target_map',
+      @'gsl//:gsl',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common:tree',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'target_map'],
+  },
+
+  absent_target_map: {
+    type: @'rules//CC:library',
+    name: ['absent_target_map'],
+    hdrs: ['absent_target_map.hpp'],
+    srcs: ['absent_target_map.cpp'],
+    deps: [
+      'configured_target',
+      'result_map',
+      @'gsl//:gsl',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/main:analyse_context',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'target_map'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/build_engine/analysed_target:graph_information',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common:statistics',
+      @'//src/buildtool/common:tree',
+      @'//src/buildtool/common:tree_overlay',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/progress_reporting:progress',
+      @'//src/buildtool/progress_reporting:task_tracker',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:storage',
+      @'//src/utils/cpp:json',
+    ],
+  },
 }

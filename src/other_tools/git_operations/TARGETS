@@ -1,61 +1,69 @@
-{ "git_ops_types":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_ops_types"]
-  , "hdrs": ["git_ops_types.hpp"]
-  , "deps":
-    [["src/buildtool/file_system", "git_cas"], ["src/utils/cpp", "path"]]
-  , "stage": ["src", "other_tools", "git_operations"]
-  }
-, "git_operations":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_operations"]
-  , "hdrs": ["git_operations.hpp"]
-  , "srcs": ["git_operations.cpp"]
-  , "deps":
-    ["git_ops_types", ["src/buildtool/multithreading", "async_map_consumer"]]
-  , "stage": ["src", "other_tools", "git_operations"]
-  , "private-deps":
-    [ "git_repo_remote"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    ]
-  }
-, "git_repo_remote":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_repo_remote"]
-  , "hdrs": ["git_repo_remote.hpp"]
-  , "srcs": ["git_repo_remote.cpp"]
-  , "deps":
-    [ ["src/buildtool/file_system", "git_cas"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "git_utils"]
-    , ["src/buildtool/storage", "config"]
-    ]
-  , "stage": ["src", "other_tools", "git_operations"]
-  , "private-deps":
-    [ "git_config_settings"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["", "libgit2"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/system", "system_command"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "git_config_settings":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_config_settings"]
-  , "hdrs": ["git_config_settings.hpp"]
-  , "srcs": ["git_config_settings.cpp"]
-  , "stage": ["src", "other_tools", "git_operations"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["", "libgit2"]
-    , ["src/other_tools/utils", "curl_url_handle"]
-    ]
-  }
+{
+  git_ops_types: {
+    type: @'rules//CC:library',
+    name: ['git_ops_types'],
+    hdrs: ['git_ops_types.hpp'],
+    deps: [
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/utils/cpp:path',
+    ],
+    stage: ['src', 'other_tools', 'git_operations'],
+  },
+
+  git_operations: {
+    type: @'rules//CC:library',
+    name: ['git_operations'],
+    hdrs: ['git_operations.hpp'],
+    srcs: ['git_operations.cpp'],
+    deps: [
+      'git_ops_types',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    stage: ['src', 'other_tools', 'git_operations'],
+    'private-deps': [
+      'git_repo_remote',
+      @'fmt//:fmt',
+      @'//src/buildtool/file_system:file_system_manager',
+    ],
+  },
+
+  git_repo_remote: {
+    type: @'rules//CC:library',
+    name: ['git_repo_remote'],
+    hdrs: ['git_repo_remote.hpp'],
+    srcs: ['git_repo_remote.cpp'],
+    deps: [
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:git_utils',
+      @'//src/buildtool/storage:config',
+    ],
+    stage: ['src', 'other_tools', 'git_operations'],
+    'private-deps': [
+      'git_config_settings',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//:libgit2',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/system:system_command',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  git_config_settings: {
+    type: @'rules//CC:library',
+    name: ['git_config_settings'],
+    hdrs: ['git_config_settings.hpp'],
+    srcs: ['git_config_settings.cpp'],
+    stage: ['src', 'other_tools', 'git_operations'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//:libgit2',
+      @'//src/other_tools/utils:curl_url_handle',
+    ],
+  },
 }

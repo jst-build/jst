@@ -1,0 +1,6 @@
+{
+  git2: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['libgit2'],
+  },
+}

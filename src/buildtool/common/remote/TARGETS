@@ -1,66 +1,74 @@
-{ "client_common":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["client_common"]
-  , "hdrs": ["client_common.hpp"]
-  , "proto": [["@", "googleapis", "", "google_rpc_status_proto"]]
-  , "deps":
-    [ "port"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/auth", "auth"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "common", "remote"]
-  }
-, "port":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["port"]
-  , "hdrs": ["port.hpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "type_safe_arithmetic"]
-    ]
-  , "stage": ["src", "buildtool", "common", "remote"]
-  }
-, "remote_common":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["remote_common"]
-  , "hdrs": ["remote_common.hpp"]
-  , "deps":
-    [ "port"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "common", "remote"]
-  }
-, "retry_config":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["retry_config"]
-  , "hdrs": ["retry_config.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "common", "remote"]
-  }
-, "retry":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["retry"]
-  , "hdrs": ["retry.hpp"]
-  , "srcs": ["retry.cpp"]
-  , "deps":
-    [ "retry_config"
-    , ["@", "grpc", "", "grpc++"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "common", "remote"]
-  , "private-deps": [["@", "fmt", "", "fmt"], ["@", "gsl", "", "gsl"]]
-  }
+{
+  client_common: {
+    type: @'rules//CC:library',
+    name: ['client_common'],
+    hdrs: ['client_common.hpp'],
+    proto: [@'googleapis//:google_rpc_status_proto'],
+    deps: [
+      'port',
+      @'fmt//:fmt',
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'//src/buildtool/auth:auth',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'common', 'remote'],
+  },
+
+  port: {
+    type: @'rules//CC:library',
+    name: ['port'],
+    hdrs: ['port.hpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:type_safe_arithmetic',
+    ],
+    stage: ['src', 'buildtool', 'common', 'remote'],
+  },
+
+  remote_common: {
+    type: @'rules//CC:library',
+    name: ['remote_common'],
+    hdrs: ['remote_common.hpp'],
+    deps: [
+      'port',
+      @'fmt//:fmt',
+      @'json//:json',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'common', 'remote'],
+  },
+
+  retry_config: {
+    type: @'rules//CC:library',
+    name: ['retry_config'],
+    hdrs: ['retry_config.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'//src/buildtool/logging:log_level',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'common', 'remote'],
+  },
+
+  retry: {
+    type: @'rules//CC:library',
+    name: ['retry'],
+    hdrs: ['retry.hpp'],
+    srcs: ['retry.cpp'],
+    deps: [
+      'retry_config',
+      @'grpc//:grpc++',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'common', 'remote'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+    ],
+  },
 }

@@ -27,7 +27,7 @@
     'private-cflags':
       if $'USE_FMTLIB' then ['-DUSE_FMTLIB'],
     'private-deps':
-      if $'USE_FMTLIB' then [@'fmtlib//:fmt-lib'],
+      if $'USE_FMTLIB' then [@'fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers

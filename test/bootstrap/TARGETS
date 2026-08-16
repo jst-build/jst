@@ -1,108 +1,122 @@
-{ "bundled-test":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "arguments_config": ["SUFFIX"]
-  , "name":
-    [ "bootstrap-test-bundled"
-    , {"type": "var", "name": "SUFFIX", "default": ""}
-    ]
-  , "test": ["test-bootstrap.sh"]
-  , "deps":
-    [ "prune-config.py"
-    , ["@", "just-distfiles", "", "distdir"]
-    , ["@", "src", "", "bootstrap-src"]
-    ]
-  }
-, "bundled-test-debug":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": "bundled-test"
-  , "config":
-    {"type": "'", "$1": {"SUFFIX": "-debug", "TEST_ENV": {"DEBUG": "YES"}}}
-  }
-, "bundled-test-gnu":
-  { "type": "configure"
-  , "tainted": ["test"]
-  , "target": "bundled-test"
-  , "config":
-    { "type": "'"
-    , "$1":
-      { "SUFFIX": "-gnu"
-      , "TEST_ENV":
-        { "JUST_BUILD_CONF": "{\"TOOLCHAIN_CONFIG\":{\"FAMILY\": \"gnu\"}, \"CC\": \"gcc\", \"CXX\": \"g++\"}"
-        }
-      }
-    }
-  }
-, "distro-bootstrap-deps":
-  { "type": "install"
-  , "dirs": [["just_cc_deps", "LOCALBASE"], ["just_other_deps", "LOCALBASE"]]
-  , "tainted": ["test"]
-  }
-, "just_cc_deps":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "targets":
-    [ ["@", "json", "", "json"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "cli11", "", "cli11"]
-    , ["@", "ssl", "", "crypto"]
-    , ["@", "src", "", "libgit2"]
-    , ["@", "protoc", "", "protoc"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "grpc", "", "grpc"]
-    , ["@", "grpc", "", "grpc_cpp_plugin"]
-    , ["@", "src", "", "libarchive"]
-    , ["@", "src", "", "libcurl"]
-    ]
-  }
-, "just_other_deps":
-  { "type": ["bootstrap", "stage-deps"]
-  , "protos":
-    [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
-    , ["@", "googleapis", "", "google_bytestream_proto"]
-    , ["@", "googleapis", "", "google_api_httpbody_proto"]
-    , ["@", "googleapis", "", "google_api_expr_v1alpha1_checked_proto"]
-    , ["@", "googleapis", "", "google_api_expr_v1alpha1_syntax_proto"]
-    ]
-  }
-, "staged-sources":
-  { "type": "install"
-  , "tainted": ["test"]
-  , "dirs": [[["@", "src", "", "bootstrap-src"], "srcs/just"]]
-  }
-, "pkgconfig-test":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["bootstrap-test-pkgconfig"]
-  , "test": ["test-bootstrap-pkgconfig.sh"]
-  , "deps": ["distro-bootstrap-deps", "staged-sources"]
-  }
-, "mixed-test":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["bootstrap-test-mixed"]
-  , "test": ["test-mixed-bootstrap.sh"]
-  , "deps":
-    [ "distro-bootstrap-deps"
-    , "staged-sources"
-    , ["@", "just-distfiles", "", "distdir"]
-    ]
-  }
-, "symlink-test":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["bootstrap-test-symlink"]
-  , "test": ["test-symlink-bootstrap.sh"]
-  , "deps": ["distro-bootstrap-deps", "staged-sources"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["bootstrap"]
-  , "deps":
-    [ "bundled-test"
-    , "bundled-test-debug"
-    , "bundled-test-gnu"
-    , "mixed-test"
-    , "pkgconfig-test"
-    , "symlink-test"
-    ]
-  }
+{
+  'bundled-test': {
+    type: @'rules//shell/test:script',
+    arguments_config: ['SUFFIX'],
+    name: ['bootstrap-test-bundled' + jst.env('SUFFIX', default='')],
+    test: ['test-bootstrap.sh'],
+    deps: [
+      'prune-config.py',
+      @'just-distfiles//:distdir',
+      @'src//:bootstrap-src',
+    ],
+  },
+
+  'bundled-test-debug': {
+    type: 'configure',
+    tainted: ['test'],
+    target: 'bundled-test',
+    config: {
+      SUFFIX: '-debug',
+      TEST_ENV: { DEBUG: 'YES' },
+    },
+  },
+
+  'bundled-test-gnu': {
+    type: 'configure',
+    tainted: ['test'],
+    target: 'bundled-test',
+    config: {
+      SUFFIX: '-gnu',
+      TEST_ENV: { JUST_BUILD_CONF: '{"TOOLCHAIN_CONFIG":{"FAMILY": "gnu"}, "CC": "gcc", "CXX": "g++"}' },
+    },
+  },
+
+  'distro-bootstrap-deps': {
+    type: 'install',
+    dirs: [
+      ['just_cc_deps', 'LOCALBASE'],
+      ['just_other_deps', 'LOCALBASE'],
+    ],
+    tainted: ['test'],
+  },
+
+  just_cc_deps: {
+    type: @'rules//CC:install-with-deps',
+    targets: [
+      @'json//:json',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'cli11//:cli11',
+      @'ssl//:crypto',
+      @'src//:libgit2',
+      @'protoc//:protoc',
+      @'protoc//:libprotobuf',
+      @'grpc//:grpc++',
+      @'grpc//:grpc',
+      @'grpc//:grpc_cpp_plugin',
+      @'src//:libarchive',
+      @'src//:libcurl',
+    ],
+  },
+
+  just_other_deps: {
+    type: @'//bootstrap:stage-deps',
+    protos: [
+      @'bazel_remote_apis//:remote_execution_proto',
+      @'googleapis//:google_bytestream_proto',
+      @'googleapis//:google_api_httpbody_proto',
+      @'googleapis//:google_api_expr_v1alpha1_checked_proto',
+      @'googleapis//:google_api_expr_v1alpha1_syntax_proto',
+    ],
+  },
+
+  'staged-sources': {
+    type: 'install',
+    tainted: ['test'],
+    dirs: [[@'src//:bootstrap-src', 'srcs/just']],
+  },
+
+  'pkgconfig-test': {
+    type: @'rules//shell/test:script',
+    name: ['bootstrap-test-pkgconfig'],
+    test: ['test-bootstrap-pkgconfig.sh'],
+    deps: [
+      'distro-bootstrap-deps',
+      'staged-sources',
+    ],
+  },
+
+  'mixed-test': {
+    type: @'rules//shell/test:script',
+    name: ['bootstrap-test-mixed'],
+    test: ['test-mixed-bootstrap.sh'],
+    deps: [
+      'distro-bootstrap-deps',
+      'staged-sources',
+      @'just-distfiles//:distdir',
+    ],
+  },
+
+  'symlink-test': {
+    type: @'rules//shell/test:script',
+    name: ['bootstrap-test-symlink'],
+    test: ['test-symlink-bootstrap.sh'],
+    deps: [
+      'distro-bootstrap-deps',
+      'staged-sources',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['bootstrap'],
+    deps: [
+      'bundled-test',
+      'bundled-test-debug',
+      'bundled-test-gnu',
+      'mixed-test',
+      'pkgconfig-test',
+      'symlink-test',
+    ],
+  },
 }

@@ -1,0 +1,930 @@
+{
+  "main": "jst",
+  "repositories": {
+    "": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      }
+    },
+    "toolchain": {
+      "repository": "toolchain/base_rules",
+      "target_root": "toolchain/toolchain/targets",
+      "rule_root": "toolchain/base_rules"
+    },
+    "toolchain/base_rules": {
+      "repository": {
+        "type": "file",
+        "path": "./etc/rules/rules",
+        "pragma": {
+          "to_git": true
+        }
+      }
+    },
+    "toolchain/toolchain/targets": {
+      "repository": {
+        "type": "file",
+        "path": "./etc/toolchain/targets",
+        "pragma": {
+          "to_git": true
+        }
+      }
+    },
+    "google_apis": {
+      "repository": {
+        "type": "archive",
+        "content": "db3c51a8fd9c923a4e4908d8bcd7dd4642cc4664",
+        "fetch": "https://github.com/googleapis/googleapis/archive/fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0.tar.gz",
+        "sha256": "0513f0f40af63bd05dc789cacc334ab6cec27cc89db596557cb2dfe8919463e4",
+        "sha512": "d77ea83f8e68e3c0b667e7de43c2cd28b0ca7b969b2cf127b3873fc19f330ad85afb314bef4174a4e11ed68b620e43853d8b44eb833c5eca7e820ca21c1c3e15",
+        "subdir": "googleapis-fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0",
+        "mirrors": [
+          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/googleapis/googleapis/archive/fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0.tar.gz"
+        ]
+      },
+      "target_root": "tests/fmt/imports",
+      "target_file_name": "google_apis.TARGETS",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "bazel_remote_apis": {
+      "repository": {
+        "type": "archive",
+        "content": "b2c8d2624519413a67d354d8e2b1b707e29482b1",
+        "fetch": "https://github.com/bazelbuild/remote-apis/archive/9ef19c6b5fbf77d6dd9d84d75fbb5a20a6b62ef1.tar.gz",
+        "sha256": "ccf57539b6347ceb0aa7e93ee43b9fff1aeb496d36cc097da918c4a35ef65839",
+        "sha512": "6fc84bc0b3f0730651ec9f7fe03e343c02acaabfef80cd3057343b6c6b935820e4fea27e0c8f0f0d86ccd9c3cbf82461e75b66740326113cf647339007fb3c0c",
+        "subdir": "remote-apis-9ef19c6b5fbf77d6dd9d84d75fbb5a20a6b62ef1"
+      },
+      "target_root": "tests/fmt/imports",
+      "target_file_name": "bazel_remote_apis.TARGETS",
+      "bindings": {
+        "rules": "toolchain",
+        "google_apis": "google_apis"
+      }
+    },
+    "absl": {
+      "repository": {
+        "type": "archive",
+        "content": "b5cc395c49afa2a2dec1d9c4072500494b126974",
+        "fetch": "https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz",
+        "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
+        "sha512": "bd2cca8f007f2eee66f51c95a979371622b850ceb2ce3608d00ba826f7c494a1da0fba3c1427728f2c173fe50d59b701da35c2c9fdad2752a5a49746b1c8ef31",
+        "subdir": "abseil-cpp-20240722.0",
+        "mirrors": [
+          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/abseil/abseil-cpp/archive/20240722.0.tar.gz"
+        ]
+      },
+      "target_root": "absl/targets",
+      "bindings": {
+        "rules": "absl/rules",
+        "patches": "absl/patches"
+      }
+    },
+    "absl/patches": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "absl/v20240722.0",
+        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "subdir": "patches"
+      }
+    },
+    "absl/rules": {
+      "repository": "toolchain",
+      "target_root": "absl/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "absl/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "absl/v20240722.0",
+        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "subdir": "config"
+      }
+    },
+    "absl/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "absl/v20240722.0",
+        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "subdir": "targets"
+      }
+    },
+    "ssl": {
+      "repository": {
+        "type": "archive",
+        "content": "d9ff3aa3d22337e93cb0a0e2df00ca8abea2fac6",
+        "fetch": "https://github.com/google/boringssl/archive/dec0d8f681348af8bb675e07bd89989665fca8bc.tar.gz",
+        "sha256": "2f12c33d2cf25a658a1b981fb96923dac87e9175fb20e45db6950ee36c526356",
+        "sha512": "51f91bee640e38ce20c180195de6811b5be7522240faae2b57158fa9c298ed09292ecb09c770df5d4fc6a3100bc2459de4e9d312e315265c1ea7ade347bad3f2",
+        "subdir": "boringssl-dec0d8f681348af8bb675e07bd89989665fca8bc",
+        "mirrors": [
+          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/google/boringssl/archive/dec0d8f681348af8bb675e07bd89989665fca8bc.tar.gz"
+        ]
+      },
+      "target_root": "ssl/targets",
+      "bindings": {
+        "rules": "ssl/rules"
+      }
+    },
+    "ssl/rules": {
+      "repository": "toolchain",
+      "target_root": "ssl/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "ssl/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "boringssl/dec0d8f6",
+        "commit": "469f043f19e0409fbce28bda5a8d36576e35dfd0",
+        "subdir": "config"
+      }
+    },
+    "ssl/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "boringssl/dec0d8f6",
+        "commit": "469f043f19e0409fbce28bda5a8d36576e35dfd0",
+        "subdir": "targets"
+      }
+    },
+    "bzip2": {
+      "repository": {
+        "type": "archive",
+        "content": "f9d91f2012aedeedcfd3bd918124ca11f0160373",
+        "fetch": "https://github.com/libarchive/bzip2/archive/refs/tags/bzip2-1.0.8.tar.gz",
+        "sha256": "db106b740252669664fd8f3a1c69fe7f689d5cd4b132f82ba82b9afba27627df",
+        "sha512": "596d1b304f1f2d64b020d04845db10a2330c7f614a9fd0b5344afff65877d2141b3fcaa43d9e2dbc2f6a7929a1dab07df54d3d4bd69678b53906472958c7b80c",
+        "subdir": "bzip2-bzip2-1.0.8"
+      },
+      "target_root": "bzip2/targets",
+      "bindings": {
+        "rules": "bzip2/rules"
+      }
+    },
+    "bzip2/rules": {
+      "repository": "toolchain",
+      "target_root": "bzip2/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "bzip2/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "bzip2/v1.0.8",
+        "commit": "1909df452e9e5a0a656643fa583f43d2c54d947d",
+        "subdir": "config"
+      }
+    },
+    "bzip2/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "bzip2/v1.0.8",
+        "commit": "1909df452e9e5a0a656643fa583f43d2c54d947d",
+        "subdir": "targets"
+      }
+    },
+    "catch2": {
+      "repository": {
+        "type": "archive",
+        "content": "5af653af0c54ad580176a8cadb5a1cef8c880372",
+        "fetch": "https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.3.tar.gz",
+        "sha256": "8d723b0535c94860ef8cf6231580fa47d67a3416757ecb10639e40d748ab6c71",
+        "sha512": "57c996f679cbad212cb0fde39e506bade37bd559c0e93e20f407f2a2f029e98b78661e10257f9c8e4cb5fd7d52d0ea1eae3d4a1f989c6d66fcb281e32e1688f6",
+        "subdir": "Catch2-3.5.3"
+      },
+      "target_root": "catch2/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "catch2/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "catch2/v3.5.3",
+        "commit": "64f698cde6f0eebd376bf0cae0fe34b312662bfe",
+        "subdir": "targets"
+      }
+    },
+    "cares": {
+      "repository": {
+        "type": "archive",
+        "content": "4237a53f7a5dc1cfb4d04a6b6374f8674c32e271",
+        "fetch": "https://github.com/c-ares/c-ares/releases/download/cares-1_19_1/c-ares-1.19.1.tar.gz",
+        "sha256": "321700399b72ed0e037d0074c629e7741f6b2ec2dda92956abe3e9671d3e268e",
+        "sha512": "466a94efda626e815a6ef7a890637056339f883d549ea6055e289fd8cd2391130e5682c905c0fb3bd7e955af7f6deb793562c170eb0ee066a4a62085a82ba470",
+        "subdir": "c-ares-1.19.1"
+      },
+      "target_root": "cares/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "cares/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "cares/v1.19.1",
+        "commit": "86a537176064de338b028104d91585eeb9095eb5",
+        "subdir": "targets"
+      }
+    },
+    "cli11": {
+      "repository": {
+        "type": "archive",
+        "content": "6689a311c4e3f31e0428a6135ed03f2ccac448f8",
+        "fetch": "https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.5.0.tar.gz",
+        "sha256": "17e02b4cddc2fa348e5dbdbb582c59a3486fa2b2433e70a0c3bacb871334fd55",
+        "sha512": "895fb61e4c9974ee8e8d4681fb880a10126a412f24bb147d558d465d78fe784a044c5443edf1ce20fc9936901073073d795b034e0c02bdb3c8aa74c9d6ac811c",
+        "subdir": "CLI11-2.5.0"
+      },
+      "target_root": "cli11/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "cli11/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "cli11/v2.5.0",
+        "commit": "4e561d988318eab7c1c315c52da5e1d0d41d2365",
+        "subdir": "targets"
+      }
+    },
+    "fmt": {
+      "repository": {
+        "type": "zip",
+        "content": "4e761e8f52da03e28b32e761dc5231c7d080508d",
+        "fetch": "https://github.com/fmtlib/fmt/releases/download/12.2.0/fmt-12.2.0.zip",
+        "sha256": "a2f4a8d51178f954e4c339007f77edd76ba0cb2e36f87a48e5a5403d9be5878f",
+        "sha512": "5d184f0fccd0630ef774b70e795496a3320e56ee32ca682787d11db7dbb3173d70f3375fd8a61776ba167d880b888adea03fa3c977241467a5e863874672f5a0",
+        "subdir": "fmt-12.2.0"
+      },
+      "target_root": "fmt/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "fmt/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "fmt/v12.2.0",
+        "commit": "692b3effd3bbaaa40aef667830d29bdffb869396",
+        "subdir": "targets"
+      }
+    },
+    "lzma": {
+      "repository": {
+        "type": "archive",
+        "content": "80e67abd2e08a54ec21f195b3e9e4abfc64ba7e1",
+        "fetch": "https://github.com/tukaani-project/xz/releases/download/v5.6.3/xz-5.6.3.tar.gz",
+        "sha256": "b1d45295d3f71f25a4c9101bd7c8d16cb56348bbef3bbc738da0351e17c73317",
+        "sha512": "b07b45e18615d1946e9d12157af99b54700d757832a638fccab70549574dcd7f28e69e71cc4c0b9c808959f818e79b668a5ccf108429ea0f40b6125bfd55d274",
+        "subdir": "xz-5.6.3"
+      },
+      "target_root": "lzma/targets",
+      "bindings": {
+        "rules": "lzma/rules"
+      }
+    },
+    "lzma/rules": {
+      "repository": "toolchain",
+      "target_root": "lzma/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "lzma/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "lzma/v5.6.3",
+        "commit": "4a9578343888470b1088656955d68fe7c448da95",
+        "subdir": "config"
+      }
+    },
+    "lzma/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "lzma/v5.6.3",
+        "commit": "4a9578343888470b1088656955d68fe7c448da95",
+        "subdir": "targets"
+      }
+    },
+    "gsl": {
+      "repository": {
+        "type": "archive",
+        "content": "386f0a89a47763481223a63d5026215af8d3c827",
+        "fetch": "https://github.com/microsoft/GSL/archive/refs/tags/v4.0.0.tar.gz",
+        "sha256": "f0e32cb10654fea91ad56bde89170d78cfbf4363ee0b01d8f097de2ba49f6ce9",
+        "sha512": "7fa7446796c6bf82fb3bff09f86a69c446a27be528bef3b17c8bc5ad2f24d5cf86bdb3d3813ecb44726e8f395020180e97e41027330d1fbf545cc0f0b44aac29",
+        "subdir": "GSL-4.0.0/include/gsl"
+      },
+      "target_root": "gsl/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "gsl/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "microsoft_gsl/v4.0.0",
+        "commit": "e316a4c1194273b16f2efd12b9fa3cb4b3b857ed",
+        "subdir": "targets"
+      }
+    },
+    "json": {
+      "repository": {
+        "type": "zip",
+        "content": "733571f96614cc01fcebf76c8359f52706677c61",
+        "fetch": "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip",
+        "sha256": "a22461d13119ac5c78f205d3df1db13403e58ce1bb1794edc9313677313f4a9d",
+        "sha512": "8d923e2586acf736fc1886bf1839ca0126444ec60ce93a4bd18c21eef4475dff6f608203e42bf4968878dc50727a8c20c517dd8c1ac5c6b0bb6a95f2dce5546e",
+        "subdir": "include/nlohmann"
+      },
+      "target_root": "json/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "json/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "nlohmann_json/v3.11.3",
+        "commit": "c12e71b1fd0ac1def830aa189ee87827d56b44ab",
+        "subdir": "targets"
+      }
+    },
+    "re2": {
+      "repository": {
+        "type": "archive",
+        "content": "8eebd70d7ebd33ac5d736090cecd7cfe1831b9e3",
+        "fetch": "https://github.com/google/re2/archive/refs/tags/2022-04-01.tar.gz",
+        "sha256": "1ae8ccfdb1066a731bba6ee0881baad5efd2cd661acd9569b689f2586e1a50e9",
+        "sha512": "fc3d7cc1ee6bd771719845566d83ffc8c4e19d838748e842a1e19c7564473c9a0a061bebb3966ffa82de6515346f9bbddc2d94ceb3de89233f58826774bd7ce7",
+        "subdir": "re2-2022-04-01",
+        "mirrors": [
+          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/google/re2/archive/2022-04-01.tar.gz"
+        ]
+      },
+      "target_root": "re2/targets",
+      "bindings": {
+        "rules": "re2/rules"
+      }
+    },
+    "re2/rules": {
+      "repository": "toolchain",
+      "target_root": "re2/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "re2/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "re2/v2022-04-01",
+        "commit": "de643fc1aa87bed8b7cf7a42af2f91ff1126d528",
+        "subdir": "config"
+      }
+    },
+    "re2/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "re2/v2022-04-01",
+        "commit": "de643fc1aa87bed8b7cf7a42af2f91ff1126d528",
+        "subdir": "targets"
+      }
+    },
+    "zlib": {
+      "repository": {
+        "type": "archive",
+        "content": "53fa48bf97f0ee0f42c62743b018507a6583ec3e",
+        "fetch": "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
+        "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
+        "sha512": "580677aad97093829090d4b605ac81c50327e74a6c2de0b85dd2e8525553f3ddde17556ea46f8f007f89e435493c9a20bc997d1ef1c1c2c23274528e3c46b94f",
+        "subdir": "zlib-1.3.1"
+      },
+      "target_root": "zlib/targets",
+      "bindings": {
+        "rules": "toolchain"
+      }
+    },
+    "zlib/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "zlib/v1.3.1",
+        "commit": "944d9ed967c4b8c37dd3b52947a071a14704c92b",
+        "subdir": "targets"
+      }
+    },
+    "curl": {
+      "repository": {
+        "type": "archive",
+        "content": "7b7ace4d7cc7d4059163bbd789ef7071e5d326e5",
+        "fetch": "https://github.com/curl/curl/releases/download/curl-8_6_0/curl-8.6.0.tar.gz",
+        "sha256": "9c6db808160015f30f3c656c0dec125feb9dc00753596bf858a272b5dd8dc398",
+        "sha512": "43fdb6b81b394f3382d353d5f57673b2b3d26cfe34b25d08a526bc0597f508d5298e5a7088d0736d1f139cad19cd922affa51533c3a5a4bb5f2de68891c2958d",
+        "subdir": "curl-8.6.0"
+      },
+      "target_root": "curl/targets",
+      "bindings": {
+        "rules": "curl/rules",
+        "zlib": "zlib",
+        "ssl": "ssl",
+        "cares": "cares"
+      }
+    },
+    "curl/rules": {
+      "repository": "toolchain",
+      "target_root": "curl/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "curl/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "curl/v8.6.0",
+        "commit": "7a3dfa319bdc559d80d6da550507a231be8944fc",
+        "subdir": "config"
+      }
+    },
+    "curl/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "curl/v8.6.0",
+        "commit": "7a3dfa319bdc559d80d6da550507a231be8944fc",
+        "subdir": "targets"
+      }
+    },
+    "libarchive": {
+      "repository": {
+        "type": "archive",
+        "content": "994435922d1ce63b52f6420f90b1b2a9f6670c39",
+        "fetch": "https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz",
+        "sha256": "4cc540a3e9a1eebdefa1045d2e4184831100667e6d7d5b315bb1cbc951f8ddff",
+        "sha512": "cce6eecfcd33d228bd1b1162a90bad63750adb53ac4edcaed34e2fdc30b6ba211cf1fd25d4b8761373949ceec266478b09bd70ffa4e374803a29e8573d6d149e",
+        "subdir": "libarchive-3.7.7"
+      },
+      "target_root": "libarchive/targets",
+      "bindings": {
+        "rules": "libarchive/rules",
+        "zlib": "zlib",
+        "ssl": "ssl",
+        "bzip2": "bzip2",
+        "lzma": "lzma"
+      }
+    },
+    "libarchive/rules": {
+      "repository": "toolchain",
+      "target_root": "libarchive/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "libarchive/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "libarchive/v3.7.7",
+        "commit": "9fa42f83091d8f2ce25da1f00474a5bcd78537f7",
+        "subdir": "config"
+      }
+    },
+    "libarchive/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc.git",
+        "branch": "libarchive/v3.7.7",
+        "commit": "9fa42f83091d8f2ce25da1f00474a5bcd78537f7",
+        "subdir": "targets"
+      }
+    },
+    "libgit2": {
+      "repository": {
+        "type": "archive",
+        "content": "80f999c62e8da8da7d64fe543c8eeb9953bf6974",
+        "fetch": "https://github.com/libgit2/libgit2/archive/refs/tags/v1.7.2.tar.gz",
+        "sha256": "de384e29d7efc9330c6cdb126ebf88342b5025d920dcb7c645defad85195ea7f",
+        "sha512": "825737e4a1991fba50ea535f15b0e560ebe76ead752e04aeba36925b944d0da77fe9826a70980a1aa3d0bf9afbedfab79dd92e799c9252931384c89ebec9b012",
+        "subdir": "libgit2-1.7.2"
+      },
+      "target_root": "libgit2/targets",
+      "bindings": {
+        "rules": "libgit2/rules",
+        "zlib": "zlib",
+        "ssl": "ssl"
+      }
+    },
+    "libgit2/rules": {
+      "repository": "toolchain",
+      "target_root": "libgit2/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "libgit2/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "libgit2/v1.7.2",
+        "commit": "7693d2d199454a6fc4fc0ee9fbc93b4163551eff",
+        "subdir": "config"
+      }
+    },
+    "libgit2/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "libgit2/v1.7.2",
+        "commit": "7693d2d199454a6fc4fc0ee9fbc93b4163551eff",
+        "subdir": "targets"
+      }
+    },
+    "protobuf": {
+      "repository": {
+        "type": "archive",
+        "content": "e8787a2f6d661aaaec426743c4e9667be7c8ba2f",
+        "fetch": "https://github.com/protocolbuffers/protobuf/releases/download/v29.0/protobuf-29.0.tar.gz",
+        "sha256": "10a0d58f39a1a909e95e00e8ba0b5b1dc64d02997f741151953a2b3659f6e78c",
+        "sha512": "c5637486a533557ea909d1f880b0f0064fff0c4665612e023170941310c45bf8e7373d2c67de621824b056530e98792c00799d71ec4ff7b6af9142cdc4cb8dee",
+        "subdir": "protobuf-29.0"
+      },
+      "target_root": "protobuf/targets",
+      "bindings": {
+        "rules": "protobuf/rules",
+        "zlib": "zlib",
+        "absl": "absl"
+      }
+    },
+    "protobuf/rules": {
+      "repository": "toolchain",
+      "target_root": "protobuf/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "protobuf/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "protobuf/v29.0",
+        "commit": "7edba982c695f9242ab7591a2fe91d6d98b3d3a3",
+        "subdir": "config"
+      }
+    },
+    "protobuf/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "protobuf/v29.0",
+        "commit": "7edba982c695f9242ab7591a2fe91d6d98b3d3a3",
+        "subdir": "targets"
+      }
+    },
+    "grpc": {
+      "repository": {
+        "type": "archive",
+        "content": "87c37bc5be5d6ded368667d02958d488b94d6143",
+        "fetch": "https://github.com/grpc/grpc/archive/refs/tags/v1.70.2.tar.gz",
+        "sha256": "92f240f7267ed6cd8ba2be4c59a3b5b6ec0c4b4c466071b1e1d62165b25acf64",
+        "sha512": "4afd34b36b4d7c41260abad6d921154a3e7176a7a46de6ae97335697db5d11f61e37b08889c007463fc8f3e800788585f5f7d5b2cec12f89b69fc9bc15efd17f",
+        "subdir": "grpc-1.70.2",
+        "pragma": {
+          "special": "ignore"
+        }
+      },
+      "target_root": "grpc/targets",
+      "bindings": {
+        "rules": "grpc/rules",
+        "protobuf": "protobuf",
+        "ssl": "ssl",
+        "absl": "absl",
+        "zlib": "zlib",
+        "re2": "re2",
+        "cares": "cares"
+      }
+    },
+    "grpc/proto_toolchain": {
+      "repository": "toolchain",
+      "target_root": "grpc/proto_toolchain/targets",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain",
+        "protobuf": "protobuf"
+      }
+    },
+    "grpc/rules": {
+      "repository": "grpc/proto_toolchain",
+      "target_root": "grpc/config",
+      "rule_root": "grpc/proto_toolchain",
+      "bindings": {
+        "base": "grpc/proto_toolchain"
+      }
+    },
+    "grpc/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "grpc/v1.70.2",
+        "commit": "04689194807b36eddda17d42159641b9febcb3b0",
+        "subdir": "config"
+      }
+    },
+    "grpc/proto_toolchain/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/toolchains-cc.git",
+        "branch": "protobuf/v29.0",
+        "commit": "1d70d764438d7fee2d13a7856c1af00dfab45a62",
+        "subdir": "targets"
+      }
+    },
+    "grpc/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "grpc/v1.70.2",
+        "commit": "04689194807b36eddda17d42159641b9febcb3b0",
+        "subdir": "targets"
+      }
+    },
+    "grpc_toolchain": {
+      "repository": "toolchain",
+      "target_root": "grpc_toolchain/targets",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain",
+        "grpc": "grpc",
+        "protobuf": "protobuf"
+      }
+    },
+    "grpc_toolchain/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/toolchains-cc",
+        "branch": "grpc/v1.70.2",
+        "commit": "59d1325d00dbdb2a9f0558ca09394a1a3080ad28",
+        "subdir": "targets"
+      }
+    },
+    "justlang": {
+      "repository": {
+        "type": "file",
+        "path": "./extern/justlang"
+      },
+      "bindings": {
+        "rules": "justlang/justlang/rules",
+        "json": "json"
+      }
+    },
+    "justlang/justlang/rules": {
+      "repository": "toolchain",
+      "target_root": "tests/justlang/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "toolchain": "toolchain"
+      }
+    },
+    "justlang_tests": {
+      "repository": {
+        "type": "file",
+        "path": "./extern/justlang/test"
+      },
+      "bindings": {
+        "rules": "justlang/justlang/rules",
+        "json": "json",
+        "catch2": "catch2",
+        "justlang": "justlang"
+      }
+    },
+    "justlang_lint": {
+      "repository": {
+        "type": "file",
+        "path": "./extern/justlang/lint"
+      },
+      "bindings": {
+        "rules": "justlang/justlang/rules",
+        "clang": "lint/clang-18",
+        "justlang": "justlang",
+        "tests": "justlang_tests"
+      }
+    },
+    "jst": {
+      "repository": {
+        "type": "file",
+        "path": "./."
+      },
+      "bindings": {
+        "rules": "jst/rules",
+        "gsl": "gsl",
+        "cli11": "cli11",
+        "json": "json",
+        "fmt": "fmt",
+        "ssl": "ssl",
+        "grpc": "grpc",
+        "googleapis": "google_apis",
+        "bazel_remote_apis": "bazel_remote_apis",
+        "libgit2": "libgit2",
+        "protoc": "protobuf",
+        "libcurl": "curl",
+        "libarchive": "libarchive",
+        "justlang": "justlang"
+      }
+    },
+    "jst/rules": {
+      "repository": "grpc_toolchain",
+      "target_root": "jst/config",
+      "rule_root": "grpc_toolchain",
+      "bindings": {
+        "base": "grpc_toolchain"
+      }
+    },
+    "jst/config": {
+      "repository": {
+        "type": "file",
+        "path": "./etc/config"
+      }
+    },
+    "tests": {
+      "repository": {
+        "type": "file",
+        "path": "./test"
+      },
+      "bindings": {
+        "src": "tests/jst",
+        "rules": "jst/rules",
+        "catch2": "catch2",
+        "gsl": "gsl",
+        "cli11": "cli11",
+        "json": "json",
+        "fmt": "fmt",
+        "ssl": "ssl",
+        "grpc": "grpc",
+        "googleapis": "google_apis",
+        "bazel_remote_apis": "bazel_remote_apis",
+        "libgit2": "libgit2",
+        "protoc": "protobuf",
+        "justlang_tests": "justlang_tests"
+      }
+    },
+    "tests/curl": {
+      "repository": "tests/fmt/imports",
+      "target_file_name": "curl.TARGETS",
+      "bindings": {
+        "rules": "grpc_toolchain"
+      }
+    },
+    "tests/jst": {
+      "repository": {
+        "type": "file",
+        "path": "./."
+      },
+      "bindings": {
+        "rules": "jst/rules",
+        "gsl": "gsl",
+        "cli11": "cli11",
+        "json": "json",
+        "fmt": "fmt",
+        "ssl": "ssl",
+        "grpc": "grpc",
+        "googleapis": "google_apis",
+        "bazel_remote_apis": "bazel_remote_apis",
+        "libgit2": "libgit2",
+        "protoc": "protobuf",
+        "libcurl": "tests/curl",
+        "libarchive": "tests/libarchive",
+        "justlang": "tests/justlang"
+      }
+    },
+    "tests/justlang": {
+      "repository": {
+        "type": "file",
+        "path": "./extern/justlang"
+      },
+      "bindings": {
+        "rules": "tests/justlang/rules",
+        "json": "json"
+      }
+    },
+    "tests/justlang/rules": {
+      "repository": "grpc_toolchain",
+      "target_root": "tests/justlang/config",
+      "rule_root": "grpc_toolchain",
+      "bindings": {
+        "toolchain": "grpc_toolchain"
+      }
+    },
+    "tests/libarchive": {
+      "repository": "tests/fmt/imports",
+      "target_file_name": "libarchive.TARGETS",
+      "bindings": {
+        "rules": "grpc_toolchain"
+      }
+    },
+    "tests/fmt/imports": {
+      "repository": {
+        "type": "file",
+        "path": "./etc/imports"
+      }
+    },
+    "tests/justlang/config": {
+      "repository": {
+        "type": "file",
+        "path": "./extern/justlang/etc/config"
+      }
+    },
+    "lint": {
+      "repository": {
+        "type": "file",
+        "path": "./lint"
+      },
+      "bindings": {
+        "rules": "jst/rules",
+        "jst": "jst",
+        "tests": "tests",
+        "clang": "lint/clang-18",
+        "justlang_lint": "justlang_lint"
+      }
+    },
+    "lint/clang-18": {
+      "repository": {
+        "type": "archive",
+        "fetch": "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
+        "sha256": "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
+        "content": "495971397e90fef8f731a1f1ad3ca1d25e845b9a",
+        "subdir": "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04"
+      },
+      "target_root": "lint/clang-18/targets",
+      "target_file_name": "clang.TARGETS",
+      "bindings": {
+        "rules": "lint/clang-18/base_toolchain"
+      }
+    },
+    "lint/clang-18/base_toolchain": {
+      "repository": "lint/clang-18/base_toolchain/rules",
+      "target_root": "lint/clang-18/base_toolchain/targets",
+      "rule_root": "lint/clang-18/base_toolchain/rules"
+    },
+    "lint/clang-18/base_toolchain/rules": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/rules-cc",
+        "branch": "master",
+        "commit": "62c4b9f3524b456049e1cdf3601b7e07d0c9e4d0",
+        "subdir": "rules"
+      }
+    },
+    "lint/clang-18/base_toolchain/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/toolchains-cc",
+        "branch": "system",
+        "commit": "93ba90ae5752d72041eb9849ad53e66c82826e20",
+        "subdir": "targets"
+      }
+    },
+    "lint/clang-18/targets": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/toolchains-cc",
+        "branch": "clang-amd64-gnu/v18.1.8",
+        "commit": "16c3784a78f2a6ff7ca5ca4ad135bbf059793ff0",
+        "subdir": "targets"
+      }
+    }
+  }
+}

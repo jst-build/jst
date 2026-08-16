@@ -1,56 +1,59 @@
-{ "main": "justlang"
-, "imports":
-  [ { "source": "git"
-    , "branch": "master"
-    , "url": "https://github.com/just-buildsystem/rules-cc"
-    , "repos": [{"repo": "rules"}]
+{
+  "main": "justlang",
+  "imports": [
+    {
+      "source": "git",
+      "url": "https://github.com/jst-build/toolchains-cc.git",
+      "branch": "system",
+      "repos": [{"alias": "toolchain"}]
+    },
+    {
+      "source": "git",
+      "url": "https://github.com/jst-build/toolchains-cc.git",
+      "branch": "clang-amd64-gnu/v18.1.8",
+      "repos": [{"repo": "clang", "alias": "clang-18"}]
+    },
+    {
+      "source": "git",
+      "url": "https://github.com/jst-build/imports-cc.git",
+      "branch": "nlohmann_json/v3.11.3",
+      "repos": [{"alias": "json", "map": {"toolchain": "toolchain"}}]
+    },
+    {
+      "source": "git",
+      "url": "https://github.com/jst-build/imports-cc.git",
+      "branch": "catch2/v3.5.3",
+      "repos": [{"alias": "catch2", "map": {"toolchain": "toolchain"}}]
     }
-  , { "source": "git"
-    , "branch": "v1.6.0"
-    , "url": "https://github.com/just-buildsystem/justbuild"
-    , "repos":
-      [ {"repo": "rules", "alias": "toolchain"}
-      , {"repo": "json"}
-      , {"repo": "catch2"}
-      ]
-    }
-  , { "source": "git"
-    , "branch": "master"
-    , "url": "https://github.com/just-buildsystem/toolchains-cc.git"
-    , "mirrors": ["https://gitee.com/justbuild/toolchains-cc.git"]
-    , "repos":
-      [{"repo": "external_clang18-x86_64-ubuntu", "alias": "clang-18"}]
-    }
-  ]
-, "repositories":
-  { "defaults": {"repository": {"type": "file", "path": "etc/defaults"}}
-  , "rules-justlang":
-    { "repository": "toolchain"
-    , "target_root": "defaults"
-    , "rule_root": "toolchain"
-    , "bindings": {"toolchain": "toolchain"}
-    }
-  , "justlang":
-    { "repository": {"type": "file", "path": "."}
-    , "bindings":
-      {"rules": "rules-justlang", "json": "json"}
-    }
-  , "tests":
-    { "repository": {"type": "file", "path": "test"}
-    , "bindings":
-      { "rules": "rules-justlang"
-      , "json": "json"
-      , "catch2": "catch2"
-      , "justlang": "justlang"
+  ],
+  "repositories": {
+    "config": {"repository": {"type": "file", "path": "etc/config"}},
+    "rules": {
+      "repository": "toolchain",
+      "target_root": "config",
+      "rule_root": "toolchain",
+      "bindings": {"toolchain": "toolchain"}
+    },
+    "justlang": {
+      "repository": {"type": "file", "path": "."},
+      "bindings": {"rules": "rules", "json": "json"}
+    },
+    "tests": {
+      "repository": {"type": "file", "path": "test"},
+      "bindings": {
+        "rules": "rules",
+        "json": "json",
+        "catch2": "catch2",
+        "justlang": "justlang"
       }
-    }
-  , "lint":
-    { "repository": {"type": "file", "path": "lint"}
-    , "bindings":
-      { "rules": "rules-justlang"
-      , "clang": "clang-18"
-      , "justlang": "justlang"
-      , "tests": "tests"
+    },
+    "lint": {
+      "repository": {"type": "file", "path": "lint"},
+      "bindings": {
+        "rules": "rules",
+        "clang": "clang-18",
+        "justlang": "justlang",
+        "tests": "tests"
       }
     }
   }

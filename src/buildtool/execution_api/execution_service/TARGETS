@@ -1,230 +1,242 @@
-{ "execution_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["execution_server"]
-  , "hdrs": ["execution_server.hpp"]
-  , "srcs": ["execution_server.cpp"]
-  , "private-cflags": ["-Wno-deprecated-declarations"]
-  , "proto":
-    [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
-    , ["@", "googleapis", "", "google_longrunning_operations_proto"]
-    , ["@", "googleapis", "", "google_rpc_status_proto"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ "operation_cache"
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/execution_api/local", "local_api"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/storage", "garbage_collector"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  , "private-ldflags":
-    ["-pthread", "-Wl,--whole-archive,-lpthread,--no-whole-archive"]
-  }
-, "ac_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["ac_server"]
-  , "hdrs": ["ac_server.hpp"]
-  , "srcs": ["ac_server.cpp"]
-  , "proto": [["@", "bazel_remote_apis", "", "remote_execution_proto"]]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/storage", "garbage_collector"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  }
-, "cas_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["cas_server"]
-  , "hdrs": ["cas_server.hpp"]
-  , "srcs": ["cas_server.cpp"]
-  , "proto":
-    [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
-    , ["@", "googleapis", "", "google_rpc_status_proto"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    ]
-  , "private-deps":
-    [ "cas_utils"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/storage", "garbage_collector"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  }
-, "server_implementation":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["server_implementation"]
-  , "hdrs": ["server_implementation.hpp"]
-  , "srcs": ["server_implementation.cpp"]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/execution_api/remote", "context"]
-    ]
-  , "private-deps":
-    [ "ac_server"
-    , "bytestream_server"
-    , "capabilities_server"
-    , "cas_server"
-    , "execution_server"
-    , "operations_server"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/auth", "auth"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/common/remote", "port"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/local", "local_api"]
-    , ["src/buildtool/file_system", "atomic"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/utils/cpp", "type_safe_arithmetic"]
-    ]
-  }
-, "bytestream_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["bytestream"]
-  , "hdrs": ["bytestream_server.hpp"]
-  , "srcs": ["bytestream_server.cpp"]
-  , "proto": [["@", "googleapis", "", "google_bytestream_proto"]]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    ]
-  , "private-deps":
-    [ "cas_utils"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/common", "bytestream_utils"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/storage", "garbage_collector"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "incremental_reader"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "capabilities_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["capabilities_server"]
-  , "hdrs": ["capabilities_server.hpp"]
-  , "srcs": ["capabilities_server.cpp"]
-  , "proto":
-    [ ["@", "bazel_remote_apis", "", "remote_execution_proto"]
-    , ["@", "bazel_remote_apis", "", "semver_proto"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "grpc", "", "grpc++"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/crypto", "hash_function"]
-    ]
-  , "private-deps":
-    [ ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/execution_api/common", "message_limits"]
-    ]
-  }
-, "operation_cache":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["operation_cache"]
-  , "hdrs": ["operation_cache.hpp"]
-  , "srcs": ["operation_cache.cpp"]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "proto": [["@", "googleapis", "", "google_longrunning_operations_proto"]]
-  , "deps": [["@", "protoc", "", "libprotobuf"]]
-  }
-, "operations_server":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["operations_server"]
-  , "hdrs": ["operations_server.hpp"]
-  , "srcs": ["operations_server.cpp"]
-  , "deps":
-    [ "operation_cache"
-    , ["@", "grpc", "", "grpc++"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "proto": [["@", "googleapis", "", "google_longrunning_operations_proto"]]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  }
-, "cas_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["cas_utils"]
-  , "hdrs": ["cas_utils.hpp"]
-  , "srcs": ["cas_utils.cpp"]
-  , "stage": ["src", "buildtool", "execution_api", "execution_service"]
-  , "deps":
-    [ ["@", "grpc", "", "grpc++"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/crypto", "hash_function"]
-    ]
-  }
+{
+  execution_server: {
+    type: @'rules//CC:library',
+    name: ['execution_server'],
+    hdrs: ['execution_server.hpp'],
+    srcs: ['execution_server.cpp'],
+    // uses deprecated RBEv2 fields to stay compatible with older clients
+    'private-cflags': ["-Wno-deprecated-declarations"],
+    proto: [
+      @'bazel_remote_apis//:remote_execution_proto',
+      @'googleapis//:google_longrunning_operations_proto',
+      @'googleapis//:google_rpc_status_proto',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      'operation_cache',
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/execution_api/local:local_api',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+      @'//src/utils/cpp:expected',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'json//:json',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/storage:garbage_collector',
+      @'//src/utils/cpp:hex_string',
+    ],
+    'private-ldflags': [
+      '-pthread',
+      '-Wl,--whole-archive,-lpthread,--no-whole-archive',
+    ],
+  },
+
+  ac_server: {
+    type: @'rules//CC:library',
+    name: ['ac_server'],
+    hdrs: ['ac_server.hpp'],
+    srcs: ['ac_server.cpp'],
+    proto: [@'bazel_remote_apis//:remote_execution_proto'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'json//:json',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/storage:garbage_collector',
+      @'//src/utils/cpp:expected',
+    ],
+  },
+
+  cas_server: {
+    type: @'rules//CC:library',
+    name: ['cas_server'],
+    hdrs: ['cas_server.hpp'],
+    srcs: ['cas_server.cpp'],
+    proto: [
+      @'bazel_remote_apis//:remote_execution_proto',
+      @'googleapis//:google_rpc_status_proto',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+    ],
+    'private-deps': [
+      'cas_utils',
+      @'fmt//:fmt',
+      @'json//:json',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/storage:garbage_collector',
+      @'//src/utils/cpp:expected',
+    ],
+  },
+
+  server_implementation: {
+    type: @'rules//CC:library',
+    name: ['server_implementation'],
+    hdrs: ['server_implementation.hpp'],
+    srcs: ['server_implementation.cpp'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/execution_api/remote:context',
+    ],
+    'private-deps': [
+      'ac_server',
+      'bytestream_server',
+      'capabilities_server',
+      'cas_server',
+      'execution_server',
+      'operations_server',
+      @'fmt//:fmt',
+      @'grpc//:grpc++',
+      @'json//:json',
+      @'//src/buildtool/auth:auth',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/common/remote:port',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/local:local_api',
+      @'//src/buildtool/file_system:atomic',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/utils/cpp:type_safe_arithmetic',
+    ],
+  },
+
+  bytestream_server: {
+    type: @'rules//CC:library',
+    name: ['bytestream'],
+    hdrs: ['bytestream_server.hpp'],
+    srcs: ['bytestream_server.cpp'],
+    proto: [@'googleapis//:google_bytestream_proto'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+    ],
+    'private-deps': [
+      'cas_utils',
+      @'fmt//:fmt',
+      @'json//:json',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/common:bytestream_utils',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/storage:garbage_collector',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:incremental_reader',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  capabilities_server: {
+    type: @'rules//CC:library',
+    name: ['capabilities_server'],
+    hdrs: ['capabilities_server.hpp'],
+    srcs: ['capabilities_server.cpp'],
+    proto: [
+      @'bazel_remote_apis//:remote_execution_proto',
+      @'bazel_remote_apis//:semver_proto',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'grpc//:grpc++',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/crypto:hash_function',
+    ],
+    'private-deps': [
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/execution_api/common:message_limits',
+    ],
+  },
+
+  operation_cache: {
+    type: @'rules//CC:library',
+    name: ['operation_cache'],
+    hdrs: ['operation_cache.hpp'],
+    srcs: ['operation_cache.cpp'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    proto: [@'googleapis//:google_longrunning_operations_proto'],
+    deps: [@'protoc//:libprotobuf'],
+  },
+
+  operations_server: {
+    type: @'rules//CC:library',
+    name: ['operations_server'],
+    hdrs: ['operations_server.hpp'],
+    srcs: ['operations_server.cpp'],
+    deps: [
+      'operation_cache',
+      @'grpc//:grpc++',
+      @'gsl//:gsl',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/logging:logging',
+    ],
+    proto: [@'googleapis//:google_longrunning_operations_proto'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/logging:log_level',
+      @'//src/utils/cpp:hex_string',
+    ],
+  },
+
+  cas_utils: {
+    type: @'rules//CC:library',
+    name: ['cas_utils'],
+    hdrs: ['cas_utils.hpp'],
+    srcs: ['cas_utils.cpp'],
+    stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
+    deps: [
+      @'grpc//:grpc++',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/storage:storage',
+      @'//src/utils/cpp:expected',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/crypto:hash_function',
+    ],
+  },
 }

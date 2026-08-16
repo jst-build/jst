@@ -1,53 +1,57 @@
-{ "execution_config":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["execution_config"]
-  , "hdrs": ["execution_config.hpp"]
-  , "stage": ["src", "buildtool", "execution_api", "bazel_msg"]
-  }
-, "bazel_msg_factory":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["bazel_msg_factory"]
-  , "hdrs": ["bazel_msg_factory.hpp"]
-  , "srcs": ["bazel_msg_factory.cpp"]
-  , "private-cflags": ["-Wno-deprecated-declarations"]
-  , "deps":
-    [ "directory_tree"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "path"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "bazel_msg"]
-  }
-, "directory_tree":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["directory_tree"]
-  , "hdrs": ["directory_tree.hpp"]
-  , "srcs": ["directory_tree.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
-    ]
-  , "private-deps":
-    [ ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "gsl"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "bazel_msg"]
-  }
+{
+  execution_config: {
+    type: @'rules//CC:library',
+    name: ['execution_config'],
+    hdrs: ['execution_config.hpp'],
+    stage: ['src', 'buildtool', 'execution_api', 'bazel_msg'],
+  },
+
+  bazel_msg_factory: {
+    type: @'rules//CC:library',
+    name: ['bazel_msg_factory'],
+    hdrs: ['bazel_msg_factory.hpp'],
+    srcs: ['bazel_msg_factory.cpp'],
+    // uses deprecated RBEv2 fields to stay compatible with older clients
+    'private-cflags': ["-Wno-deprecated-declarations"],
+    deps: [
+      'directory_tree',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:path',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'bazel_msg'],
+  },
+
+  directory_tree: {
+    type: @'rules//CC:library',
+    name: ['directory_tree'],
+    hdrs: ['directory_tree.hpp'],
+    srcs: ['directory_tree.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/execution_engine/dag:dag',
+    ],
+    'private-deps': [
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:gsl',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'bazel_msg'],
+  },
 }

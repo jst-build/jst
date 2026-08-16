@@ -1,3 +1,0 @@
-{ "defaults":
-  {"type": ["patch", "defaults"], "base": [["@", "base", "patch", "defaults"]]}
-}

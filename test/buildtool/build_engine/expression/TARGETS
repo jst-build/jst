@@ -1,54 +1,54 @@
-{ "linked_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["linked_map"]
-  , "srcs": ["linked_map.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/build_engine/expression", "linked_map"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "expression"]
-  }
-, "expression":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["expression"]
-  , "srcs": ["expression.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/build_engine/expression", "expression"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/build_engine/expression"
-      , "expression_ptr_interface"
-      ]
-    , ["@", "src", "src/buildtool/build_engine/expression", "linked_map"]
-    , ["@", "src", "src/buildtool/common", "artifact_description"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "expression"]
-  }
-, "configuration":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["configuration"]
-  , "srcs": ["configuration.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/build_engine/expression", "expression"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/build_engine/expression"
-      , "expression_ptr_interface"
-      ]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "expression"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["expression"]
-  , "deps": ["configuration", "expression", "linked_map"]
-  }
+{
+  linked_map: {
+    type: @'rules//CC/test:test',
+    name: ['linked_map'],
+    srcs: ['linked_map.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/build_engine/expression:linked_map',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'expression'],
+  },
+
+  expression: {
+    type: @'rules//CC/test:test',
+    name: ['expression'],
+    srcs: ['expression.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'src//src/buildtool/build_engine/expression:linked_map',
+      @'src//src/buildtool/common:artifact_description',
+      @'src//src/buildtool/common:common',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'expression'],
+  },
+
+  configuration: {
+    type: @'rules//CC/test:test',
+    name: ['configuration'],
+    srcs: ['configuration.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'expression'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['expression'],
+    deps: [
+      'configuration',
+      'expression',
+      'linked_map',
+    ],
+  },
 }

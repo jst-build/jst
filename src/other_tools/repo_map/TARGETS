@@ -1,39 +1,40 @@
-{ "repos_to_setup_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["repos_to_setup_map"]
-  , "hdrs": ["repos_to_setup_map.hpp"]
-  , "srcs": ["repos_to_setup_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/other_tools/just_mr/progress_reporting", "statistics"]
-    , ["src/other_tools/root_maps", "commit_git_map"]
-    , ["src/other_tools/root_maps", "content_git_map"]
-    , ["src/other_tools/root_maps", "distdir_git_map"]
-    , ["src/other_tools/root_maps", "foreign_file_git_map"]
-    , ["src/other_tools/root_maps", "fpath_git_map"]
-    , ["src/other_tools/root_maps", "tree_id_git_map"]
-    ]
-  , "stage": ["src", "other_tools", "repo_map"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/build_engine/expression", "expression_ptr_interface"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/crypto", "hash_info"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "precomputed_root"]
-    , ["src/buildtool/file_system/symlinks", "pragma_special"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/other_tools/just_mr", "utils"]
-    , ["src/other_tools/ops_maps", "content_cas_map"]
-    , ["src/other_tools/ops_maps", "git_tree_fetch_map"]
-    , ["src/other_tools/utils", "parse_archive"]
-    , ["src/other_tools/utils", "parse_git_tree"]
-    , ["src/other_tools/utils", "parse_precomputed_root"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "path"]
-    ]
-  }
+{
+  repos_to_setup_map: {
+    type: @'rules//CC:library',
+    name: ['repos_to_setup_map'],
+    hdrs: ['repos_to_setup_map.hpp'],
+    srcs: ['repos_to_setup_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/other_tools/just_mr/progress_reporting:statistics',
+      @'//src/other_tools/root_maps:commit_git_map',
+      @'//src/other_tools/root_maps:content_git_map',
+      @'//src/other_tools/root_maps:distdir_git_map',
+      @'//src/other_tools/root_maps:foreign_file_git_map',
+      @'//src/other_tools/root_maps:fpath_git_map',
+      @'//src/other_tools/root_maps:tree_id_git_map',
+    ],
+    stage: ['src', 'other_tools', 'repo_map'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/crypto:hash_info',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:precomputed_root',
+      @'//src/buildtool/file_system/symlinks:pragma_special',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/other_tools/just_mr:utils',
+      @'//src/other_tools/ops_maps:content_cas_map',
+      @'//src/other_tools/ops_maps:git_tree_fetch_map',
+      @'//src/other_tools/utils:parse_archive',
+      @'//src/other_tools/utils:parse_git_tree',
+      @'//src/other_tools/utils:parse_precomputed_root',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:path',
+    ],
+  },
 }

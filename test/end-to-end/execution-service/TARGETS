@@ -1,18 +1,24 @@
-{ "simple_build":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["simple_build"]
-  , "test": ["simple_build.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "tree_inputs":
-  { "type": ["end-to-end", "with remote"]
-  , "name": ["tree_inputs"]
-  , "test": ["tree_inputs.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["execution-service"]
-  , "deps": ["simple_build", "tree_inputs"]
-  }
+{
+  simple_build: {
+    type: @'rules//shell/test:script',
+    name: ['simple_build'],
+    test: ['simple_build.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  tree_inputs: {
+    type: @'//end-to-end:with remote',
+    name: ['tree_inputs'],
+    test: ['tree_inputs.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['execution-service'],
+    deps: [
+      'simple_build',
+      'tree_inputs',
+    ],
+  },
 }

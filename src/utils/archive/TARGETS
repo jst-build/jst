@@ -1,14 +1,15 @@
-{ "archive_ops":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["archive_ops"]
-  , "hdrs": ["archive_ops.hpp"]
-  , "srcs": ["archive_ops.cpp"]
-  , "stage": ["src", "utils", "archive"]
-  , "private-deps":
-    [ ["", "libarchive"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
+{
+  archive_ops: {
+    type: @'rules//CC:library',
+    name: ['archive_ops'],
+    hdrs: ['archive_ops.hpp'],
+    srcs: ['archive_ops.cpp'],
+    stage: ['src', 'utils', 'archive'],
+    'private-deps': [
+      @'//:libarchive',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
 }

@@ -245,14 +245,14 @@ target can be used to restage the outputs to different names.
 Build this target to produce and restage all output files:
 
 ``` sh
-$ jut build ALL
+$ jst build ALL
 ```
 
 The output produced should look like this:
 
 ``` plaintext
 INFO: Requested target '""//:ALL' with config: {}
-INFO: Discovered 2 actions, 0 trees, 1 blobs
+INFO: Discovered 2 actions, 0 tree overlays, 0 trees, 1 blobs
 INFO: Processed 2 actions, 2 cache hits.
 INFO: Artifacts built, logical paths are:
         out/file.txt [34c97eeca89eb286aed798efd885da6ea77e9a96:13:f]

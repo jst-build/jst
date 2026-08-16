@@ -1,47 +1,49 @@
-{ "mr_git_api":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["mr_git_api"]
-  , "hdrs": ["mr_git_api.hpp"]
-  , "srcs": ["mr_git_api.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/storage", "config"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "serve"]
-  , "private-deps":
-    [ ["src/buildtool/execution_api/git", "git_api"]
-    , ["src/buildtool/execution_api/utils", "rehash_utils"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  }
-, "mr_local_api":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["mr_local_api"]
-  , "hdrs": ["mr_local_api.hpp"]
-  , "srcs": ["mr_local_api.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "serve"]
-  , "private-deps":
-    [ ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/execution_api/utils", "rehash_utils"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  }
+{
+  mr_git_api: {
+    type: @'rules//CC:library',
+    name: ['mr_git_api'],
+    hdrs: ['mr_git_api.hpp'],
+    srcs: ['mr_git_api.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/storage:config',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'serve'],
+    'private-deps': [
+      @'//src/buildtool/execution_api/git:git_api',
+      @'//src/buildtool/execution_api/utils:rehash_utils',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+    ],
+  },
+
+  mr_local_api: {
+    type: @'rules//CC:library',
+    name: ['mr_local_api'],
+    hdrs: ['mr_local_api.hpp'],
+    srcs: ['mr_local_api.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/execution_engine/dag:dag',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'serve'],
+    'private-deps': [
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/execution_api/utils:rehash_utils',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/storage:config',
+      @'//src/utils/cpp:expected',
+    ],
+  },
 }

@@ -1,28 +1,28 @@
-{ "system":
-  { "type": ["@", "rules", "CC", "library"]
-  , "arguments_config": ["VALGRIND_BUILD"]
-  , "name": ["system"]
-  , "hdrs": ["system.hpp"]
-  , "srcs": ["system.cpp"]
-  , "private-defines":
-    { "type": "if"
-    , "cond": {"type": "var", "name": "VALGRIND_BUILD"}
-    , "then": ["VALGRIND_BUILD"]
-    }
-  , "deps": [["src/utils/cpp", "concepts"]]
-  , "stage": ["src", "buildtool", "system"]
-  }
-, "system_command":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["system_command"]
-  , "hdrs": ["system_command.hpp"]
-  , "deps":
-    [ "system"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "system"]
-  }
+{
+  system: {
+    type: @'rules//CC:library',
+    arguments_config: ['VALGRIND_BUILD'],
+    name: ['system'],
+    hdrs: ['system.hpp'],
+    srcs: ['system.cpp'],
+    'private-defines':
+      if jst.env('VALGRIND_BUILD') then
+        ['VALGRIND_BUILD'],
+    deps: [@'//src/utils/cpp:concepts'],
+    stage: ['src', 'buildtool', 'system'],
+  },
+
+  system_command: {
+    type: @'rules//CC:library',
+    name: ['system_command'],
+    hdrs: ['system_command.hpp'],
+    deps: [
+      'system',
+      @'gsl//:gsl',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'system'],
+  },
 }

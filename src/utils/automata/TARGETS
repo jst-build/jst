@@ -1,13 +1,14 @@
-{ "dfa_minimizer":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["dfa_minimizer"]
-  , "hdrs": ["dfa_minimizer.hpp"]
-  , "stage": ["src", "utils", "automata"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/utils/cpp", "hash_combine"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  }
+{
+  dfa_minimizer: {
+    type: @'rules//CC:library',
+    name: ['dfa_minimizer'],
+    hdrs: ['dfa_minimizer.hpp'],
+    stage: ['src', 'utils', 'automata'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/utils/cpp:hash_combine',
+      @'//src/utils/cpp:hex_string',
+    ],
+  },
 }

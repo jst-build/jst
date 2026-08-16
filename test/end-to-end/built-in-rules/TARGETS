@@ -1,58 +1,76 @@
-{ "generic_out_dirs":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["generic_out_dirs"]
-  , "test": ["generic_out_dirs.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "generic_sh":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["generic_sh"]
-  , "test": ["generic_sh.sh"]
-  , "keep": ["null.json", "empty.json", "custom.json"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "generic_conflict":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["generic_conflict"]
-  , "test": ["generic_conflict.sh"]
-  , "keep": ["log"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "filegen_config":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["filegen_config"]
-  , "test": ["filegen_config.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "tree":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["tree"]
-  , "test": ["tree.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "symlink_config":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["symlink_config"]
-  , "test": ["symlink_config.sh"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "export_counting":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["export_counting"]
-  , "test": ["export_counting.sh"]
-  , "deps": [["", "mr-tool-under-test"], ["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["built-in-rules"]
-  , "deps":
-    [ "export_counting"
-    , "filegen_config"
-    , "generic_conflict"
-    , "generic_out_dirs"
-    , "generic_sh"
-    , "symlink_config"
-    , "tree"
-    ]
-  }
+{
+  generic_out_dirs: {
+    type: @'rules//shell/test:script',
+    name: ['generic_out_dirs'],
+    test: ['generic_out_dirs.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  generic_sh: {
+    type: @'rules//shell/test:script',
+    name: ['generic_sh'],
+    test: ['generic_sh.sh'],
+    keep: [
+      'null.json',
+      'empty.json',
+      'custom.json',
+    ],
+    deps: [@'//:tool-under-test'],
+  },
+
+  generic_conflict: {
+    type: @'rules//shell/test:script',
+    name: ['generic_conflict'],
+    test: ['generic_conflict.sh'],
+    keep: ['log'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  filegen_config: {
+    type: @'rules//shell/test:script',
+    name: ['filegen_config'],
+    test: ['filegen_config.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  tree: {
+    type: @'rules//shell/test:script',
+    name: ['tree'],
+    test: ['tree.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  symlink_config: {
+    type: @'rules//shell/test:script',
+    name: ['symlink_config'],
+    test: ['symlink_config.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  export_counting: {
+    type: @'rules//shell/test:script',
+    name: ['export_counting'],
+    test: ['export_counting.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['built-in-rules'],
+    deps: [
+      'export_counting',
+      'filegen_config',
+      'generic_conflict',
+      'generic_out_dirs',
+      'generic_sh',
+      'symlink_config',
+      'tree',
+    ],
+  },
 }

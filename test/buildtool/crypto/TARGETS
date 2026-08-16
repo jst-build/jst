@@ -1,41 +1,49 @@
-{ "hasher":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["hasher"]
-  , "srcs": ["hasher.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/crypto", "hasher"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "crypto"]
-  }
-, "hash_function":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["hash_function"]
-  , "srcs": ["hash_function.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/crypto", "hasher"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "crypto"]
-  }
-, "hash_info":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["hash_info"]
-  , "srcs": ["hash_info.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/crypto", "hash_info"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "crypto"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["crypto"]
-  , "deps": ["hash_function", "hash_info", "hasher"]
-  }
+{
+  hasher: {
+    type: @'rules//CC/test:test',
+    name: ['hasher'],
+    srcs: ['hasher.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/crypto:hasher',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'crypto'],
+  },
+
+  hash_function: {
+    type: @'rules//CC/test:test',
+    name: ['hash_function'],
+    srcs: ['hash_function.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/crypto:hasher',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'crypto'],
+  },
+
+  hash_info: {
+    type: @'rules//CC/test:test',
+    name: ['hash_info'],
+    srcs: ['hash_info.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/crypto:hash_info',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'crypto'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['crypto'],
+    deps: [
+      'hash_function',
+      'hash_info',
+      'hasher',
+    ],
+  },
 }

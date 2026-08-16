@@ -1,175 +1,195 @@
-{ "config":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["config"]
-  , "hdrs": ["config.hpp"]
-  , "deps":
-    [ "backend_description"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "gsl"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  }
-, "repository_garbage_collector":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["repository_garbage_collector"]
-  , "hdrs": ["repository_garbage_collector.hpp"]
-  , "srcs": ["repository_garbage_collector.cpp"]
-  , "deps": ["config", ["src/utils/cpp", "file_locking"]]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/execution_api/common", "ids"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  }
-, "storage":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["storage"]
-  , "hdrs":
-    [ "storage.hpp"
-    , "local_cas.hpp"
-    , "local_cas.tpp"
-    , "local_ac.hpp"
-    , "local_ac.tpp"
-    , "target_cache.hpp"
-    , "target_cache.tpp"
-    , "target_cache_key.hpp"
-    , "target_cache_entry.hpp"
-    , "large_object_cas.hpp"
-    , "large_object_cas.tpp"
-    , "uplinker.hpp"
-    ]
-  , "srcs": ["target_cache_entry.cpp", "uplinker.cpp"]
-  , "private-cflags": ["-Wno-deprecated-declarations"]
-  , "deps":
-    [ "backend_description"
-    , "config"
-    , "file_chunker"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/build_engine/analysed_target", "target"]
-    , ["src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["src/buildtool/build_engine/expression", "expression"]
-    , ["src/buildtool/common", "artifact_description"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_storage"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "object_cas"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "gsl"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  , "private-deps":
-    [["src/buildtool/build_engine/expression", "expression_ptr_interface"]]
-  }
-, "garbage_collector":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["garbage_collector"]
-  , "hdrs": ["garbage_collector.hpp"]
-  , "srcs": ["garbage_collector.cpp"]
-  , "deps": ["config", ["src/utils/cpp", "file_locking"]]
-  , "private-deps":
-    [ "compactifier"
-    , "storage"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/common", "ids"]
-    , ["src/buildtool/execution_api/common", "message_limits"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  }
-, "compactifier":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["compactifier"]
-  , "hdrs": ["compactifier.hpp"]
-  , "private-hdrs": ["compactification_task.hpp"]
-  , "srcs": ["compactifier.cpp", "compactification_task.cpp"]
-  , "deps": ["storage"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/crypto", "hasher"]
-    , ["src/buildtool/file_system", "file_storage"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "path_hash"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  }
-, "fs_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["fs_utils"]
-  , "hdrs": ["fs_utils.hpp"]
-  , "srcs": ["fs_utils.cpp"]
-  , "deps":
-    [ "config"
-    , "storage"
-    , ["src/buildtool/common", "user_structs"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system/symlinks", "pragma_special"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "path"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "file_chunker":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_chunker"]
-  , "hdrs": ["file_chunker.hpp"]
-  , "srcs": ["file_chunker.cpp"]
-  , "stage": ["src", "buildtool", "storage"]
-  , "private-deps": [["@", "gsl", "", "gsl"]]
-  }
-, "backend_description":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["backend_description"]
-  , "hdrs": ["backend_description.hpp"]
-  , "srcs": ["backend_description.cpp"]
-  , "deps":
-    [ ["src/buildtool/common", "common"]
-    , ["src/buildtool/common/remote", "remote_common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "storage"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/file_system", "object_type"]
-    ]
-  }
+{
+  config: {
+    type: @'rules//CC:library',
+    name: ['config'],
+    hdrs: ['config.hpp'],
+    deps: [
+      'backend_description',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:gsl',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+  },
+
+  repository_garbage_collector: {
+    type: @'rules//CC:library',
+    name: ['repository_garbage_collector'],
+    hdrs: ['repository_garbage_collector.hpp'],
+    srcs: ['repository_garbage_collector.cpp'],
+    deps: [
+      'config',
+      @'//src/utils/cpp:file_locking',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/execution_api/common:ids',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+  },
+
+  storage: {
+    type: @'rules//CC:library',
+    name: ['storage'],
+    hdrs: [
+      'storage.hpp',
+      'local_cas.hpp',
+      'local_cas.tpp',
+      'local_ac.hpp',
+      'local_ac.tpp',
+      'target_cache.hpp',
+      'target_cache.tpp',
+      'target_cache_key.hpp',
+      'target_cache_entry.hpp',
+      'large_object_cas.hpp',
+      'large_object_cas.tpp',
+      'uplinker.hpp',
+    ],
+    srcs: [
+      'target_cache_entry.cpp',
+      'uplinker.cpp',
+    ],
+    // uses deprecated RBEv2 fields to stay compatible with older clients
+    'private-cflags': ["-Wno-deprecated-declarations"],
+    deps: [
+      'backend_description',
+      'config',
+      'file_chunker',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/build_engine/analysed_target:target',
+      @'//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//src/buildtool/build_engine/expression:expression',
+      @'//src/buildtool/common:artifact_description',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_storage',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:object_cas',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:gsl',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+    'private-deps': [@'//src/buildtool/build_engine/expression:expression_ptr_interface'],
+  },
+
+  garbage_collector: {
+    type: @'rules//CC:library',
+    name: ['garbage_collector'],
+    hdrs: ['garbage_collector.hpp'],
+    srcs: ['garbage_collector.cpp'],
+    deps: [
+      'config',
+      @'//src/utils/cpp:file_locking',
+    ],
+    'private-deps': [
+      'compactifier',
+      'storage',
+      @'fmt//:fmt',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/common:ids',
+      @'//src/buildtool/execution_api/common:message_limits',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+  },
+
+  compactifier: {
+    type: @'rules//CC:library',
+    name: ['compactifier'],
+    hdrs: ['compactifier.hpp'],
+    'private-hdrs': ['compactification_task.hpp'],
+    srcs: [
+      'compactifier.cpp',
+      'compactification_task.cpp',
+    ],
+    deps: ['storage'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/crypto:hasher',
+      @'//src/buildtool/file_system:file_storage',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:path_hash',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+  },
+
+  fs_utils: {
+    type: @'rules//CC:library',
+    name: ['fs_utils'],
+    hdrs: ['fs_utils.hpp'],
+    srcs: ['fs_utils.cpp'],
+    deps: [
+      'config',
+      'storage',
+      @'//src/buildtool/common:user_structs',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system/symlinks:pragma_special',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'json//:json',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:path',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  file_chunker: {
+    type: @'rules//CC:library',
+    name: ['file_chunker'],
+    hdrs: ['file_chunker.hpp'],
+    srcs: ['file_chunker.cpp'],
+    stage: ['src', 'buildtool', 'storage'],
+    'private-deps': [@'gsl//:gsl'],
+  },
+
+  backend_description: {
+    type: @'rules//CC:library',
+    name: ['backend_description'],
+    hdrs: ['backend_description.hpp'],
+    srcs: ['backend_description.cpp'],
+    deps: [
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common/remote:remote_common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'storage'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'json//:json',
+      @'//src/buildtool/file_system:object_type',
+    ],
+  },
 }

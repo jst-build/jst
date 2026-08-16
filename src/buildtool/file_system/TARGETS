@@ -1,252 +1,274 @@
-{ "object_type":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["object_type"]
-  , "hdrs": ["object_type.hpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "file_storage":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_storage"]
-  , "hdrs": ["file_storage.hpp"]
-  , "deps":
-    [ "object_type"
-    , ["src/buildtool/execution_api/common", "ids"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "object_cas":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["object_cas"]
-  , "hdrs": ["object_cas.hpp"]
-  , "deps":
-    [ "file_storage"
-    , "object_type"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "file_system_manager":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_system_manager"]
-  , "hdrs": ["file_system_manager.hpp"]
-  , "deps":
-    [ "object_type"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/system", "system"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "incremental_reader"]
-    , ["src/utils/cpp", "path"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "jsonfs":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["jsonfs"]
-  , "hdrs": ["jsonfs.hpp"]
-  , "deps":
-    [ "file_system_manager"
-    , "object_type"
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "git_cas":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_cas"]
-  , "hdrs": ["git_cas.hpp"]
-  , "srcs": ["git_cas.cpp"]
-  , "deps":
-    [ "git_utils"
-    , "object_type"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/logging", "log_level"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  , "private-deps":
-    [ "git_context"
-    , ["", "libgit2"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "path"]
-    ]
-  }
-, "git_tree":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_tree"]
-  , "hdrs": ["git_tree.hpp"]
-  , "srcs": ["git_tree.cpp"]
-  , "deps":
-    [ "git_cas"
-    , "git_repo"
-    , "object_type"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/multithreading", "atomic_value"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  , "private-deps":
-    [ ["src/buildtool/common", "common"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
-, "git_context":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_context"]
-  , "hdrs": ["git_context.hpp"]
-  , "srcs": ["git_context.cpp"]
-  , "stage": ["src", "buildtool", "file_system"]
-  , "private-deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["", "libgit2"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  }
-, "git_repo":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_repo"]
-  , "hdrs": ["git_repo.hpp"]
-  , "srcs": ["git_repo.cpp"]
-  , "deps":
-    [ "git_cas"
-    , "git_types"
-    , "git_utils"
-    , "object_type"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  , "private-deps":
-    [ "git_context"
-    , ["@", "fmt", "", "fmt"]
-    , ["", "libgit2"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "file_locking"]
-    , ["src/utils/cpp", "gsl"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "cflags": ["-pthread"]
-  }
-, "git_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_utils"]
-  , "hdrs": ["git_utils.hpp"]
-  , "srcs": ["git_utils.cpp"]
-  , "deps": [["@", "gsl", "", "gsl"]]
-  , "stage": ["src", "buildtool", "file_system"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["", "libgit2"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  }
-, "git_types":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_types"]
-  , "hdrs": ["git_types.hpp"]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "file_type":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_type"]
-  , "hdrs": ["file_type.hpp"]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "file_root":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["file_root"]
-  , "hdrs": ["file_root.hpp"]
-  , "srcs": ["file_root.cpp"]
-  , "deps":
-    [ "file_system_manager"
-    , "git_cas"
-    , "git_tree"
-    , "git_tree_utils"
-    , "object_type"
-    , "precomputed_root"
-    , "file_type"
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "artifact_description"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/common", "git_hashes_converter"]
-    , ["src/buildtool/common", "protocol_traits"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/buildtool/multithreading", "atomic_value"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/utils/cpp", "concepts"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "json"]
-    ]
-  , "private-deps": [["@", "justlang", "", "preprocessor"]]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "precomputed_root":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["precomputed_root"]
-  , "hdrs": ["precomputed_root.hpp"]
-  , "srcs": ["precomputed_root.cpp"]
-  , "deps":
-    [ ["@", "json", "", "json"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "atomic":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["atomic"]
-  , "hdrs": ["atomic.hpp"]
-  , "srcs": ["atomic.cpp"]
-  , "private-deps": [["@", "fmt", "", "fmt"]]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
-, "git_tree_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["git_tree_utils"]
-  , "hdrs": ["git_tree_utils.hpp"]
-  , "srcs": ["git_tree_utils.cpp"]
-  , "deps": ["git_cas", "git_tree", ["src/buildtool/storage", "config"]]
-  , "private-deps":
-    [ "file_system_manager"
-    , "object_type"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/storage", "fs_utils"]
-    ]
-  , "stage": ["src", "buildtool", "file_system"]
-  }
+{
+  object_type: {
+    type: @'rules//CC:library',
+    name: ['object_type'],
+    hdrs: ['object_type.hpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  file_storage: {
+    type: @'rules//CC:library',
+    name: ['file_storage'],
+    hdrs: ['file_storage.hpp'],
+    deps: [
+      'object_type',
+      @'//src/buildtool/execution_api/common:ids',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  object_cas: {
+    type: @'rules//CC:library',
+    name: ['object_cas'],
+    hdrs: ['object_cas.hpp'],
+    deps: [
+      'file_storage',
+      'object_type',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  file_system_manager: {
+    type: @'rules//CC:library',
+    name: ['file_system_manager'],
+    hdrs: ['file_system_manager.hpp'],
+    deps: [
+      'object_type',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/system:system',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:incremental_reader',
+      @'//src/utils/cpp:path',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  jsonfs: {
+    type: @'rules//CC:library',
+    name: ['jsonfs'],
+    hdrs: ['jsonfs.hpp'],
+    deps: [
+      'file_system_manager',
+      'object_type',
+      @'json//:json',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  git_cas: {
+    type: @'rules//CC:library',
+    name: ['git_cas'],
+    hdrs: ['git_cas.hpp'],
+    srcs: ['git_cas.cpp'],
+    deps: [
+      'git_utils',
+      'object_type',
+      @'gsl//:gsl',
+      @'//src/buildtool/logging:log_level',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+    'private-deps': [
+      'git_context',
+      @'//:libgit2',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:path',
+    ],
+  },
+
+  git_tree: {
+    type: @'rules//CC:library',
+    name: ['git_tree'],
+    hdrs: ['git_tree.hpp'],
+    srcs: ['git_tree.cpp'],
+    deps: [
+      'git_cas',
+      'git_repo',
+      'object_type',
+      @'gsl//:gsl',
+      @'//src/buildtool/multithreading:atomic_value',
+      @'//src/utils/cpp:hex_string',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+    'private-deps': [
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
+
+  git_context: {
+    type: @'rules//CC:library',
+    name: ['git_context'],
+    hdrs: ['git_context.hpp'],
+    srcs: ['git_context.cpp'],
+    stage: ['src', 'buildtool', 'file_system'],
+    'private-deps': [
+      @'gsl//:gsl',
+      @'//:libgit2',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+    ],
+  },
+
+  git_repo: {
+    type: @'rules//CC:library',
+    name: ['git_repo'],
+    hdrs: ['git_repo.hpp'],
+    srcs: ['git_repo.cpp'],
+    deps: [
+      'git_cas',
+      'git_types',
+      'git_utils',
+      'object_type',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/storage:config',
+      @'//src/utils/cpp:expected',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+    'private-deps': [
+      'git_context',
+      @'fmt//:fmt',
+      @'//:libgit2',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:file_locking',
+      @'//src/utils/cpp:gsl',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    cflags: ['-pthread'],
+  },
+
+  git_utils: {
+    type: @'rules//CC:library',
+    name: ['git_utils'],
+    hdrs: ['git_utils.hpp'],
+    srcs: ['git_utils.cpp'],
+    deps: [@'gsl//:gsl'],
+    stage: ['src', 'buildtool', 'file_system'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//:libgit2',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:hex_string',
+    ],
+  },
+
+  git_types: {
+    type: @'rules//CC:library',
+    name: ['git_types'],
+    hdrs: ['git_types.hpp'],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  file_type: {
+    type: @'rules//CC:library',
+    name: ['file_type'],
+    hdrs: ['file_type.hpp'],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  file_root: {
+    type: @'rules//CC:library',
+    name: ['file_root'],
+    hdrs: ['file_root.hpp'],
+    srcs: ['file_root.cpp'],
+    deps: [
+      'file_system_manager',
+      'git_cas',
+      'git_tree',
+      'git_tree_utils',
+      'object_type',
+      'precomputed_root',
+      'file_type',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:artifact_description',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/common:git_hashes_converter',
+      @'//src/buildtool/common:protocol_traits',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/buildtool/multithreading:atomic_value',
+      @'//src/buildtool/storage:config',
+      @'//src/utils/cpp:concepts',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:json',
+    ],
+    'private-deps': [@'justlang//:preprocessor'],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  precomputed_root: {
+    type: @'rules//CC:library',
+    name: ['precomputed_root'],
+    hdrs: ['precomputed_root.hpp'],
+    srcs: ['precomputed_root.cpp'],
+    deps: [
+      @'json//:json',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  atomic: {
+    type: @'rules//CC:library',
+    name: ['atomic'],
+    hdrs: ['atomic.hpp'],
+    srcs: ['atomic.cpp'],
+    'private-deps': [
+      @'fmt//:fmt',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
+
+  git_tree_utils: {
+    type: @'rules//CC:library',
+    name: ['git_tree_utils'],
+    hdrs: ['git_tree_utils.hpp'],
+    srcs: ['git_tree_utils.cpp'],
+    deps: [
+      'git_cas',
+      'git_tree',
+      @'//src/buildtool/storage:config',
+    ],
+    'private-deps': [
+      'file_system_manager',
+      'object_type',
+      @'gsl//:gsl',
+      @'//src/buildtool/storage:fs_utils',
+    ],
+    stage: ['src', 'buildtool', 'file_system'],
+  },
 }

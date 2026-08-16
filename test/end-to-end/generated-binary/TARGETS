@@ -1,22 +1,39 @@
-{ "shell":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["shell"]
-  , "test": ["shell-script.sh"]
-  , "keep": ["out/out.txt"]
-  , "deps": [["", "tool-under-test"]]
-  }
-, "compile rules":
-  {"type": "install", "files": {"RULES": "data/RULES.compiled"}}
-, "compiled":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["compiled"]
-  , "test": ["compiled.sh"]
-  , "keep": ["graph.json", "out/out.txt"]
-  , "deps": ["compile rules", ["", "tool-under-test"]]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["generated-binary"]
-  , "deps": ["compiled", "shell"]
-  }
+{
+  shell: {
+    type: @'rules//shell/test:script',
+    name: ['shell'],
+    test: ['shell-script.sh'],
+    keep: ['out/out.txt'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  'compile rules': {
+    type: 'install',
+    files: {
+      RULES: 'data/RULES.compiled',
+    },
+  },
+
+  compiled: {
+    type: @'rules//shell/test:script',
+    name: ['compiled'],
+    test: ['compiled.sh'],
+    keep: [
+      'graph.json',
+      'out/out.txt',
+    ],
+    deps: [
+      'compile rules',
+      @'//:tool-under-test',
+    ],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['generated-binary'],
+    deps: [
+      'compiled',
+      'shell',
+    ],
+  },
 }

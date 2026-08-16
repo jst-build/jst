@@ -1,6 +1,0 @@
-{ "cli11_headers":
-  { "type": "tree"
-  , "name": "CLI"
-  , "deps": [["GLOB", null, "*.hpp"], ["TREE", null, "impl"]]
-  }
-}

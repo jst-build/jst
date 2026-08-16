@@ -1,99 +1,106 @@
-{ "":
-  { "type": "install"
-  , "tainted": ["lint", "test"]
-  , "deps": ["LINT"]
-  , "files": {"REPORT": "lint-report", "format.diff": "format.diff"}
-  }
-, "LINT":
-  { "type": "install"
-  , "tainted": ["lint", "test"]
-  , "dirs":
-    [ ["LINT: clang-tidy", "clang-tidy"]
-    , ["LINT: clang-format", "clang-format"]
-    , ["LINT: strict_deps", "strict_deps"]
-    , [["@", "justlang_lint", "", "LINT: clang-tidy"], "justlang_clang-tidy"]
-    , [ ["@", "justlang_lint", "", "LINT: clang-format"]
-      , "justlang_clang-format"
-      ]
-    ]
-  }
-, "clang":
-  { "type": "generic"
-  , "deps": [["@", "clang", "", "install_dir"]]
-  , "cmds":
-    [ "# rename install dir, as linters expect clang in directory 'toolchain'"
-    , "rm -rf toolchain"
-    , "mv installed_clang toolchain"
-    ]
-  , "out_dirs": ["toolchain"]
-  }
-, "configured_jst":
-  { "type": "configure"
-  , "arguments_config": ["OS", "ARCH"]
-  , "config":
-    { "type": "let*"
-    , "bindings":
-      [ ["OS", {"type": "var", "name": "OS", "default": "linux"}]
-      , ["ARCH", {"type": "var", "name": "ARCH", "default": "x86_64"}]
-      ]
-    , "body": {"type": "env", "vars": ["OS", "ARCH"]}
-    }
-  , "target": ["@", "src", "src/other_tools/just_mr", "jst"]
-  }
-, "configured_jst_backend":
-  { "type": "configure"
-  , "arguments_config": ["OS", "ARCH"]
-  , "config":
-    { "type": "let*"
-    , "bindings":
-      [ ["OS", {"type": "var", "name": "OS", "default": "linux"}]
-      , ["ARCH", {"type": "var", "name": "ARCH", "default": "x86_64"}]
-      ]
-    , "body": {"type": "env", "vars": ["OS", "ARCH"]}
-    }
-  , "target": ["@", "src", "src/buildtool/main", "jst_backend"]
-  }
-, "LINT: clang-tidy":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "tainted": ["test"]
-  , "name": ["clang-tidy"]
-  , "linter": ["run_clang_tidy.py"]
-  , "summarizer": ["summary.py"]
-  , "config": [["@", "src", "", ".clang-tidy"], "clang"]
-  , "targets":
-    ["configured_jst", "configured_jst_backend", ["@", "tests", "", "ALL"]]
-  }
-, "LINT: clang-format":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "tainted": ["test"]
-  , "name": ["clang-format"]
-  , "linter": ["run_clang_format.py"]
-  , "summarizer": ["summary.py"]
-  , "config": [["@", "src", "", ".clang-format"], "clang"]
-  , "targets":
-    ["configured_jst", "configured_jst_backend", ["@", "tests", "", "ALL"]]
-  }
-, "format.diff":
-  { "type": "generic"
-  , "tainted": ["lint", "test"]
-  , "cmds": ["./create-diff.py"]
-  , "outs": ["format.diff"]
-  , "deps": ["LINT: clang-format", "create-diff.py"]
-  }
-, "LINT: strict_deps":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "tainted": ["test"]
-  , "name": ["strict deps"]
-  , "linter": ["run_strict_deps.py"]
-  , "summarizer": ["summary.py"]
-  , "targets":
-    ["configured_jst", "configured_jst_backend", ["@", "tests", "", "ALL"]]
-  }
-, "lint-report":
-  { "type": "generic"
-  , "tainted": ["lint", "test"]
-  , "cmds": ["./combined-report.py"]
-  , "outs": ["report"]
-  , "deps": ["LINT", "combined-report.py"]
-  }
+{
+  // Combines the output from the linter runs, the aggregated linter report, and
+  // the format.diff patch as formatting suggestions.
+  ALL: {
+    type: 'install',
+    tainted: ['lint', 'test'],
+    deps: ['LINT'],
+    files: {
+      REPORT: 'lint_report',
+      'format.diff': 'format.diff',
+    },
+  },
+
+  // Runs all configured linter targets at once.
+  LINT: {
+    type: 'install',
+    tainted: ['lint', 'test'],
+    dirs: [
+      ['run_clang_tidy', 'clang-tidy'],
+      ['run_clang_format', 'clang-format'],
+      ['run_strict_deps', 'strict_deps'],
+      [@'justlang_lint//:run_clang_tidy', 'justlang_clang-tidy'],
+      [@'justlang_lint//:run_clang_format', 'justlang_clang-format'],
+    ],
+  },
+
+  // Restage Clang installation (linters expect clang in directory 'toolchain')
+  clang: {
+    type: 'install',
+    dirs: [[@'clang//:INSTALL', 'toolchain']],
+  },
+
+  // Runs clang-tidy linter on targets (wont run on export targets)
+  run_clang_tidy: {
+    type: @'rules//lint:targets',
+    tainted: ['test'],
+    name: ['clang-tidy'],
+    linter: ['run_clang_tidy.py'],
+    summarizer: ['summary.py'],
+    config: [
+      @'jst//:.clang-tidy',
+      'clang',
+    ],
+    targets: [
+      @'jst//:jst_configured',
+      @'jst//:jst_backend_configured',
+      @'tests//:ALL',
+    ],
+  },
+
+  // Runs clang-format verification on targets (wont run on export targets)
+  run_clang_format: {
+    type: @'rules//lint:targets',
+    tainted: ['test'],
+    name: ['clang-format'],
+    linter: ['run_clang_format.py'],
+    summarizer: ['summary.py'],
+    config: [
+      @'jst//:.clang-format',
+      'clang',
+    ],
+    targets: [
+      @'jst//:jst_configured',
+      @'jst//:jst_backend_configured',
+      @'tests//:ALL',
+    ],
+  },
+
+  // Runs strict dependency verification on targets (wont run on export targets)
+  run_strict_deps: {
+    type: @'rules//lint:targets',
+    tainted: ['test'],
+    name: ['strict deps'],
+    linter: ['run_strict_deps.py'],
+    summarizer: ['summary.py'],
+    targets: [
+      @'jst//:jst_configured',
+      @'jst//:jst_backend_configured',
+      @'tests//:ALL',
+    ],
+  },
+
+  // Aggregates linter reports (produced by target LINT)
+  lint_report: {
+    type: 'generic',
+    tainted: ['lint', 'test'],
+    cmds: ['./combined-report.py'],
+    outs: ['report'],
+    deps: [
+      'LINT',
+      'combined-report.py',
+    ],
+  },
+
+  // Aggregates format suggestions (produced by target run_clang_format)
+  'format.diff': {
+    type: 'generic',
+    tainted: ['lint', 'test'],
+    cmds: ['./create-diff.py'],
+    outs: ['format.diff'],
+    deps: [
+      'run_clang_format',
+      'create-diff.py',
+    ],
+  },
 }

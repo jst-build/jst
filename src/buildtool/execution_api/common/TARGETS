@@ -1,141 +1,150 @@
-{ "common":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["common"]
-  , "hdrs":
-    [ "execution_api.hpp"
-    , "execution_action.hpp"
-    , "execution_response.hpp"
-    , "tree_reader.hpp"
-    , "tree_reader_utils.hpp"
-    , "stream_dumper.hpp"
-    ]
-  , "srcs": ["tree_reader_utils.cpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "protoc", "", "libprotobuf"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/common", "bazel_types"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_engine/dag", "dag"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "private-deps":
-    [ ["@", "json", "", "json"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  }
-, "ids":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["common"]
-  , "hdrs": ["ids.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "gsl"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  }
-, "bytestream_utils":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["bytestream_utils"]
-  , "hdrs": ["bytestream_utils.hpp"]
-  , "srcs": ["bytestream_utils.cpp"]
-  , "deps":
-    [ ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/utils/cpp", "expected"]
-    ]
-  , "private-deps":
-    [["@", "fmt", "", "fmt"], ["src/buildtool/common", "bazel_types"]]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  }
-, "api_bundle":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["api_bundle"]
-  , "hdrs": ["api_bundle.hpp"]
-  , "srcs": ["api_bundle.cpp"]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  , "deps":
-    [ "common"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/auth", "auth"]
-    , ["src/buildtool/common", "config"]
-    , ["src/buildtool/common/remote", "remote_common"]
-    , ["src/buildtool/common/remote", "retry_config"]
-    , ["src/buildtool/execution_api/local", "context"]
-    , ["src/buildtool/execution_api/remote", "context"]
-    ]
-  , "private-deps":
-    [ ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/execution_api/bazel_msg", "execution_config"]
-    , ["src/buildtool/execution_api/local", "local_api"]
-    , ["src/buildtool/execution_api/remote", "bazel_api"]
-    , ["src/buildtool/execution_api/remote", "config"]
-    , ["src/buildtool/storage", "config"]
-    ]
-  }
-, "message_limits":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["message_limits"]
-  , "hdrs": ["message_limits.hpp"]
-  , "srcs": ["message_limits.cpp"]
-  , "private-deps": [["@", "grpc", "", "grpc"]]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  }
-, "common_api":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["common_api"]
-  , "hdrs": ["common_api.hpp"]
-  , "srcs": ["common_api.cpp"]
-  , "deps":
-    [ "blob_tree"
-    , "common"
-    , ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/execution_api/bazel_msg", "bazel_msg_factory"]
-    , ["src/buildtool/execution_api/bazel_msg", "directory_tree"]
-    , ["src/buildtool/logging", "logging"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  , "private-deps":
-    [ "message_limits"
-    , ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/utils/cpp", "back_map"]
-    ]
-  }
-, "blob_tree":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["blob_tree"]
-  , "hdrs": ["blob_tree.hpp"]
-  , "srcs": ["blob_tree.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "artifact_blob"]
-    , ["src/buildtool/execution_api/bazel_msg", "directory_tree"]
-    ]
-  , "private-deps":
-    [ ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "hex_string"]
-    ]
-  , "stage": ["src", "buildtool", "execution_api", "common"]
-  }
+{
+  common: {
+    type: @'rules//CC:library',
+    name: ['common'],
+    hdrs: [
+      'execution_api.hpp',
+      'execution_action.hpp',
+      'execution_response.hpp',
+      'tree_reader.hpp',
+      'tree_reader_utils.hpp',
+      'stream_dumper.hpp',
+    ],
+    srcs: ['tree_reader_utils.cpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'protoc//:libprotobuf',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/common:bazel_types',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_engine/dag:dag',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    'private-deps': [
+      @'json//:json',
+      @'//src/buildtool/logging:log_level',
+      @'//src/utils/cpp:hex_string',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+  },
+
+  ids: {
+    type: @'rules//CC:library',
+    name: ['common'],
+    hdrs: ['ids.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:gsl',
+      @'//src/utils/cpp:hex_string',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+  },
+
+  bytestream_utils: {
+    type: @'rules//CC:library',
+    name: ['bytestream_utils'],
+    hdrs: ['bytestream_utils.hpp'],
+    srcs: ['bytestream_utils.cpp'],
+    deps: [
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/utils/cpp:expected',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:bazel_types',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+  },
+
+  api_bundle: {
+    type: @'rules//CC:library',
+    name: ['api_bundle'],
+    hdrs: ['api_bundle.hpp'],
+    srcs: ['api_bundle.cpp'],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+    deps: [
+      'common',
+      @'gsl//:gsl',
+      @'//src/buildtool/auth:auth',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/common/remote:remote_common',
+      @'//src/buildtool/common/remote:retry_config',
+      @'//src/buildtool/execution_api/local:context',
+      @'//src/buildtool/execution_api/remote:context',
+    ],
+    'private-deps': [
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/bazel_msg:execution_config',
+      @'//src/buildtool/execution_api/local:local_api',
+      @'//src/buildtool/execution_api/remote:bazel_api',
+      @'//src/buildtool/execution_api/remote:config',
+      @'//src/buildtool/storage:config',
+    ],
+  },
+
+  message_limits: {
+    type: @'rules//CC:library',
+    name: ['message_limits'],
+    hdrs: ['message_limits.hpp'],
+    srcs: ['message_limits.cpp'],
+    'private-deps': [@'grpc//:grpc'],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+  },
+
+  common_api: {
+    type: @'rules//CC:library',
+    name: ['common_api'],
+    hdrs: ['common_api.hpp'],
+    srcs: ['common_api.cpp'],
+    deps: [
+      'blob_tree',
+      'common',
+      @'gsl//:gsl',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/execution_api/bazel_msg:bazel_msg_factory',
+      @'//src/buildtool/execution_api/bazel_msg:directory_tree',
+      @'//src/buildtool/logging:logging',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+    'private-deps': [
+      'message_limits',
+      @'fmt//:fmt',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/utils/cpp:back_map',
+    ],
+  },
+
+  blob_tree: {
+    type: @'rules//CC:library',
+    name: ['blob_tree'],
+    hdrs: ['blob_tree.hpp'],
+    srcs: ['blob_tree.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:artifact_blob',
+      @'//src/buildtool/execution_api/bazel_msg:directory_tree',
+    ],
+    'private-deps': [
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:hex_string',
+    ],
+    stage: ['src', 'buildtool', 'execution_api', 'common'],
+  },
 }

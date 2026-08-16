@@ -1,5 +1,0 @@
-{ "git2_public_headers":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["git2.h", ["./", "git2", "TREE"]]
-  }
-}

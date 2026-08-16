@@ -1,0 +1,6 @@
+{
+  json: {
+    type: @'rules//CC/pkgconfig:system_library',
+    name: ['nlohmann_json'],
+  },
+}

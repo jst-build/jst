@@ -1,214 +1,220 @@
-{ "distdir_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["distdir_git_map"]
-  , "hdrs": ["distdir_git_map.hpp"]
-  , "srcs": ["distdir_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/other_tools/ops_maps", "content_cas_map"]
-    , ["src/other_tools/ops_maps", "critical_git_op_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "git_types"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/storage", "fs_utils"]
-    , ["src/other_tools/git_operations", "git_ops_types"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "commit_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["commit_git_map"]
-  , "hdrs": ["commit_git_map.hpp"]
-  , "srcs": ["commit_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "user_structs"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/other_tools/just_mr", "mirrors"]
-    , ["src/other_tools/just_mr/progress_reporting", "progress"]
-    , ["src/other_tools/ops_maps", "critical_git_op_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_cas"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "git_types"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/progress_reporting", "task_tracker"]
-    , ["src/buildtool/storage", "fs_utils"]
-    , ["src/other_tools/git_operations", "git_ops_types"]
-    , ["src/other_tools/git_operations", "git_repo_remote"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "path"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "fpath_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["fpath_git_map"]
-  , "hdrs": ["fpath_git_map.hpp"]
-  , "srcs": ["fpath_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/file_system/symlinks", "pragma_special"]
-    , ["src/buildtool/file_system/symlinks", "resolve_symlinks_map"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/other_tools/ops_maps", "critical_git_op_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    , ["src/utils/cpp", "hash_combine"]
-    , ["src/utils/cpp", "path_hash"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_cas"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/storage", "fs_utils"]
-    , ["src/other_tools/git_operations", "git_ops_types"]
-    , ["src/other_tools/git_operations", "git_repo_remote"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "content_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["content_git_map"]
-  , "hdrs": ["content_git_map.hpp"]
-  , "srcs": ["content_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/common", "user_structs"]
-    , ["src/buildtool/file_system/symlinks", "resolve_symlinks_map"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/other_tools/just_mr/progress_reporting", "progress"]
-    , ["src/other_tools/ops_maps", "content_cas_map"]
-    , ["src/other_tools/ops_maps", "critical_git_op_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_function"]
-    , ["src/buildtool/crypto", "hash_info"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_cas"]
-    , ["src/buildtool/file_system", "git_types"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/progress_reporting", "task_tracker"]
-    , ["src/buildtool/storage", "fs_utils"]
-    , ["src/other_tools/git_operations", "git_ops_types"]
-    , ["src/other_tools/git_operations", "git_repo_remote"]
-    , ["src/utils/archive", "archive_ops"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
-, "foreign_file_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["foreign_file_git_map"]
-  , "hdrs": ["foreign_file_git_map.hpp"]
-  , "srcs": ["foreign_file_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/buildtool/storage", "storage"]
-    , ["src/other_tools/ops_maps", "content_cas_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    ]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/crypto", "hash_info"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "file_system_manager"]
-    , ["src/buildtool/file_system", "git_cas"]
-    , ["src/buildtool/file_system", "git_repo"]
-    , ["src/buildtool/file_system", "git_types"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/buildtool/storage", "fs_utils"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  }
-, "tree_id_git_map":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["tree_id_git_map"]
-  , "hdrs": ["tree_id_git_map.hpp"]
-  , "srcs": ["tree_id_git_map.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["@", "json", "", "json"]
-    , ["src/buildtool/execution_api/common", "common"]
-    , ["src/buildtool/multithreading", "async_map_consumer"]
-    , ["src/buildtool/serve_api/remote", "serve_api"]
-    , ["src/buildtool/storage", "config"]
-    , ["src/other_tools/ops_maps", "critical_git_op_map"]
-    , ["src/other_tools/ops_maps", "git_tree_fetch_map"]
-    , ["src/other_tools/ops_maps", "import_to_git_map"]
-    , ["src/utils/cpp", "hash_combine"]
-    ]
-  , "stage": ["src", "other_tools", "root_maps"]
-  , "private-deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/file_system", "file_root"]
-    , ["src/buildtool/file_system", "object_type"]
-    , ["src/buildtool/multithreading", "task_system"]
-    , ["src/other_tools/git_operations", "git_ops_types"]
-    , ["src/other_tools/git_operations", "git_repo_remote"]
-    , ["src/utils/cpp", "expected"]
-    , ["src/utils/cpp", "tmp_dir"]
-    ]
-  }
+{
+  distdir_git_map: {
+    type: @'rules//CC:library',
+    name: ['distdir_git_map'],
+    hdrs: ['distdir_git_map.hpp'],
+    srcs: ['distdir_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+      @'//src/other_tools/ops_maps:content_cas_map',
+      @'//src/other_tools/ops_maps:critical_git_op_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:git_types',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/storage:fs_utils',
+      @'//src/other_tools/git_operations:git_ops_types',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  commit_git_map: {
+    type: @'rules//CC:library',
+    name: ['commit_git_map'],
+    hdrs: ['commit_git_map.hpp'],
+    srcs: ['commit_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:user_structs',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/other_tools/just_mr:mirrors',
+      @'//src/other_tools/just_mr/progress_reporting:progress',
+      @'//src/other_tools/ops_maps:critical_git_op_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:git_types',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/progress_reporting:task_tracker',
+      @'//src/buildtool/storage:fs_utils',
+      @'//src/other_tools/git_operations:git_ops_types',
+      @'//src/other_tools/git_operations:git_repo_remote',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:path',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  fpath_git_map: {
+    type: @'rules//CC:library',
+    name: ['fpath_git_map'],
+    hdrs: ['fpath_git_map.hpp'],
+    srcs: ['fpath_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/file_system/symlinks:pragma_special',
+      @'//src/buildtool/file_system/symlinks:resolve_symlinks_map',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/other_tools/ops_maps:critical_git_op_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+      @'//src/utils/cpp:hash_combine',
+      @'//src/utils/cpp:path_hash',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/storage:fs_utils',
+      @'//src/other_tools/git_operations:git_ops_types',
+      @'//src/other_tools/git_operations:git_repo_remote',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  content_git_map: {
+    type: @'rules//CC:library',
+    name: ['content_git_map'],
+    hdrs: ['content_git_map.hpp'],
+    srcs: ['content_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/common:user_structs',
+      @'//src/buildtool/file_system/symlinks:resolve_symlinks_map',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+      @'//src/other_tools/just_mr/progress_reporting:progress',
+      @'//src/other_tools/ops_maps:content_cas_map',
+      @'//src/other_tools/ops_maps:critical_git_op_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/crypto:hash_info',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/buildtool/file_system:git_types',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/progress_reporting:task_tracker',
+      @'//src/buildtool/storage:fs_utils',
+      @'//src/other_tools/git_operations:git_ops_types',
+      @'//src/other_tools/git_operations:git_repo_remote',
+      @'//src/utils/archive:archive_ops',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
+
+  foreign_file_git_map: {
+    type: @'rules//CC:library',
+    name: ['foreign_file_git_map'],
+    hdrs: ['foreign_file_git_map.hpp'],
+    srcs: ['foreign_file_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/buildtool/storage:storage',
+      @'//src/other_tools/ops_maps:content_cas_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+    ],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/crypto:hash_info',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:file_system_manager',
+      @'//src/buildtool/file_system:git_cas',
+      @'//src/buildtool/file_system:git_repo',
+      @'//src/buildtool/file_system:git_types',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/buildtool/storage:fs_utils',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+  },
+
+  tree_id_git_map: {
+    type: @'rules//CC:library',
+    name: ['tree_id_git_map'],
+    hdrs: ['tree_id_git_map.hpp'],
+    srcs: ['tree_id_git_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'json//:json',
+      @'//src/buildtool/execution_api/common:common',
+      @'//src/buildtool/multithreading:async_map_consumer',
+      @'//src/buildtool/serve_api/remote:serve_api',
+      @'//src/buildtool/storage:config',
+      @'//src/other_tools/ops_maps:critical_git_op_map',
+      @'//src/other_tools/ops_maps:git_tree_fetch_map',
+      @'//src/other_tools/ops_maps:import_to_git_map',
+      @'//src/utils/cpp:hash_combine',
+    ],
+    stage: ['src', 'other_tools', 'root_maps'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/file_system:object_type',
+      @'//src/buildtool/multithreading:task_system',
+      @'//src/other_tools/git_operations:git_ops_types',
+      @'//src/other_tools/git_operations:git_repo_remote',
+      @'//src/utils/cpp:expected',
+      @'//src/utils/cpp:tmp_dir',
+    ],
+  },
 }

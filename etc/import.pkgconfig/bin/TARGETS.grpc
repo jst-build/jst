@@ -1,3 +1,0 @@
-{ "grpc_cpp_plugin":
-  {"type": "install", "deps": [["FILE", null, "grpc_cpp_plugin"]]}
-}

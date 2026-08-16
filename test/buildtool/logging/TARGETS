@@ -1,32 +1,38 @@
-{ "logger":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["logger"]
-  , "srcs": ["logger.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/logging", "log_level"]
-    , ["@", "src", "src/buildtool/logging", "logging"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "logging"]
-  }
-, "log_sink_file":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["log_sink_file"]
-  , "srcs": ["log_sink_file.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/logging", "log_level"]
-    , ["@", "src", "src/buildtool/logging", "logging"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "logging"]
-  , "private-ldflags": ["-pthread"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["logging"]
-  , "deps": ["log_sink_file", "logger"]
-  }
+{
+  logger: {
+    type: @'rules//CC/test:test',
+    name: ['logger'],
+    srcs: ['logger.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/logging:log_level',
+      @'src//src/buildtool/logging:logging',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'logging'],
+  },
+
+  log_sink_file: {
+    type: @'rules//CC/test:test',
+    name: ['log_sink_file'],
+    srcs: ['log_sink_file.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/logging:log_level',
+      @'src//src/buildtool/logging:logging',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'logging'],
+    'private-ldflags': ['-pthread'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['logging'],
+    deps: [
+      'log_sink_file',
+      'logger',
+    ],
+  },
 }

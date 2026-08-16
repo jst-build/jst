@@ -1,10 +1,11 @@
-{ "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["other_tools"]
-  , "deps":
-    [ ["./", "git_operations", "TESTS"]
-    , ["./", "just_mr", "TESTS"]
-    , ["./", "utils", "TESTS"]
-    ]
-  }
+{
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['other_tools'],
+    deps: [
+      @'./git_operations:TESTS',
+      @'./just_mr:TESTS',
+      @'./utils:TESTS',
+    ],
+  },
 }

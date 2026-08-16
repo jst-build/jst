@@ -1,0 +1,14 @@
+{
+  defaults: {
+    type: @'//CC:defaults',
+    base: [@'toolchain//CC:defaults'],
+    ADD_CXXFLAGS: [
+      '-std=c++20',
+      '-Wall',
+      '-Wextra',
+      //'-Werror',
+      '-pedantic-errors',
+    ],
+    PATH: ['/bin', '/usr/bin'],
+  },
+}

@@ -1,187 +1,192 @@
-{ "file_system_manager":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["file_system_manager"]
-  , "srcs": ["file_system_manager.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/logging", "log_level"]
-    , ["@", "src", "src/buildtool/logging", "logging"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["@", "src", "src/buildtool/system", "system"]
-    , ["@", "src", "src/utils/cpp", "tmp_dir"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "object_cas":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["object_cas"]
-  , "srcs": ["object_cas.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "object_cas"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "git_tree":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["git_tree"]
-  , "srcs": ["git_tree.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "git_cas"]
-    , ["@", "src", "src/buildtool/file_system", "git_repo"]
-    , ["@", "src", "src/buildtool/file_system", "git_tree"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/utils/cpp", "atomic"]
-    , ["@", "src", "src/utils/cpp", "hex_string"]
-    , ["", "catch-main"]
-    , ["utils", "container_matchers"]
-    , ["utils", "shell_quoting"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "file_root":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["file_root"]
-  , "srcs": ["file_root.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/common", "artifact_description"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/common", "protocol_traits"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/utils/cpp", "expected"]
-    , ["", "catch-main"]
-    , ["utils", "shell_quoting"]
-    , ["utils", "test_hash_function_type"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "directory_entries":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["directory_entries"]
-  , "srcs": ["directory_entries.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["", "catch-main"]
-    , ["utils", "shell_quoting"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "test_data":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs":
-    [ "data/empty_executable"
-    , "data/example_file"
-    , "data/test_repo.bundle"
-    , "data/test_repo_symlinks.bundle"
-    , "data/subdir/nested_file"
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "data/test_repo.bundle":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "deps": ["create_fs_test_git_bundle.sh"]
-  , "outs": ["data/test_repo.bundle"]
-  , "cmds": ["sh create_fs_test_git_bundle.sh"]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "data/test_repo_symlinks.bundle":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "deps": ["create_fs_test_git_bundle_symlinks.sh"]
-  , "outs": ["data/test_repo_symlinks.bundle"]
-  , "cmds": ["sh create_fs_test_git_bundle_symlinks.sh"]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "git_repo":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["git_repo"]
-  , "srcs": ["git_repo.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "git_cas"]
-    , ["@", "src", "src/buildtool/file_system", "git_repo"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/logging", "log_level"]
-    , ["@", "src", "src/buildtool/logging", "logging"]
-    , ["@", "src", "src/utils/cpp", "atomic"]
-    , ["@", "src", "src/utils/cpp", "expected"]
-    , ["@", "src", "src/utils/cpp", "hex_string"]
-    , ["", "catch-main"]
-    , ["utils", "shell_quoting"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "resolve_symlinks_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["resolve_symlinks_map"]
-  , "srcs": ["resolve_symlinks_map.test.cpp"]
-  , "data": ["test_data"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "git_cas"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/file_system/symlinks", "pragma_special"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/file_system/symlinks"
-      , "resolve_symlinks_map"
-      ]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["", "catch-main"]
-    , ["utils", "shell_quoting"]
-    ]
-  , "stage": ["test", "buildtool", "file_system"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["file_system"]
-  , "deps":
-    [ "directory_entries"
-    , "file_root"
-    , "file_system_manager"
-    , "git_repo"
-    , "git_tree"
-    , "object_cas"
-    , "resolve_symlinks_map"
-    ]
-  }
+{
+  file_system_manager: {
+    type: @'rules//CC/test:test',
+    name: ['file_system_manager'],
+    srcs: ['file_system_manager.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/logging:log_level',
+      @'src//src/buildtool/logging:logging',
+      @'src//src/buildtool/storage:config',
+      @'src//src/buildtool/system:system',
+      @'src//src/utils/cpp:tmp_dir',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  object_cas: {
+    type: @'rules//CC/test:test',
+    name: ['object_cas'],
+    srcs: ['object_cas.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:object_cas',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  git_tree: {
+    type: @'rules//CC/test:test',
+    name: ['git_tree'],
+    srcs: ['git_tree.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:git_cas',
+      @'src//src/buildtool/file_system:git_repo',
+      @'src//src/buildtool/file_system:git_tree',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/utils/cpp:atomic',
+      @'src//src/utils/cpp:hex_string',
+      @'//:catch-main',
+      @'//utils:container_matchers',
+      @'//utils:shell_quoting',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  file_root: {
+    type: @'rules//CC/test:test',
+    name: ['file_root'],
+    srcs: ['file_root.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'src//src/buildtool/common:artifact_description',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/common:protocol_traits',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/utils/cpp:expected',
+      @'//:catch-main',
+      @'//utils:shell_quoting',
+      @'//utils:test_hash_function_type',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  directory_entries: {
+    type: @'rules//CC/test:test',
+    name: ['directory_entries'],
+    srcs: ['directory_entries.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'//:catch-main',
+      @'//utils:shell_quoting',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  test_data: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data/empty_executable',
+      'data/example_file',
+      'data/test_repo.bundle',
+      'data/test_repo_symlinks.bundle',
+      'data/subdir/nested_file',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  'data/test_repo.bundle': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    deps: ['create_fs_test_git_bundle.sh'],
+    outs: ['data/test_repo.bundle'],
+    cmds: ['sh create_fs_test_git_bundle.sh'],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  'data/test_repo_symlinks.bundle': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    deps: ['create_fs_test_git_bundle_symlinks.sh'],
+    outs: ['data/test_repo_symlinks.bundle'],
+    cmds: ['sh create_fs_test_git_bundle_symlinks.sh'],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  git_repo: {
+    type: @'rules//CC/test:test',
+    name: ['git_repo'],
+    srcs: ['git_repo.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:git_cas',
+      @'src//src/buildtool/file_system:git_repo',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/logging:log_level',
+      @'src//src/buildtool/logging:logging',
+      @'src//src/utils/cpp:atomic',
+      @'src//src/utils/cpp:expected',
+      @'src//src/utils/cpp:hex_string',
+      @'//:catch-main',
+      @'//utils:shell_quoting',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  resolve_symlinks_map: {
+    type: @'rules//CC/test:test',
+    name: ['resolve_symlinks_map'],
+    srcs: ['resolve_symlinks_map.test.cpp'],
+    data: ['test_data'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:git_cas',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/file_system/symlinks:pragma_special',
+      @'src//src/buildtool/file_system/symlinks:resolve_symlinks_map',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+      @'//utils:shell_quoting',
+    ],
+    stage: ['test', 'buildtool', 'file_system'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['file_system'],
+    deps: [
+      'directory_entries',
+      'file_root',
+      'file_system_manager',
+      'git_repo',
+      'git_tree',
+      'object_cas',
+      'resolve_symlinks_map',
+    ],
+  },
 }

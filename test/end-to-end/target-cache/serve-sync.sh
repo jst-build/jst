@@ -99,7 +99,7 @@ cat > repos.json <<EOF
     }
   , "rules":
     { "repository":
-      {"type": "file", "path": "../src/rules", "pragma": {"to_git": true}}
+      {"type": "file", "path": "../src/etc/rules/rules", "pragma": {"to_git": true}}
     }
   , "lib":
     { "repository":

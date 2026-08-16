@@ -1,5 +1,0 @@
-{ "srcs":
-  {"type": ["@", "rules", "data", "staged"], "srcs": [["GLOB", null, "*.c"]]}
-, "hdrs":
-  {"type": ["@", "rules", "data", "staged"], "srcs": [["GLOB", null, "*.h"]]}
-}

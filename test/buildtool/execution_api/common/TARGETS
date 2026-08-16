@@ -1,82 +1,85 @@
-{ "api_test":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["api_test"]
-  , "hdrs": ["api_test.hpp"]
-  , "deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "fmt", "", "fmt"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "src", "src/buildtool/common", "artifact_blob"]
-    , ["@", "src", "src/buildtool/common", "artifact_description"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/common", "protocol_traits"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/execution_api/common", "common"]
-    , ["@", "src", "src/buildtool/execution_api/local", "config"]
-    , ["@", "src", "src/buildtool/execution_api/local", "local_api"]
-    , ["@", "src", "src/buildtool/execution_engine/dag", "dag"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/logging", "log_level"]
-    , ["@", "src", "src/buildtool/logging", "logging"]
-    , ["@", "src", "src/utils/cpp", "expected"]
-    , ["utils", "test_hash_function_type"]
-    ]
-  , "stage": ["test", "buildtool", "execution_api", "common"]
-  }
-, "bytestream_utils":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["bytestream_utils"]
-  , "srcs": ["bytestream_utils.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/execution_api/common", "bytestream_utils"]
-    , ["@", "src", "src/buildtool/execution_api/common", "common"]
-    , ["@", "src", "src/buildtool/execution_api/common", "ids"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/utils/cpp", "expected"]
-    , ["", "catch-main"]
-    , ["utils", "test_hash_function_type"]
-    ]
-  , "stage": ["test", "buildtool", "execution_api", "common"]
-  }
-, "tree_rehashing":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["tree_rehashing"]
-  , "srcs": ["tree_rehashing.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "gsl", "", "gsl"]
-    , ["@", "src", "src/buildtool/common", "common"]
-    , ["@", "src", "src/buildtool/common", "protocol_traits"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , [ "@"
-      , "src"
-      , "src/buildtool/execution_api/bazel_msg"
-      , "bazel_msg_factory"
-      ]
-    , ["@", "src", "src/buildtool/execution_api/common", "api_bundle"]
-    , ["@", "src", "src/buildtool/execution_api/local", "config"]
-    , ["@", "src", "src/buildtool/execution_api/local", "context"]
-    , ["@", "src", "src/buildtool/execution_api/local", "local_api"]
-    , ["@", "src", "src/buildtool/execution_api/utils", "rehash_utils"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/file_system", "object_type"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["@", "src", "src/buildtool/storage", "storage"]
-    , ["@", "src", "src/utils/cpp", "expected"]
-    , ["@", "src", "src/utils/cpp", "tmp_dir"]
-    , ["", "catch-main"]
-    , ["utils", "large_object_utils"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "execution_api", "common"]
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["common"]
-  , "deps": ["bytestream_utils", "tree_rehashing"]
-  }
+{
+  api_test: {
+    type: @'rules//CC:library',
+    name: ['api_test'],
+    hdrs: ['api_test.hpp'],
+    deps: [
+      @'catch2//:catch2',
+      @'fmt//:fmt',
+      @'gsl//:gsl',
+      @'src//src/buildtool/common:artifact_blob',
+      @'src//src/buildtool/common:artifact_description',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/common:protocol_traits',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/execution_api/common:common',
+      @'src//src/buildtool/execution_api/local:config',
+      @'src//src/buildtool/execution_api/local:local_api',
+      @'src//src/buildtool/execution_engine/dag:dag',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/logging:log_level',
+      @'src//src/buildtool/logging:logging',
+      @'src//src/utils/cpp:expected',
+      @'//utils:test_hash_function_type',
+    ],
+    stage: ['test', 'buildtool', 'execution_api', 'common'],
+  },
+
+  bytestream_utils: {
+    type: @'rules//CC/test:test',
+    name: ['bytestream_utils'],
+    srcs: ['bytestream_utils.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/execution_api/common:bytestream_utils',
+      @'src//src/buildtool/execution_api/common:common',
+      @'src//src/buildtool/execution_api/common:ids',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/utils/cpp:expected',
+      @'//:catch-main',
+      @'//utils:test_hash_function_type',
+    ],
+    stage: ['test', 'buildtool', 'execution_api', 'common'],
+  },
+
+  tree_rehashing: {
+    type: @'rules//CC/test:test',
+    name: ['tree_rehashing'],
+    srcs: ['tree_rehashing.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'gsl//:gsl',
+      @'src//src/buildtool/common:common',
+      @'src//src/buildtool/common:protocol_traits',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/execution_api/bazel_msg:bazel_msg_factory',
+      @'src//src/buildtool/execution_api/common:api_bundle',
+      @'src//src/buildtool/execution_api/local:config',
+      @'src//src/buildtool/execution_api/local:context',
+      @'src//src/buildtool/execution_api/local:local_api',
+      @'src//src/buildtool/execution_api/utils:rehash_utils',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/file_system:object_type',
+      @'src//src/buildtool/storage:config',
+      @'src//src/buildtool/storage:storage',
+      @'src//src/utils/cpp:expected',
+      @'src//src/utils/cpp:tmp_dir',
+      @'//:catch-main',
+      @'//utils:large_object_utils',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'execution_api', 'common'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['common'],
+    deps: [
+      'bytestream_utils',
+      'tree_rehashing',
+    ],
+  },
 }

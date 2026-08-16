@@ -1,175 +1,215 @@
-{ "test_repo":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["test_repo"]
-  , "hdrs": ["test_repo.hpp"]
-  , "deps":
-    [ ["@", "fmt", "", "fmt"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["utils", "shell_quoting"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "entity_name":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["entity_name"]
-  , "srcs": ["entity_name.test.cpp"]
-  , "private-deps":
-    [ ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["", "catch-main"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "directory_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["directory_map"]
-  , "srcs": ["directory_map.test.cpp"]
-  , "data": ["test_data_src", "test_data"]
-  , "private-deps":
-    [ "test_repo"
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "directory_map"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "module_name"]
-    , ["@", "src", "src/buildtool/common", "config"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "json_file_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["json_file_map"]
-  , "srcs": ["json_file_map.test.cpp"]
-  , "data": ["test_data_json", "test_data"]
-  , "private-deps":
-    [ "test_repo"
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "json_file_map"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "module_name"]
-    , ["@", "src", "src/buildtool/common", "config"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "source_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["source_map"]
-  , "srcs": ["source_map.test.cpp"]
-  , "data": ["test_data", "test_data_src"]
-  , "private-deps":
-    [ "test_repo"
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "directory_map"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "source_map"]
-    , ["@", "src", "src/buildtool/common", "config"]
-    , ["@", "src", "src/buildtool/common", "protocol_traits"]
-    , ["@", "src", "src/buildtool/crypto", "hash_function"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/file_system", "file_system_manager"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_hash_function_type"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "expression_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["expression_map"]
-  , "srcs": ["expression_map.test.cpp"]
-  , "data": ["test_data_expr", "test_data"]
-  , "private-deps":
-    [ "test_repo"
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "expression_map"]
-    , ["@", "src", "src/buildtool/build_engine/expression", "expression"]
-    , ["@", "src", "src/buildtool/common", "config"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "rule_map":
-  { "type": ["@", "rules", "CC/test", "test"]
-  , "name": ["rule_map"]
-  , "srcs": ["rule_map.test.cpp"]
-  , "data": ["test_data_rule", "test_data"]
-  , "private-deps":
-    [ "test_repo"
-    , ["@", "catch2", "", "catch2"]
-    , ["@", "json", "", "json"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "entity_name_data"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "expression_map"]
-    , ["@", "src", "src/buildtool/build_engine/base_maps", "rule_map"]
-    , ["@", "src", "src/buildtool/build_engine/expression", "expression"]
-    , ["@", "src", "src/buildtool/common", "config"]
-    , ["@", "src", "src/buildtool/file_system", "file_root"]
-    , ["@", "src", "src/buildtool/multithreading", "task_system"]
-    , ["@", "src", "src/buildtool/storage", "config"]
-    , ["", "catch-main"]
-    , ["utils", "test_storage_config"]
-    ]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "test_data_src":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data_src/file", "data_src/foo/bar/file"]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "test_data_json":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data_json/bad.json", "data_json/foo.json"]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "test_data_expr":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data_expr/EXPRESSIONS", "data_expr/readers/EXPRESSIONS"]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "test_data_rule":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data_rule/RULES", "data_rule/composers/EXPRESSIONS"]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "test_data":
-  { "type": ["@", "rules", "data", "staged"]
-  , "srcs": ["data/test_repo.bundle"]
-  , "stage": ["test", "buildtool", "build_engine", "base_maps"]
-  }
-, "data/test_repo.bundle":
-  { "type": "generic"
-  , "arguments_config": ["TEST_ENV"]
-  , "deps": ["create_maps_test_git_bundle.sh"]
-  , "outs": ["data/test_repo.bundle"]
-  , "cmds": ["sh create_maps_test_git_bundle.sh"]
-  , "env":
-    {"type": "var", "name": "TEST_ENV", "default": {"type": "empty_map"}}
-  }
-, "TESTS":
-  { "type": ["@", "rules", "test", "suite"]
-  , "stage": ["base_maps"]
-  , "deps":
-    [ "directory_map"
-    , "entity_name"
-    , "expression_map"
-    , "json_file_map"
-    , "rule_map"
-    , "source_map"
-    ]
-  }
+{
+  test_repo: {
+    type: @'rules//CC:library',
+    name: ['test_repo'],
+    hdrs: ['test_repo.hpp'],
+    deps: [
+      @'fmt//:fmt',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'//utils:shell_quoting',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  entity_name: {
+    type: @'rules//CC/test:test',
+    name: ['entity_name'],
+    srcs: ['entity_name.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  directory_map: {
+    type: @'rules//CC/test:test',
+    name: ['directory_map'],
+    srcs: ['directory_map.test.cpp'],
+    data: [
+      'test_data_src',
+      'test_data',
+    ],
+    'private-deps': [
+      'test_repo',
+      @'catch2//:catch2',
+      @'src//src/buildtool/build_engine/base_maps:directory_map',
+      @'src//src/buildtool/build_engine/base_maps:module_name',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  json_file_map: {
+    type: @'rules//CC/test:test',
+    name: ['json_file_map'],
+    srcs: ['json_file_map.test.cpp'],
+    data: [
+      'test_data_json',
+      'test_data',
+    ],
+    'private-deps': [
+      'test_repo',
+      @'catch2//:catch2',
+      @'src//src/buildtool/build_engine/base_maps:json_file_map',
+      @'src//src/buildtool/build_engine/base_maps:module_name',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  source_map: {
+    type: @'rules//CC/test:test',
+    name: ['source_map'],
+    srcs: ['source_map.test.cpp'],
+    data: [
+      'test_data',
+      'test_data_src',
+    ],
+    'private-deps': [
+      'test_repo',
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:directory_map',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'src//src/buildtool/build_engine/base_maps:source_map',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/common:protocol_traits',
+      @'src//src/buildtool/crypto:hash_function',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/file_system:file_system_manager',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_hash_function_type',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  expression_map: {
+    type: @'rules//CC/test:test',
+    name: ['expression_map'],
+    srcs: ['expression_map.test.cpp'],
+    data: [
+      'test_data_expr',
+      'test_data',
+    ],
+    'private-deps': [
+      'test_repo',
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'src//src/buildtool/build_engine/base_maps:expression_map',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  rule_map: {
+    type: @'rules//CC/test:test',
+    name: ['rule_map'],
+    srcs: ['rule_map.test.cpp'],
+    data: [
+      'test_data_rule',
+      'test_data',
+    ],
+    'private-deps': [
+      'test_repo',
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'src//src/buildtool/build_engine/base_maps:expression_map',
+      @'src//src/buildtool/build_engine/base_maps:rule_map',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/multithreading:task_system',
+      @'src//src/buildtool/storage:config',
+      @'//:catch-main',
+      @'//utils:test_storage_config',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  test_data_src: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data_src/file',
+      'data_src/foo/bar/file',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  test_data_json: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data_json/bad.json',
+      'data_json/foo.json',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  test_data_expr: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data_expr/EXPRESSIONS',
+      'data_expr/readers/EXPRESSIONS',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  test_data_rule: {
+    type: @'rules//data:staged',
+    srcs: [
+      'data_rule/RULES',
+      'data_rule/composers/EXPRESSIONS',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  test_data: {
+    type: @'rules//data:staged',
+    srcs: ['data/test_repo.bundle'],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
+  'data/test_repo.bundle': {
+    type: 'generic',
+    arguments_config: ['TEST_ENV'],
+    deps: ['create_maps_test_git_bundle.sh'],
+    outs: ['data/test_repo.bundle'],
+    cmds: ['sh create_maps_test_git_bundle.sh'],
+    env: jst.env('TEST_ENV', default={}),
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['base_maps'],
+    deps: [
+      'directory_map',
+      'entity_name',
+      'expression_map',
+      'json_file_map',
+      'rule_map',
+      'source_map',
+    ],
+  },
 }

@@ -22,7 +22,7 @@
       @'justlang//src/justlang/ast:to_json_visitor',
       @'justlang//src/justlang/ast/native:parser',
       @'catch2//:catch2',
-      @'catch2//:catch2-main',
+      @'catch2//:catch2_main',
     ],
   },
 
@@ -35,7 +35,7 @@
       @'justlang//:preprocessor',
       @'json//:json',
       @'catch2//:catch2',
-      @'catch2//:catch2-main',
+      @'catch2//:catch2_main',
     ],
   },
 
@@ -47,7 +47,7 @@
     'private-deps': [
       @'justlang//:ref',
       @'catch2//:catch2',
-      @'catch2//:catch2-main',
+      @'catch2//:catch2_main',
     ],
   },
 
@@ -60,7 +60,7 @@
       @'json//:json',
       @'justlang//src/justlang/ast/native:lexer',
       @'catch2//:catch2',
-      @'catch2//:catch2-main',
+      @'catch2//:catch2_main',
     ],
   },
 
@@ -73,7 +73,7 @@
       @'justlang//src/justlang/ast/native:parser',
       @'justlang//src/justlang/ast:to_string_visitor',
       @'catch2//:catch2',
-      @'catch2//:catch2-main',
+      @'catch2//:catch2_main',
     ],
   },
 

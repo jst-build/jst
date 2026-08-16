@@ -1,18 +1,19 @@
-{ "dag":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["dag"]
-  , "hdrs": ["dag.hpp"]
-  , "srcs": ["dag.cpp"]
-  , "deps":
-    [ ["@", "gsl", "", "gsl"]
-    , ["src/buildtool/common", "action_description"]
-    , ["src/buildtool/common", "artifact_description"]
-    , ["src/buildtool/common", "common"]
-    , ["src/buildtool/logging", "log_level"]
-    , ["src/buildtool/logging", "logging"]
-    , ["src/utils/cpp", "hex_string"]
-    , ["src/utils/cpp", "type_safe_arithmetic"]
-    ]
-  , "stage": ["src", "buildtool", "execution_engine", "dag"]
-  }
+{
+  dag: {
+    type: @'rules//CC:library',
+    name: ['dag'],
+    hdrs: ['dag.hpp'],
+    srcs: ['dag.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:action_description',
+      @'//src/buildtool/common:artifact_description',
+      @'//src/buildtool/common:common',
+      @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/logging:logging',
+      @'//src/utils/cpp:hex_string',
+      @'//src/utils/cpp:type_safe_arithmetic',
+    ],
+    stage: ['src', 'buildtool', 'execution_engine', 'dag'],
+  },
 }
