@@ -162,7 +162,7 @@ EOF
 }
 
 _jst_completion(){
-    local readonly SUBCOMMANDS=(version setup setup-env fetch update backend gc-repo add-to-cas analyse build describe gc eval install install-cas rebuild version -h --help)
+    local readonly SUBCOMMANDS=(version setup setup-env fetch update backend gc-repo add-to-cas analyse build describe gc eval execute install install-cas rebuild serve version -h --help)
     local word=${COMP_WORDS[$COMP_CWORD]}
     local prev=${COMP_WORDS[$((COMP_CWORD-1))]}
     local cmd=$(_jst_parse_subcommand "${COMP_WORDS[@]}")
@@ -184,7 +184,7 @@ _jst_completion(){
         local _opts=($(_jst_options "jst $cmd"))
         local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -f -W "${_opts[*]} ${_repos[*]}" -- $word ))
-    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|eval|execute) ]]
+    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|eval|execute|serve) ]]
     then
         # jst_backend subcommand options and modules/targets eventually using the
         # auto-generated configuration

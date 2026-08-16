@@ -102,6 +102,14 @@ KNOWN_JUST_SUBCOMMANDS: Json = {
     "gc": {
         "config": False,
         "build root": True
+    },
+    "serve": {
+        "config": False,
+        "build root": False
+    },
+    "execute": {
+        "config": False,
+        "build root": True
     }
 }
 

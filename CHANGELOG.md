@@ -12,6 +12,7 @@
 
 ### Other changes
 
+- `serve` and `execute` are now known `jst` subcommands.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the

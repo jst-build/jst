@@ -161,6 +161,28 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .remote_props = false,
       .serve = false,
       .dispatch = false,
+      .does_build = false}},
+    // No forwards, the serve service reads everything else from its own config.
+    {"serve",
+     {.config = false,
+      .build_root = false,
+      .launch = false,
+      .defines = false,
+      .remote = false,
+      .remote_props = false,
+      .serve = false,
+      .dispatch = false,
+      .does_build = false}},
+    // The execution service the local build root and local launcher.
+    {"execute",
+     {.config = false,
+      .build_root = true,
+      .launch = true,
+      .defines = false,
+      .remote = false,
+      .remote_props = false,
+      .serve = false,
+      .dispatch = false,
       .does_build = false}}};
 
 nlohmann::json const kDefaultConfigLocations = nlohmann::json::array(
