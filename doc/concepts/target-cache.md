@@ -17,7 +17,7 @@ scheme is given by two parameters,
 For example, a root could be specified as follows.
 
 ``` jsonc
-["git tree", "6a1820e78f61aee6b8f3677f150f4559b6ba77a4", "/usr/local/src/justbuild.git"]
+["git tree", "6a1820e78f61aee6b8f3677f150f4559b6ba77a4", "/usr/local/src/jst.git"]
 ```
 
 It should be noted that the `git` tree identifier alone already
@@ -30,7 +30,7 @@ alone already specifies the content of the whole (logical) directory.
 The equality of two such directories can be established by comparing the
 two identifiers *without* the need to read any file from
 disk. Those "fixed-content" descriptions, i.e., descriptions of a
-repository root that already fully determines the content are the key to
+repository root that already fully determine the content, are the key to
 caching whole targets.
 
 ### `KNOWN` artifacts
@@ -38,8 +38,8 @@ caching whole targets.
 The in-memory representation of known artifacts has an optional
 reference to a repository containing that artifact. Artifacts "known"
 from local repositories might not be known to the CAS used for the
-action execution; this additional reference allows to fill such misses
-in the CAS.
+action execution; this additional reference allows such misses in the
+CAS to be filled.
 
 Content-fixed repositories
 --------------------------
@@ -49,9 +49,9 @@ Content-fixed repositories
 In order to meaningfully cache a target, we need to be able to
 efficiently compute the cache key. We restrict this to the case where we
 can compute the information about the repository without file-system
-access. This requires that all roots (workspace, target root, etc) be
+access. This requires that all roots (workspace, target root, etc.) be
 content fixed, as well as the bindings of the free repository names (and
-hence also all transitively reachable repositories). The call such
+hence also all transitively reachable repositories). We call such
 repositories "content-fixed" repositories.
 
 ### Canonical description of a content-fixed repository
@@ -66,32 +66,32 @@ The local data of a repository consists of the following.
 
 Additionally, repositories can reach additional repositories via
 bindings. Moreover, this repository-level dependency relation is not
-necessarily cycle free. In particular, we cannot use the tree unfolding
-as canonical representation of that graph up to bisimulation, as we do
+necessarily cycle-free. In particular, we cannot use the tree unfolding
+as the canonical representation of that graph up to bisimulation, as we do
 with most other data structures. To still get a canonical
 representation, we factor out the largest bisimulation, i.e., minimize
 the respective automaton (with repositories as states, local data as
 locally observable properties, and the binding relation as edges).
 
 Finally, for each repository individually, the reachable repositories
-are renamed `"0"`, `"1"`, `"2"`, etc, following a depth-first traversal
+are renamed `"0"`, `"1"`, `"2"`, etc., following a depth-first traversal
 starting from the repository in question where outgoing edges are
 traversed in lexicographical order. The entry point is hence
 recognisable as repository `"0"`.
 
-The repository key content-identifier of the canonically formatted
-canonical serialisation of the JSON encoding of the obtain
+The repository key is the content identifier of the canonical
+serialisation of the JSON encoding of the resulting
 multi-repository configuration (with repository-free git-root
 descriptions). The serialisation itself is stored in CAS.
 
-These identifications and replacement of global names does not change
+These identifications and replacements of global names do not change
 the semantics, as our name data types are completely opaque to our
 expression language. In the `"json_encode"` expression, they're
 serialized as `null` and string representation is only generated in user
 messages not available to the language itself. Moreover, names cannot be
 compared for equality either, so their only observable properties, i.e.,
-the way `"DEP_ARTIFACTS"`, `"DEP_RUNFILES`, and `"DEP_PROVIDES"` reacts
-to them are invariant under repository bisimulation.
+the way `"DEP_ARTIFACTS"`, `"DEP_RUNFILES"`, and `"DEP_PROVIDES"` react
+to them, are invariant under repository bisimulation.
 
 Configuration and the `"export"` rule
 -------------------------------------
@@ -143,7 +143,7 @@ caching. An export target is then fully described by
 More precisely, the canonical description is the JSON object with those
 values for the keys `"repo_key"`, `"target_name"`, and
 `"effective_config"`, respectively. The repository key is the blob
-identifier of the canonical serialisation (including sorted keys, etc)
+identifier of the canonical serialisation (including sorted keys, etc.)
 of the just described piece of JSON. To allow debugging and cooperation
 with other tools, whenever a cache key is computed, it is ensured, that
 the serialisation ends up in the applicable CAS.
@@ -157,7 +157,7 @@ configuration that were relevant.
 Cached value
 ------------
 
-The value to be cached is the result of evaluating the target, that is,
+The value to be cached is the result of evaluating the target; that is,
 its artifacts, runfiles, and provided data. All artifacts inside those
 data structures will be described as known artifacts.
 
@@ -211,7 +211,7 @@ together with the recommendation of only depending on export targets of
 other repositories.
 
 If a target forwards artifacts of an exported target (indirect header
-files, indirect link dependencies, etc), and is exported again, no
+files, indirect link dependencies, etc.), and is exported again, no
 additional conflicts occur; replacing by the corresponding known
 artifact is a projection: the known artifact corresponding to a known
 artifact is the artifact itself. Moreover, by the strictness property

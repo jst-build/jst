@@ -1,9 +1,9 @@
 # Tree Overlays
 
 
-The underlying idea of a tree object is that it is an opaque object,
+The underlying idea of a tree object is that it is an opaque object
 that can be passed around as a single artifact. Trees can be obtained
-as a directory output of an action or as explicit reference to a
+as a directory output of an action, or as an explicit reference to a
 source directory. Using a tree rather than a collection of individual
 files can be useful for reserving a whole directory for headers
 for a particular library in order to avoid future conflicts, or if
@@ -16,12 +16,12 @@ There are, however, a few examples where opaque trees have to be
 combined into a single one, e.g., if there is an external requirement
 that certain files be staged flatly in a single directory.
 
-To also support those rare use cases, `just` supports in-memory
+To also support those rare use cases, `jst_backend` supports in-memory
 actions to compute the overlay of two trees, optionally rejecting
 conflicts instead of resolving them in a latest-wins way. Those
 actions can be requested in user-defined rules, as well as by the
 built-in rules `tree_overlay` and `disjoint_tree_overlay` (where
-the latter causes a build error if the trees cannot be overlayed
+the latter causes a build error if the trees cannot be overlaid
 in a conflict-free way).
 
 Here we demonstrate the way these rules work on an artificial
@@ -33,46 +33,52 @@ $ touch ROOT
 
 We simply work locally, so our `repos.json` is trivial.
 
-``` {.jsonc srcname="repos.json"}
-{"repositories": {"": {"repository": {"type": "file", "path": "."}}}}
+``` {.json srcname="repos.json"}
+{
+  "repositories": {
+    "": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      }
+    }
+  }
+}
 ```
 
 As a replacement for a foreign-build-system call, consider a target
 having a single tree artifact as output, with contents heavily
 depending on the configuration.
 
-``` {.jsonc srcname="TARGETS"}
-{ "foo":
-  { "type": "generic"
-  , "arguments_config": ["FOO_BINS"]
-  , "out_dirs": ["bin"]
-  , "cmds":
-    [ "mkdir -p bin"
-    , { "type": "join"
-      , "$1":
-        [ "for tool in "
-        , {"type": "join_cmd", "$1": {"type": "var", "name": "FOO_BINS"}}
-        , " ; do echo \"foo binary ${tool}\" > bin/\"${tool}\""
-        , " ; chmod 755 bin/\"${tool}\""
-        , " ; done"
-        ]
-      }
-    ]
-  }
+``` {.jsonnet srcname="TARGETS"}
+{
+  foo: {
+    type: 'generic',
+    arguments_config: ['FOO_BINS'],
+    out_dirs: ['bin'],
+    cmds: [
+      'mkdir -p bin',
+      jst.join([
+        'for tool in ',
+        jst.join_cmd($'FOO_BINS'),
+        ' ; do echo "foo binary ${tool}" > bin/"${tool}"',
+        ' ; chmod 755 bin/"${tool}"',
+        ' ; done',
+      ]),
+    ],
+  },
 }
 ```
 
-So, depending on the configuration the output tree has different entries.
+So, depending on the configuration, the output tree has different entries.
 
 ``` sh
-$ just-mr build -D '{"FOO_BINS": ["version", "upload", "download"]}' -p foo
-INFO: Performing repositories setup
+$ jst build -D '{"FOO_BINS": ["version", "upload", "download"]}' -p foo
 INFO: Found 1 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","-D","{\"FOO_BINS\": [\"version\", \"upload\", \"download\"]}","-p"]
-INFO: Requested target is [["@","","","foo"],{"FOO_BINS":["version","upload","download"]}]
-INFO: Analysed target [["@","","","foo"],{"FOO_BINS":["version","upload","download"]}]
+INFO: Requested target '""//:foo' with config: {
+        "FOO_BINS": ["version","upload","download"]
+      }
 INFO: Discovered 1 actions, 0 tree overlays, 0 trees, 0 blobs
-INFO: Building [["@","","","foo"],{"FOO_BINS":["version","upload","download"]}].
 INFO: Processed 1 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
         bin [8cd3ecc03f0ba26d9e104e52b40f88a0bc5a84b9:105:t]
@@ -81,7 +87,7 @@ INFO: Artifacts built, logical paths are:
   "upload": "[af38d5c40e8828c67d0031fce42da86b68f56182::x]",
   "version": "[a263fff2a3b94429878303875861fd93bcdbe248::x]"
 }
-$ just-mr build -D '{"FOO_BINS": ["version", "ci", "co", "rlog"]}' -p foo
+$ jst build -D '{"FOO_BINS": ["version", "ci", "co", "rlog"]}' -p foo
 ...
 INFO: Processed 1 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -96,25 +102,23 @@ INFO: Artifacts built, logical paths are:
 
 Now, assume we have another such target.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "bar":
-  { "type": "generic"
-  , "arguments_config": ["BAR_BINS"]
-  , "out_dirs": ["bin"]
-  , "cmds":
-    [ "mkdir -p bin"
-    , { "type": "join"
-      , "$1":
-        [ "for tool in "
-        , {"type": "join_cmd", "$1": {"type": "var", "name": "BAR_BINS"}}
-        , " ; do echo \"bar binary ${tool}\" > bin/\"${tool}\""
-        , " ; chmod 755 bin/\"${tool}\""
-        , " ; done"
-        ]
-      }
-    ]
-  }
+  bar: {
+    type: 'generic',
+    arguments_config: ['BAR_BINS'],
+    out_dirs: ['bin'],
+    cmds: [
+      'mkdir -p bin',
+      jst.join([
+        'for tool in ',
+        jst.join_cmd($'BAR_BINS'),
+        ' ; do echo "bar binary ${tool}" > bin/"${tool}"',
+        ' ; chmod 755 bin/"${tool}"',
+        ' ; done',
+      ]),
+    ],
+  },
 ...
 ```
 
@@ -123,16 +127,16 @@ within the directory `bin`. Therefore, an overlay at analysis time
 could only result in one or the other directory. However, we overlay
 the results at build time.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "both": {"type": "tree_overlay", "deps": ["foo", "bar"]}
-, "both-noconflict": {"type": "disjoint_tree_overlay", "deps": ["foo", "bar"]}
+  both: {type: 'tree_overlay', deps: ['foo', 'bar']},
+  'both-noconflict': {type: 'disjoint_tree_overlay', deps: ['foo', 'bar']},
 ...
 ```
 
 If the entries do not conflict, in both cases, we get the union of the files.
 ``` sh
-$ just-mr build -D '{"FOO_BINS": ["ci", "co"], "BAR_BINS": ["up", "down"]}' -P bin both
+$ jst build -D '{"FOO_BINS": ["ci", "co"], "BAR_BINS": ["up", "down"]}' -P bin both
 ...
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -144,7 +148,7 @@ INFO: 'bin' not a direct logical path of the specified target; will take subobje
   "down": "[53aa524d39aff972c976bfd729a3fd26c5d364fd::x]",
   "up": "[3bfadc230e82da61f056e1d9acd854298f0b19c3::x]"
 }
-$ just-mr build -D '{"FOO_BINS": ["ci", "co"], "BAR_BINS": ["up", "down"]}' -P bin both-noconflict
+$ jst build -D '{"FOO_BINS": ["ci", "co"], "BAR_BINS": ["up", "down"]}' -P bin both-noconflict
 ...
 INFO: Processed 2 actions, 2 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -163,21 +167,20 @@ overlay the files in a latest-wins fashion, whereas the second will fail when
 handling the overlay action.
 
 ``` sh
-$ just-mr build -D '{"FOO_BINS": ["version", "ci", "co"], "BAR_BINS": ["version", "up", "down"]}' -P bin/version both
+$ jst build -D '{"FOO_BINS": ["version", "ci", "co"], "BAR_BINS": ["version", "up", "down"]}' -P bin/version both
 ...
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
          [2a26b3dc1774df55eb1f1d9a865611a413204ab2:30:t]
 INFO: 'bin/version' not a direct logical path of the specified target; will take subobject 'bin/version' of ''
 bar binary version
-$ just-mr build -D '{"FOO_BINS": ["version", "ci", "co"], "BAR_BINS": ["version", "up", "down"]}' both-noconflict || :
-INFO: Performing repositories setup
+$ jst build -D '{"FOO_BINS": ["version", "ci", "co"], "BAR_BINS": ["version", "up", "down"]}' both-noconflict || :
 INFO: Found 1 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","-D","{\"FOO_BINS\": [\"version\", \"ci\", \"co\"], \"BAR_BINS\": [\"version\", \"up\", \"down\"]}","both-noconflict"]
-INFO: Requested target is [["@","","","both-noconflict"],{"BAR_BINS":["version","up","down"],"FOO_BINS":["version","ci","co"]}]
-INFO: Analysed target [["@","","","both-noconflict"],{"BAR_BINS":["version","up","down"],"FOO_BINS":["version","ci","co"]}]
+INFO: Requested target '""//:both-noconflict' with config: {
+        "BAR_BINS": ["version","up","down"],
+        "FOO_BINS": ["version","ci","co"]
+      }
 INFO: Discovered 2 actions, 1 tree overlays, 2 trees, 0 blobs
-INFO: Building [["@","","","both-noconflict"],{"BAR_BINS":["version","up","down"],"FOO_BINS":["version","ci","co"]}].
 ERROR (action:aec6a6e881d3c3884420bee1330fbe9702ad3a7af11ee7f21fb59f88d6ba8f38):
      Tree-overlay computation failed:
      While merging the trees:
@@ -192,7 +195,7 @@ ERROR (action:aec6a6e881d3c3884420bee1330fbe9702ad3a7af11ee7f21fb59f88d6ba8f38):
 ERROR (action:aec6a6e881d3c3884420bee1330fbe9702ad3a7af11ee7f21fb59f88d6ba8f38):
      Failed to execute tree-overlay action.
      requested by
-      - [["@","","","both-noconflict"],{"BAR_BINS":["version","up","down"],"FOO_BINS":["version","ci","co"]}]#0
+      - ['""//:both-noconflict',{"BAR_BINS":["version","up","down"],"FOO_BINS":["version","ci","co"]}]#0
      inputs were
       - 394c2bd3bf4a07f8e22f6e73c2adcb03f28349df:30:t
       - e83b879ac94530f49855004138ea96df758b14d1:30:t

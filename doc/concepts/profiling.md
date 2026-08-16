@@ -3,7 +3,7 @@
 ## Use cases for logging build internals
 
 There are several use cases where inspection of the internals of
-a build can be provide additional insights.
+a build can provide additional insights.
 
 ### Time spent during the build
 
@@ -11,18 +11,18 @@ For large projects, build times can grow quite large. While increased
 parallelism, e.g., via remote execution, helps to reduce build
 times, it cannot reduce build time below that of the critical path.
 So it is an important step in maintaining a code base to keep the
-critical path short, both in terms of number of actions, but also,
-more importantly in terms of typical runtime of those actions. Such
+critical path short, both in terms of the number of actions and,
+more importantly, in terms of the typical runtime of those actions. Such
 a task requires profiling data of real-world builds.
 
 ### Test history
 
-When running test actions, beside the time spent it is also important
+When running test actions, besides the time spent, it is also important
 to understand how a test status evolved over the history of the
 main branch of a code base, in terms of pass/fail/flaky, possibly
 also in comparison with test results on merge requests. In this
 way, information on the reliability and usefulness of the test can
-be deduced. It can also serve as basis for identifying when a test
+be deduced. It can also serve as a basis for identifying when a test
 broke on the head branch, helping to identify the offending commit.
 
 ### Build-invocation sharing
@@ -37,10 +37,10 @@ with remote sites.
 
 ## Underlying design considerations
 
-In the described profiling use cases, the importance is evolution
-over time. For build steps, the relevant data is the time taken and
-the frequency that build step has to run. For steps that are only
-run very infrequently, usually the time taken is not that important.
+In the profiling use cases described above, what matters is the
+evolution over time. For build steps, the relevant data is the time taken and
+the frequency with which that build step has to run. For steps that are
+only run very infrequently, the time taken is usually not that important.
 But for both those pieces of information, the evolution (typically
 along the main development branch of the code base) is relevant.
  - If a build step suddenly has to be run a lot more often, and hence
@@ -50,7 +50,7 @@ along the main development branch of the code base) is relevant.
    Comparison of the dependency structure before and after that
    change can help to restructure the code in a way more favourable
    for efficient builds.
- - The the time for a single build step quickly increases over the
+ - If the time for a single build step increases quickly over the
    history of the main branch, that is a candidate for a refactoring
    in the near future. Thus, by appropriately monitoring where the
    time for individual build steps increases, appropriate action
@@ -59,7 +59,7 @@ along the main development branch of the code base) is relevant.
 Depending on the use case, a different form of accumulation of
 the observed data is needed. As it is infeasible to cover all the
 possible derived statistics, we instead focus only on providing
-the raw data of a single invocation. We leave it to the user create
+the raw data of a single invocation. We leave it to the user to create
 a suitable tool collecting the invocation data, possibly from
 different machines, and computing the relevant statistics as well
 as presenting it in a friendly way.
@@ -69,21 +69,21 @@ one form of outputting the needed data: writing it to a file. The
 collection and transfer to a central database is a task that can be
 solved by a separate tool (or by using `jst add-to-cas` to collect
 in the remote-execution CAS). Nevertheless, we chose paths in such
-a way, that log files can be written to a network file system,
+a way that log files can be written to a network file system,
 which is one possible way of central collection. In any case, all
 output files are in a machine-readable format.
 
 Collection of build data, if desired, should be done routinely.
-For the build-sharing use case it is not known ahead of time,
+For the build-sharing use case it is not known ahead of time
 which invocation will be the interesting one. Also, statistics over
-invocations are much more informative, if the data is complete (or
+invocations are much more informative if the data is complete (or
 at least sampled in an unbiased way). Therefore, the build-data
 collection should be configured in a configuration file. The
 only tool we have that routinely reads a configuration file is
 `jst`. As this is also routinely used as a launcher for `jst_backend`,
 its configuration file is a good place to configure build-insight
 logging. Following the current design, we let `jst` do all the
-necessary set up and let `jst_backend` strictly follow instructions.
+necessary setup and let `jst_backend` strictly follow instructions.
 
 ## Relevant interfaces
 
@@ -101,19 +101,19 @@ more keys possibly added in the future).
 
  - The key `"exit code"` contains the exit value of the `jst_backend`
    process; this allows easy filtering on the build and test results.
- - The key `"target"` contains the target in full-qualified form.
-   The reason we include the target is that `jst` allows to also
-   deduce it from the invocation context (like working directory).
+ - The key `"target"` contains the target in fully-qualified form.
+   The reason we include the target is that `jst` also allows it to be
+   deduced from the invocation context (like the working directory).
  - The key `"configuration"` contains the configuration in which
    this target is built. The reason this is included is that it
    is a value derived not only from the command line but also from
-   the context of a file (given via `-c`) possibly local on the
-   machine `jst` was run.
+   the context of a file (given via `-c`) that may be local to the
+   machine `jst` was run on.
  - The key `"remote"` describes the remote-execution endpoint,
-   including the used properties and dispatch list. This allow
-   distinguishing builds in different environments (possibly using
-   different hardware); this can be relevant both for performance
-   as well as failure statistics for tests. Again, the reason for
+   including the properties and dispatch list used. This allows
+   builds in different environments (possibly using different
+   hardware) to be distinguished; this can be relevant both for
+   performance and for failure statistics for tests. Again, the reason for
    including it in the profile is that local files are read (for
    the dispatch list).
  - The key `"actions"` contains a JSON object with the keys being
@@ -134,12 +134,12 @@ more keys possibly added in the future).
       even used for that particular compilation step?". In case of
       tests, the collected outputs can be used to compare successful
       and failing runs of a flaky test.
-    - Wether the action was cached.
+    - Whether the action was cached.
     - For non-cached actions, the duration of the action, as
       floating-point seconds. If possible, that information is taken
       from the execution response (following the key `result` to
-      the `ExecutedActionMetaData`); in this case, also additional
-      meta data is recorded. If obtaining the meta data that way
+      the `ExecutedActionMetaData`); in this case, additional
+      metadata is recorded. If obtaining the metadata that way
       is not possible, the wall-clock time between starting and
       completing the action can be taken; in this case, the fact
       that this fallback was taken is also recorded.
@@ -171,7 +171,7 @@ It supports the following keys.
    graph file, or plain-graph file, respectively. If not given, the
    respective file will not be requested in the invocation of `jst`.
  - `"meta data"` A path fragment specifying the file name of the
-   meta-data file. If not give, no meta-data file will be created.
+   metadata file. If not given, no metadata file will be created.
 
 If invocation logging is requested, `jst` will create for each invocation
 a directory `<prefix>/<project-id>/<YYYY-mm-DD-HH:MM>-<uuid>` where
@@ -184,18 +184,18 @@ a directory `<prefix>/<project-id>/<YYYY-mm-DD-HH:MM>-<uuid>` where
    the committed code base (via rc-file merging) whereas the
    general logging location can be specified in a user-specific or
    machine-specific way.
- - `<YYYY-mm-DD-HH:MM:SS>` is the UTC timestamp (year, moth, day,
+ - `<YYYY-mm-DD-HH:MM:SS>` is the UTC timestamp (year, month, day,
    hours, minutes, seconds) of the invocation and `<uuid>` is a universally
    unique id for that invocation (following RFC9562). The reason we
-   prefix the UUID with a time stamp is allow a simple time-based
-   collection and clean up of the log data.
+   prefix the UUID with a time stamp is to allow simple time-based
+   collection and cleanup of the log data.
 
 Inside this directory the requested files with the specified file
 names will be created, in the case of `"--profile"`, `"--dump-graph"`,
 and `"--dump-plain-graph"` by passing the appropriate options to
 the invocation of `jst`.
 
-The meta-data will be written just by `jst` itself, just before
+The metadata is written by `jst` itself, just before
 doing the `exec` call. The file contains a JSON object with keys
 
  - `"time"` The time stamp in seconds since the epoch as floating-point
@@ -204,5 +204,5 @@ doing the `exec` call. The file contains a JSON object with keys
    is about to `exec` to.
  - `"configuration"` The blob-identifier of the multi-repository
    configuration; in this way, the actual repository configuration
-   can be conveniently backed up. In this way, analysis with respect
-   to the source tree is possible.
+   can be conveniently backed up, making analysis with respect
+   to the source tree possible.

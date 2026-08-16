@@ -54,7 +54,7 @@ Generic targets use the built-in rule [`generic`](../../doc/concepts/built-in-ru
 rules in a classical `Makefile` or Bazel's `genrule`. A generic target runs a
 set of shell commands to produce one or more output artifacts (files or
 directories). Optionally, its execution may depend on artifacts from other
-targets, a custom environment, or specify a different working directory.
+targets, use a custom environment, or specify a different working directory.
 
 Please step into the workspace root of this tutorial:
 
@@ -65,7 +65,7 @@ $ cd basics-tutorial
 ### Target without dependencies
 
 Let's begin by defining a minimal `generic` target in the `TARGETS` file, next
-to the `ROOT` file, marking the workspace root.
+to the `ROOT` file that marks the workspace root.
 
 ``` jsonnet
 {
@@ -143,7 +143,7 @@ $ jst build file_greeter -P out.txt
 
 This should print the string "`Hello Galaxy`".
 
-### Target with dependencies on another target
+### Target with a dependency on another target
 
 Finally, let's create a `generic` target that takes the output of another target
 as input.
@@ -195,7 +195,7 @@ Producing a text file can also be achieved by using the built-in rule [`file_gen
 The target `generated` produces the file `out.txt` with its content computed
 from the expression in field `data`. The expression concatenates the string
 `'Hello '` with the value from the configuration variable `GREETEE`, which
-defaults to string `'Universe'` if not set.
+defaults to the string `'Universe'` if not set.
 
 > Note: configuration variables are read using the function [`jst.env()`](../../extern/justlang/doc/stdlib.md#jstenvname-defaultnull).
 

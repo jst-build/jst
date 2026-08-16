@@ -45,7 +45,7 @@ projects, declare the public targets as *export targets*, and define convenient
 The `repos.in.json` file contains the *multi-repository configuration*. In
 `jst`, most projects are multi-repository projects, because the *rules* and
 *toolchains* are typically imported repositories. The general structure of
-the `repo.in.json` file is defined as:
+the `repos.in.json` file is defined as:
 
 ``` jsonc
 {
@@ -98,13 +98,13 @@ $ cd cpp-tutorial/stage1
 
 ### Project setup and toolchain import
 
-To setup the project, we need to do two things:
+To set up the project, we need to do two things:
 
 1. Specify the *main repository* and the location of targets and sources
 2. Import a [toolchain for C/C++](https://gitee.com/justbuild/toolchains-cc), which includes a [rule set for C/C++](https://github.com/just-buildsystem/rules-cc)
 
-Let's start to setup the project by creating the `repos.in.json` file, next to
-the `ROOT` file, marking the workspace root.
+Let's start setting up the project by creating the `repos.in.json` file, next
+to the `ROOT` file that marks the workspace root.
 
 ``` jsonc
 {
@@ -143,7 +143,7 @@ This repository already includes a suitable [rule set for C/C++](https://github.
 so it can be directly used as rules for repository `"stage1"`.
 
 Now, the last missing piece is the `repos.json` file. It serves as a
-*lock-file*, pinpointing to the exact revisions of all imported repositories.
+*lock-file*, pinning down the exact revisions of all imported repositories.
 This file is required for building. It can be generated from the `repos.in.json`
 file by running `jst-lock`:
 
@@ -159,7 +159,7 @@ stage 1.
 
 ### Build and execute the binary
 
-With the project and toolchain successfully set up, we can now start to describe
+With the project and toolchain successfully set up, we can now describe
 the binary target in the `src/TARGETS` file.
 
 ``` jsonnet
@@ -247,19 +247,19 @@ for cross-compilation, according to the [system toolchain documentation](https:/
 $ jst build src helloworld -D'{"TARGET_ARCH":"arm64","TOOLCHAIN_CONFIG":{"FAMILY":"gnu"}}' -v
 ```
 
-Again, the `-v` flags shows that the executed compile and linker commands are
+Again, the `-v` flag shows that the executed compile and linker commands are
 now using the cross-compiler `["aarch64-linux-gnu-g++", ...]`.
 
 ### Summary: Stage 1
 
 In this tutorial stage, you learned how to set up a C++ project with a toolchain
-and how to build a simple C++ binary. Furthermore, you have understood that the
+and how to build a simple C++ binary. Furthermore, you have seen that the
 build can be parameterized by specifying supported configuration variables.
 
 ## Stage 2: Library dependencies and project settings
 
 This stage extends the previous one by adding a library target as a dependency
-to the binary target and provide project-wide settings (e.g., compile flags)
+to the binary target and providing project-wide settings (e.g., compile flags)
 that are applied to all targets. This stage is structured as follows:
 
 ``` plaintext
@@ -320,9 +320,9 @@ Build the `helloworld` binary again.
 $ jst build src helloworld
 ```
 
-You can see that build succeeds with now four processed actions in total.
+You can see that the build succeeds, now with four processed actions in total.
 
-Of course you can also build the `libgreet` target separately.
+Of course, you can also build the `libgreet` target separately.
 
 ``` sh
 $ jst build src libgreet -s
@@ -340,7 +340,7 @@ INFO: Processed 2 actions, 2 cache hits.
 ### Define project-wide settings
 
 To define project-wide settings (e.g., compile flags) that are applied to all
-targets, we need add two new repositories to the `repos.in.json` file:
+targets, we need to add two new repositories to the `repos.in.json` file:
 
 ``` jsonc
 { // ...
@@ -421,7 +421,7 @@ equally to all C/C++ targets within the project.
 ## Stage 3: Add test targets
 
 Testing is a crucial part of every software development project. Similar to
-compiling and linking, also tests should never needlessly rerun if they are not
+compiling and linking, tests should never needlessly rerun if they are not
 affected by a change. In this stage, you will learn how to add binary tests and
 shell tests to your project. The structure of this stage is as follows:
 
@@ -450,7 +450,7 @@ $ cd cpp-tutorial/stage3
 ### Test concept
 
 Tests can be added by writing specific test targets. Like most other targets,
-also test targets are essentially *build targets*, i.e., they run a build
+test targets are essentially *build targets*, i.e., they run a build
 action to produce an artifact. In this case, the artifact that is being built is
 a test report. Consequently, the subcommand `build` is used to run tests.
 
@@ -466,8 +466,8 @@ process.
 All test targets are implicitly *tainted* with the string `"test"`. The way
 *tainting* works is that all targets that depend on a test target must be
 tainted with the string `"test"` as well (and possibly even more strings). The
-target analysis will fail if this constraint is violated. It is up to the users
-to define with what strings their targets are tainted with.
+target analysis will fail if this constraint is violated. It is up to the user
+to define which strings their targets are tainted with.
 
 ### Supported test rules
 
@@ -477,7 +477,7 @@ types of test rules:
 1. *Binary test* rule [`//CC/test:test`](https://github.com/just-buildsystem/rules-cc#rule-cctest-test) for testing native libraries
 2. *Shell test* rule [`//shell/test:script`](https://github.com/just-buildsystem/rules-cc#rule-shelltest-script) for running shell tests
 
-The test report produced with these rules will contain the artifacts: `result`,
+The test report produced by these rules will contain the artifacts `result`,
 `stderr`, `stdout`, `time-start`, and `time-stop`.
 
 ### Add binary tests
@@ -600,7 +600,7 @@ an example, we will import [`fmtlib`](https://github.com/fmtlib/fmt) and [`googl
 Furthermore, we will show how your project's public targets can be declared as
 *export targets*, a requirement if others want to import your project. Finally,
 we present *install targets* that conveniently include the required artifacts of
-transient dependencies. The structure of this stage is as follows:
+transitive dependencies. The structure of this stage is as follows:
 
 ``` plaintext
 examples
@@ -629,8 +629,8 @@ to consider:
 
 ### Import fmtlib from a jst project
 
-Importing from an existing `jst` project is straight-forward. All you need to do
-is to define a new import in the `repos.in.json`:
+Importing from an existing `jst` project is straightforward. All you need to do
+is define a new import in `repos.in.json`:
 
 ``` jsonc
 { // ...
@@ -721,7 +721,7 @@ Let's start by defining a new import for fetching the external sources:
 ```
 
 In the above example, we imported the sources from the [googletest](https://github.com/google/googletest.git) repository
-version `v1.14.0`. Due to it not being a `jst` repository (missing lock-file
+version `v1.14.0`. As it is not a `jst` repository (it has no lock-file
 `repos.json`), we have to import it `as plain`. The local alias name for this
 repository is `gtest_sources`.
 
@@ -772,12 +772,12 @@ The last missing piece is providing the target description in file
 Due to googletest being a CMake project, the rule [`//CC/foreign/cmake:library`](https://github.com/just-buildsystem/rules-cc/tree/master#rule-ccforeigncmake-library) is used.
 As a project directory, we specify the entire local tree `"."`. Depending on
 the `DEBUG` variable, slightly different CMake defines are used. The output
-artifacts collected for this target are: the libraries `libgreet_main.a` and
-`libgreet.a` (order matters), the header directory `gtest`, and the optional
+artifacts collected for this target are the libraries `libgtest_main.a` and
+`libgtest.a` (order matters), the header directory `gtest`, and the optional
 pkg-config file `gtest.pc`. Please be aware that CMake must be installed for
 building this target.
 
-Now add the `gtest//:gtest_main` to the `test_libgreet` target and run the test:
+Now add `gtest//:gtest_main` to the `test_libgreet` target and run the test:
 
 ``` sh
 $ jst build test test_libgreet -P stdout
@@ -788,11 +788,11 @@ was used to run the test.
 
 ### Define public export targets
 
-To make you project ready for being imported by other `jst` projects, it is
+To make your project ready to be imported by other `jst` projects, it is
 recommended to define *export targets*. Export targets evaluate the public
 targets of your project and make them eligible for [target-level caching](../../doc/concepts/target-cache.md),
-a technique to cut off entire subgraphs of the action graphs, which is required
-to lower the action graph size for large-scale projects.
+a technique to cut off entire subgraphs of the action graph, which is required
+to keep the action graph small for large-scale projects.
 
 Please see the top-level `TARGETS` file.
 
@@ -844,7 +844,7 @@ not be honored when computing the action graph.
 For development, obtaining only the target's main artifacts when building is
 fine. However, for deployment, you probably want to define *install targets*
 that also consider required artifacts (e.g., shared libraries, public headers)
-of their transient dependencies.
+of their transitive dependencies.
 
 Please see the top-level `TARGETS` file.
 
@@ -923,7 +923,7 @@ mirrors and set up a redirection.
 `git`. Consequently, redirections have to be configured for both scenarios.
 
 To configure redirections for repositories directly fetched by `jst`, provide
-the file `~/.just-local.json` with content analogous to:
+the file `~/.jst-local.json` with content analogous to:
 
 ``` json
 {
@@ -936,7 +936,7 @@ the file `~/.just-local.json` with content analogous to:
 }
 ```
 
-> Note: for more details, please see section [Additional mirrors in just local](../../doc/concepts/alternative-mirrors.md#additional-mirrors-in-the-just-local-specification).
+> Note: for more details, please see section [Additional mirrors in jst local](../../doc/concepts/alternative-mirrors.md#additional-mirrors-in-the-jst-local-specification).
 
 To configure redirections for repositories fetched by shelling out to `git`,
 provide a Git config, e.g., `~/.gitconfig` with content analogous to:

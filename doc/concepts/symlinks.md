@@ -7,21 +7,21 @@ Background
 Besides files and directories, symbolic links are also an important
 entity in the file system. Also `git` natively supports symbolic links
 as entries in a tree object. Technically, a symbolic link is a string
-that can be read via `readlink(2)`. However, they can also be followed
-and functions to access a file, like `open(2)` do so by default. When
-following a symbolic link, both, relative and absolute, names can be
+that can be read via `readlink(2)`. However, they can also be followed,
+and functions that access a file, like `open(2)`, do so by default. When
+following a symbolic link, both relative and absolute names can be
 used.
 
 Symbolic links in build systems
 -------------------------------
 
-### Follow and reading both happen
+### Following and reading both happen
 
 Compilers usually follow symlinks for all inputs. Archivers (like
 `tar(1)` and package-building tools) usually read the link in order to
 package the link itself, rather than the file referred to (if any). As a
-generic build system, it is desirable to not have to make assumptions on
-the intention of the program called (and hence the way it deals with
+generic build system, it is desirable not to have to make assumptions
+about the intention of the program called (and hence the way it deals with
 symlinks). This, however, has the consequence that only symbolic links
 themselves can properly model symbolic links.
 
@@ -30,7 +30,7 @@ themselves can properly model symbolic links.
 From a build-system perspective, a root should be self-contained; in
 fact, the target-level caching assumes that the git tree identifier
 entirely describes a `git`-tree root. For this to be true, such a root
-has to be both, self contained and independent of its (assumed) location
+has to be both self-contained and independent of its (assumed) location
 in the file system. In particular, we can neither allow absolute
 symbolic links (as they, depending on the assumed location, might point
 out of the root), nor relative symbolic links that go upwards (via a
@@ -38,8 +38,8 @@ out of the root), nor relative symbolic links that go upwards (via a
 
 ### Symbolic links in actions
 
-Like for source roots, we understand action directories as self
-contained and independent of their location in the file system.
+As for source roots, we understand action directories to be
+self-contained and independent of their location in the file system.
 Therefore, we have to require the same restrictions there as well, i.e.,
 neither absolute symbolic links nor relative symbolic links going up too
 far.
@@ -50,8 +50,8 @@ the definition of actions: a string might be allowed as symlink in some
 places in the action directory, but not in others; in particular, we
 can't tell only from the information that an artifact is a relative
 symlink whether it can be safely placed at a particular location in an
-action or not. Similarly for trees for which we only know that they
-might contain relative symbolic links.
+action or not. The same applies to trees, for which we only know that
+they might contain relative symbolic links.
 
 ### Presence of symbolic links in system source trees
 
@@ -83,8 +83,8 @@ Our treatment of symbolic links
 
 For cases where we simply have no need for special entries, all the existing
 roots have "ignore-special" versions thereof. In such a root
-(regardless whether file based, or `git`-tree based), everything
-not a file or a directory is pretended to be absent. For any
+(regardless of whether it is file based or `git`-tree based), anything
+that is not a file or a directory is treated as absent. For any
 compile-like tasks, the effect of symlinks can be modeled by appropriate
 staging.
 
@@ -98,7 +98,7 @@ content fixed and hence eligible for target-level caching.
 ### Non-upwards relative symlinks as first-class objects
 
 A restricted form of symlinks, more precisely *relative*
-*non-upwards symbolic links*, exist as first-class objects.
+*non-upwards symbolic links*, exists as first-class objects.
 That is, a new artifact type (besides blobs and trees) for relative
 non-upwards symbolic links has been introduced. Like any other artifact,
 they can be freely placed into the inputs of an action, as well as in artifacts,

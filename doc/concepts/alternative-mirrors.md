@@ -8,9 +8,9 @@ The repository fetch tool `jst` reads a repository-configuration
 file that describes `git` repositories and repositories given by
 archives in a content-addressable way: by the `git` commit id, or
 the blob identifier of the archive, respectively. Hence it does
-not matter where these resources are fetched form; nevertheless,
+not matter where these resources are fetched from; nevertheless,
 a location to fetch from is needed for `jst` to be able to set
-up those repositories. Typically the main upstream URL is given.
+up those repositories. Typically, the main upstream URL is given.
 
 While `jst` fetches each archive or commit only once and keeps
 a local copy, large organizations still tend to set up a local mirror.
@@ -18,9 +18,9 @@ In this way, not every person working on the project has to fetch
 from upstream (thus reducing load there) and there is a central
 place archiving all the dependencies. Such an archive is needed
 anyway, for audit and compliance reasons, as well as to be able
-to continue the project independent of the dependencies' upstream.
+to continue the project independently of the dependencies' upstream.
 
-It is therefore desirable that `jst` support this workflow while
+It is therefore desirable that `jst` supports this workflow while
 still clearly pointing out the upstream location, e.g., for updating.
 
 Implementation
@@ -32,22 +32,22 @@ We have introduced the following, backwards-compatible, extensions to
 ### Mirrors field in `jst` repository config
 
 In the multi-repository configuration, in the definition of an
-`"archive"`, `"zip"` or `"git"` repository, an addition field
+`"archive"`, `"zip"`, or `"git"` repository, an additional field
 `"mirrors"` was added. If given, this field has to be a list
 of URLs that provide additional places where the respective
 repository can be fetched from. `jst` will only consider a fetch
-failed if the repository cannot be fetched neither from the main
+failed if the repository can be fetched neither from the main
 location (described in `"fetch"` field for `"archive"` and `"zip"`
 repositories, and `"repository"` field for `"git"` repositories),
 nor from any of the specified mirrors.
 
-### Additional mirrors in the just local specification
+### Additional mirrors in the jst local specification
 
 Local mirrors of organizations are often not available to the
 general public and possibly not even available to everyone who
 has access to the respective project. In order to avoid polluting
 a multi-repository specification with the URLs of such restricted
-mirrors, the `.just-local` file was extended to support additional
+mirrors, the `.jst-local` file was extended to support additional
 keys in its JSON object.
 
 - For the optional key `"local mirrors"`, if given, a JSON object
@@ -66,8 +66,8 @@ As multi-repository specifications are often generated from a
 description of the local repositories by a chain of `jst-import-git`
 invocations, this tool needs to be able to also insert a `"mirrors"`
 field for the repository imported. Therefore, this tool was
-extended by an option `--mirror` where multiple occurrences accumulate
+extended with an option `--mirror`, where multiple occurrences accumulate
 to specify additional mirrors for the URL fetched. These mirrors,
-if any, form the `"mirrors"` field of the repository imported; they
+if any, form the `"mirrors"` field of the imported repository; they
 are not used for the fetching in the import step itself, as the
 head commit of the primary URL is to be taken.

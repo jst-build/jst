@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-: ${JUST_MR:=just-mr}
+: ${JST:=jst}
 
 cd $(readlink -f $(dirname $0)/..)
-${JUST_MR} --main lint build -p format.diff | (patch -p1)
+${JST} --main lint build -p format.diff | (patch -p1)

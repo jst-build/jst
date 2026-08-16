@@ -18,20 +18,20 @@ Extend an existing **`jst-repo-config`**(5) by adding one Git
 repository. In doing so, the dependencies declared in the imported
 repository are added as well and *`"file"`* repositories are transformed
 to *`"subdir"`* parts of the imported repository. This solves the
-problem, that a repository can refer to itself only as *`"."`* in a
+problem that a repository can refer to itself only as *`"."`* in a
 portable way. The importing party, however, always knows the URL it is
 importing from.
 
 The imported repositories are renamed in a way that no conflicts with
 already present repositories arise. The repositories pulled in as
-dependencies are named in a way to remind for which repositories they
-came as a dependency. This renaming is taken into account at all places
+dependencies are named in a way that records which repositories pulled
+them in as a dependency. This renaming is taken into account at all places
 repositories are referred to, i.e., the *`"bindings"`* field, as well as
 roots defined by reference to other repositories.
 
 Only the main parts of repositories are imported (*`"repository"`*,
 *`"bindings"`*, names, and roots). The *`"pragma"`* part, as well as
-unknown fields are dropped.
+unknown fields, are dropped.
 
 The repository to import is specified by its URL.
 

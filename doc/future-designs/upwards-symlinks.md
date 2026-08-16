@@ -8,17 +8,17 @@ Our build system already supports non-upwards relative symbolic links
 as first-class objects. The reason for choosing this restriction was
 that those can be placed anywhere inside an action directory without
 that directory becoming dependent on the ambient system, regardless
-if symbolic links are followed or inspected via readlink(2).
+of whether symbolic links are followed or inspected via `readlink(2)`.
 
-Additionally, `just-mr` supports resolving symlinks that are
-entirely within a logical root. This allows to support roots where
-symlinks are used to have file under version control only once; as
+Additionally, `jst` supports resolving symlinks that are
+entirely within a logical root. This supports roots where
+symlinks are used to keep a file under version control only once; as
 roots are internally represented in a content-addressable way, the
 duplication implicit to the resolving comes at no extra cost.
 
 ### Level of enforcement
 
-The restriction to only allow only non-upwards relative symlinks
+The restriction to allow only non-upwards relative symlinks
 is enforced
 - in the output of actions, including output directories,
 - in explicit tree references on `file` roots.
@@ -34,7 +34,7 @@ that subdirectory.
 While used rarely, dangling upwards relative symlinks do exist in
 some projects, also for legitimate reasons. Being dangling, they
 cannot be resolved in the root definition. Where such projects occur
-as (transitive) dependency, some form of extended symlink handling
+as a (transitive) dependency, some form of extended symlink handling
 seems desirable.
 
 ## Proposed changes
@@ -46,20 +46,20 @@ symlinks, including upward ones, in a safe way.
 
 #### Extensional symlink level of a computed artifact
 
-We associate a symlink-level with blobs and trees that do not
+We associate a symlink level with blobs and trees that do not
 transitively contain absolute symlinks in the following way.
 - Files and executable files have symlink level 0.
 - The symlink level of a relative symlink is the number of (necessarily
   leading) `../` of the syntactical canonical form, when read as
   a relative path.
-- The symlink level of a tree is the maximum of 0 and the symlink-levels
-  of all (immediate) subobjects reduced by one.
+- The symlink level of a tree is the maximum of 0 and the symlink levels
+  of all (immediate) subobjects, reduced by one.
 
 #### The declared symlink level
 
 In the description language a declared symlink level is associated
 with each artifact; the invariant is that
-- the declared level is always at least as big as the extensional level
+- the declared level is always at least as large as the extensional level
   of the defined object, and
 - the action directory of each action has declared level 0, ensuring
   that action directories do not refer to external sources.
@@ -80,11 +80,11 @@ The reason for choosing a dict rather than a positional argument is
 to be prepared for additional declared properties in the future,
 should they become necessary.
 
-We extend the definition of `"ACTION"` function available inside
-rule definitions to declare a symlink level of output files and
+We extend the definition of the `"ACTION"` function available inside
+rule definitions to declare a symlink level for output files and
 output directories by allowing an optional map `"symlink level"`
-with keys the names of the declared outputs (files and directories)
-and values non-negative integers. The declared symlink level of
+whose keys are the names of the declared outputs (files and directories)
+and whose values are non-negative integers. The declared symlink level of
 an action artifact is the value of the output path in that map; if
 not found in that map, the declared value is 0; in this way, this
 extension is backwards compatible. Moreover, we require that in
@@ -124,13 +124,13 @@ outputs: for `"outs"`, if they are a symlink, the level is checked
 and the action rejected if the actual level is larger than the
 declared one. For `"out_dirs"`, the directory is rejected if the
 actual symlink level is larger than the declared one. It then follows
-that all action have actual symlink level 0 of the input stage.
+that all actions have actual symlink level 0 for their input stage.
 
 ### Extensional projection reduces symlink level
 
-In evaluation of an export target, the intensional description with
+In the evaluation of an export target, the intensional description with
 the declared symlink level is replaced by the extensional description
 using the extensional symlink level. By our construction, the
-latter is less or equal than the former. Hence, this projections
-allows at most _more_ builds which is in line with the properties
+latter is less than or equal to the former. Hence, this projection
+allows at most _more_ builds, which is in line with the properties
 of export targets.

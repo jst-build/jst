@@ -21,14 +21,13 @@ abstract nodes for our sources (`main.cpp`, `greet/greet.hpp`,
 `greet/greet.cpp`).
 
 ``` sh
-$ just-mr analyse -D '{"LINT": true}' --dump-nodes -
-INFO: Performing repositories setup
+$ jst analyse -D '{"LINT": true}' --dump-nodes -
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","-D","{\"LINT\": true}","--dump-nodes","-"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{"LINT":true}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{"LINT":true}]
+INFO: Requested target 'tutorial//:helloworld' with config: {
+        "LINT": true
+      }
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
-INFO: Result of target [["@","tutorial","","helloworld"],{"LINT":true}]: {
+INFO: Result of target ['tutorial//:helloworld',{"LINT":true}]: {
         "artifacts": {
           "helloworld": {"data":{"id":"1154ef311dff82653bc6a1a92bfc6152bc116cb86652b4b5218385fe39054391","path":"work/helloworld"},"type":"ACTION"}
         },
@@ -53,7 +52,7 @@ INFO: Result of target [["@","tutorial","","helloworld"],{"LINT":true}]: {
         "runfiles": {
         }
       }
-INFO: Target nodes of target [["@","tutorial","","helloworld"],{"LINT":true}]:
+INFO: Target nodes of target 'tutorial//:helloworld':
 {
   "509e506f8d0c2ebe4fca63fe7cc528be17165bae464410ac5fba97a6ed92930d": {
     "result": {
@@ -156,7 +155,7 @@ know the correct defines to be used.
 
 Of course, those abstract nodes are just an implementation detail
 and there is a rule to define linting for the collected sources.
-It takes two programs (targets consisting of a single artifact),
+It takes two programs (targets consisting of a single artifact each),
 
 - the `linter` for running the lint task on a single file, and
 - the `summarizer` for summarizing the lint results;
@@ -168,10 +167,8 @@ As for every rule, the details can be obtained with the `describe`
 subcommand.
 
 ``` sh
-$ just-mr --main rules-cc describe --rule lint targets
-INFO: Performing repositories setup
+$ jst --main rules-cc describe --rule lint targets
 INFO: Found 2 repositories involved
-INFO: Setup finished, exec ["just","describe","-C","...","--rule","lint","targets"]
  | Run a given linter on the lint information provided by the given targets.
 ...
  Target fields
@@ -184,10 +181,10 @@ INFO: Setup finished, exec ["just","describe","-C","...","--rule","lint","target
 
 Let's go through these programs we have to provide one by one. The
 first one is supposed to call the actual linter; as many linters,
-including `clang-tidy` which we use as an example, prefer to obtain
+including `clang-tidy`, which we use as an example, prefer to obtain
 the command information through a
 [compilation database](https://clang.llvm.org/docs/JSONCompilationDatabase.html)
-there is actually some work to do, especially as the directory entry
+there is actually some work to do, especially since the directory entry
 has to be an absolute path. We also move the configuration file
 `.clang-tidy` from the configuration directory (located in a directory given
 to us through the environment variable `CONFIG`) to the position
@@ -227,11 +224,11 @@ if __name__ == "__main__":
 The actual information on success or failure is provided through
 the exit code and information on the problems discovered (if any)
 is reported on stdout or stderr. Additionally, our launcher also
-writes the meta data in a file `config.json` in the directory for
-additional (usually machine-readable) diagnose output; the location
+writes the metadata to a file `config.json` in the directory for
+additional (usually machine-readable) diagnostic output; the location
 of this directory is given to us by the environment variable `OUT`.
 
-We use a pretty simple `.clang-tidy` for demonstration purpose.
+We use a fairly simple `.clang-tidy` for demonstration purposes.
 
 ``` {.md srcname=".clang-tidy"}
 Checks: 'clang-analyzer-*,misc-*,-misc-include-*'
@@ -240,8 +237,8 @@ WarningsAsErrors: 'clang-analyzer-*,misc-*,-misc-include-*'
 
 Computing a summary of the individual lint results (given to the
 summarizer as subdirectories of the current working directory) is
-straight forward: the overall linting passed if all individual checks
-passed and for the failed tests we format stdout and stderr in some
+straightforward: the overall linting passed if all individual checks
+passed, and for the failed tests we format stdout and stderr in an
 easy-to-read way; additionally, we also provide a machine-readable
 summary of the failures.
 
@@ -287,7 +284,7 @@ if failures:
     sys.exit(1)
 ```
 
-Of course, our launcher and summarizer have to be executable
+Of course, our launcher and summarizer have to be executable.
 
 ``` sh
 $ chmod 755 run_clang_tidy.py summary.py
@@ -295,20 +292,20 @@ $ chmod 755 run_clang_tidy.py summary.py
 
 Now we can define our lint target.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "lint":
-  { "type": ["@", "rules", "lint", "targets"]
-  , "targets": ["helloworld"]
-  , "linter": ["run_clang_tidy.py"]
-  , "summarizer": ["summary.py"]
-  , "config": [".clang-tidy"]
-  }
+  lint: {
+    type: @'rules//lint:targets',
+    targets: ['helloworld'],
+    linter: ['run_clang_tidy.py'],
+    summarizer: ['summary.py'],
+    config: ['.clang-tidy'],
+  },
 ...
 ```
 
-As most rules, the lint rules also have a `"defaults"` target,
-which allows to set `PATH` appropriately for all lint actions.
+Like most rules, the lint rules also have a `"defaults"` target,
+which allows `PATH` to be set appropriately for all lint actions.
 This can be useful if the linters are installed in a non-standard
 directory.
 
@@ -319,19 +316,15 @@ $ git add tutorial-defaults
 $ git commit -m 'add lint defaults'
 ```
 
-We now can build our lint report in the same way as any test report.
+We can now build our lint report in the same way as any test report.
 
 ``` sh
-$ just-mr build lint -P report
-INFO: Performing repositories setup
+$ jst build lint -P report
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","lint","-P","report"]
-INFO: Requested target is [["@","tutorial","","lint"],{}]
-INFO: Analysed target [["@","tutorial","","lint"],{}]
+INFO: Requested target 'tutorial//:lint' with config: {}
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
 INFO: Target tainted ["lint"].
 INFO: Discovered 11 actions, 0 tree overlays, 7 trees, 0 blobs
-INFO: Building [["@","tutorial","","lint"],{}].
 INFO: Processed 7 actions, 3 cache hits.
 INFO: Artifacts built, logical paths are:
         out [a90a9e3a8ac23526eb31ae46c80434cfd5810ed5:41:t]
@@ -368,15 +361,11 @@ void greet(std::string const& s) {
 Building succeeds without any warning.
 
 ``` sh
-$ just-mr build helloworld
-INFO: Performing repositories setup
+$ jst build helloworld
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{}]
+INFO: Requested target 'tutorial//:helloworld' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{}].
 INFO: Processed 4 actions, 1 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [2cb87c743e9fd3d18543732945df3ef9ca084be6:132736:x]
@@ -384,16 +373,12 @@ INFO: Artifacts built, logical paths are:
 
 However, the linter reports it.
 ``` sh
-$ just-mr build lint -P report || :
-INFO: Performing repositories setup
+$ jst build lint -P report || :
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","lint","-P","report"]
-INFO: Requested target is [["@","tutorial","","lint"],{}]
-INFO: Analysed target [["@","tutorial","","lint"],{}]
+INFO: Requested target 'tutorial//:lint' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Target tainted ["lint"].
 INFO: Discovered 8 actions, 0 tree overlays, 6 trees, 0 blobs
-INFO: Building [["@","tutorial","","lint"],{}].
 WARN (action:415a94f0c74ec937e2504b9ef5f94696232ff2c57eb2bec00c226896e2eb8be6):
      lint failed for work/greet/greet.cpp (exit code 1); outputs:
       - "out" [caf25f0a518d21909625f9a7974002796f6d8b5f:39:t]

@@ -23,7 +23,7 @@ Repository import description objects
 -------------------------------------
 
 One of the main functionalities of the **`jst-lock`**(1) tool is to import
-dependencies from other Just projects, as described in their repositories
+dependencies from other *jst-build* projects, as described in their repositories
 configuration file. From each such project, one or more repositories can be
 imported (with their respective transitive dependencies).
 A *repository import description* is a JSON object describing one such
@@ -60,7 +60,7 @@ Source objects
 A *source* provides information about an operation that the **`jst-lock`**(1)
 tool can perform in order to extend an initial repository description stub and
 obtain the output repository configuration. In most cases, this operation
-involves importing repositories from other Just projects, but a more general
+involves importing repositories from other *jst-build* projects, but a more general
 operation exists as well.
 
 Sources are given as JSON objects for which the string value to the mandatory
@@ -70,8 +70,8 @@ fields are available. Currently, the supported source types are *`"git"`*,
 
 ### *`"git"`*
 
-It defines an import operation of one or more dependencies from a Just project
-under Git version control.
+It defines an import operation of one or more dependencies from a *jst-build*
+project under Git version control.
 
 The following fields are supported:
 
@@ -121,8 +121,8 @@ The following fields are supported:
 
 ### *`"file"`*
 
-It defines an import operation of one or more dependencies from a Just project
-present as a local checkout.
+It defines an import operation of one or more dependencies from a *jst-build*
+project present as a local checkout.
 
 The following fields are supported:
 
@@ -156,7 +156,7 @@ The following fields are supported:
 ### *`"archive"`*
 
 It defines an import operation of one or more dependencies from an archived
-Just project.
+*jst-build* project.
 
 The following fields are supported:
 
@@ -214,8 +214,8 @@ The following fields are supported:
 
 ### *`"git tree"`*
 
-It defines an import operation of one or more dependencies from a Just project
-given as the result of running a command. This can be used, for example, to
+It defines an import operation of one or more dependencies from a *jst-build*
+project given as the result of running a command. This can be used, for example, to
 import projects found under a version control system other than Git.
 
 The following fields are supported:
@@ -228,7 +228,7 @@ The following fields are supported:
 
  - *`"cmd"`* provides a list of strings forming a command that, when executed in
    an empty directory (anywhere in the file system), creates the tree of the
-   source Just project to use for the import. This entry is optional. One and
+   source *jst-build* project to use for the import. This entry is optional. One and
    only one of the fields `"cmd"` and `"cmd gen"` must be provided.
 
  - *`"cmd gen"`* provides a list of strings forming a command that, when
@@ -292,7 +292,7 @@ The following fields are supported:
    optional.
 
 The jst-lock configuration format
-----------------------------------
+---------------------------------
 
 The configuration format is structured as a JSON object. It is a superset of
 the **`jst-repository-config`**(5), which is extended by two additional

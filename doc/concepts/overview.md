@@ -13,20 +13,20 @@ developer thinks in: libraries, binaries, etc. The definition of a
 target only describes the information directly belonging to the target,
 e.g., its source, private and public header files, and its direct
 dependencies. Any other information needed to build a target (like the
-public header files of an indirect dependency) are inferred by the build
-tool. In this way, the build description can be kept maintainable
+public header files of an indirect dependency) is inferred by the build
+tool. In this way, the build description can be kept maintainable.
 
 A built target consists of files logically belonging together (like the
 actual library file and its public headers) as well as information on
-how to use the target (linking arguments, transitive header files, etc).
+how to use the target (linking arguments, transitive header files, etc.).
 For a consumer of a target, the definition of this collection of files
 as well as the additionally provided information is what defines the
-target as a dependency, irrespectively of where the target is coming from
+target as a dependency, irrespective of where the target is coming from
 (i.e., targets coinciding here are indistinguishable for other targets).
 
 Of course, to actually build a single target from its dependencies, many
 invocations of the compiler or other tools are necessary (so called
-"actions"); the build tool translates these high-level description
+"actions"); the build tool translates these high-level descriptions
 into the individual actions necessary and only re-executes those where
 inputs have changed.
 
@@ -70,8 +70,8 @@ target, or as inputs to actions), the paths are interpreted as paths
 relative to the respective root (installation or action directory).
 
 This separation is what allows flexible combination of targets from
-various sources without leaking repository names or different file
-arrangement if a target is in the "main" repository.
+various sources without leaking repository names, or a different file
+arrangement when a target is in the "main" repository.
 
 Repository data
 ---------------
@@ -112,8 +112,8 @@ Targets
 ### Target naming
 
 In description files, targets, rules, and expressions are referred to by
-name. As the context always fixes if a name for a target, rule, or
-expression is expected, they use the same naming scheme.
+name. As the context always determines whether a name for a target, rule, or
+expression is expected, they all use the same naming scheme.
 
  - A single string refers to the target with this name in the same
    module.
@@ -135,7 +135,7 @@ target files.
    specified as `jst.symlink(name)`.
    It is the user's responsibility to ensure the symlink
    pointed to is non-upwards.
- - A reference to an collection, given by a shell pattern, of explicit
+ - A reference to a collection, given by a shell pattern, of explicit
    source files in the top-level directory of the same module,
    specified as `jst.glob(pattern)`.
  - A reference to a tree target in the same module, specified as
@@ -156,7 +156,7 @@ Analyzing a target results in 3 pieces of data.
 
  - A "provides" map with additional information the target wants to
    provide to its consumers. The data contained in that map can also
-   contain additional artifacts. Typically, this the remaining
+   contain additional artifacts. Typically, this is the remaining
    information needed to use the target in a build.
 
    In case of a library, that typically would include any other
@@ -166,7 +166,7 @@ Analyzing a target results in 3 pieces of data.
 
 A target is completely determined by these 3 pieces of data. A consumer
 of the target will have no other information available. Hence it is
-crucial, that everything (apart from artifacts and runfiles) needed to
+crucial that everything (apart from artifacts and runfiles) needed to
 build against that target is contained in the provides map.
 
 When the installation of a target is requested on the command line,
@@ -178,7 +178,7 @@ artifacts take precedence.
 #### Files
 
 If a target is not found in the targets file, it is implicitly
-treated as a source file. Both, explicit and implicit source files
+treated as a source file. Explicit and implicit source files both
 look the same. The artifacts stage has a single entry: the path is
 the relative path of the file to the module root and the value the
 file artifact located at the specified location. The runfiles are
@@ -187,9 +187,8 @@ the same as the artifacts and the provides map is empty.
 #### (Non-upwards) Symlinks
 
 To ensure self-containedness and location-independence, only
-*non-upwards* symlinks are expected and accepted. The symlinks
-must not however be necessarily resolvable, i.e., dangling symlinks
-are accepted.
+*non-upwards* symlinks are expected and accepted. The symlinks do not,
+however, have to be resolvable, i.e., dangling symlinks are accepted.
 
 An explicit (non-upwards) symlink target is similar to an explicit file target,
 except that at the specified location there has to be a non-upwards symlink
@@ -202,7 +201,7 @@ A collection of files given by a shell pattern has, both as
 artifacts and runfiles, the (necessarily disjoint) union of the
 artifact maps of the (zero or more) source targets that match the
 pattern. Only *files* in the *top-level* directory of the given
-modules are considered for matches. The provides map is empty.
+module are considered for matches. The provides map is empty.
 
 #### Trees
 

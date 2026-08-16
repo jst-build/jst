@@ -29,17 +29,17 @@ value is easily cacheable.
 
 ### Simplified rule definition and alternative syntax
 
-Rules can share computation through expressions. However, the interface,
+Rules can share computation through expressions. However, the interface
 deliberately has to be explicit, including the documentation strings
 that are used by `jst describe`. While this allows easy and efficient
 implementation of `jst describe`, there is some redundancy involved, as
-often fields are only there to be used by a common expression, but this
-have to be documented in a redundant way (causing additional maintenance
-burden).
+often fields are only there to be used by a common expression, but they
+still have to be documented in a redundant way (causing additional
+maintenance burden).
 
 Moreover, using JSON encoding of abstract syntax trees is an
-unambiguously readable and easy to automatically process format, but
-people argue that it is hard to write by hand. However, it is unlikely
+unambiguously readable format that is easy to process automatically,
+but people argue that it is hard to write by hand. However, it is unlikely
 to get agreement on which syntax is best to use. Now, if rule and
 expression files can be generated, this argument is not
 necessary. Moreover, rules are typically versioned and infrequently
@@ -50,14 +50,14 @@ Root types depending on computation
 -----------------------------------
 
 There are two additional types of roots that are defined through
-computation. They allow a clean principle to add the needed (and a
+computation. They provide a clean way to add the needed (and a
 lot more) flexibility for the described use cases, while ensuring that
-all computations of roots are properly cacheable at high level. In this
+all computations of roots are properly cacheable at a high level. In this
 way, we do not compromise efficient builds, as the price of the
-additional flexibility; in the typical case, is just a single cache
+additional flexibility, in the typical case, is just a single cache
 lookup. Of course, it is up to the user to ensure that this case really
 is the typical one, in the same way as it is their responsibility to
-describe the targets in a way to have proper incrementality.
+describe the targets in a way that gives proper incrementality.
 
 ### Root type `"computed"`
 
@@ -69,9 +69,9 @@ called `"computed"`. A `"computed"` root is given by
  - a configuration (as JSON object, taken literally).
 
 It is a requirement that the specified target is an `"export"` target
-and the specified repository content-fixed; `"computed"` roots are
-considered content-fixed. However, the dependency structure of computed
-roots must be cycle free. In other words, there must exist an ordering
+and that the specified repository is content-fixed; `"computed"` roots are
+themselves considered content-fixed. However, the dependency structure of
+computed roots must be cycle-free. In other words, there must exist an ordering
 of computed roots (the implicit topological order, not a declared one)
 such that for each computed root, the referenced repository as well as
 all repositories reachable from that one via the `"bindings"` map only
@@ -81,13 +81,13 @@ contain computed roots earlier in that order.
 
 In the described use case of generated target files, the tree of
 target files only depends on the structure of the workspace root. To
-avoid unnecessary actions, an additional root type is defined,
-that of a `"tree structure"`. Such a root is given by precisely
-one root. It evaluates to that root but with all files replaced
+avoid unnecessary actions, an additional root type is defined:
+the `"tree structure"`. Such a root is given by precisely
+one root. It evaluates to that root, but with all files replaced
 by empty files. Obviously, this computation can be done without
-spawning actions and is cachable.
+spawning actions, and it is cacheable.
 
-The serve functionality also allows to answer queries for the
+The serve functionality can also answer queries for the
 tree structure of a given tree known to serve.
 
 ### Strict evaluation of roots as artifact tree
@@ -109,7 +109,7 @@ target-level cache most of the time anyway).
 ### Intensional equality of computed roots
 
 During a build, each computed root is evaluated only once, even if
-required in several places. Two computed roots are considered equal, if
+required in several places. Two computed roots are considered equal if
 they are defined in the same way, i.e., repository name, target, and
 configuration agree. The repository or layer using the computed root is
 not part of the root definition. Similarly, two tree-structure roots
@@ -119,7 +119,7 @@ are equal if the defining roots are equal.
 
 When determining the value of a computed root, as for every export
 target, the provided serve endpoint (if any) is consulted first.
-Only if it is not aware of the root, a local evaluation is carried
+Only if it is not aware of the root is a local evaluation carried
 out. This strategy is also applied for tree-structure roots.
 
 ### `jst` support for computed roots
@@ -132,9 +132,9 @@ be used as roots, like any other `jst` repository type. When
 generating the `jst_backend` multi-repository configuration, the definition
 of a `"computed"` repository is just forwarded as computed root.
 
-### Computed roots and `just serve`
+### Computed roots and `jst serve`
 
-Due to the presence of `just serve`, roots can be absent. This
+Due to the presence of `jst serve`, roots can be absent. This
 affects computed roots in two ways,
 
  - roots, in particular the target roots, of the repository referred
@@ -142,11 +142,11 @@ affects computed roots in two ways,
  - a computed root can be absent itself.
 
 The latter has to be supported, as dependencies that should be
-delegated to `just serve` might contain computed roots themselves.
+delegated to `jst serve` might contain computed roots themselves.
 In this case, we consider it acceptable to have one round of talking
-back and forth with the serve instance per computed root involved,
-however we do not want to fetch the artifacts of those intermediate
-roots. After all, whole point of the serve service was to use
+back and forth with the serve instance per computed root involved;
+we do not, however, want to fetch the artifacts of those intermediate
+roots. After all, the whole point of the serve service was to use
 dependencies without having them locally.
 
 #### Syntax for absent computed roots
@@ -157,7 +157,7 @@ dependencies (e.g., by the option `--absent` of `jst-import-git`)
 to computed roots as well.
 
 In a `jst` repository config, `"pragma": {"absent": true}` can
-be used for computed roots as well. Also `jst` will also honor
+be used for computed roots as well. `jst` will also honor
 the passed absent specification (via `--absent` or implicitly via
 the rc file) for computed roots the same way as for other roots.
 

@@ -1,36 +1,36 @@
-Multi-repository configuration management: `just-lock`
-======================================================
+Multi-repository configuration management: `jst-lock`
+=====================================================
 
-The multi-repository build configuration used as input by `just-mr` acts for
-all intents and purposes as a _lockfile_ for *justbuild* projects, containing
+The multi-repository build configuration used as input by `jst` acts for
+all intents and purposes as a _lockfile_ for *jst-build* projects, containing
 the pinned versions of all content-fixed repositories. This is expected to be
 stored and shipped together with the source code, allowing a consistent
 development environment for all users.
 
-With dependencies of projects coming in many shapes and forms, `just-lock` is
+With dependencies of projects coming in many shapes and forms, `jst-lock` is
 a tool for generating and maintaining the multi-repositories configuration 
-(lock)file of *justbuild* projects. This tool performs several functionalities,
+(lock)file of *jst-build* projects. This tool performs several functionalities,
 such as importing dependencies with repository composition (extending the
-functionality available in the `just-import-git` tool), automatic deduplication
+functionality available in the `jst-import-git` tool), automatic deduplication
 of identical transitive dependencies (a functionality available also standalone
-in the `just-deduplicate-repos` tool), or setup of repository clones for local
+in the `jst-deduplicate-repos` tool), or setup of repository clones for local
 development. For the purposes of this tutorial, we will focus only on the
 dependency import aspects.
 
-Basic use of `just-lock`
-------------------------
+Basic use of `jst-lock`
+-----------------------
 
-In order to produce the multi-repository build configuration file, `just-lock`
+In order to produce the multi-repository build configuration file, `jst-lock`
 expects an input configuration file. The format of this file is an extension of
-the one of `just-mr` and it is read as a `JSON` object. The file defines four
+the one of `jst` and it is read as a `JSON` object. The file defines four
 elements:
 
  - the description of local repositories, as the value for mandatory field
  `"repositories"`. This usually defines local checkouts, patches, overlays.
  - the description of remote dependencies, as the optional value for field
- `"imports"`. For *justbuild* dependencies, their multi-repository configuration
+ `"imports"`. For *jst-build* dependencies, their multi-repository configuration
  (lock)file is taken as the ground truth for importing repository descriptions
- into the current project. Non-*justbuild* dependencies can also be described
+ into the current project. Non-*jst-build* dependencies can also be described
  here, but can only be imported as-is, with overlays defining how such source
  code should be integrated (as it will be shown below).
  - the repository to consider as the main entry point for the build, as the
@@ -49,52 +49,61 @@ on the open-source project [fmtlib](https://github.com/fmtlib/fmt), in the
 setup that enables high-level target caching.
 
 We define the following `repos.in.json` input configuration file for
-`just-lock`:
+`jst-lock`:
 
-``` {.jsonc srcname="repos.in.json"}
-{ "main": "tutorial"
-, "repositories":
-  { "rules-cc":
-    { "repository": "rules-cc-rules-sources"
-    , "target_root": "tutorial-defaults"
-    , "rule_root": "rules-cc"
-    }
-  , "tutorial":
-    { "repository": {"type": "file", "path": "."}
-    , "bindings": {"rules": "rules-cc", "format": "fmtlib"}
-    }
-  , "tutorial-defaults":
-    { "repository":
-      { "type": "file"
-      , "path": "./tutorial-defaults"
-      , "pragma": {"to_git": true}
+``` {.json srcname="repos.in.json"}
+{
+  "main": "tutorial",
+  "repositories": {
+    "rules-cc": {
+      "repository": "rules-cc-rules-sources",
+      "target_root": "tutorial-defaults",
+      "rule_root": "rules-cc"
+    },
+    "tutorial": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      },
+      "bindings": {
+        "rules": "rules-cc",
+        "format": "fmtlib"
       }
-    }
-  , "fmt-targets-layer":
-    { "repository":
-      { "type": "file"
-      , "path": "./fmt-layer"
-      , "pragma": {"to_git": true}
+    },
+    "tutorial-defaults": {
+      "repository": {
+        "type": "file",
+        "path": "./tutorial-defaults",
+        "pragma": {"to_git": true}
       }
+    },
+    "fmt-targets-layer": {
+      "repository": {
+        "type": "file",
+        "path": "./fmt-layer",
+        "pragma": {"to_git": true}
+      }
+    },
+    "fmtlib": {
+      "repository": "fmtlib-sources",
+      "target_root": "fmt-targets-layer",
+      "bindings": {"rules": "rules-cc"}
     }
-  , "fmtlib":
-    { "repository": "fmtlib-sources"
-    , "target_root": "fmt-targets-layer"
-    , "bindings": {"rules": "rules-cc"}
-    }
-  }
-, "imports":
-  [ { "source": "git"
-    , "branch": "master"
-    , "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6"
-    , "url": "https://github.com/just-buildsystem/rules-cc.git"
-    , "repos": [{"alias": "rules-cc-rules-sources", "repo": "rules"}]
-    }
-  , { "source": "git"
-    , "branch": "8.1.1"
-    , "url": "https://github.com/fmtlib/fmt.git"
-    , "repos": [{"alias": "fmtlib-sources"}]
-    , "as plain": true
+  },
+  "imports": [
+    {
+      "source": "git",
+      "branch": "master",
+      "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6",
+      "url": "https://github.com/jst-build/rules-cc.git",
+      "repos": [{"alias": "rules-cc-rules-sources", "repo": "rules"}]
+    },
+    {
+      "source": "git",
+      "branch": "8.1.1",
+      "url": "https://github.com/fmtlib/fmt.git",
+      "repos": [{"alias": "fmtlib-sources"}],
+      "as plain": true
     }
   ]
 }
@@ -111,48 +120,44 @@ names, which will bind the workspace roots of our `"rules-cc"` and `"fmtlib"`
 repositories, respectively, to the descriptions of the remote repositories
 providing the necessary source trees.
 
-The first import description object is for `rules-cc`, which is a *justbuild*
+The first import description object is for `rules-cc`, which is a *jst-build*
 project hosted as a Git repository, from which we would like to import its
 `"rules"` subdirectory. Thankfully, that project offers a useful shorthand by
 defining in its own locked repositories configuration file the `"rules"` overlay
-repository pointing to the respective subdirectory. `just-lock` will read that
+repository pointing to the respective subdirectory. `jst-lock` will read that
 configuration file in order to produce the resulting configuration, caching any
 fetched source trees. It is thus highly recommended that the same build root as
-the one subsequently used by `just-mr` is provided to `just-lock` (via the
-`--local-build-root` option, with same default behaviour as in `just-mr`).
+the one subsequently used by `jst` is provided to `jst-lock` (via the
+`--local-build-root` option, with same default behaviour as in `jst`).
 
 In the case of `fmtib`, which is also hosted as a Git repository but does not
-provide a *justbuild* configuration file, we can only import it as-is, as a
+provide a *jst-build* configuration file, we can only import it as-is, as a
 complete repository, signaled by setting the `"as plain"` flag. Do note that in
 this case we can limit ourselves to also just providing the `"branch"` field,
-and not also a specific commit. This is because `just-lock` automatically
+and not also a specific commit. This is because `jst-lock` automatically
 interrogates the remote in order to retrieve the top commit associated to a
 certain reference (in this case, a release tag) and pin it to a hard reference
 (in this case, the commit identifier) into the output configuration. This is a
 useful feature, as it is often the case that information about dependencies
 comes in the form of "loose" references, such as release tags or even simply the
-remote location of a distfile, but which `just-lock` then will pin down to a
+remote location of a distfile, but which `jst-lock` then will pin down to a
 content-defined reference, such as a commit, blob, or tree identifier.
 
 ### Generating the configuration
 
-We generate an output configuration file `repos.out.json` by running `just-lock`
+We generate an output configuration file `repos.out.json` by running `jst-lock`
 with the appropriate arguments, then we build the `helloworld` target with this
 configuration:
 
 ``` sh
-$ just-lock -C repos.in.json -o repos.out.json
+$ jst-lock -C repos.in.json -o repos.out.json
 [...]
 $
-$ just-mr -C repos.out.json build helloworld
-INFO: Performing repositories setup
+$ jst -C repos.out.json build helloworld
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{}]
+INFO: Requested target 'tutorial//:helloworld' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{}].
 INFO: Processed 4 actions, 4 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [18d25e828a0176cef6fb029bfd83e1862712ec87:132736:x]
@@ -202,7 +207,7 @@ $ diff -y <(jq --sort-keys . repos.out.json) <(jq --sort-keys . repos.json)
       "repository": {                                                 "repository": {
         "branch": "master",                                             "branch": "master",
         "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6",           "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6",
-        "repository": "https://github.com/just-buildsystem/ru           "repository": "https://github.com/just-buildsystem/ru
+        "repository": "https://github.com/jst-build/rules-cc.           "repository": "https://github.com/jst-build/rules-cc.
         "subdir": "rules",                                              "subdir": "rules",
         "type": "git"                                                   "type": "git"
       }                                                       |       },
@@ -232,5 +237,5 @@ $ diff -y <(jq --sort-keys . repos.out.json) <(jq --sort-keys . repos.json)
 }                                                               }
 ```
 
-Except for the two overlays, kept from the `just-lock` input file configuration,
+Except for the two overlays, kept from the `jst-lock` input file configuration,
 the two configuration files have the same content.

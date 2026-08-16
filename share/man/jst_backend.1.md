@@ -37,7 +37,7 @@ target file.
 
 The module's name of the targets defined at the target root level is
 the empty string. Specifying the correct repository, target root,
-module, and target name allows to process that target independently of
+module, and target name allows that target to be processed independently of
 the current working directory.
 
 If the module is not specified on the command line, **`jst_backend`** sets the
@@ -209,7 +209,7 @@ rules, to make usage simpler.
  - If the size is missing (e.g., because the argument contains no
    colon), or cannot be parsed as a number, this is not an error, and
    the value 0 is assumed. While this is almost never the correct size,
-   many CAS implementations, including the local CAS of just itself,
+   many CAS implementations, including the local CAS of **`jst_backend`** itself,
    ignore the size for lookups.
  - From the type, only the first letter (*`f`* for non-executable file,
    *`x`* for executable file, and *`t`* for tree) is significant; the
@@ -297,7 +297,7 @@ oldest generation.
 `--no-rotate` and `--all` are incompatible options.
 
 **`eval`**
---------
+----------
 
 The **`eval`** subcommand evaluates Justlang code from file (use `-`
 for evaluating code from stdin). Runtime data can injected via options
@@ -312,7 +312,7 @@ of them implying **`--ir`**).
 -------------
 
 This subcommand starts a single node remote execution service, honoring
-the just native remote protocol.
+the **`jst`** native remote protocol.
 
 If the flag **`--compatible`** is provided, the execution service will
 honor the original remote build execution protocol.
@@ -711,14 +711,21 @@ treated as stdout. Output is a JSON map of all targets encoded as tree
 by their entity name:
 
 ``` jsonc
-{ "#": // anonymous targets
-  { "<rule_map_id>":
-    { "<node_id>": ["<serialized config1>", ...] } // all configs this target is configured with
-  }
-, "@": // "normal" targets
-  { "<repo>":
-    { "<module>":
-      { "<target>": ["<serialized config1>", ...] } // all configs this target is configured with
+{
+  // anonymous targets
+  "#": {
+    "<rule_map_id>": {
+      // all configs this target is configured with
+      "<node_id>": ["<serialized config1>", ...]
+    }
+  },
+  // "normal" targets
+  "@": {
+    "<repo>": {
+      "<module>": {
+        // all configs this target is configured with
+        "<target>": ["<serialized config1>", ...]
+      }
     }
   }
 }

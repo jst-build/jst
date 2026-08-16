@@ -360,7 +360,7 @@ those) argument(s) to obtain the final result.
 
  - `"join"` The argument has to be a list of strings. The
    return value is the concatenation of those strings,
-   separated by the the specified `"separator"` (strings,
+   separated by the specified `"separator"` (strings,
    default `""`).
 
  - `"escape_chars"` Prefix every in the argument every
@@ -446,15 +446,15 @@ reported together with a stack trace. This, however, might not be
 the most informative way to present a problem to the user,
 especially if the underlying problem is a proper user error, e.g.,
 in rule usage (leaving out mandatory arguments, violating semantical
-prerequisites, etc). To allow proper error reporting, the following
+prerequisites, etc.). To allow proper error reporting, the following
 functions are available. All of them have an optional argument
-`"msg"` that is evaluated (only) in case of error and the result of
+`"msg"` that is evaluated (only) in case of an error, with the result of
 that evaluation included in the error message presented to the user.
 
  - `"fail"` Evaluation of this function unconditionally fails.
 
  - `"context"` This function is only there to provide additional
-   information in case of error. Otherwise it is the identify
+   information in case of an error. Otherwise it is the identity
    function (a unary function, i.e., the result of the evaluation
    is the result of evaluating the argument `"$1"`).
 

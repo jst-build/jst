@@ -11,22 +11,22 @@ libraries, or a compiled set of slides in PDF format, or even whole file
 system images. Such artifacts result in large blobs, which need to be
 fetched from a remote CAS if they are to be inspected or used locally.
 Depending on the network connection, this might imply a significant
-waiting time until the complete artifact is downloaded as well as
-results in a lot of network traffic. This situation is especially
-painful in case of short modification-inspection cycles. For each small
+waiting time until the complete artifact is downloaded, as well as a lot
+of network traffic. This situation is especially
+painful in the case of short modification-inspection cycles. For each small
 modification of the sources, the complete artifact needs to be
 downloaded even though maybe only a small fraction of the compiled
 binary artifact has been changed.
 
-Thus, we introduced a blob splitting API as conservative extension to
+Thus, we introduced a blob splitting API as a conservative extension to
 the original [remote execution
 API](https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto),
-which allows to split the binary data of a blob into chunks and then to
-transmit only the modified chunks instead of the whole blob data. This
+which allows the binary data of a blob to be split into chunks, so that
+only the modified chunks are transmitted instead of the whole blob. This
 reduces traffic between the remote server and the local host and avoids
 unnecessary waiting times for users frequently working on large
-artifacts. The downside of this API is an increased storage consumption,
-since the binary data of the splitted artifacts will be stored twice.
+artifacts. The downside of this API is increased storage consumption,
+since the binary data of the split artifacts is stored twice.
 
 Remote execution API extension
 ------------------------------
@@ -68,7 +68,7 @@ CAS to be downloaded and second, the concatenation of the returned blobs
 in the given order will result in the original blob the client has
 requested.
 
-The client does not give any promise to the server, it is free to not
+The client does not give any promise to the server; it is free not to
 use the blob splitting rpc, but in order to make sense of the protocol
 extension (saving traffic), a meaningful behavior of the client would be
 to request the chunk digests of a blob from the server, to fetch only
@@ -76,7 +76,7 @@ those chunks that are missing in its local CAS, and to store the fetched
 chunks as well as the reconstructed original blob in its local CAS. If
 the client requests to split a blob, but the server does not support
 blob splitting or if an error occurred during the request, the client
-falls back to fetch the entire blob.
+falls back to fetching the entire blob.
 
 Blob split procedure
 --------------------
@@ -89,9 +89,9 @@ the `SplitBlobRequest` message exists in its CAS. If not, the status
 code `google.rpc.Code.NOT_FOUND` is returned. Otherwise, it loads the
 blob data and splits it into chunks according to the implemented data
 chunking algorithm. As explained later, there are different
-implementation options for this algorithm, but they all must ensure one
-property: the concatenation of the chunks result in the original blob.
-After the blob is splitted, the server computes a digest for each chunk
+implementation options for this algorithm, but they must all ensure one
+property: the concatenation of the chunks results in the original blob.
+After the blob is split, the server computes a digest for each chunk
 according to the configured digest function and puts each chunk that is
 not yet stored in its CAS. If an error occurs during storing the chunks
 in the CAS due to storage shortage, the status code
@@ -108,13 +108,13 @@ status code `google.rpc.Code.OK`.
 
 ### Client side
 
-If a client wants to take advantage from blob splitting, it requests to
+If a client wants to take advantage of blob splitting, it requests to
 split a blob into chunks at the remote side by calling the `SplitBlob`
 rpc from the `ContentAddressableStorage` service given a
 `SplitBlobRequest` message containing the `blob_digest` of the
 respective blob. If the status code returned by the `SplitBlob` rpc
 contains an error, the split operation failed and the client needs to
-fall back to fetch the entire blob. Otherwise, blob splitting was
+fall back to fetching the entire blob. Otherwise, blob splitting was
 successful and the remote server returns an ordered list of
 `chunk_digests` and guarantees that the chunks are available in its CAS
 and that the concatenation of all chunks in the given order will result
@@ -143,18 +143,18 @@ blob splitting using this field.
 
 An old client can communicate with a server implementing the new API
 without any modification. Nobody is forced to use the blob splitting
-functionality and unknown fields are just ignored at the client side. A
+functionality, and unknown fields are simply ignored on the client side. A
 client implementing the new API can communicate with an old server by
 evaluating the `blob_split_support` field, which will be set to its
-default value `false` at the client side.
+default value `false` on the client side.
 
 Until the protocol extension is officially accepted, the field number
 for the `blob_split_support` field is not known. In this case, early
 implementors can use a _trial request_ to determine whether the remote
-server supports blob splitting or not. This allows to implement a
-prototypical client and server employing blob splitting without
+server supports blob splitting. This allows a prototypical client and
+server employing blob splitting to be implemented without
 requiring the protocol extension to be officially accepted. It also
-allows new clients to communicate with old servers, they still behave
+allows new clients to communicate with old servers: they still behave
 correctly and do not need to be adapted. The client implementation needs
 to be rebuilt once a field number has been assigned.
 
@@ -164,28 +164,28 @@ Data chunking algorithm
 As stated earlier, a blob split request from a client is answered by the
 server with the promise that the concatenation of the returned chunks
 results in the requested blob. While this property is guaranteed by the
-server, it does not tell anything about the quality of the split result.
+server, it says nothing about the quality of the split result.
 It is desirable to generate chunks that are likely to be known by the
 client, because then less data needs to be transferred.
 
 A trivial implementation of the split operation would be returning a
-_singleton list_ containing the original blob as single chunk. While
+_singleton list_ containing the original blob as a single chunk. While
 this implementation is correct and fast, it is not very useful, since it
 does not save any traffic.
 
 A better approach is _fixed-block chunking_ where the data is split into
 chunks of fixed and equal size. While this approach typically results in
-more than one chunk and improves the probability to save some traffic,
-it comes with the limitation of the data shifting problem. The insertion
+more than one chunk and improves the chances of saving some traffic,
+it suffers from the data shifting problem. The insertion
 of a single character at the beginning of a data stream shifts the
 entire data while chunk boundaries are fixed. Thus, completely new
-chunks, unknown to the client are created even though the data patterns
+chunks unknown to the client are created, even though the data patterns
 are mostly similar.
 
 A more intelligent way of splitting blobs would be to look for locations
-in the content of the data as chunk boundaries such that splitting of a
-slightly modified blob results in almost similar chunks insensitive to
-the data shifting problem of fixed-block chunking. Since the resulting
+in the content of the data to use as chunk boundaries, such that splitting
+a slightly modified blob results in nearly identical chunks, insensitive
+to the data shifting problem of fixed-block chunking. Since the resulting
 chunk sizes are typically different, this approach is also called
 _variable-block chunking_ and is explained in the following section.
 
@@ -206,8 +206,8 @@ would result in chunks with an average size of `2^n` bytes.
 
 A common technique to efficiently compute hash values of consecutive
 bytes at every byte position in the data stream is to use a rolling hash
-function. A rolling hash function allows to cheaply compute the hash
-value of a chunk of bytes of a specific size at byte position `i` from
+function. A rolling hash function allows the hash value of a chunk of
+bytes of a specific size at byte position `i` to be computed cheaply from
 the hash value of the data chunk of the same size at byte position
 `i-1`. Different plain rolling hash functions are available for
 implementation such as a [polynomial rolling
@@ -218,6 +218,6 @@ hash](https://dl.acm.org/doi/abs/10.1145/256163.256168) (also called
 Buzhash). However, the [fast rolling Gear hash
 algorithm](https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia)
 (also called FastCDC) has been proven to be very compute efficient and
-faster than the other rolling hash algorithms specifically for
-content-based chunking of a stream of data while achieving similar
-deduplication ratios as the Rabin fingerprint.
+faster than the other rolling hash algorithms, specifically for
+content-based chunking of a stream of data, while achieving
+deduplication ratios similar to the Rabin fingerprint.

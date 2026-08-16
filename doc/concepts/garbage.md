@@ -5,14 +5,14 @@ For every build, for all non-failed actions an entry is created in the
 action cache and the corresponding artifacts are stored in the CAS. So,
 over time, a lot of files accumulate in the local build root. Hence we
 have a way to reclaim disk space while keeping the benefits of having a
-cache. This operation is referred to as garbage collection and usually
-uses the heuristics to keeping what is most recently used. Our approach
+cache. This operation is referred to as garbage collection, and usually
+uses the heuristic of keeping what is most recently used. Our approach
 follows this paradigm as well.
 
 Invariants assumed by our build system
 --------------------------------------
 
-Our tool assumes several invariants on the local build root, that we
+Our tool assumes several invariants on the local build root that we
 need to maintain during garbage collection. Those are the following.
 
  - If an artifact is referenced in any cache entry (action cache,
@@ -31,11 +31,11 @@ generations, respectively. Obviously, then the effective cache and CAS
 fulfill the invariants as well.
 
 The actual `gc` command rotates the generations: the oldest generation
-is be removed and the remaining generations are moved one number up
+is removed and the remaining generations are moved one number up
 (i.e., currently the young generation will simply become the old
 generation), implicitly creating a new, empty, youngest generation. As
 an empty generation fulfills the required invariants, this operation
-preservers the requirement that each generation individually fulfill the
+preserves the requirement that each generation individually fulfill the
 invariants.
 
 All additions are made to the youngest generation; in order to keep the
@@ -52,9 +52,9 @@ effective cache or CAS upon the next garbage collection.
 These generations are stored as separate directories inside the local
 build root. As the local build root is, starting from an empty
 directory, entirely managed by `jst` and compatible tools,
-generations are on the same file system. Therefore the adding of old
-entries to the youngest generation can be implemented in an efficient
-way by using hard links.
+generations are on the same file system. Therefore, adding old
+entries to the youngest generation can be implemented efficiently
+by using hard links.
 
 The moving up of generations can happen atomically by renaming the
 respective directory. Also, the oldest generation can be removed
@@ -68,12 +68,12 @@ Parallel operations in the presence of garbage collection
 
 The addition to cache and CAS can continue to happen in parallel; that
 certain values are taken from an older generation instead of freshly
-computed does not make a difference for the youngest generation (which
+computed makes no difference to the youngest generation (which
 is the only generation modified). But build processes assume they don't
 violate the invariant if they first add files to CAS and later a tree or
 cache entry referencing them. This, however, only holds true if no
-generation rotation happens in between. To avoid those kind of races, we
-make processes coordinate over a single lock for each build root.
+generation rotation happens in between. To avoid those kinds of races,
+we make processes coordinate over a single lock for each build root.
 
  - Any build process keeps a shared lock for the entirety of the build.
  - The garbage collection process takes an exclusive lock for the
@@ -101,30 +101,30 @@ stored only once.
 
 ### Large-objects CAS
 
-Large objects are stored in a separated from of CAS,
-called large-objects CAS. It follows
+Large objects are stored in a separate form of CAS,
+called the large-objects CAS. It follows
 the same generation regime as the regular CAS; more precisely,
 next to the `casf`, `casx`, and `cast` two additional
 entries are generated, `cas-large-f` and `cas-large-t`, where the
 latter is only available in native mode (i.e., when trees are hashed
 differently than blobs).
 
-The entries in the large-objects CAS are keyed by hash of the
+The entries in the large-objects CAS are keyed by the hash of the
 large object and the value of an entry is the concatenation of the
 hashes of the chunks the large object is composed of. An entry in
 a large-object CAS promises
 
 - that the chunks the large object is composed of are in the main
   CAS, more precisely `casf` in the same generation,
-- the concatenation of the specified chunks indeed gives the
+- that the concatenation of the specified chunks indeed gives the
   requested object,
-- if the object is a tree, the parts are also in the same generation,
-  in main or larger-object CAS, and
-- the object is strictly larger than the maximal size a chunk
+- that, if the object is a tree, the parts are also in the same
+  generation, in the main or large-objects CAS, and
+- that the object is strictly larger than the maximal size a chunk
   obtained by splitting can have.
 
-Here, the last promise avoids that chunks of a large object later
-can be replaced by a large-object entry themselves.
+The last promise prevents the chunks of a large object from later
+being replaced by a large-object entry themselves.
 
 ### Using objects from the large-objects CAS
 
@@ -148,15 +148,15 @@ splitting of that blob is minimal.
 
 ### Blob splitting uses large-objects CAS as cache
 
-When `jst backend execute` is asked to split an object, first the
+When `jst execute` is asked to split an object, first the
 large-objects CAS is inspected. If the entry is present in the
 youngest generation, the answer is directly served from there;
 if found in an older generation, it is served from there after
 appropriate promotion (chunks; parts of the tree, if the object to
 split was a tree; large-objects entry) to the youngest generation.
 
-When `jst backend execute` actually performs a split and the object that
-was to be splitted was larger than the maximal size of a chunk,
+When `jst execute` actually performs a split and the object that
+was to be split was larger than the maximal size of a chunk,
 after having added the chunks to the main CAS, it will also write
 a corresponding entry to the large-objects CAS. In this way,
 subsequent requests for the same object can be served from there
@@ -177,7 +177,7 @@ rotation.
 
 - For every entry in the large-objects CAS the corresponding entries
   in the main CAS are removed (for an entry in `cas-large-f` the
-  entries in both, `casf` and `casx` are removed, as files and
+  entries in both `casf` and `casx` are removed, as files and
   executable files are both hashed the same way, as blobs).
 - For every entry in the main CAS that is larger than the
   compactification threshold, the object is split, the chunks are
@@ -189,12 +189,12 @@ It should be noted that these steps do not modify the objects
 that can be obtained from that CAS generation. In particular, all
 invariants are kept.
 
-As compactification threshold we chose a fixed value larger than
+As the compactification threshold we chose a fixed value larger than
 the maximal size a chunk obtained from splitting can have. More
-precisely, we take the maximal value where we still can transfer
+precisely, we take the largest value for which we can still transfer
 a blob via `grpc` without having to use the streaming interface,
-i.e, we chose 2MB. In this way, we already have correct blobs split
-for transfer to an end point that supports blob splicing.
+i.e., 2MB. In this way, we already have blobs correctly split
+for transfer to an endpoint that supports blob splicing.
 
 The compactification step will also be carried out if the `--no-rotate`
 option is given to `gc`.
@@ -218,10 +218,10 @@ provided by that cached association.
 
 While this setup is good at preserving roots in a quite compact
 form, there currently is no mechanism to get rid of roots that are
-no longer needed. Especially switching between projects that have
-a large number of third-party dependencies, or on projects changing
-their set of dependencies frequently, this `git` repository in the
-local build root can grow large.
+no longer needed. Especially when switching between projects that have
+a large number of third-party dependencies, or when working on projects
+that change their set of dependencies frequently, this `git` repository
+in the local build root can grow large.
 
 Therefore, the repository roots follow a similar generation regime.
 The subcommand `gc-repo` of `jst` rotates generations and removes

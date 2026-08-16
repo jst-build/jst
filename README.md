@@ -5,27 +5,31 @@ builds. The language-specific information to translate high-level
 concepts (libraries, binaries) into individual compile actions is
 taken from user-defined rules described by functional expressions.
 
-Designated targets are taken entirely from cache, if the repositories
+Designated targets are taken entirely from cache if the repositories
 transitively involved have not changed. So, by making good use of
 the multi-repository structure, the action graph can be kept small.
-Remote build execution is supported and the remote-building of
-cachable targets can be fully delegated to a service (provided by
+Remote build execution is supported, and the remote building of
+cacheable targets can be fully delegated to a service (provided by
 the tool itself); when doing so, it is not necessary to have the
 dependencies locally (neither as source nor as binary).
 
-## Why jst?
+## Why use `jst`?
 
 What sets `jst` apart from other build systems:
 
-- Built-in integration of Git, using its object database
+- Built-in integration of Git, directly accessing its object database
 - Support for multi-language builds via [user-defined rules](doc/concepts/rules.md)
-- Support for conflict-free [multi-repository builds](doc/concepts/multi-repo.md)
+- Support for conflict-free [multi-repository builds](doc/concepts/multi-repo.md),
+  serving distro-ready packaging against system dependencies and large-scale
+  company builds alike
 - Decoupling files from their local path: ["staging"](doc/concepts/overview.md#staging)
 - Action graph pruning via [target-level caching](doc/concepts/target-cache.md)
 - Building without the sources via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst_backend-repository-specification)
-- Reduced network traffic via [blob splitting](doc/concepts/blob-splitting.md)
+- Reduced network traffic via [blob splitting](doc/concepts/blob-splitting.md), which
+  also shrinks the on-disk footprint of large artifacts such as disk images via
+  [cache compactification](doc/concepts/garbage.md#compactification-as-part-of-garbage-collection)
 - Faster communication with [directories as first-class citizens](doc/specification/remote-protocol.md)
-- Built-in single-node remote execution server: `jst backend execute`
+- Built-in single-node remote execution server: `jst execute`
 
 ## Installing
 
@@ -65,9 +69,6 @@ Hello World!
 
 - [Basics](examples/basics-tutorial/README.md)
 - [C/C++](examples/cpp-tutorial/README.md)
-- Java (*coming soon*)
-- Rust (*coming soon*)
-- Cangjie (*coming soon*)
 
 ## Justlang documentation
 
@@ -90,3 +91,12 @@ Hello World!
 - [Execution properties](doc/concepts/execution-properties.md)
 - [Computed roots](doc/concepts/computed-roots.md)
 - [Profiling and Invocation Logging](doc/concepts/profiling.md)
+
+## Disclaimer
+
+`jst` is a fork of [justbuild](https://github.com/just-buildsystem/justbuild),
+an open-source project developed at the Munich Research Center. Its concepts —
+the functional expression language, target-level caching, staging, absent roots
+— were designed and brought to life by a truly brilliant mind, and this fork
+stands entirely on that work. If you have not come across the original yet, go
+and take a look; it is well worth your time.

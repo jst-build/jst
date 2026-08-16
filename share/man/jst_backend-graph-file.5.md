@@ -144,12 +144,12 @@ requested (so often, but not always, the list has length 1). Each such
 place is described by a JSON object with the following keys.
 
  - *`"target"`* The target in which the action was requested. It is
-   given as a list, either a full qualified named target given as
+   given as a list, either a fully-qualified named target given as
    *`"@"`* followed by global repository name, module, and target name,
    or an anonymous target, given by *`"#"`* followed by a hash of the
    rule binding and the node name.
  - *`"subtask"`* The running number, starting from 0, of the action, as
-   given by the (deterministic) evaluation order of he defining
+   given by the (deterministic) evaluation order of the defining
    expression for the rule that defined the target.
  - *`"config"`* The effective configuration for that target, a JSON
    object.

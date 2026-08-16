@@ -25,33 +25,33 @@ Core concepts and implementation
 --------------------------------
 
 To avoid these unnecessary fetches, we have added a new subcommand 
-`jst backend serve` that starts the `just serve` service that provides the dependencies.
+`jst serve` that starts the `jst serve` service that provides the dependencies.
 This typically happens by looking up a target-level cache entry.
 If the entry, however, is not in cache, this also includes building the
 respective `export` target using an associated remote-execution endpoint.
 
 ### Scope: eligible `export` targets
 
-In order to typically have requests in cache, `just serve` will refuse
+In order to typically have requests in cache, `jst serve` will refuse
 to handle requests that do not refer to `export` targets in
 content-fixed repositories; recall that for a repository to be content
 fixed, so have to be all repositories reachable from there.
 
 ### Communication through an associated remote-execution service
 
-Each `just serve` endpoint is always associated with a remote-execution
-endpoint. All artifacts exchanged between client and `just serve`
+Each `jst serve` endpoint is always associated with a remote-execution
+endpoint. All artifacts exchanged between client and `jst serve`
 endpoint are exchanged via the CAS that is part in the associated
 remote-execution endpoint. This remote-execution endpoint is also used
-if `just serve` has to build targets.
+if `jst serve` has to build targets.
 
 The associated remote-execution endpoint can well be the same process
-simultaneously acting as `jst backend execute`. In fact, this is the default if
+simultaneously acting as `jst execute`. In fact, this is the default if
 no remote-execution endpoint is specified.
 
 ### Sources: local git repositories and remote trees
 
-A `just serve` instance takes roots from various sources,
+A `jst serve` instance takes roots from various sources,
 
  - the `git` repository contained in the local build root,
  - additional `git` repositories, optionally specified in the
@@ -83,7 +83,7 @@ roots, i.e., roots that are the output of a `jst_backend` build.
 ### Delegation: absent roots in `jst_backend` repository specification
 
 In order for `jst_backend` to know for which repositories to delegate the build
-to the designated `just serve` endpoint, the repository configuration
+to the designated `jst serve` endpoint, the repository configuration
 for `jst_backend` can mark roots as _absent_; this is done by only giving the
 type as `"git tree"` (or the corresponding ignore-special variant
 thereof) and the tree identifier in the root specification, but no
@@ -92,9 +92,9 @@ witnessing repository.
 Any repository containing an absent root has to be content fixed, but
 not all roots have to be absent (as `jst_backend` can always upload those trees
 to CAS). It is an error if, outside the computations delegated to
-`just serve`, a non-export target is requested from a repository
+`jst serve`, a non-export target is requested from a repository
 containing an absent root. Moreover, whenever there is a dependency on a
-repository containing an absent root, a `just serve` endpoint has to be
+repository containing an absent root, a `jst serve` endpoint has to be
 specified in the invocation of `jst_backend`.
 
 Protocol description
@@ -103,11 +103,11 @@ Protocol description
 Communication is handled via `grpc` exchanging `proto` buffers
 containing the information described in the rest of this section.
 
-Besides the main service of `just serve`, auxiliary requests are defined,
+Besides the main service of `jst serve`, auxiliary requests are defined,
 bundled in two other services: one allowing `jst` to configure
 multi-repository builds in the context of `absent` roots, and the other
 to perform the optional check for remote-execution endpoint consistency
-between a client and the `just serve` endpoint.
+between a client and the `jst serve` endpoint.
 
 ### Main service
 
@@ -119,7 +119,7 @@ A request is given by
    remote-execution endpoint,
  - the identifier of the blob containing the endpoint configuration
    information; together with the knowledge on the fixed endpoint,
-   the `just serve` instance computes the target-level cache shard,
+   the `jst serve` instance computes the target-level cache shard,
    and
  - the identifier of the target-level cache key; it is the
    client's responsibility to ensure that the referred blob (i.e.,
@@ -131,16 +131,16 @@ A request is given by
 
 The answer to that request is the identifier of the corresponding
 target-level cache value (in the same format as for local
-target-level caching). The `just serve` instance ensures that
+target-level caching). The `jst serve` instance ensures that
 the actual value, as well as any directly or indirectly referenced
 artifacts are available in the respective remote-execution CAS.
 Alternatively, the answer indicates the kind of error (unknown
-root, not an export target, build failure, etc).
+root, not an export target, build failure, etc.).
 
 #### Auxiliary request: flexible variables of an `export` target
 
 To allow `jst_backend` to compute the target-level cache key without
-knowledge of an absent tree, `just serve` also answers questions
+knowledge of an absent tree, `jst serve` also answers questions
 about the flexible variables of an `export` target. Such an `export`
 target is specified by the tree of its target-level root, the name
 of the targets file, and the name of the target itself. The answer
@@ -148,9 +148,9 @@ is a list of strings, naming the flexible variables.
 
 #### Auxiliary request: rule description of an `export` target
 
-To support `just describe` also in the cases where code is delegated
-to the `just serve` endpoint, an additional request for the
-`describe` information of a target can be requested; as `just serve`
+To support `jst describe` also in the cases where code is delegated
+to the `jst serve` endpoint, an additional request for the
+`describe` information of a target can be requested; as `jst serve`
 only handles `export` targets, this target necessarily has to be an
 export target.
 
@@ -158,8 +158,8 @@ The request again contains the tree identifier of the target-level
 root, the name of the targets file, and the name of the target to
 inspect. The answer is the identifier of a blob containing a JSON object
 with the needed information, i.e., those parts of the target description
-that are used by `just describe`. Alternatively, the answer indicates
-the kind of error (unknown root, not an export target, etc).
+that are used by `jst describe`. Alternatively, the answer indicates
+the kind of error (unknown root, not an export target, etc.).
 
 ### Auxiliary service: source trees
 
@@ -173,24 +173,24 @@ overhead is needed in order to get the tree identifier.
 
 Therefore, in order to support clients (or, more precisely,
 `jst` instances setting up the repository description) in
-constructing an appropriate request for `just serve` without
-unnecessary overhead, `just serve` supports a second kind of
+constructing an appropriate request for `jst serve` without
+unnecessary overhead, `jst serve` supports a second kind of
 request, where the client request consists of a `git` commit
 identifier and the server answers with the tree identifier for that
 commit if it is aware of that commit, or indicates that it is not
 aware of that commit.
 
-Optionally, the client can request that `just serve` back up this
+Optionally, the client can request that `jst serve` back up this
 tree in the CAS of the associated remote-execution endpoint.
 
 #### Auxiliary request: tree of an archive
 
 For archives typically the `git` blob identifier is given, rather
 than the tree. In order to allow `jst` to set up a repository
-description without fetching the respective archive, `just serve`
+description without fetching the respective archive, `jst serve`
 supports also a request which, given the blob identifier of an
 archive, answers with the respective tree identifier of the unpacked
-archive. Here, if `just serve` needs the archive, it can look it
+archive. Here, if `jst serve` needs the archive, it can look it
 up in its CAS, any of the supplied `git` repositories (where one
 might be for archiving of the third-party distribution archives),
 and the specified remote-execution endpoint.
@@ -202,7 +202,7 @@ the local build root in the same way as `jst` does it. When
 answering such a request, that tree map is consulted first (so that
 those requests as well can be typically served from cache).
 
-Optionally, the client can request that `just serve` back up this
+Optionally, the client can request that `jst serve` back up this
 tree in the CAS of the associated remote-execution endpoint.
 
 #### Auxiliary request: tree of a distdir
@@ -213,26 +213,26 @@ a list of distfiles) can always be computed without fetching the
 actual archives.
 
 In order to allow `jst` to set up a repository description that
-can build against an _absent_ distdir repository root, `just serve`
+can build against an _absent_ distdir repository root, `jst serve`
 supports a request which, given a mapping of distfile names to their
 content blob identifiers, returns the tree identifier of a directory
 containing that list of distfiles, with the guarantee that all content
-blobs are known to `just serve`. The locations they are looked for are,
+blobs are known to `jst serve`. The locations they are looked for are,
 in order: the local CAS, all known Git repositories (including the
 local Git cache), and the CAS of the associated remote-execution endpoint.
 Any blob located in a Git repository is made available in the local CAS.
 
-Optionally, the client can request that `just serve` back up this
+Optionally, the client can request that `jst serve` back up this
 tree and all the content blobs in the CAS of the associated
 remote-execution endpoint.
 
 #### Auxiliary requests: known Git objects
 
-For `just fetch` operations typically either a blob (e.g., content of
+For `jst fetch` operations typically either a blob (e.g., content of
 an archive) or a tree (e.g., a root, like from a `git tree` repository)
 are needed to be stored into local CAS. For these cases, two auxiliary
 requests, one for blobs and one for trees, respectively, have been
-provided. They check whether the `just serve` endpoint knows these Git
+provided. They check whether the `jst serve` endpoint knows these Git
 objects and, if yes, ensure they are uploaded to the remote CAS, from
 where the client can easily then retrieve them.
 
@@ -268,10 +268,10 @@ marked absent available to build against.
 
 #### Auxiliary request: remote-execution endpoint
 
-Given that all artifact exchanges between client and `just serve`
+Given that all artifact exchanges between client and `jst serve`
 rely on the CAS of a given remote endpoint, the client might want
 to double check that the remote execution endpoint it wants to use
-is the same that is associated with the `just serve` instance.
+is the same that is associated with the `jst serve` instance.
 
 The server replies with the address (in the usual `HOST:PORT` string
 format) of the associated remote execution endpoint, if set, or an
@@ -281,32 +281,32 @@ execution endpoint).
 Auxiliary changes
 -----------------
 
-### Modifications to the justbuild analysis of an export target
+### Modifications to the jst-build analysis of an export target
 
-During the analysis of an export target, querying the `just serve` endpoint
+During the analysis of an export target, querying the `jst serve` endpoint
 is exclusively linked to the presence of at least one _absent_ root.
 
-The first time that we need to query `just serve` we verify that its remote
+The first time that we need to query `jst serve` we verify that its remote
 endpoint coincides with the one given to `jst_backend`.
 
 If the _target root_ for this export target is marked as absent:
- - We query the `just serve` for retrieving the flexible configuration
-   variables needed to compute the target cache key. If `just serve` cannot
+ - We query the `jst serve` for retrieving the flexible configuration
+   variables needed to compute the target cache key. If `jst serve` cannot
    answer, we break the analysis and inform the user with a proper error
    message.
 
  - With the served flexible configuration variables we compute the target
    cache key, as all other required information for this in available
    locally. If the cache entry is not in the local target cache, we query
-   `just serve` to provide the associated target cache value. If it is not
+   `jst serve` to provide the associated target cache value. If it is not
    able to provide the target cache value, analysis fails and we error out.
 
-It has to be noted that, in the case the `just serve` endpoint also does
-not have the target cache entry in its own target cache, a build of the
+It should be noted that, in the case where the `jst serve` endpoint also
+does not have the target cache entry in its own target cache, a build of the
 content-fixed target is dispatched to the associated remote-execution
 endpoint, which will thus increase the time spent in the analysis phase,
 as experienced by the user. In order to provide a better user experience,
-the work done by the `just serve` endpoint is also being reported to the
+the work done by the `jst serve` endpoint is also being reported to the
 end user, similarly to the reporting done for a locally-triggered build.
 
 #### `jst` pragma `"absent"`
@@ -318,13 +318,13 @@ repository description. If the specified value is true, `jst`
 generates an absent root out of this description, using all
 available means to generate that root without ever having to fetch
 the repository locally. For example, in the typical case of a `git`
-repository the auxiliary `just serve` function to obtain the tree of a
+repository the auxiliary `jst serve` function to obtain the tree of a
 commit is used. To allow this communication, `jst` also accepts
-arguments describing a `just serve` endpoint and forwards them as
+arguments describing a `jst serve` endpoint and forwards them as
 early arguments to `jst_backend`, in the same way as it does, e.g., with
 `--local-build-root`.
 
-If a `just serve` endpoint is given to `jst`, the tool ensures
+If a `jst serve` endpoint is given to `jst`, the tool ensures
 however possible that all absent roots it generates are available also to
 the serve endpoint for a subsequent orchestrated remote build. Absent
 roots without providing a serve endpoint can also be generated, however
@@ -373,7 +373,7 @@ This includes
 
  - all archives fetched, but also
  - all trees computed in setting up the respective repository
-   description, both, from `git tree` repositories, as well as from
+   description, both from `git tree` repositories and from
    archives.
 
 In this way, `jst` can be used to fill the CAS from one central
@@ -383,9 +383,9 @@ content-fixed roots as absent.
 ### Target-level cache writing in the presence of some targets served
 
 When building, `jst_backend` normally does not create an entry for
-target-level cache hit received from `just serve`. However, it
+target-level cache hit received from `jst serve`. However, it
 might happen that `jst_backend` has to analyse an eligible `export`
-target locally, as the `just serve` instance cannot provide it, and
-during that analysis `export` targets provided by `just serve` are
+target locally, as the `jst serve` instance cannot provide it, and
+during that analysis `export` targets provided by `jst serve` are
 encountered. In this case, the writing of the export targets depending
 on served targets is skipped.

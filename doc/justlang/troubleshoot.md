@@ -23,9 +23,9 @@ $ jst eval -D'{"BAR":"bar"}' snippet.jst
 "foobar"
 ```
 
-## Generate Justbuild IR
+## Generate jst-build IR
 
-Advanced users might want to investigate the generated Justbuild IR (JSON),
+Advanced users might want to investigate the generated jst-build IR (JSON),
 which can be requested by specifying the flag `--ir`:
 
 ``` sh

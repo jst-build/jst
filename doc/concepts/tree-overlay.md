@@ -13,15 +13,15 @@ opaque objects, which has two advantages.
 - From a user point of view, this improves maintainability, as a
   certain target can already claim certain subtrees in its artifacts
   or runfiles, so that staging conflicts that might arise from a
-  latter addition of artifacts are already detected now.
+  later addition of artifacts are detected right away.
 
 However, there are some use cases not covered by this way of handling
 trees. E.g., when creating disk images, it might be desirable to add
 project-specific artifacts to a tree obtained as directory output
-of an action calling a foreign build system. Of course, there need
-to be some out-of-band understanding where artifacts can be placed
+of an action calling a foreign build system. Of course, this requires
+some out-of-band understanding of where artifacts can be placed
 without messing up the original tree, but often this is the case,
-despite this being hard to formulate in a way that can be verified
+even though it is hard to formulate in a way that can be verified
 by a build system; however, it is easy for a build system to verify
 after the fact (i.e., once the trees are computed) that certain
 trees do not conflict on any path. Such an after-the-fact check is
@@ -33,7 +33,7 @@ library is built using a foreign build system and, in order to keep
 the description maintainable over updates, the include files are
 collected as a whole directory.
 
-The mentioned use cases can be done in `justbuild` by means of
+The use cases mentioned above are handled in jst-build by means of
 the in-memory actions of type `TREE_OVERLAY` that rules can use
 to construct new trees out of existing ones by overlaying the
 contents; there is also a variant `DISJOINT_TREE_OVERLAY` that
@@ -69,7 +69,7 @@ this position in the first tree.
 
 ## Computation of `"tree overlays"` in the presence of remote execution
 
-The evaluation of `"tree overlays"` happens in memory in the `just`
+The evaluation of `"tree overlays"` happens in memory in the `jst_backend`
 process. To do so, the actual tree objects have to be inspected, in
 fact downwards for all common paths. In particular, as opposed to
 all other operations, trees in this operation cannot be passed
@@ -80,7 +80,7 @@ objects are fetched without the blobs or tree objects outside
 common paths, even if that means that those objects cannot be put
 into the local CAS (as that would violate the tree invariant). In
 any case, when adding the new tree objects that are part of the
-overlaid tree,  `just` adds them to the applicable
+overlaid tree, `jst_backend` adds them to the applicable
 CAS in topological order, in order to keep the tree invariant.
 
 ## Functions in rule definition: `TREE_OVERLAY` and `DISJOINT_TREE_OVERLAY`

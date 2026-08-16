@@ -1,5 +1,5 @@
 This directory contains a collection of design documents for planned
-additions and changes to the `just` build tool. In this way, the
+additions and changes to the `jst_backend` build tool. In this way, the
 design of upcoming larger changes can be reviewed in a transparent
 way, before the implementation is started.
 

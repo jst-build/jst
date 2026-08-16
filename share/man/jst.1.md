@@ -14,13 +14,13 @@ SYNOPSIS
 **`jst`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
 **`jst`** \[*`OPTION`*\]... **`gc-repo`** \[**`--drop-only`**\]  
 **`jst`** \[*`OPTION`*\]... **`backend`** \[*`JST_BACKEND_ARG`*\]...  
-**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**} \[*`JST_BACKEND_ARG`*\]...  
+**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**|**`serve`**|**`execute`**} \[*`JST_BACKEND_ARG`*\]...  
 
 DESCRIPTION
 ===========
 
-**`jst`** is a configuration tool for the multi-repository Just build
-system. It can be used both standalone and as a launcher for
+**`jst`** is a configuration tool for the multi-repository *jst-build*
+build system. It can be used both standalone and as a launcher for
 **`jst_backend`**(1).
 
 The tool performs specific operations, based on the invoked subcommand,
@@ -47,8 +47,8 @@ order:
  - *`$WORKSPACE_ROOT/repos.json`* (workspace of the **`jst`** invocation)
  - *`$WORKSPACE_ROOT/etc/repos.json`* (workspace of the **`jst`**
    invocation)
- - *`$HOME/.just-repos.json`*
- - *`/etc/just-repos.json`*
+ - *`$HOME/.jst-repos.json`*
+ - *`/etc/jst-repos.json`*
 
 The default configuration lookup order can be adjusted in the jstrc
 file. See **`jstrc`**(5) for more details.
@@ -71,7 +71,7 @@ the command line.
 Root for local CAS, cache, and build directories. The path will be
 created if it does not exist already. This option overwrites any values
 set in the **`jstrc`**(5) file.  
-Default: path *`".cache/just"`* in user's home directory.
+Default: path *`".cache/jst"`* in user's home directory.
 
 **`--checkout-locations`** *`PATH`*  
 Specification file for checkout locations and additional mirrors.
@@ -99,7 +99,7 @@ This file contains a JSON object with several known keys:
    pass the credentials.
 
 This options overwrites any values set in the **`jstrc`**(5) file.  
-Default: file path *`".just-local.json"`* in user's home directory.
+Default: file path *`".jst-local.json"`* in user's home directory.
 
 **`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
 JSON array with the list of strings representing the launcher to prepend
@@ -189,8 +189,7 @@ Legacy option to specify the backend binary, same as **`--backend`**.
 **`--rc`** *`PATH`*  
 Path to the jstrc file to use. See **`jstrc`**(5) for more
 details.  
-Default: file path *`".jstrc"`* in the user's home directory, with fallback to
-*`".just-mrrc"`* if not found.
+Default: file path *`".jstrc"`* in the user's home directory.
 
 **`--dump-rc`** *`PATH`*  
 Dump the effective rc, i.e., the rc after overlaying all applicable auxiliary
@@ -232,7 +231,7 @@ SUBCOMMANDS
 ===========
 
 **`version`**
----------------
+-------------
 
 Print on stdout a JSON object providing version information for this
 tool itself. The version information for jst is in the same format that
@@ -321,13 +320,15 @@ necessary as no perfect sharing happens between the repository generations.
 backend
 --
 
-This subcommand is used as the canonical way of specifying just backend
+This subcommand is used as the canonical way of specifying **`jst_backend`**
 arguments and calling **`jst_backend`** via **`execvp`**(2). Any subsequent argument
 is unconditionally forwarded to **`jst_backend`**. For *known* subcommands
 (**`version`**, **`describe`**, **`analyse`**, **`build`**, **`install`**, 
-**`install-cas`**, **`add-to-cas`**, **`rebuild`**, **`gc`**), the
+**`install-cas`**, **`add-to-cas`**, **`rebuild`**, **`gc`**, **`eval`**,
+**`serve`**, **`execute`**), the
 **`jst setup`** step is performed first for those commands accepting a
-configuration and the produced configuration is prefixed to the provided
+configuration (**`describe`**, **`analyse`**, **`build`**, **`install`**,
+**`rebuild`**) and the produced configuration is prefixed to the provided
 arguments. The main repository for the **`setup`** step can be provided in
 the configuration or on the command line. If no main repository is
 provided, the lexicographical first repository from the configuration is
@@ -339,23 +340,26 @@ arguments. If log files are provided, an unconditional
 messages will get overwritten.
 
 The **`--local-launcher`** argument is passed to **`jst_backend`** as early
-argument for those *known* subcommands that accept it (build, install,
-rebuild).
+argument for those *known* subcommands that accept it (analyse, build,
+install, rebuild, execute).
 
 The **`--remote-execution-address`**, **`--remote-instance-name`**,
 **`--compatible`**, and
 **`--remote-serve-address`** arguments are passed to **`jst_backend`** as early
 arguments for those *known* subcommands that accept them
-(analyse, build, install-cas, add-to-cas, install, rebuild, traverse).
+(describe, analyse, build, install-cas, add-to-cas, install, rebuild).
+They are *not* forwarded to **`serve`** and **`execute`**, which are servers
+rather than remote-execution clients and take their remote-execution
+settings from their own configuration or command line.
 
 The *authentication options* given to **`jst`** are passed to **`jst_backend`** as
 early arguments for those *known* subcommands that accept them, according to
 **`jst_backend`**(1).
 
-**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**
-------------------------------------------------------------------------------------------------------------------------------
+**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**|**`serve`**|**`execute`**
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-This subcommand is the explicit way of specifying *known* just
+This subcommand is the explicit way of specifying *known* **`jst_backend`**
 subcommands and calling **`jst_backend`** via **`execvp`**(2). The same description
 as for the **`backend`** subcommand applies.
 
@@ -363,7 +367,7 @@ as for the **`backend`** subcommand applies.
 -------------
 
 Rotate the repository-root generations. In this way, all repository
-roots not needed since the the last call to **`gc-repo`** are purged
+roots not needed since the last call to **`gc-repo`** are purged
 and the corresponding disk space reclaimed.
 
 

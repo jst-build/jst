@@ -20,10 +20,10 @@ Location objects
 The general syntax and semantics of a location object are described in 
 **`jstrc`**(5). Here we use a restricted form where the value for key
 *`"root"`* can only be either *`"home"`* or *`"system"`*. This is because
-`jst_backend serve` is not aware of the concept of workspaces.
+**`jst_backend`** **`serve`** is not aware of the concept of workspaces.
 
 The jst_backend-serve configuration format
------------------------------------
+------------------------------------------
 
 The configuration file is given by a JSON object.
 
@@ -134,39 +134,74 @@ EXAMPLE
 
 An example serve configuration file could look as follows.
 
-```jsonc
-{ "local build root": {"root": "system", "path": "var/just-serve/root"}
-, "authentication":
-  { "ca cert":
-    {"root": "system", "path": "etc/just-serve/certs/ca.crt"}
-  , "client cert":
-    {"root": "system", "path": "etc/just-serve/certs/client.crt"}
-  , "client key":
-    {"root": "system", "path": "etc/just-serve/certs/client.key"}
-  }
-, "remote service":
-  { "interface": "192.0.2.1"
-  , "port": 9999
-  , "pid file":
-    {"root": "system", "path": "var/run/just-serve/server.pid"}
-  , "server cert":
-    {"root": "system", "path": "etc/just-serve/certs/server.crt"}
-  , "server key":
-    {"root": "system", "path": "etc/just-serve/certs/server.key"}
-  }
-, "execution endpoint": {"address": "198.51.100.1:8989"}
-, "repositories":
-  [ {"root": "system", "path": "var/just-serve/repos/third-party-distfiles"}
-  , {"root": "system", "path": "var/just-serve/repos/project-foo"}
-  , {"root": "system", "path": "var/just-serve/repos/project-bar"}
-  ]
-, "logging":
-  {"files": [{"root": "home", "path": ".log/just-serve/latest"}]}
-, "jobs": 8
-, "build": {"build jobs": 128}
-, "max-attempts": 10
-, "initial-backoff-seconds": 10
-, "max-backoff-seconds": 60
+```json
+{
+  "local build root": {
+    "root": "system",
+    "path": "var/jst-serve/root"
+  },
+  "authentication": {
+    "ca cert": {
+      "root": "system",
+      "path": "etc/jst-serve/certs/ca.crt"
+    },
+    "client cert": {
+      "root": "system",
+      "path": "etc/jst-serve/certs/client.crt"
+    },
+    "client key": {
+      "root": "system",
+      "path": "etc/jst-serve/certs/client.key"
+    }
+  },
+  "remote service": {
+    "interface": "192.0.2.1",
+    "port": 9999,
+    "pid file": {
+      "root": "system",
+      "path": "var/run/jst-serve/server.pid"
+    },
+    "server cert": {
+      "root": "system",
+      "path": "etc/jst-serve/certs/server.crt"
+    },
+    "server key": {
+      "root": "system",
+      "path": "etc/jst-serve/certs/server.key"
+    }
+  },
+  "execution endpoint": {
+    "address": "198.51.100.1:8989"
+  },
+  "repositories": [
+    {
+      "root": "system",
+      "path": "var/jst-serve/repos/third-party-distfiles"
+    },
+    {
+      "root": "system",
+      "path": "var/jst-serve/repos/project-foo"
+    },
+    {
+      "root": "system",
+      "path": "var/jst-serve/repos/project-bar"
+    }
+  ],
+  "logging": {
+    "files": [
+      {
+        "root": "home",
+        "path": ".log/jst-serve/latest"
+      }
+    ]
+  },
+  "jobs": 8,
+  "build": {
+    "build jobs": 128
+  },
+  "max-attempts": 10,
+  "initial-backoff-seconds": 10,
+  "max-backoff-seconds": 60
 }
 ```
 

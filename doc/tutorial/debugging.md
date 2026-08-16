@@ -1,18 +1,18 @@
 Debugging
 =========
 
-With *justbuild* striving to ensure that only our own project's code is needed
+With *jst-build* striving to ensure that only our own project's code needs
 to be available locally, and not any of our dependencies (especially in
-conjunction with our [serve service](./just-serve.md)) or any on-the-fly patches
-or generated files, it might seem that debugging is not a straight-forward
-endeavor. However, *justbuild* always knows exactly what source files are needed
-to build a target and therefore they can be staged locally and made available to
+conjunction with our [serve service](./jst-serve.md)) or any on-the-fly patches
+or generated files, it might seem that debugging is not a straightforward
+endeavor. However, *jst-build* always knows exactly which source files are needed
+to build a target, and therefore they can be staged locally and made available to
 a debugger, such as `gdb(1)`.
 
-In the following we will show how to use the `["CC", "install-with-deps"]` rule
-to stage all the needed sources for debugging a program with `gdb(1)`.
-As example we use the *hello_world* program employing high-level target caching
-from the section on
+In the following, we will show how to use the `'//CC:install-with-deps'` rule
+to stage all the sources needed for debugging a program with `gdb(1)`.
+As an example, we use the *hello_world* program employing high-level target
+caching from the section on
 [*Building Third-party dependencies*](./third-party-software.md), which depends
 on the open-source project [fmtlib](https://github.com/fmtlib/fmt).
 
@@ -23,21 +23,22 @@ The first step is to define a set of debugging defaults (toolchain and compile
 flags) for our example project. This can be done by extending the existing
 `tutorial-defaults/CC/TARGETS` file as
 
-``` {.jsonc srcname="tutorial-defaults/CC/TARGETS"}
-{ "defaults":
-  { "type": ["CC", "defaults"]
-  , "CC": ["cc"]
-  , "CXX": ["c++"]
-  , "ADD_COMPILE_FLAGS": ["-O2", "-Wall"]
-  , "ADD_DEBUGFLAGS": ["-O2", "-Wall", "-g"]
-  , "AR": ["ar"]
-  , "DWP": ["dwp"]
-  , "PATH": ["/bin", "/usr/bin"]
+``` {.jsonnet srcname="tutorial-defaults/CC/TARGETS"}
+{
+  defaults: {
+    type: @'//CC:defaults',
+    CC: ['cc'],
+    CXX: ['c++'],
+    ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
+    ADD_DEBUGFLAGS: ['-O2', '-Wall', '-g'],
+    AR: ['ar'],
+    DWP: ['dwp'],
+    PATH: ['/bin', '/usr/bin'],
   }
 }
 ```
 
-This states that when in debug mode a different set of C/C++ flags should be
+This states that when in debug mode, a different set of C/C++ flags should be
 used, in this case the ones from release mode plus the `-g` flag to generate
 debug information for `gdb(1)`. As this updated `TARGETS` file is under version
 control, we need to commit the changes:
@@ -53,13 +54,13 @@ Now we need to configure the actual target we want to debug. The `TARGETS` file
 of our *hello-world* program currently contains only the release version, so we
 need to add a new target, configured in debug mode.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "helloworld-debug":
-  { "type": "configure"
-  , "target": "helloworld"
-  , "config": {"type": "'", "$1": {"DEBUG": {"USE_DEBUG_FISSION": false}}}
-  }
+helloworld_debug: {
+  type: 'configure',
+  target: 'helloworld',
+  config: {DEBUG: {USE_DEBUG_FISSION: false}},
+}
 ...
 ```
 
@@ -69,14 +70,14 @@ instruct the updated toolchain defaults, which honor the `"DEBUG"` argument, to
 compile all actions with the `"-g"` flag.
 
 To actually collect the artifacts needed to run the debugger, we use the
-`["CC", "install-with-deps"]` rule, contained in the `rules-cc` repository.
+`'//CC:install-with-deps'` rule, contained in the `rules-cc` repository.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "helloworld-debug staged":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "targets": ["helloworld-debug"]
-  }
+helloworld_debug_install: {
+  type: @'rules//CC:install-with-deps',
+  targets: ['helloworld_debug'],
+}
 ...
 ```
 
@@ -84,15 +85,11 @@ Now this target can be installed to a location of our choice provided by the
 `-o` argument.
 
 ``` sh
-$ just-mr install "helloworld-debug staged" -o .ext/debug
-INFO: Performing repositories setup
+$ jst install "helloworld_debug_install" -o .ext/debug
 INFO: Found 5 repositories involved
-INFO: Setup finished, exec ["just","install","-C","...","helloworld-debug staged","-o",".ext/debug"]
-INFO: Requested target is [["@","tutorial","","helloworld-debug install"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld-debug install"],{}]
+INFO: Requested target 'tutorial//:helloworld_debug_install"] with config: {}
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
 INFO: Discovered 7 actions, 0 tree overlays, 3 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld-debug install"],{}].
 INFO: Processed 7 actions, 0 cache hits.
 INFO: Artifacts can be found in:
         /tmp/tutorial/.ext/debug/bin/helloworld [5f0ce4ed97000af42902c41f9d3b7d51343534a6:1570896:x]
@@ -107,7 +104,7 @@ INFO: Artifacts can be found in:
 INFO: Backing up artifacts of 1 export targets
 ```
 
-To now debug the *helloworld* executable, we simply need to switch to the
+To debug the *helloworld* executable, we simply need to switch to the
 specified directory and run `gdb(1)`.
 
 ``` sh
@@ -119,14 +116,14 @@ This works out-of-the-box specifically because our tool keeps track of the
 logical staging of the artifacts (from direct and transitive dependencies) of
 targets, meaning it can easily mirror this staging in the install folder, thus
 ensuring a debugger finds all the symbols in the places it looks for by default.
-As such, this install directory can also be directly provided to an IDE (such as
-VSCode) as search location for debug symbols.
+As such, this install directory can also be provided directly to an IDE (such as
+VSCode) as the search location for debug symbols.
 
 Finally, note that not only the artifacts of the first-party library `greet` get
 staged, but also the artifacts of the third-party dependency `fmtlib`. This is
-due to the fact that the `"fmtlib"` export target is already configured (see its
+because the `"fmtlib"` export target is already configured (see its
 `TARGETS` file) to inherit the `"DEBUG"` flag from the environment, meaning that
-the `true` value set by the `"helloworld-debug"` target gets honored.
-In general, we recommend that export targets always allow the `"DEBUG"` flag
-through, specifically to ensure consumers have access to and can build the
-target library also in debug mode.
+the `true` value set by the `"helloworld_debug"` target gets honored.
+In general, we recommend that export targets always let the `"DEBUG"` flag
+through, specifically to ensure that consumers have access to the target library
+and can build it in debug mode as well.

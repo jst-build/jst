@@ -1,7 +1,7 @@
 Building C++ Hello World
 ========================
 
-*justbuild* is a true language-agnostic (there are no more-equal
+*jst-build* is a true language-agnostic (there are no more-equal
 languages) and multi-repository build system. As a consequence,
 high-level concepts (e.g., C++ binaries, C++ libraries, etc.) are not
 hardcoded built-ins of the tool, but rather provided via a set of rules.
@@ -23,21 +23,25 @@ $ touch ROOT
 Second, we also need to create the multi-repository configuration
 `repos.json` in the workspace root:
 
-``` {.jsonc srcname="repos.json"}
-{ "main": "tutorial"
-, "repositories":
-  { "rules-cc":
-    { "repository":
-      { "type": "git"
-      , "branch": "master"
-      , "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6"
-      , "repository": "https://github.com/just-buildsystem/rules-cc.git"
-      , "subdir": "rules"
+``` {.json srcname="repos.json"}
+{
+  "main": "tutorial",
+  "repositories": {
+    "rules-cc": {
+      "repository": {
+        "type": "git",
+        "branch": "master",
+        "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6",
+        "repository": "https://github.com/jst-build/rules-cc.git",
+        "subdir": "rules"
       }
-    }
-  , "tutorial":
-    { "repository": {"type": "file", "path": "."}
-    , "bindings": {"rules": "rules-cc"}
+    },
+    "tutorial": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      },
+      "bindings": {"rules": "rules-cc"}
     }
   }
 }
@@ -46,25 +50,25 @@ Second, we also need to create the multi-repository configuration
 In that configuration, two repositories are defined:
 
 1. The `"rules-cc"` repository located in the subdirectory `rules` of
-   [just-buildsystem/rules-cc:7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6](https://github.com/just-buildsystem/rules-cc/tree/7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6),
+   [jst-build/rules-cc:7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6](https://github.com/jst-build/rules-cc/tree/7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6),
    which contains the high-level concepts for building C/C++ binaries
    and libraries.
 
 2. The `"tutorial"` repository located at `.`, which contains the
    targets that we want to build. It has a single dependency, which is
    the *rules* that are needed to build the target. These rules are
-   bound via the open name `"rules"` to the just created repository
+   bound via the open name `"rules"` to the repository we just created,
    `"rules-cc"`. In this way, the entities provided by `"rules-cc"` can
    be accessed from within the `"tutorial"` repository via the
-   fully-qualified name `["@", "rules", "<module>", "<name>"]`;
+   fully-qualified name `@'rules//<module>:<name>'`;
    fully-qualified names (for rules, targets to build (like libraries,
-   binaries), etc) are given by a repository name, a path specifying a
+   binaries), etc.) are given by a repository name, a path specifying a
    directory within that repository (the "module") where the
    specification file is located, and a symbolic name (i.e., an
    arbitrary string that is used as key in the specification).
 
 The final repository configuration contains a single `JSON` object with
-the key `"repositories"` referring to an object of repository names as
+the key `"repositories"` referring to an object with repository names as
 keys and repository descriptions as values. For convenience, the main
 repository to pick is set to `"tutorial"`.
 
@@ -75,12 +79,13 @@ For this tutorial, we want to create a target `helloworld` that produces
 a binary from the C++ source `main.cpp`. To define such a target, create
 a `TARGETS` file with the following content:
 
-``` {.jsonc srcname="TARGETS"}
-{ "helloworld":
-  { "type": ["@", "rules", "CC", "binary"]
-  , "name": ["helloworld"]
-  , "srcs": ["main.cpp"]
-  }
+``` {.jsonnet srcname="TARGETS"}
+{
+  helloworld: {
+    type: @'rules//CC:binary',
+    name: ['helloworld'],
+    srcs: ['main.cpp'],
+  },
 }
 ```
 
@@ -111,18 +116,14 @@ int main() {
 Building the helloworld target
 ------------------------------
 
-To build the `helloworld` target, we need specify it on the `just-mr`
+To build the `helloworld` target, we need specify it on the `jst`
 command line:
 
 ``` sh
-$ just-mr build helloworld
-INFO: Performing repositories setup
+$ jst build helloworld
 INFO: Found 2 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{}]
+INFO: Requested target 'tutorial//:helloworld' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{}].
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [bd36255e856ddb72c844c2010a785ab70ee75d56:17088:x]
@@ -134,25 +135,25 @@ specified as the main repository in `repos.json`. If targets from other
 repositories should be build, the repository to use must be specified
 via the `--main` option.
 
-`just-mr` reads the repository configuration, fetches externals (if
+`jst` reads the repository configuration, fetches externals (if
 any), generates the actual build configuration, and stores it in its
-cache directory (by default under `$HOME/.cache/just`). Afterwards, the
-generated configuration is used to call the `just` binary, which
+cache directory (by default under `$HOME/.cache/jst`). Afterwards, the
+generated configuration is used to call the `jst_backend` binary, which
 performs the actual build.
 
-Note that these two programs, `just-mr` and `just`, can also be run
-individually. To do so, first run `just-mr` with `setup` and capture the
+Note that these two programs, `jst` and `jst_backend`, can also be run
+individually. To do so, first run `jst` with `setup` and capture the
 path to the generated build configuration from stdout (above omitted from the
 log message as `"..."`) by assigning it to a shell variable (e.g., `CONF`).
-Afterwards, `just` can be called to perform the actual build by explicitly
+Afterwards, `jst_backend` can be called to perform the actual build by explicitly
 specifying the configuration file via `-C`, e.g.:
 
 ``` sh
-$ CONF=$(just-mr setup tutorial)
-$ just build -C $CONF helloworld
+$ CONF=$(jst setup tutorial)
+$ jst build -C $CONF helloworld
 ```
 
-Note that `just-mr` only needs to be run the very first time and only
+Note that `jst` only needs to be run the very first time and only
 once again whenever the `repos.json` file is modified.
 
 By default, the BSD-default compiler front-ends (which are also defined
@@ -164,14 +165,12 @@ single build invocation, you can use the following command to provide an
 object that sets `"CXX"` to `"clang++"`:
 
 ``` sh
-$ just-mr build helloworld -D'{"CXX":"clang++"}'
-INFO: Performing repositories setup
+$ jst build helloworld -D'{"CXX":"clang++"}'
 INFO: Found 2 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld","-D{\"CXX\":\"clang++\"}"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{"CXX":"clang++"}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{"CXX":"clang++"}]
+INFO: Requested target 'tutorial//:helloworld' with config: {
+        "CXX": "clang++"
+      }
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{"CXX":"clang++"}].
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [a1e0dc77ec6f171e118a3e6992859f68617a2c6f:16944:x]
@@ -204,16 +203,17 @@ specifies which toolchain and compile flags to use; it has to specify
 the complete toolchain, but can specify a `"base"` toolchain to inherit
 from. In our case, we don't use any base.
 
-``` {.jsonc srcname="tutorial-defaults/CC/TARGETS"}
-{ "defaults":
-  { "type": ["CC", "defaults"]
-  , "CC": ["cc"]
-  , "CXX": ["c++"]
-  , "ADD_COMPILE_FLAGS": ["-O2", "-Wall"]
-  , "AR": ["ar"]
-  , "DWP": ["dwp"]
-  , "PATH": ["/bin", "/usr/bin"]
-  }
+``` {.jsonnet srcname="tutorial-defaults/CC/TARGETS"}
+{
+  defaults: {
+    type: @'//CC:defaults',
+    CC: ['cc'],
+    CXX: ['c++'],
+    ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
+    AR: ['ar'],
+    DWP: ['dwp'],
+    PATH: ['/bin', '/usr/bin'],
+  },
 }
 ```
 
@@ -222,40 +222,46 @@ Here we used `"ADD_COMPILE_FLAGS"` to add flags for both, `C` and
 from `"base"`, in our case (as we did not specify a `"base"`) the
 empty list. There are also `"ADD_CFLAGS"` and `"ADD_CXXFLAGS"` if
 we want to add flags for just `C` or just `C++`. Finally, there
-is also the possibility to explicitly specify `"CFLAGS"` and
+it is also possible to explicitly specify `"CFLAGS"` and
 `"CXXFLAGS"` (completely ignoring anything inherited).
 
 To use the project defaults, modify the existing `repos.json` to reflect
 the following content:
 
-``` {.jsonc srcname="repos.json"}
-{ "main": "tutorial"
-, "repositories":
-  { "rules-cc":
-    { "repository":
-      { "type": "git"
-      , "branch": "master"
-      , "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6"
-      , "repository": "https://github.com/just-buildsystem/rules-cc.git"
-      , "subdir": "rules"
+``` {.json srcname="repos.json"}
+{
+  "main": "tutorial",
+  "repositories": {
+    "rules-cc": {
+      "repository": {
+        "type": "git",
+        "branch": "master",
+        "commit": "7a2fb9f639a61cf7b7d7e45c7c4cea845e7528c6",
+        "repository": "https://github.com/jst-build/rules-cc.git",
+        "subdir": "rules"
+      },
+      "target_root": "tutorial-defaults",
+      "rule_root": "rules-cc"
+    },
+    "tutorial": {
+      "repository": {
+        "type": "file",
+        "path": "."
+      },
+      "bindings": {"rules": "rules-cc"}
+    },
+    "tutorial-defaults": {
+      "repository": {
+        "type": "file",
+        "path": "./tutorial-defaults"
       }
-    , "target_root": "tutorial-defaults"
-    , "rule_root": "rules-cc"
-    }
-  , "tutorial":
-    { "repository": {"type": "file", "path": "."}
-    , "bindings": {"rules": "rules-cc"}
-    }
-  , "tutorial-defaults":
-    { "repository": {"type": "file", "path": "./tutorial-defaults"}
     }
   }
 }
 ```
 
-Note that the `"defaults"` target uses the rule `["CC", "defaults"]`
-without specifying any external repository (e.g.,
-`["@", "rules", ...]`). This is because `"tutorial-defaults"` is not a
+Note that the `"defaults"` target uses the rule `@'//CC:defaults'`
+without specifying any external repository (e.g., `@'rules//...'`). This is because `"tutorial-defaults"` is not a
 full-fledged repository but merely a file root that is considered local
 to the `"rules-cc"` repository. In fact, the `"rules-cc"` repository
 cannot refer to any external repository as it does not have any defined
@@ -265,19 +271,15 @@ directory. As our `"defaults"` target is in the directory `"CC"` of
 the rules repository we could also have written the rule `"type"`
 simply as `"defaults"`.
 
-To rebuild the project, we rerun `just-mr` (note that due to configuration
+To rebuild the project, we rerun `jst` (note that due to configuration
 changes, we expect the intermediary configuration file hash reported to also
 change):
 
 ``` sh
-$ just-mr build helloworld
-INFO: Performing repositories setup
+$ jst build helloworld
 INFO: Found 3 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{}]
+INFO: Requested target 'tutorial//:helloworld' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{}].
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [0d5754a83c7c787b1c4dd717c8588ecef203fb72:16992:x]
@@ -288,14 +290,14 @@ Note that the output binary has changed due to different defaults.
 
 In this tutorial we simply set the correct parameters of the defaults target.
 It is, however, not necessary to remember all the fields of a rule; we can
-always ask `just` to present us the available field names and configuration
+always ask `jst_backend` to present us the available field names and configuration
 variables together with any documentation the rule author provided. For
 this, we use the `describe` subcommand; as we're interested in a target of
 the `rules-cc` repository, which is not the default repository, we also
 have to specify the repository name.
 
 ``` sh
-$ just-mr --main rules-cc describe CC defaults
+$ jst --main rules-cc describe CC defaults
 ```
 
 Of course, the `describe` subcommand works generically on all
@@ -304,7 +306,7 @@ we will get reminded about all the various fields and relevant
 configuration variables of a C++ binary.
 
 ``` sh
-$ just-mr describe helloworld
+$ jst describe helloworld
 ```
 
 
@@ -342,14 +344,15 @@ These files can now be used to create a static library `libgreet.a`. To
 do so, we need to create the following target description in
 `greet/TARGETS`:
 
-``` {.jsonc srcname="greet/TARGETS"}
-{ "greet":
-  { "type": ["@", "rules", "CC", "library"]
-  , "name": ["greet"]
-  , "hdrs": ["greet.hpp"]
-  , "srcs": ["greet.cpp"]
-  , "stage": ["greet"]
-  }
+``` {.jsonnet srcname="greet/TARGETS"}
+{
+  greet: {
+    type: @'rules//CC:library',
+    name: ['greet'],
+    hdrs: ['greet.hpp'],
+    srcs: ['greet.cpp'],
+    stage: ['greet'],
+  },
 }
 ```
 
@@ -358,10 +361,10 @@ Additionally, a library has public headers defined via `"hdrs"` and an
 optional staging directory `"stage"` (default value `"."`). The staging
 directory specifies where the consumer of this library can expect to
 find the library's artifacts. Note that this does not need to reflect
-the location on the file system (i.e., a full-qualified path like
+the location on the file system (i.e., a fully-qualified path like
 `["com", "example", "utils", "greet"]` could be used to distinguish it
 from greeting libraries of other projects). The staging directory does
-not only affect the main artifact `libgreet.a` but also it's
+not only affect the main artifact `libgreet.a` but also its
 *runfiles*, a second set of artifacts, usually those a consumer needs to
 make proper use the actual artifact; in the case of a library, the
 runfiles are its public headers. Hence, the public header will be staged
@@ -380,13 +383,14 @@ int main() {
 The target `"helloworld"` will have a direct dependency to the target
 `"greet"` of the module `"greet"` in the top-level `TARGETS` file:
 
-``` {.jsonc srcname="TARGETS"}
-{ "helloworld":
-  { "type": ["@", "rules", "CC", "binary"]
-  , "name": ["helloworld"]
-  , "srcs": ["main.cpp"]
-  , "private-deps": [["greet", "greet"]]
-  }
+``` {.jsonnet srcname="TARGETS"}
+{
+  helloworld: {
+    type: @'rules//CC:binary',
+    name: ['helloworld'],
+    srcs: ['main.cpp'],
+    'private-deps': [@'//greet:greet'],
+  },
 }
 ```
 
@@ -394,17 +398,13 @@ Note that there is no need to explicitly specify `"greet"`'s public
 headers here as the appropriate artifacts of dependencies are
 automatically added to the inputs of compile and link actions. The new
 binary can be built with the same command as before (no need to rerun
-`just-mr`):
+`jst`):
 
 ``` sh
-$ just-mr build helloworld
-INFO: Performing repositories setup
+$ jst build helloworld
 INFO: Found 3 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","helloworld"]
-INFO: Requested target is [["@","tutorial","","helloworld"],{}]
-INFO: Analysed target [["@","tutorial","","helloworld"],{}]
+INFO: Requested target is 'tutorial//:helloworld' with config: {}
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
-INFO: Building [["@","tutorial","","helloworld"],{}].
 INFO: Processed 4 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
         helloworld [a0e593e4d52e8b3e14863b3cf1f80809143829ca:17664:x]
@@ -415,14 +415,10 @@ To only build the static library target `"greet"` from module `"greet"`,
 run the following command:
 
 ``` sh
-$ just-mr build greet greet
-INFO: Performing repositories setup
+$ jst build greet greet
 INFO: Found 3 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","greet","greet"]
-INFO: Requested target is [["@","tutorial","greet","greet"],{}]
-INFO: Analysed target [["@","tutorial","greet","greet"],{}]
+INFO: Requested target 'tutorial//greet:greet' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
-INFO: Building [["@","tutorial","greet","greet"],{}].
 INFO: Processed 2 actions, 2 cache hits.
 INFO: Artifacts built, logical paths are:
         greet/libgreet.a [83ed406e21f285337b0c9bd5011f56f656bba683:2992:f]
@@ -431,18 +427,15 @@ $
 ```
 
 The omitted (i.e., not shown but still built) runfile is the header file. As
-mentioned in the introduction to `just analyse` this is a typical use of that
+mentioned in the introduction to `jst analyse` this is a typical use of that
 second artifact arrangement. We can also have a look at the other information
 that library provides.
 
 ``` sh
-$ just-mr analyse greet greet
-INFO: Performing repositories setup
+$ jst analyse greet greet
 INFO: Found 3 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","greet","greet"]
-INFO: Requested target is [["@","tutorial","greet","greet"],{}]
-INFO: Analysed target [["@","tutorial","greet","greet"],{}]
-INFO: Result of target [["@","tutorial","greet","greet"],{}]: {
+INFO: Requested target 'tutorial//greet:greet' with config: {}
+INFO: Result of target ['tutorial//greet:greet',{}]: {
         "artifacts": {
           "greet/libgreet.a": {"data":{"id":"d964a2747015935adc5fd7f06bbd910d5dde99e990436be0b1f7034270b5b11d","path":"work/greet/libgreet.a"},"type":"ACTION"}
         },

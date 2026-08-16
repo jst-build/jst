@@ -13,15 +13,15 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Jst-Lock is a tool that encompasses several functionalities related to
-generating and maintaining the **`jst-repo-config`**(5) of a Just
+**`jst-lock`** is a tool that encompasses several functionalities related to
+generating and maintaining the **`jst-repo-config`**(5) of a *jst-build*
 project, centered around multi-repository configuration composition.
 
 The main functionality of the tool is to import declared dependencies from
-other Just projects and generate a repository configuration which can directly
-be used by **`jst`**(1). The imported repositories are renamed in a way that
-no conflicts arise and in a way to remind for which repositories they come as a
-dependency. This mirrors the capabilities of existing tools such as
+other *jst-build* projects and generate a repository configuration that can
+directly be used by **`jst`**(1). The imported repositories are renamed so
+that no conflicts arise, and in a way that records which repository pulled
+them in as a dependency. This mirrors the capabilities of existing tools such as
 **`jst-import-git`**(1) and extends them by features such as implicitly
 allowing multiple imports to take place and supporting imports from sources
 other than Git repositories (e.g., distfiles, local clones, repositories under
@@ -34,7 +34,7 @@ standalone in **`jst-deduplicate-repos`**(1).
 
 The tool performs these operations based on a provided **`jst-lock-config`**(5)
 input file and outputs the resulting configuration file at either an explicitly
-given location or at a location expected by **`jst`**(5).
+given location or at a location expected by **`jst`**(1).
 
 OPTIONS
 =======
@@ -58,7 +58,7 @@ file name does not end in `.in.json`.
 **`--local-build-root`** *`PATH`*  
 Root for local CAS, cache, and build directories. The path will be created if
 it does not exist already.  
-Default: path *`".cache/just"`* in user's home directory.
+Default: path *`".cache/jst"`* in user's home directory.
 
 **`--backend`** *`PATH`*  
 Path to the **`jst_backend`** binary in *`PATH`* or path to the **`jst_backend`** binary.
@@ -83,9 +83,9 @@ For each map entry, the target repository, found by following the bindings from
 a given start repository, after all repositories have been imported, will have
 its workspace root cloned in the specified filesystem directory and its
 description in the output configuration made to point to this clone.  
-The start repository names must be known, i.e., an initial repository or
-declared import, and both the start and target repositories will be kept during
-deduplication.
+The start repository names must be known, i.e., they must be an initial
+repository or a declared import, and both the start and target repositories
+will be kept during deduplication.
 
 See also
 ========

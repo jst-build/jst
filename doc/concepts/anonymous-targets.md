@@ -5,7 +5,7 @@ Motivation
 ----------
 
 Using [Protocol buffers](https://github.com/protocolbuffers/protobuf)
-allows to specify, in a language-independent way, a wire format for
+allows a wire format to be specified in a language-independent way for
 structured data. This is done by using description files from which APIs
 for various languages can be generated. As protocol buffers can contain
 other protocol buffers, the description files themselves have a
@@ -39,7 +39,7 @@ Preliminary remark: action identifiers
 
 Actions are defined as Merkle-tree hash of the contents. As all
 components (input tree, list of output strings, command vector,
-environment, and cache pragma) are given by expressions, that can
+environment, and cache pragma) are given by expressions that can
 quickly be computed. This identifier also defines the notion of equality
 for actions, and hence action artifacts. Recall that equality of
 artifacts is also (implicitly) used in our notion of disjoint map union
@@ -114,7 +114,7 @@ graphs; here we can confidently say "equal" and not only isomorphic:
 due to our preliminary clean up, even the node names are equal. Making
 sure that equal actions produce bit-by-bit equal outputs is the realm of
 [reproducible builds](https://reproducible-builds.org/). The tool can
-support this by appropriate sandboxing, etc, but the rules still have to
+support this by appropriate sandboxing, etc., but the rules still have to
 define actions that don't pick up non-input information like the
 current time, user id, readdir order, etc. Files that are bit-by-bit
 identical will behave in the same way.

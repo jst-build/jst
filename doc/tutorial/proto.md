@@ -1,10 +1,10 @@
 Using protocol buffers
 ======================
 
-The rules *justbuild* uses for itself also support protocol buffers.
+The rules *jst-build* uses for itself also support protocol buffers.
 This tutorial shows how to use those rules and the targets associated
-with them. It is not a tutorial on protocol buffers itself; rather, it
-is assumed that the reader has some knowledge on [protocol
+with them. It is not a tutorial on protocol buffers themselves; rather,
+it is assumed that the reader has some knowledge of [protocol
 buffers](https://developers.google.com/protocol-buffers/).
 
 Setting up the repository configuration
@@ -22,35 +22,41 @@ The `protobuf` repository conveniently contains an
 so we can use this and just add our own target files. We create file
 `repos.template.json` as follows.
 
-``` {.jsonc srcname="repos.template.json"}
-{ "repositories":
-  { "":
-    { "repository":
-      { "type": "zip"
-      , "content": "7af7165b585e4aed714555a747b6822376176ef4"
-      , "fetch": "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.12.4.zip"
-      , "subdir": "protobuf-3.12.4/examples"
+``` {.json srcname="repos.template.json"}
+{
+  "repositories": {
+    "": {
+      "repository": {
+        "type": "zip",
+        "content": "7af7165b585e4aed714555a747b6822376176ef4",
+        "fetch": "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.12.4.zip",
+        "subdir": "protobuf-3.12.4/examples"
+      },
+      "target_root": "tutorial",
+      "bindings": {"rules": "rules-cc"}
+    },
+    "tutorial": {
+      "repository": {
+        "type": "file",
+        "path": "."
       }
-    , "target_root": "tutorial"
-    , "bindings": {"rules": "rules-cc"}
     }
-  , "tutorial": {"repository": {"type": "file", "path": "."}}
   }
 }
 ```
 
 The missing entry `"rules-cc"` refers to our C/C++ build rules provided
-[online](https://github.com/just-buildsystem/rules-cc). These rules
+[online](https://github.com/jst-build/rules-cc). These rules
 support protobuf if the dependency `"protoc"` is provided. To import
 this rule repository including the required transitive dependencies for
-protobuf, the `just-import-git` script of the *justbuild* project can be
+protobuf, the `jst-import-git` script of the *jst-build* project can be
 used with option `--as rules-cc` to generate the actual `repos.json`:
 
 ``` sh
-$ just-import-git -C repos.template.json -b master --as rules-cc https://github.com/just-buildsystem/rules-cc > repos.json
+$ jst-import-git -C repos.template.json -b master --as rules-cc https://github.com/jst-build/rules-cc > repos.json
 ```
 
-To build the example with `just`, the only task is to write targets
+To build the example with `jst`, the only task is to write targets
 files. As that contains a couple of new concepts, we will do this step
 by step.
 
@@ -61,34 +67,31 @@ First, we have to declare the proto library. In this case, it only
 contains the file `addressbook.proto` and has no dependencies. To
 declare the library, create a `TARGETS` file with the following content:
 
-``` {.jsonc srcname="TARGETS"}
-{ "address":
-  { "type": ["@", "rules", "proto", "library"]
-  , "name": ["addressbook"]
-  , "srcs": ["addressbook.proto"]
-  }
+``` {.jsonnet srcname="TARGETS"}
+{
+  address: {
+    type: @'rules//proto:library',
+    name: ['addressbook'],
+    srcs: ['addressbook.proto'],
+  },
 }
 ```
 
 In general, proto libraries could also depend on other proto libraries;
 those would be added to the `"deps"` field.
 
-When building the library, there's very little to do after `just-mr` fetches
+When building the library, there's very little to do after `jst` fetches
 and sets up all the repositories.
 
 ``` sh
-$ just-mr build address
-INFO: Performing repositories setup
+$ jst build address
 INFO: Found 23 repositories involved
 PROG: [ 44%] 0 computed, 1 local, 13 cached, 4 done; 7 fetches ("rules-cc/just/defaults", ...)
 PROG: [ 66%] 0 computed, 1 local, 13 cached, 6 done; 7 fetches ("rules-cc/just/defaults", ...)
 PROG: [ 66%] 0 computed, 1 local, 13 cached, 6 done; 7 fetches ("rules-cc/just/defaults", ...)
 PROG: [ 77%] 0 computed, 1 local, 13 cached, 7 done; 7 fetches ("rules-cc/just/defaults", ...)
-INFO: Setup finished, exec ["just","build","-C","...","--local-build-root","/tmp/proto","address"]
-INFO: Requested target is [["@","","","address"],{}]
-INFO: Analysed target [["@","","","address"],{}]
+INFO: Requested target '""//:address' with config: {}
 INFO: Discovered 0 actions, 0 tree overlays, 0 trees, 0 blobs
-INFO: Building [["@","","","address"],{}].
 INFO: Processed 0 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
 $
@@ -107,12 +110,10 @@ for that target. A proto library simply provides the dependency
 structure of the `.proto` files.
 
 ``` sh
-$ just-mr analyse --dump-nodes - address
-INFO: Performing repositories setup
+$ jst analyse --dump-nodes - address
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","--dump-nodes","-","address"]
-INFO: Requested target is [["@","","","address"],{}]
-INFO: Result of target [["@","","","address"],{}]: {
+INFO: Requested target '""//:address' with config: {}
+INFO: Result of target ['""//:address',{}]: {
         "artifacts": {
         },
         "provides": {
@@ -123,7 +124,7 @@ INFO: Result of target [["@","","","address"],{}]: {
         "runfiles": {
         }
       }
-INFO: Target nodes of target [["@","","","address"],{}]:
+INFO: Target nodes of target ['""//:address',{}]:
 {
   "6bcfb07e77f4d00f84d4c38bff64b92e0a1cf07399bd0987250eaef1b06b0b50": {
     "node_type": "library",
@@ -186,20 +187,21 @@ Using proto libraries requires, as discussed, bindings for the abstract
 names. Fortunately, our `CC` rules are aware of proto libraries, so we
 can simply use them. Our target file hence continues as follows.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "add_person":
-  { "type": ["@", "rules", "CC", "binary"]
-  , "name": ["add_person"]
-  , "srcs": ["add_person.cc"]
-  , "private-proto": ["address"]
-  }
-, "list_people":
-  { "type": ["@", "rules", "CC", "binary"]
-  , "name": ["list_people"]
-  , "srcs": ["list_people.cc"]
-  , "private-proto": ["address"]
-  }
+  add_person: {
+    type: @'rules//CC:binary',
+    name: ['add_person'],
+    srcs: ['add_person.cc'],
+    'private-proto': ['address'],
+  },
+
+  list_people: {
+    type: @'rules//CC:binary',
+    name: ['list_people'],
+    srcs: ['list_people.cc'],
+    'private-proto': ['address'],
+  },
 ...
 ```
 
@@ -209,17 +211,13 @@ of time, as the proto compiler has to be built. But in follow-up builds,
 also in different projects, the target-level cache is filled already.
 
 ``` sh
-$ just-mr build add_person
+$ jst build add_person
 [...]
-$ just-mr build add_person
-INFO: Performing repositories setup
+$ jst build add_person
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","add_person"]
-INFO: Requested target is [["@","","","add_person"],{}]
-INFO: Analysed target [["@","","","add_person"],{}]
+INFO: Requested target '""//:add_person' with config: {}
 INFO: Export targets found: 2 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 5 actions, 0 tree overlays, 2 trees, 0 blobs
-INFO: Building [["@","","","add_person"],{}].
 INFO: Processed 5 actions, 5 cache hits.
 INFO: Artifacts built, logical paths are:
         add_person [bca89ed8465e81c629d689b66c71deca138e2c27:2847912:x]
@@ -232,12 +230,10 @@ are still the two actions we expect: a compile action and a link action.
 replaced by `"..."` for clarity.)
 
 ``` sh
-$ just-mr analyse add_person --dump-actions -
-INFO: Performing repositories setup
+$ jst analyse add_person --dump-actions -
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","add_person","--dump-actions","-"]
-INFO: Requested target is [["@","","","add_person"],{}]
-INFO: Result of target [["@","","","add_person"],{}]: {
+INFO: Requested target '""//:add_person' with config: {}
+INFO: Result of target ['""//:add_person',{}]: {
         "artifacts": {
           "add_person": {"data":{"id":"cb403cfeb7af26f83cb268056847f465d330ac44f7a563788305436b2640df2e","path":"work/add_person"},"type":"ACTION"}
         },
@@ -259,7 +255,7 @@ INFO: Result of target [["@","","","add_person"],{}]: {
         "runfiles": {
         }
       }
-INFO: Actions for target [["@","","","add_person"],{}]:
+INFO: Actions for target ['""//:add_person'],{}]:
 [
   {
     "command": ["c++","-O2",...,"-I","work","-isystem","include","-c","work/add_person.cc","-o","work/add_person.o"],
@@ -294,12 +290,10 @@ the one anonymous target, we find again the abstract node we discussed
 earlier.
 
 ``` sh
-$ just-mr analyse add_person --dump-targets -
-INFO: Performing repositories setup
+$ jst analyse add_person --dump-targets -
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","add_person","--dump-targets","-"]
-INFO: Requested target is [["@","","","add_person"],{}]
-INFO: Result of target [["@","","","add_person"],{}]: {
+INFO: Requested target '""//:add_person' with config: {}
+INFO: Result of target ['""//:add_person',{}]: {
         "artifacts": {
           "add_person": {"data":{"id":"cb403cfeb7af26f83cb268056847f465d330ac44f7a563788305436b2640df2e","path":"work/add_person"},"type":"ACTION"}
         },
@@ -376,20 +370,20 @@ and then simply reflecting the values of that target. In fact, we could
 simply use an empty library with a public `proto` dependency for this
 purpose.
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "address proto library":
-  {"type": ["@", "rules", "CC", "library"], "proto": ["address"]}
+  address_proto_library: {
+    type: @'rules//CC:library',
+    proto: ['address'],
+  },
 ...
 ```
 
 ``` sh
-$ just-mr analyse 'address proto library'
-INFO: Performing repositories setup
+$ jst analyse address_proto_library
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","address proto library"]
-INFO: Requested target is [["@","","","address proto library"],{}]
-INFO: Result of target [["@","","","address proto library"],{}]: {
+INFO: Requested target '""//:address_proto_library' with config: {}
+INFO: Result of target ['""//:address_proto_library',{}]: {
         "artifacts": {
         },
         "provides": {
@@ -426,29 +420,26 @@ the `"file_gen"` rule. For debugging a potentially failing test, we also
 keep the intermediate files the test generates. Add to the top-level
 `TARGETS` file the following content:
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "test.sh":
-  { "type": "file_gen"
-  , "name": "test.sh"
-  , "data":
-    { "type": "join"
-    , "separator": "\n"
-    , "$1":
-      [ "set -e"
-      , "(echo 12345; echo 'John Doe'; echo 'jdoe@example.org'; echo) | ./add_person addressbook.data"
-      , "./list_people addressbook.data > out.txt"
-      , "grep Doe out.txt"
-      ]
-    }
-  }
-, "test":
-  { "type": ["@", "rules", "shell/test", "script"]
-  , "name": ["read-write-test"]
-  , "test": ["test.sh"]
-  , "deps": ["add_person", "list_people"]
-  , "keep": ["addressbook.data", "out.txt"]
-  }
+  'test.sh': {
+    type: 'file_gen',
+    name: 'test.sh',
+    data: |||
+      set -e
+      (echo 12345; echo 'John Doe'; echo 'jdoe@example.org'; echo) | ./add_person addressbook.data
+      ./list_people addressbook.data > out.txt
+      grep Doe out.txt
+    |||,
+  },
+
+  test: {
+    type: @'rules//shell/test:script',
+    name: ['read-write-test'],
+    test: ['test.sh'],
+    deps: ['add_person', 'list_people'],
+    keep: ['addressbook.data', 'out.txt'],
+  },
 ...
 ```
 
@@ -460,12 +451,10 @@ library. And, indeed, analysing the test, we get the expected additional
 targets and the one anonymous target is reused by both binaries.
 
 ``` sh
-$ just-mr analyse test --dump-targets -
-INFO: Performing repositories setup
+$ jst analyse test --dump-targets -
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","analyse","-C","...","test","--dump-targets","-"]
-INFO: Requested target is [["@","","","test"],{}]
-INFO: Result of target [["@","","","test"],{}]: {
+INFO: Requested target '""//:test' with config: {}
+INFO: Result of target ['""//:test',{}]: {
         "artifacts": {
           "pwd": {"data":{"id":"73744cdcd8be5082a6960ec0cf8c929d2a9cd0dd65860e3458901c49c8e4744f","path":"pwd"},"type":"ACTION"},
           "result": {"data":{"id":"73744cdcd8be5082a6960ec0cf8c929d2a9cd0dd65860e3458901c49c8e4744f","path":"result"},"type":"ACTION"},
@@ -541,16 +530,12 @@ $
 Finally, the test passes and the output is as expected.
 
 ``` sh
-$ just-mr build test -P work/out.txt
-INFO: Performing repositories setup
+$ jst build test -P work/out.txt
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","build","-C","...","test","-P","work/out.txt"]
-INFO: Requested target is [["@","","","test"],{}]
-INFO: Analysed target [["@","","","test"],{}]
+INFO: Requested target '""//:test' with config: {}
 INFO: Export targets found: 2 cached, 0 uncached, 0 not eligible for caching
 INFO: Target tainted ["test"].
 INFO: Discovered 8 actions, 0 tree overlays, 5 trees, 1 blobs
-INFO: Building [["@","","","test"],{}].
 INFO: Processed 8 actions, 5 cache hits.
 INFO: Artifacts built, logical paths are:
         pwd [9006e78b54c8f3118918d2d471c79745ffa0c8a0:311:f]
@@ -578,33 +563,29 @@ Finally, let's look at how debugging using protobufs looks like. In the root
 together with the target to stage its respective debug artifacts (as described
 in the chapter on [*Debugging*](./hello-world.md)).
 
-``` {.jsonc srcname="TARGETS"}
+``` {.jsonnet srcname="TARGETS"}
 ...
-, "list_people debug":
-  { "type": "configure"
-  , "target": "list_people"
-  , "config": {"type": "'", "$1": {"DEBUG": {"USE_DEBUG_FISSION": false}}}
-  }
-, "list_people debug staged":
-  { "type": ["@", "rules", "CC", "install-with-deps"]
-  , "targets": ["list_people debug"]
-  }
+  list_people_debug: {
+    type: 'configure',
+    target: 'list_people',
+    config: {DEBUG: {USE_DEBUG_FISSION: false}},
+  },
+
+  list_people_debug_staged: {
+    type: @'rules//CC:install-with-deps',
+    targets: ['list_people_debug'],
+  },
 ...
 ```
 
 The debugging target can then be installed to a directory of our choosing.
 
 ``` sh
-$ just-mr install "list_people debug staged" -o .ext/debug
-INFO: Performing repositories setup
+$ jst install list_people_debug_staged -o .ext/debug
 INFO: Found 23 repositories involved
-INFO: Setup finished, exec ["just","install","-C","...","list_people debug staged","-o",".ext/debug"]
-INFO: Requested target is [["@","","","list_people debug staged"],{}]
-INFO: Analysed target [["@","","","list_people debug staged"],{}]
+INFO: Requested target '""//:list_people_debug_staged' with config: {}
 INFO: Export targets found: 0 cached, 98 uncached, 0 not eligible for caching
 INFO: Discovered 447 actions, 0 tree overlays, 99 trees, 1 blobs
-INFO: Building [["@","","","list_people debug staged"],{}].
-[...]
 INFO: Processed 447 actions, 1 cache hits.
 INFO: Artifacts can be found in:
         /tmp/tutorial/.ext/debug/bin/list_people [71165d3aed4491169ed8bb8e783a9bbc15b9e9b6:46902576:x]
@@ -654,7 +635,7 @@ In order to debug now this binary, one can, for example, use the
 input database for the `list_people` binary.
 
 ``` sh
-$ just-mr install test -o .ext/test_data
+$ jst install test -o .ext/test_data
 [...]
 $ cd .ext/debug
 $ gdb --args bin/list_people ../test_data/work/addressbook.data

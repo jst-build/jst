@@ -62,7 +62,7 @@ Example:
 `"install"`
 -----------
 
-The `"install"` rules allows to stage artifacts (and runfiles) of other
+The `"install"` rule allows staging artifacts (and runfiles) of other
 targets in a different way. More precisely, a new stage (i.e., map of
 artifacts with keys treated as file names) is constructed in the
 following way.
@@ -111,7 +111,7 @@ Any provided information of the dependencies is discarded.
 `"generic"`
 -----------
 
-The `"generic"` rules allows to define artifacts as the output of an
+The `"generic"` rule allows artifacts to be defined as the output of an
 action. This is mainly useful for ad-hoc constructions; for anything
 occurring more often, a proper user-defined rule is usually the better
 choice.
@@ -172,7 +172,7 @@ empty.
 `"file_gen"`
 ------------
 
-The `"file_gen"` rule allows to specify a file with a given content. To
+The `"file_gen"` rule allows a file with given content to be specified. To
 be able to accurately report about file names of artifacts or runfiles
 of other targets, they can be specified in the field `"deps"` which has
 to evaluate to a list of targets. The names of the artifacts and
@@ -207,7 +207,7 @@ empty.
 `"tree"`
 --------
 
-The `"tree"` rule allows to specify a tree out of the artifact stage of
+The `"tree"` rule allows a tree to be specified out of the artifact stage of
 given targets. More precisely, the deps field `"deps"` has to evaluate
 to a list of targets. For each target, runfiles and artifacts are
 overlayed in an artifacts-win fashion and the union of the resulting
@@ -257,7 +257,7 @@ Example:
 `"symlink"`
 ------------
 
-The `"symlink"` rule allows to specify a non-upwards symbolic link with a
+The `"symlink"` rule allows a non-upwards symbolic link to be specified with a
 given link target. To be able to accurately report about file names of
 artifacts or runfiles of other targets, they can be specified in the field
 `"deps"` which has to evaluate to a list of targets. The names of the
@@ -286,7 +286,7 @@ a non-upwards path). The provides map is empty.
 `"configure"`
 -------------
 
-The `"configure"` rule allows to configure a target with a given
+The `"configure"` rule allows a target to be configured with a given
 configuration. The field `"target"` is evaluated and the result of the
 evaluation must name a single target (not a list). The `"config"` field
 is evaluated and must result in a map, which is used as configuration overlay

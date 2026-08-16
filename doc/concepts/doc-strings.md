@@ -1,7 +1,7 @@
-Documentation of build rules, expressions, etc
-==============================================
+Documentation of build rules, expressions, etc.
+===============================================
 
-Build rules can obtain a non-trivial complexity. This is especially true
+Build rules can reach a non-trivial complexity. This is especially true
 if several rules have to exist for slightly different use cases, or if
 the rule supports many different fields. Therefore, documentation of the
 rules (and also expressions for the benefit of rule authors) is
@@ -15,7 +15,7 @@ Multi-line strings in JSON
 --------------------------
 
 In JSON, the newline character is encoded specially and not taken
-literally; also, there is not implicit joining of string literals. So,
+literally; also, there is no implicit joining of string literals. So,
 in order to also have documentation readable in the JSON representation
 itself, instead of single strings, we take arrays of strings, with the
 understanding that they describe the strings obtained by joining the
@@ -44,9 +44,9 @@ array of strings describing the respective variable. `"artifacts_doc"` is
 an array of strings describing the artifacts produced by the rule.
 `"runfiles_doc"` is an array of strings describing the runfiles produced
 by this rule. Finally, `"provides_doc"` is a map describing (some of) the
-providers by that rule; as opposed to fields or config variables there
+providers of that rule; as opposed to fields or config variables, there
 is no authoritative list of providers given elsewhere in the rule, so it
-is up to the rule author to give an accurate documentation on the
+is up to the rule author to give accurate documentation of the
 provided data.
 
 ### Example
@@ -125,16 +125,16 @@ Export targets
 
 As export targets play the role of interfaces between repositories, it
 is important that they be documented as well. Again, export targets are
-described as a JSON object with fixed set of keys and we use the keys
+described as a JSON object with a fixed set of keys, and we use the keys
 `"doc"` and `"config_doc"` for documentation. Here `"doc"` is an array of
-strings describing the targeted in general and `"config_doc"` is a map
+strings describing the target in general and `"config_doc"` is a map
 from (some of) the variables of the `"flexible_config"` to an array of
 strings describing this parameter.
 
 Configure targets
 -----------------
 
-As configure targets often serve as internal interface to external
+As configure targets often serve as an internal interface to external
 export targets (e.g., in order to set a needed configuration), we
 support documentation here as well. As configure targets, being
 built-in, have a fixed set of fields, a `"doc"` field can be used
@@ -144,18 +144,18 @@ array of strings describing the target in general.
 Presentation of the documentation
 ---------------------------------
 
-As all documentation are just values (that need not be evaluated) in
-JSON objects, it is easy to write tool rendering documentation pages for
-rules, etc, and we expect those tools to be written independently.
-Nevertheless, for the benefit of developers using rules from a git-tree
+As all documentation can be easily evaluated to JSON objects (via
+`eval`), it is easy to write tools rendering documentation pages
+for rules, etc., and we expect those tools to be written independently.
+Nevertheless, for the benefit of developers using rules from git-tree
 roots that might not be checked out, there is a subcommand `describe`
-which takes a target specification like the `analyze` command, looks up
+which takes a target specification like the `analyse` command, looks up
 the corresponding rule and describes it fully, i.e., prints in
 human-readable form
 
  - the documentation for the rule
  - all the fields available for that rule together with
-    - their type (`"string_fields"`, `"target_fields"`, etc), and
+    - their type (`"string_fields"`, `"target_fields"`, etc.), and
     - their documentation,
  - all the configuration variables of the rule with their documentation
    (if given), and

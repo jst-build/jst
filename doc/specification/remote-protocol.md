@@ -1,10 +1,10 @@
-Specification of the just Remote Execution Protocol
-===================================================
+Specification of the jst Remote Execution Protocol
+==================================================
 
 Introduction
 ------------
 
-just supports remote execution of actions across multiple machines. As
+`jst` supports remote execution of actions across multiple machines. As
 such, it makes use of a remote execution protocol. The basis of our
 protocol is the open-source gRPC [remote execution
 API](https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto).
@@ -18,15 +18,15 @@ git content as much as possible by avoiding unnecessary conversion and
 communication overhead.
 
 In the following sections, we explain which modifications we applied to
-the original protocol and which requirements we have to the remote
-execution service to seamlessly work with just.
+the original protocol and which requirements we place on the remote
+execution service to seamlessly work with `jst`.
 
-just Protocol Description
--------------------------
+jst Protocol Description
+------------------------
 
 ### git Blob and Tree Hashes
 
-In order to be able work with git hashes, both client side as well as
+In order to be able to work with git hashes, both client side as well as
 server side need to be extended to support the regular git hash
 functions for blobs and trees:
 
@@ -51,8 +51,8 @@ documentation](https://git-scm.com/book/en/v2/git-Internals-git-Objects).
 
 Since git hashes blob content differently from trees, this type of
 information has to be transmitted in addition to the content and the
-hash. To this aim, just prefixes the git hash values passed over the
-wire with a single-byte marker. Thus allowing the remote side to
+hash. To this aim, `jst` prefixes the git hash values passed over the
+wire with a single-byte marker, thus allowing the remote side to
 distinguish a blob from a tree without inspecting the (potentially
 large) content. The markers are
 

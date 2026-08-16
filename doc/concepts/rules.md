@@ -539,7 +539,7 @@ In the simple case of patching, the resulting file is indeed the only
 information the consumer of that target needs; in fact, the main point
 was that the resulting target could be a drop-in replacement of a source
 file. A typical rule, however, defines something like a library and a
-library is much more, than just the actual library file and the public
+library is much more than just the actual library file and the public
 headers: a library may depend on other libraries; therefore, in order to
 use it, we need
 

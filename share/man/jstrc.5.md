@@ -40,7 +40,7 @@ a config file contains relative paths, those will be resolved relative
 to the specified base. If omitted, the default value *`"."`* is used.
 
 The jstrc format
---------------------
+----------------
 
 The jstrc is given by a JSON object.
 
@@ -83,7 +83,7 @@ The jstrc is given by a JSON object.
    default *`["env", "--"]`* is assumed.
 
  - The value for the key *`"log limit"`*, if given, sets the default
-   value for the log limit, that can be overridden by the command-line
+   value for the log limit, which can be overridden by the command-line
    options.
 
  - The value for the key *`"restrict stderr log limit"`*, if given,
@@ -143,7 +143,7 @@ The jstrc is given by a JSON object.
    time is doubled; this number specifies the maximal time between
    attempts of an rpc, not counting the jitter.
 
- - The value for the key *`"just files"`* is a JSON object. The keys correspond
+ - The value for the key *`"jst files"`* is a JSON object. The keys correspond
    to options that some **`jst_backend`** subcommands accept and require a file as
    argument. For each key, the value is a list of location objects. When
    **`jst`** is used as a launcher and the invoked subcommand is known to
@@ -151,14 +151,11 @@ The jstrc is given by a JSON object.
    the first matching entry, if any. The supported options are *`"config"`*
    and *`endpoint-configuration`*.
 
- - The value for the key *`"backend args"`* is a JSON object. Its keys are
+ - The value for the key *`"jst args"`* is a JSON object. Its keys are
    **`jst_backend`** subcommands and its value is a JSON list of strings. For the
    corresponding subcommand, these strings are prefixed to the **`jst_backend`**
    argument vector (after all other options provided through the rc file),
    if **`jst`** is used as a launcher.
-
- - The value for the key *`"just args"`* is used as a legacy fallback, in the
-   case that *`"backend args"`* is not set.
 
  - The value for the key *`"rc files"`*, if given, is a list of
    location objects. For those location objects that refer to
@@ -186,7 +183,7 @@ The jstrc is given by a JSON object.
      followed by the base name of the invocation logging directory.
    - *`"metadata"`* A file name specifying where in the invocation-log
      directory the metadata file should be stored. If not given,
-     no metadata file will be written. See **`just-profile`**(5) for
+     no metadata file will be written. See **`jst-profile`**(5) for
      details of the format.
    - *`"context variables"`* An optional list of environment variables,
      which are captured at invocation time and stored as key-value pairs
@@ -215,52 +212,124 @@ EXAMPLE
 
 An example jstrc file could look like the following:
 
-``` jsonc
-{ "rc files":
-  [ {"root": "workspace", "path": "rc.json"}
-  , {"root": "workspace", "path": "etc/rc.json"}
-  ]
-, "config lookup order":
-  [ {"root": "workspace", "path": "repos.json"}
-  , {"root": "workspace", "path": "etc/repos.json"}
-  , {"root": "home", "path": ".just-repos.json"}
-  , {"root": "system", "path": "etc/just-repos.json"}
-  ]
-, "invocation log":
-  { "directory": {"root": "system", "path": "var/opt/just-invocation"}
-  , "metadata": "metadata.json"
-  , "--dump-graph": "graph.json"
-  , "--profile": "profile.json"
-  }
-, "absent":
-  [ {"root": "workspace", "path": "etc/absent.json"}
-  , {"root": "home", "path": ".just-absent"}
-  ]
-, "local build root": {"root": "home", "path": ".cache/just"}
-, "checkout locations": {"root": "home", "path": ".just-local.json"}
-, "local launcher": ["env", "--"]
-, "log limit": 5
-, "restrict stderr log limit": 4
-, "log files": [{"root": "home", "path": ".log/just/latest-invocation"}]
-, "distdirs": [{"root": "home", "path": ".distfiles"}]
-, "backend": {"root": "system", "path": "usr/bin/jst_backend"}
-, "git": {"root": "system", "path": "usr/bin/git"}
-, "remote execution": {"address": "10.0.0.1:8980"}
-, "remote-execution properties": ["image:development-v1.2.3"]
-, "authentication":
-  { "ca cert": {"root": "home", "path": ".certs/ca.crt"}
-  , "client cert": {"root": "home", "path": ".certs/client.crt"}
-  , "client key": {"root": "home", "path": ".certs/client.key"}
-  }
-, "backend args":
-  { "build": ["-J", "64"]
-  , "install": ["-J", "64", "--remember"]
-  , "install-cas": ["--remember"]
-  }
-, "just files":
-  { "config":
-    [ {"root": "workspace", "path": "etc/config.json"}
-    , {"root": "home", "path": ".just-config"}
+```json
+{
+  "rc files": [
+    {
+      "root": "workspace",
+      "path": "rc.json"
+    },
+    {
+      "root": "workspace",
+      "path": "etc/rc.json"
+    }
+  ],
+  "config lookup order": [
+    {
+      "root": "workspace",
+      "path": "repos.json"
+    },
+    {
+      "root": "workspace",
+      "path": "etc/repos.json"
+    },
+    {
+      "root": "home",
+      "path": ".jst-repos.json"
+    },
+    {
+      "root": "system",
+      "path": "etc/jst-repos.json"
+    }
+  ],
+  "invocation log": {
+    "directory": {
+      "root": "system",
+      "path": "var/opt/jst-invocation"
+    },
+    "metadata": "metadata.json",
+    "--dump-graph": "graph.json",
+    "--profile": "profile.json"
+  },
+  "absent": [
+    {
+      "root": "workspace",
+      "path": "etc/absent.json"
+    },
+    {
+      "root": "home",
+      "path": ".jst-absent"
+    }
+  ],
+  "local build root": {
+    "root": "home",
+    "path": ".cache/jst"
+  },
+  "checkout locations": {
+    "root": "home",
+    "path": ".jst-local.json"
+  },
+  "local launcher": [
+    "env",
+    "--"
+  ],
+  "log limit": 5,
+  "restrict stderr log limit": 4,
+  "log files": [
+    {
+      "root": "home",
+      "path": ".log/jst/latest-invocation"
+    }
+  ],
+  "distdirs": [
+    {
+      "root": "home",
+      "path": ".distfiles"
+    }
+  ],
+  "backend": {
+    "root": "system",
+    "path": "usr/bin/jst_backend"
+  },
+  "git": {
+    "root": "system",
+    "path": "usr/bin/git"
+  },
+  "remote execution": {
+    "address": "10.0.0.1:8980"
+  },
+  "remote-execution properties": [
+    "image:development-v1.2.3"
+  ],
+  "authentication": {
+    "ca cert": {
+      "root": "home",
+      "path": ".certs/ca.crt"
+    },
+    "client cert": {
+      "root": "home",
+      "path": ".certs/client.crt"
+    },
+    "client key": {
+      "root": "home",
+      "path": ".certs/client.key"
+    }
+  },
+  "jst args": {
+    "build": ["-J", "64"],
+    "install": ["-J", "64", "--remember"],
+    "install-cas": ["--remember"]
+  },
+  "jst files": {
+    "config": [
+      {
+        "root": "workspace",
+        "path": "etc/config.json"
+      },
+      {
+        "root": "home",
+        "path": ".jst-config"
+      }
     ]
   }
 }

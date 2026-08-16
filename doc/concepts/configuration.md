@@ -10,7 +10,7 @@ example,
  - it can be a special build for debugging, profiling, etc.
 
 So, a target (like a library described by header files, source files,
-dependencies, etc) has some additional input. As those inputs are
+dependencies, etc.) has some additional input. As those inputs are
 typically of a global nature (e.g., a profiling build usually wants all
 involved libraries to be built for profiling), this additional input,
 called "configuration" follows the same approach as the `UNIX`
@@ -95,9 +95,9 @@ A target is influenced by the configuration through
 
 Restricting the configuration to this collection of variables yields the
 effective configuration for that target-configuration pair. The
-`--dump-targets` option of the `analyse` subcommand allows to inspect
+`--dump-targets` option of the `analyse` subcommand allows inspection of
 the effective configurations of all involved targets. Due to
 configuration transitions, a target can be analyzed in more than one
-configuration, e.g., if a library is used both, for a tool needed during
+configuration, e.g., if a library is used both for a tool needed during
 the build, as well as for the final binary cross-compiled for a
 different target architecture.
