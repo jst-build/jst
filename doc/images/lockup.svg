@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 241 113" width="241" height="113" fill="none" role="img" aria-label="jst -- Crane hook">
+  <title>jst</title>
+  <g transform="translate(8,13)">
+    <path d="M5 0 H73"
+          fill="none" stroke="#F57C00" stroke-width="26"
+          stroke-linecap="round"/>
+    <path d="M10 13 V28" fill="none" stroke="#F57C00" stroke-width="7"/>
+    <path d="M10 27 V44 A9 9 0 1 0 27.5 40.9" fill="none"
+          stroke="#F57C00" stroke-width="11"/>
+    <g fill="#263238">
+    <path d="M63 0 V62 A25 25 0 0 1 13 62" fill="none" stroke="#263238" stroke-width="26"/>
+    <path d="M138 31.5 A18.5 18.5 0 1 0 119.5 50 A18.5 18.5 0 1 1 101 68.5"
+          fill="none" stroke="#263238" stroke-width="26"/>
+    <path d="M157 0 H233 V26 H208 V100 H182 V26 H157 Z"/>
+  </g>
+  </g>
+</svg>
