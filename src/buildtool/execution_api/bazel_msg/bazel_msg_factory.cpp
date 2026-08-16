@@ -44,9 +44,12 @@ template <class T>
     -> std::optional<std::string> {
     try {
         std::string content(message.ByteSizeLong(), '\0');
-        message.SerializeToArray(content.data(),
-                                 gsl::narrow<int>(content.size()));
-        return content;
+        if (message.SerializeToArray(content.data(),
+                                     gsl::narrow<int>(content.size()))) {
+
+            return content;
+        }
+        return std::nullopt;
     } catch (...) {
         return std::nullopt;
     }

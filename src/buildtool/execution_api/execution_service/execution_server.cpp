@@ -60,11 +60,11 @@ void SetTimeStamp(
     t->set_nanos(static_cast<int32_t>(nanos % k_nanoseconds_per_second));
 }
 
-void UpdateTimeStamp(
-    gsl::not_null<::google::longrunning::Operation*> const& op) {
+[[nodiscard]] auto UpdateTimeStamp(
+    gsl::not_null<::google::longrunning::Operation*> const& op) -> bool {
     ::google::protobuf::Timestamp t;
     SetTimeStamp(&t, std::chrono::high_resolution_clock::now());
-    op->mutable_metadata()->PackFrom(t);
+    return op->mutable_metadata()->PackFrom(t);
 }
 
 [[nodiscard]] auto ToBazelActionResult(
@@ -211,17 +211,22 @@ auto ExecutionServiceImpl::ToBazelExecuteResponse(
     return bazel_response;
 }
 
-void ExecutionServiceImpl::WriteResponse(
+auto ExecutionServiceImpl::WriteResponse(
     ::bazel_re::ExecuteResponse const& execute_response,
     ::grpc::ServerWriter<::google::longrunning::Operation>* writer,
-    ::google::longrunning::Operation&& op) noexcept {
+    ::google::longrunning::Operation&& op) noexcept -> bool {
     // send response to the client
-    op.mutable_response()->PackFrom(execute_response);
+    if (not op.mutable_response()->PackFrom(execute_response)) {
+        return false;
+    }
     op.set_done(true);
-    UpdateTimeStamp(&op);
+    if (not UpdateTimeStamp(&op)) {
+        return false;
+    }
 
     op_cache_.Set(op.name(), op);
     writer->Write(op);
+    return true;
 }
 
 auto ExecutionServiceImpl::Execute(
@@ -284,7 +289,11 @@ auto ExecutionServiceImpl::Execute(
     auto const& op_name = request->action_digest().hash();
     op.set_name(op_name);
     op.set_done(false);
-    UpdateTimeStamp(&op);
+    if (not UpdateTimeStamp(&op)) {
+        const auto* const str = "Updating time stamp failed";
+        logger_.Emit(LogLevel::Error, "{}", str);
+        return ::grpc::Status{grpc::StatusCode::INTERNAL, str};
+    }
     op_cache_.Set(op_name, op);
     writer->Write(op);
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -338,7 +347,12 @@ auto ExecutionServiceImpl::Execute(
         }
     }
 
-    WriteResponse(response, writer, std::move(op));
+    if (not WriteResponse(response, writer, std::move(op))) {
+        const auto* const str = "Writing response failed";
+        logger_.Emit(LogLevel::Error, "{}", str);
+        return ::grpc::Status{grpc::StatusCode::INTERNAL, str};
+    }
+
     return ::grpc::Status::OK;
 }
 

@@ -67,14 +67,11 @@
     "absl": {
       "repository": {
         "type": "archive",
-        "content": "b5cc395c49afa2a2dec1d9c4072500494b126974",
-        "fetch": "https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz",
-        "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
-        "sha512": "bd2cca8f007f2eee66f51c95a979371622b850ceb2ce3608d00ba826f7c494a1da0fba3c1427728f2c173fe50d59b701da35c2c9fdad2752a5a49746b1c8ef31",
-        "subdir": "abseil-cpp-20240722.0",
-        "mirrors": [
-          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/abseil/abseil-cpp/archive/20240722.0.tar.gz"
-        ]
+        "content": "5c4625ab1a6b191964f90bb5d4efd3c35cf891ae",
+        "fetch": "https://github.com/abseil/abseil-cpp/releases/download/20260526.0/abseil-cpp-20260526.0.tar.gz",
+        "sha256": "6e1aee535473414164bf83e4ebc40240dec71a4701f8a642d906e95bea1aea0c",
+        "sha512": "fe85ebdd451b126117df1c3a312a1d5b29fc3557d07bb248854639b2a0180e91003fd2331a0d938f4ffeae8966f1df67a488fa3bdab072e840bbfdc6e8a4f01b",
+        "subdir": "abseil-cpp-20260526.0"
       },
       "target_root": "absl/targets",
       "bindings": {
@@ -86,8 +83,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "absl/v20240722.0",
-        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "branch": "absl/v20260526.0",
+        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
         "subdir": "patches"
       }
     },
@@ -103,8 +100,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "absl/v20240722.0",
-        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "branch": "absl/v20260526.0",
+        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
         "subdir": "config"
       }
     },
@@ -112,22 +109,19 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "absl/v20240722.0",
-        "commit": "47f32204e99397b12e430afc0f5f32cb015a297c",
+        "branch": "absl/v20260526.0",
+        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
         "subdir": "targets"
       }
     },
     "ssl": {
       "repository": {
         "type": "archive",
-        "content": "d9ff3aa3d22337e93cb0a0e2df00ca8abea2fac6",
-        "fetch": "https://github.com/google/boringssl/archive/dec0d8f681348af8bb675e07bd89989665fca8bc.tar.gz",
-        "sha256": "2f12c33d2cf25a658a1b981fb96923dac87e9175fb20e45db6950ee36c526356",
-        "sha512": "51f91bee640e38ce20c180195de6811b5be7522240faae2b57158fa9c298ed09292ecb09c770df5d4fc6a3100bc2459de4e9d312e315265c1ea7ade347bad3f2",
-        "subdir": "boringssl-dec0d8f681348af8bb675e07bd89989665fca8bc",
-        "mirrors": [
-          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/google/boringssl/archive/dec0d8f681348af8bb675e07bd89989665fca8bc.tar.gz"
-        ]
+        "content": "42beec27e36d954e240b7ae277527b5e4176f9b4",
+        "fetch": "https://github.com/google/boringssl/archive/188ce3c13adb70fc416e7e81c5b8052142e8eb8c.tar.gz",
+        "sha256": "5a23284cf0ab813fd655b9c76bcdc5b906d9be91851749864fb4955c4167d52b",
+        "sha512": "067b09619b74d1824641140600e1c8d91f5411b4a5f5c3892536650a941ef6055b53906ae92f2544ba39196ca3c46aec368c50c23409de317cc32dd2a652d2d6",
+        "subdir": "boringssl-188ce3c13adb70fc416e7e81c5b8052142e8eb8c"
       },
       "target_root": "ssl/targets",
       "bindings": {
@@ -146,8 +140,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "boringssl/dec0d8f6",
-        "commit": "469f043f19e0409fbce28bda5a8d36576e35dfd0",
+        "branch": "boringssl/v0.20260803.0",
+        "commit": "3e83de32512b004b1ac4f8e1df20a1e75f150b7a",
         "subdir": "config"
       }
     },
@@ -155,8 +149,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "boringssl/dec0d8f6",
-        "commit": "469f043f19e0409fbce28bda5a8d36576e35dfd0",
+        "branch": "boringssl/v0.20260803.0",
+        "commit": "3e83de32512b004b1ac4f8e1df20a1e75f150b7a",
         "subdir": "targets"
       }
     },
@@ -226,23 +220,40 @@
     "cares": {
       "repository": {
         "type": "archive",
-        "content": "4237a53f7a5dc1cfb4d04a6b6374f8674c32e271",
-        "fetch": "https://github.com/c-ares/c-ares/releases/download/cares-1_19_1/c-ares-1.19.1.tar.gz",
-        "sha256": "321700399b72ed0e037d0074c629e7741f6b2ec2dda92956abe3e9671d3e268e",
-        "sha512": "466a94efda626e815a6ef7a890637056339f883d549ea6055e289fd8cd2391130e5682c905c0fb3bd7e955af7f6deb793562c170eb0ee066a4a62085a82ba470",
-        "subdir": "c-ares-1.19.1"
+        "content": "3f41ac733a9ef484e6851a06fa66b31a4563bb1b",
+        "fetch": "https://github.com/c-ares/c-ares/releases/download/v1.34.8/c-ares-1.34.8.tar.gz",
+        "sha256": "c222b6d681096f9444d2c4863d2c1174019e27cacca0a4a5c114d36dd7d7bf78",
+        "sha512": "d5997a57fda9b3a3385b1685e6b2f9292c3a1d39bd27579acaabf3d2d33aa5e91bfec5d41c5e51ca6b50dbc1f4346d75e9bfbccf44a494fbd4bc7613b167143c",
+        "subdir": "c-ares-1.34.8"
       },
       "target_root": "cares/targets",
       "bindings": {
-        "rules": "toolchain"
+        "rules": "cares/rules"
+      }
+    },
+    "cares/rules": {
+      "repository": "toolchain",
+      "target_root": "cares/config",
+      "rule_root": "toolchain",
+      "bindings": {
+        "base": "toolchain"
+      }
+    },
+    "cares/config": {
+      "repository": {
+        "type": "git",
+        "repository": "https://github.com/jst-build/imports-cc",
+        "branch": "cares/v1.34.8",
+        "commit": "59fdb5f6b3560d305b492f9c663d5441424aa9f2",
+        "subdir": "config"
       }
     },
     "cares/targets": {
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "cares/v1.19.1",
-        "commit": "86a537176064de338b028104d91585eeb9095eb5",
+        "branch": "cares/v1.34.8",
+        "commit": "59fdb5f6b3560d305b492f9c663d5441424aa9f2",
         "subdir": "targets"
       }
     },
@@ -381,18 +392,16 @@
     "re2": {
       "repository": {
         "type": "archive",
-        "content": "8eebd70d7ebd33ac5d736090cecd7cfe1831b9e3",
-        "fetch": "https://github.com/google/re2/archive/refs/tags/2022-04-01.tar.gz",
-        "sha256": "1ae8ccfdb1066a731bba6ee0881baad5efd2cd661acd9569b689f2586e1a50e9",
-        "sha512": "fc3d7cc1ee6bd771719845566d83ffc8c4e19d838748e842a1e19c7564473c9a0a061bebb3966ffa82de6515346f9bbddc2d94ceb3de89233f58826774bd7ce7",
-        "subdir": "re2-2022-04-01",
-        "mirrors": [
-          "https://storage.googleapis.com/grpc-bazel-mirror/github.com/google/re2/archive/2022-04-01.tar.gz"
-        ]
+        "content": "9c3718ad9b7d8d04b9063995e9395836f3a0d087",
+        "fetch": "https://github.com/google/re2/archive/refs/tags/2025-11-05.tar.gz",
+        "sha256": "87f6029d2f6de8aa023654240a03ada90e876ce9a4676e258dd01ea4c26ffd67",
+        "sha512": "d47f2507500ca7e004db49e30318f8713164cc3b8f28b0bdf5cdd6028985e7da4c9d0133c19fcd8f800bc666b86feb80a5c56e11fa962db72d561fb627272670",
+        "subdir": "re2-2025-11-05"
       },
       "target_root": "re2/targets",
       "bindings": {
-        "rules": "re2/rules"
+        "rules": "re2/rules",
+        "absl": "absl"
       }
     },
     "re2/rules": {
@@ -407,8 +416,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "re2/v2022-04-01",
-        "commit": "de643fc1aa87bed8b7cf7a42af2f91ff1126d528",
+        "branch": "re2/v2025-11-05",
+        "commit": "a6069bcab47edf4260fee2631ce9c2e90a68e8e8",
         "subdir": "config"
       }
     },
@@ -416,8 +425,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "re2/v2022-04-01",
-        "commit": "de643fc1aa87bed8b7cf7a42af2f91ff1126d528",
+        "branch": "re2/v2025-11-05",
+        "commit": "a6069bcab47edf4260fee2631ce9c2e90a68e8e8",
         "subdir": "targets"
       }
     },
@@ -576,11 +585,11 @@
     "protobuf": {
       "repository": {
         "type": "archive",
-        "content": "e8787a2f6d661aaaec426743c4e9667be7c8ba2f",
-        "fetch": "https://github.com/protocolbuffers/protobuf/releases/download/v29.0/protobuf-29.0.tar.gz",
-        "sha256": "10a0d58f39a1a909e95e00e8ba0b5b1dc64d02997f741151953a2b3659f6e78c",
-        "sha512": "c5637486a533557ea909d1f880b0f0064fff0c4665612e023170941310c45bf8e7373d2c67de621824b056530e98792c00799d71ec4ff7b6af9142cdc4cb8dee",
-        "subdir": "protobuf-29.0"
+        "content": "1ebc7df7dfb7f82542975c620baada42c5121efa",
+        "fetch": "https://github.com/protocolbuffers/protobuf/releases/download/v35.1/protobuf-35.1.tar.gz",
+        "sha256": "f0b6838e7522a8da96126d487068c959bc624926368f3024ac8fd03abd0a1ac4",
+        "sha512": "3cf3bd6cf7789fe65b57f3062ca3eebcf1660fbabe2c8c8504382052cb47f3a2b9ea146579a0fde58edacb53fa8c6f9eee3efee4250c9facc872e6cb0755568e",
+        "subdir": "protobuf-35.1"
       },
       "target_root": "protobuf/targets",
       "bindings": {
@@ -601,8 +610,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "protobuf/v29.0",
-        "commit": "7edba982c695f9242ab7591a2fe91d6d98b3d3a3",
+        "branch": "protobuf/v35.1",
+        "commit": "4ac7e0dd9a92b752140357cfeaabc9066e8d22a0",
         "subdir": "config"
       }
     },
@@ -610,19 +619,19 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "protobuf/v29.0",
-        "commit": "7edba982c695f9242ab7591a2fe91d6d98b3d3a3",
+        "branch": "protobuf/v35.1",
+        "commit": "4ac7e0dd9a92b752140357cfeaabc9066e8d22a0",
         "subdir": "targets"
       }
     },
     "grpc": {
       "repository": {
         "type": "archive",
-        "content": "87c37bc5be5d6ded368667d02958d488b94d6143",
-        "fetch": "https://github.com/grpc/grpc/archive/refs/tags/v1.70.2.tar.gz",
-        "sha256": "92f240f7267ed6cd8ba2be4c59a3b5b6ec0c4b4c466071b1e1d62165b25acf64",
-        "sha512": "4afd34b36b4d7c41260abad6d921154a3e7176a7a46de6ae97335697db5d11f61e37b08889c007463fc8f3e800788585f5f7d5b2cec12f89b69fc9bc15efd17f",
-        "subdir": "grpc-1.70.2",
+        "content": "d16a5027f4e5d133c926867711bc782b9d9764e2",
+        "fetch": "https://github.com/grpc/grpc/archive/refs/tags/v1.83.0.tar.gz",
+        "sha256": "90d453393a9d41215df546103b10b33b9566df79cdf6f49dc67f6c4d044d090d",
+        "sha512": "6bc1fa040a5087522f8b8292e00d289105e1343883290432e8327f9bca23248b31c95ef8d6954cad1fc9be7a4c1042cbfedc458da2e11de251e980a44ec753a4",
+        "subdir": "grpc-1.83.0",
         "pragma": {
           "special": "ignore"
         }
@@ -659,8 +668,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "grpc/v1.70.2",
-        "commit": "04689194807b36eddda17d42159641b9febcb3b0",
+        "branch": "grpc/v1.83.0",
+        "commit": "157d8cda229a38e5d543c7a1b6b905b58356add4",
         "subdir": "config"
       }
     },
@@ -668,8 +677,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc.git",
-        "branch": "protobuf/v29.0",
-        "commit": "1d70d764438d7fee2d13a7856c1af00dfab45a62",
+        "branch": "protobuf/v35.1",
+        "commit": "d0601ee16421721b9c7cca10c332a2db8868a81e",
         "subdir": "targets"
       }
     },
@@ -677,8 +686,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "grpc/v1.70.2",
-        "commit": "04689194807b36eddda17d42159641b9febcb3b0",
+        "branch": "grpc/v1.83.0",
+        "commit": "157d8cda229a38e5d543c7a1b6b905b58356add4",
         "subdir": "targets"
       }
     },
@@ -696,8 +705,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
-        "branch": "grpc/v1.70.2",
-        "commit": "59d1325d00dbdb2a9f0558ca09394a1a3080ad28",
+        "branch": "grpc/v1.83.0",
+        "commit": "ddd2c5b07904bb1e48d9befdda4ca95fd97787ca",
         "subdir": "targets"
       }
     },

@@ -30,8 +30,12 @@ void OperationCache::GarbageCollection() {
         std::sort(tmp.begin(), tmp.end(), [](auto const& x, auto const& y) {
             ::google::protobuf::Timestamp tx;
             ::google::protobuf::Timestamp ty;
-            x.second.metadata().UnpackTo(&tx);
-            y.second.metadata().UnpackTo(&ty);
+            if (not x.second.metadata().UnpackTo(&tx)) {
+                tx = ::google::protobuf::Timestamp{};
+            }
+            if (not y.second.metadata().UnpackTo(&ty)) {
+                ty = ::google::protobuf::Timestamp{};
+            }
             return tx.seconds() < ty.seconds();
         });
 

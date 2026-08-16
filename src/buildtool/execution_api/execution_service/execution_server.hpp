@@ -152,10 +152,10 @@ class ExecutionServiceImpl final : public bazel_re::Execution::Service {
         bool legacy_client) const noexcept
         -> expected<::bazel_re::ExecuteResponse, std::string>;
 
-    void WriteResponse(
+    [[nodiscard]] auto WriteResponse(
         ::bazel_re::ExecuteResponse const& execute_response,
         ::grpc::ServerWriter<::google::longrunning::Operation>* writer,
-        ::google::longrunning::Operation&& op) noexcept;
+        ::google::longrunning::Operation&& op) noexcept -> bool;
 };
 
 #endif  // EXECUTION_SERVER_HPP

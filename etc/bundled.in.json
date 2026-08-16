@@ -13,13 +13,13 @@
     },
     {
       "source": "git",
-      "branch": "absl/v20240722.0",
+      "branch": "absl/v20260526.0",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [{"alias": "absl", "map": {"toolchain": "toolchain"}}]
     },
     {
       "source": "git",
-      "branch": "boringssl/dec0d8f6",
+      "branch": "boringssl/v0.20260803.0",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [{"alias": "ssl", "map": {"toolchain": "toolchain"}}]
     },
@@ -37,7 +37,7 @@
     },
     {
       "source": "git",
-      "branch": "cares/v1.19.1",
+      "branch": "cares/v1.34.8",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [{"alias": "cares", "map": {"toolchain": "toolchain"}}]
     },
@@ -73,9 +73,14 @@
     },
     {
       "source": "git",
-      "branch": "re2/v2022-04-01",
+      "branch": "re2/v2025-11-05",
       "url": "https://github.com/jst-build/imports-cc",
-      "repos": [{"alias": "re2", "map": {"toolchain": "toolchain"}}]
+      "repos": [
+        {
+          "alias": "re2",
+          "map": {"toolchain": "toolchain", "absl": "absl"}
+        }
+      ]
     },
     {
       "source": "git",
@@ -129,7 +134,7 @@
     },
     {
       "source": "git",
-      "branch": "protobuf/v29.0",
+      "branch": "protobuf/v35.1",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [
         {
@@ -140,7 +145,7 @@
     },
     {
       "source": "git",
-      "branch": "grpc/v1.70.2",
+      "branch": "grpc/v1.83.0",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [
         {
@@ -159,7 +164,7 @@
     },
     {
       "source": "git",
-      "branch": "grpc/v1.70.2",
+      "branch": "grpc/v1.83.0",
       "url": "https://github.com/jst-build/toolchains-cc",
       "repos": [
         {

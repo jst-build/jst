@@ -232,15 +232,15 @@ auto BazelExecutionClient::ExtractContents(
     // Get execution response Unpacked from Protobufs Any type to the actual
     // type in our case
     auto const& raw_response = operation->response();
-    if (not raw_response.Is<bazel_re::ExecuteResponse>()) {
+    bazel_re::ExecuteResponse exec_response;
+    if (not raw_response.Is<bazel_re::ExecuteResponse>() or
+        not raw_response.UnpackTo(&exec_response)) {
         // Fatal error, the type should be correct
         logger_.Emit(LogLevel::Error, "Corrupted ExecuteResponse");
         response.state = ExecutionResponse::State::Failed;
         return {response, "Corrupted ExecuteResponse"};
     }
 
-    bazel_re::ExecuteResponse exec_response;
-    raw_response.UnpackTo(&exec_response);
     auto status_code = exec_response.status().code();
     if (status_code != grpc::StatusCode::OK) {
         LogExecutionStatus(&logger_, exec_response.status());
@@ -250,8 +250,11 @@ auto BazelExecutionClient::ExtractContents(
         else if (status_code == grpc::StatusCode::FAILED_PRECONDITION) {
             logger_.Emit(LogLevel::Debug, [&exec_response] {
                 std::string text_repr;
-                google::protobuf::TextFormat::PrintToString(exec_response,
-                                                            &text_repr);
+                if (not google::protobuf::TextFormat::PrintToString(
+                        exec_response, &text_repr)) {
+                    return fmt::format(
+                        "Full exec_response of precondition failure.");
+                }
                 return fmt::format(
                     "Full exec_response of precondition failure\n{}",
                     text_repr);

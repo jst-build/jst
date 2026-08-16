@@ -213,11 +213,11 @@ def setup_deps(repos_config: str) -> Json:
             build = ""
 
             if name == "ssl":
-                include_dir = os.path.join(subdir, "src/include/openssl")
+                include_dir = os.path.join(subdir, "include/openssl")
                 os.symlink(os.path.normpath(include_dir),
                            os.path.join(include_location, "openssl"))
                 arch_map = {"arm64": "aarch64"}
-                build = "{cxx} {cxxflags} -I . -I src/include -c `find . '(' -ipath './src/crypto/*.cc' -o -ipath './src/gen/crypto/*.cc' -o -ipath './src/crypto/*.S' -o -ipath './src/gen/bcm/*.S' -o -ipath './src/gen/crypto/*.S' -o -ipath './src/third_party/fiat/asm/*.S' ')' -type f ! -ipath '*_test.*' ! -ipath '*/test/*'` && {ar} cqs libcrypto.a *.o"
+                build = "{cxx} {cxxflags} -I . -I include -c `find . '(' -ipath './crypto/*.cc' -o -ipath './gen/crypto/*.cc' -o -ipath './crypto/*.S' -o -ipath './gen/bcm/*.S' -o -ipath './gen/crypto/*.S' -o -ipath './third_party/fiat/asm/*.S' ')' -type f ! -ipath '*_test.*' ! -ipath '*/test/*'` && {ar} cqs libcrypto.a *.o"
             elif name == "fmt":
                 include_dir = os.path.join(subdir, "include/fmt")
                 os.symlink(os.path.normpath(include_dir),
