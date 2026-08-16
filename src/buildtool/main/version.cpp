@@ -37,9 +37,9 @@ auto version() -> std::string {
 }  // namespace upstream
 
 auto version() -> std::string {
-    static const std::size_t kJstMajor = 1;
-    static const std::size_t kJstMinor = 6;
-    static const std::size_t kJstRevision = 2;
+    static const std::size_t kJstMajor = 2;
+    static const std::size_t kJstMinor = 0;
+    static const std::size_t kJstRevision = 0;
     std::string version_suffix = "~dev";
 
 #ifdef VERSION_EXTRA_SUFFIX
