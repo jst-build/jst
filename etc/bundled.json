@@ -42,10 +42,16 @@
           "https://storage.googleapis.com/grpc-bazel-mirror/github.com/googleapis/googleapis/archive/fe8ba054ad4f7eca946c2d14a63c3f07c0b586a0.tar.gz"
         ]
       },
-      "target_root": "tests/fmt/imports",
+      "target_root": "google_apis/fmt/imports",
       "target_file_name": "google_apis.TARGETS",
       "bindings": {
         "rules": "toolchain"
+      }
+    },
+    "google_apis/fmt/imports": {
+      "repository": {
+        "type": "file",
+        "path": "./etc/imports"
       }
     },
     "bazel_remote_apis": {
@@ -57,7 +63,7 @@
         "sha512": "6fc84bc0b3f0730651ec9f7fe03e343c02acaabfef80cd3057343b6c6b935820e4fea27e0c8f0f0d86ccd9c3cbf82461e75b66740326113cf647339007fb3c0c",
         "subdir": "remote-apis-9ef19c6b5fbf77d6dd9d84d75fbb5a20a6b62ef1"
       },
-      "target_root": "tests/fmt/imports",
+      "target_root": "google_apis/fmt/imports",
       "target_file_name": "bazel_remote_apis.TARGETS",
       "bindings": {
         "rules": "toolchain",
@@ -810,13 +816,6 @@
         "justlang_tests": "justlang_tests"
       }
     },
-    "tests/curl": {
-      "repository": "tests/fmt/imports",
-      "target_file_name": "curl.TARGETS",
-      "bindings": {
-        "rules": "grpc_toolchain"
-      }
-    },
     "tests/jst": {
       "repository": {
         "type": "file",
@@ -834,8 +833,8 @@
         "bazel_remote_apis": "bazel_remote_apis",
         "libgit2": "libgit2",
         "protoc": "protobuf",
-        "libcurl": "tests/curl",
-        "libarchive": "tests/libarchive",
+        "libcurl": "curl",
+        "libarchive": "libarchive",
         "justlang": "tests/justlang"
       }
     },
@@ -855,19 +854,6 @@
       "rule_root": "grpc_toolchain",
       "bindings": {
         "toolchain": "grpc_toolchain"
-      }
-    },
-    "tests/libarchive": {
-      "repository": "tests/fmt/imports",
-      "target_file_name": "libarchive.TARGETS",
-      "bindings": {
-        "rules": "grpc_toolchain"
-      }
-    },
-    "tests/fmt/imports": {
-      "repository": {
-        "type": "file",
-        "path": "./etc/imports"
       }
     },
     "tests/justlang/config": {

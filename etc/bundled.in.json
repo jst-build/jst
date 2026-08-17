@@ -231,6 +231,8 @@
             "bazel_remote_apis": "bazel_remote_apis",
             "libgit2": "libgit2",
             "protobuf": "protobuf",
+            "curl": "curl",
+            "libarchive": "libarchive",
             "justlang_tests": "justlang_tests"
           }
         },
