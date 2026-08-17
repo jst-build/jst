@@ -52,8 +52,8 @@ void PrintUsage(char const* toolname, std::string const& error = "") {
                str, std::min(std::strlen(str), std::strlen(prefix))} == prefix;
 }
 
-template <class T_IStream>
-[[nodiscard]] auto ReadData(T_IStream& istream) -> std::string {
+template <class TIStream>
+[[nodiscard]] auto ReadData(TIStream& istream) -> std::string {
     std::stringstream input;
     while (istream.good()) {
         std::string buffer;

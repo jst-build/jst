@@ -237,8 +237,8 @@ auto NativeParser::ParseData(const FileData& file_data)
     try {
         auto const& filename = file_data.location.ToString();
         auto const& content = file_data.content;
-        Lexer Lexer(filename, content);
-        tokens_ = TokenStream{Lexer.Tokenize()};
+        auto lexer = Lexer{filename, content};
+        tokens_ = TokenStream{lexer.Tokenize()};
         filename_ = filename;
 
         auto import_loc = file_data.location;
@@ -622,12 +622,12 @@ auto NativeParser::ParseData(const FileData& file_data)
     FieldState field_state = FieldState::FIRST_FIELD;
     Token tok = begin;
 
-    auto makeMapNode = [&](const Token& tok) {
+    auto make_map_node = [&](const Token& tok) {
         return std::make_shared<justlang::MapNode>(
             CreateLocation(tok, import_chain_.back()), std::move(fields));
     };
 
-    auto parseFields =
+    auto parse_fields =
         [this, &seen_identifier, &tok, &begin, &fields, &field_state]()
         -> void {
         switch (tok.type) {
@@ -671,11 +671,11 @@ auto NativeParser::ParseData(const FileData& file_data)
                     tokens_.PopCheck(TokenType::BRACKET_R);
                 }
                 justlang::FuncNode::params_t params;
-                bool isFunc{};
+                bool is_func{};
                 if (tokens_.Peek().type == TokenType::PAREN_L) {
                     tokens_.Advance();  // pop paren_l
                     params = ParseFuncArgs();
-                    isFunc = true;
+                    is_func = true;
                     tokens_.PopCheck(TokenType::PAREN_R);
                 }
                 tok = tokens_.PopCheck(TokenType::OPERATOR);
@@ -685,7 +685,7 @@ auto NativeParser::ParseData(const FileData& file_data)
                         CreateLocation(tok, import_chain_.back()));
                 }
                 ASTNodePtr rhs = Parse(kMaxPriority);
-                if (isFunc) {
+                if (is_func) {
                     rhs = std::make_shared<FuncNode>(loc, params, rhs);
                 }
                 tok = tokens_.Peek();  // update tok position after rhs
@@ -705,7 +705,7 @@ auto NativeParser::ParseData(const FileData& file_data)
             if (tokens_.Size() > 1) {
                 tokens_.Advance();
             }
-            return makeMapNode(tok);
+            return make_map_node(tok);
         }
 
         if (tok.type == TokenType::FOR) {
@@ -736,7 +736,7 @@ auto NativeParser::ParseData(const FileData& file_data)
                                   CreateLocation(tok, import_chain_.back()));
         }
 
-        parseFields();
+        parse_fields();
         field_state = (tok.type == TokenType::COMMA)
                           ? FieldState::EXPECTING_FIELD_OR_CLOSE
                           : field_state;
@@ -748,8 +748,8 @@ auto NativeParser::ParseData(const FileData& file_data)
 }
 
 [[nodiscard]] auto NativeParser::ParseLocalImport() -> ASTNodePtr {  // NOLINT
-    std::unique_ptr<Token> const begin_(new Token(tokens_.Peek()));
-    const Token& begin = *begin_;
+    std::unique_ptr<Token> const begin_ptr(new Token(tokens_.Peek()));
+    const Token& begin = *begin_ptr;
     std::unordered_set<std::string>
         seen_identifier;  // Local set to track seen identifiers
     switch (begin.type) {
@@ -764,9 +764,9 @@ auto NativeParser::ParseData(const FileData& file_data)
 
             ASTNodePtr body;
             justlang::FuncNode::params_t params;
-            bool const isFunction = tokens_.Peek().type == TokenType::PAREN_L;
+            bool const is_function = tokens_.Peek().type == TokenType::PAREN_L;
 
-            if (isFunction) {
+            if (is_function) {
                 tokens_.Advance();  // skip "("
                 params = ParseFuncArgs();
                 tokens_.Advance();  // skip ")"
@@ -789,8 +789,8 @@ auto NativeParser::ParseData(const FileData& file_data)
             auto loc = CreateLocation(begin, body, import_chain_.back());
             auto next = Parse(kMaxPriority);
             ASTNodePtr value =
-                isFunction ? std::make_shared<FuncNode>(loc, params, body)
-                           : body;
+                is_function ? std::make_shared<FuncNode>(loc, params, body)
+                            : body;
             return std::make_shared<justlang::LetNode>(
                 loc, idf.value, std::move(value), std::move(next));
         }

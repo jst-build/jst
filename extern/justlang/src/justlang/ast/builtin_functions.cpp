@@ -74,10 +74,10 @@ struct ExpectedParameter final {
     bool Mandatory = false;
 };
 
-template <std::size_t N>
+template <std::size_t kN>
 [[nodiscard]] auto MakeNamedParameters(
     justlang::CallNode::params_t const& source_args,
-    std::array<ExpectedParameter, N> const& expected_args) -> NamedParams;
+    std::array<ExpectedParameter, kN> const& expected_args) -> NamedParams;
 
 template <typename T = justlang::ASTNode>
 [[nodiscard]] auto RetrieveAs(NamedParams const& params,
@@ -2107,10 +2107,10 @@ auto BuiltInError::MakeMessage(justlang::Location const& loc,
     return result;
 }
 
-template <std::size_t N>
+template <std::size_t kN>
 [[nodiscard]] auto MakeNamedParameters(
     justlang::CallNode::params_t const& source_args,
-    std::array<ExpectedParameter, N> const& expected_args) -> NamedParams {
+    std::array<ExpectedParameter, kN> const& expected_args) -> NamedParams {
     NamedParams named;
     named.reserve(expected_args.size());
 

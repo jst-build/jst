@@ -371,7 +371,7 @@ auto Lexer::ScanSpecialString() -> Token {
 
 auto Lexer::ScanKeywords() -> Token {
     std::string keyword;
-    bool inKeyword = false;
+    bool in_keyword = false;
 
     while (!IsAtEnd()) {
         char const word = Peek();
@@ -386,10 +386,10 @@ auto Lexer::ScanKeywords() -> Token {
     }
 
     if (kKeywords.find(keyword) != kKeywords.end()) {
-        inKeyword = true;
+        in_keyword = true;
     }
 
-    if (inKeyword && !keyword.empty()) {
+    if (in_keyword && !keyword.empty()) {
         TokenType const type = kKeywords.at(keyword);
         return {
             filename_, type, keyword, LineNumber{line_}, ColumnNumber{column_}};
