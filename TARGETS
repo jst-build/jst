@@ -64,6 +64,7 @@ local options_doc = {
   DWP: ['The DWARF packaging utility to use.'],
   ADD_CFLAGS: ['Additional C compiler flags.'],
   ADD_CXXFLAGS: ['Additional C++ compiler flags.'],
+  ADD_LDFLAGS: ['Additional linker flags.'],
   PKG_CONFIG_ARGS: ['Additional pkg-config arguments.\n'],
   LOCALBASE: ['Use this localbase for building against system libs'],
   BUILD_MANPAGES: ['Generate manpages, requires pandoc in PATH (default: false)'],

@@ -236,7 +236,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/rules-cc",
         "branch": "master",
-        "commit": "62c4b9f3524b456049e1cdf3601b7e07d0c9e4d0",
+        "commit": "9279f494cf11696d4ad28ad33480e1edfafb92c2",
         "subdir": "rules"
       }
     },
@@ -245,7 +245,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
         "branch": "system",
-        "commit": "93ba90ae5752d72041eb9849ad53e66c82826e20",
+        "commit": "c6ab89cb0f54ecf9dc7e7e37384466e81e9b09b4",
         "subdir": "targets"
       }
     },
@@ -254,7 +254,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
         "branch": "clang-amd64-gnu/v18.1.8",
-        "commit": "16c3784a78f2a6ff7ca5ca4ad135bbf059793ff0",
+        "commit": "e0b095029387ce55a5e4a890b35a8e74cf07d4f0",
         "subdir": "targets"
       }
     },

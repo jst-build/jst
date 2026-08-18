@@ -84,7 +84,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "absl/v20260526.0",
-        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
+        "commit": "e74dbbb72f2ef384bc453e552bd8900fd58dbdea",
         "subdir": "patches"
       }
     },
@@ -101,7 +101,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "absl/v20260526.0",
-        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
+        "commit": "e74dbbb72f2ef384bc453e552bd8900fd58dbdea",
         "subdir": "config"
       }
     },
@@ -110,7 +110,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "absl/v20260526.0",
-        "commit": "17d25ee4f83e3674a44fff7b705c5d43655c795e",
+        "commit": "e74dbbb72f2ef384bc453e552bd8900fd58dbdea",
         "subdir": "targets"
       }
     },
@@ -141,7 +141,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "boringssl/v0.20260803.0",
-        "commit": "3e83de32512b004b1ac4f8e1df20a1e75f150b7a",
+        "commit": "11cd6b9d74ca3e8fbf5a981380a7ad41e26285e5",
         "subdir": "config"
       }
     },
@@ -150,7 +150,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "boringssl/v0.20260803.0",
-        "commit": "3e83de32512b004b1ac4f8e1df20a1e75f150b7a",
+        "commit": "11cd6b9d74ca3e8fbf5a981380a7ad41e26285e5",
         "subdir": "targets"
       }
     },
@@ -181,7 +181,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "bzip2/v1.0.8",
-        "commit": "1909df452e9e5a0a656643fa583f43d2c54d947d",
+        "commit": "76cfa63eaf6894dd37a5fdb23d64bf8ec723b6d0",
         "subdir": "config"
       }
     },
@@ -190,7 +190,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "bzip2/v1.0.8",
-        "commit": "1909df452e9e5a0a656643fa583f43d2c54d947d",
+        "commit": "76cfa63eaf6894dd37a5fdb23d64bf8ec723b6d0",
         "subdir": "targets"
       }
     },
@@ -213,7 +213,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "catch2/v3.5.3",
-        "commit": "64f698cde6f0eebd376bf0cae0fe34b312662bfe",
+        "commit": "996ccff4d2328f0bd22cdf04bd7558e7f258e1f1",
         "subdir": "targets"
       }
     },
@@ -244,7 +244,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "cares/v1.34.8",
-        "commit": "59fdb5f6b3560d305b492f9c663d5441424aa9f2",
+        "commit": "f003428b9eebe3c59c997876bfdc819d585bfd84",
         "subdir": "config"
       }
     },
@@ -253,7 +253,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "cares/v1.34.8",
-        "commit": "59fdb5f6b3560d305b492f9c663d5441424aa9f2",
+        "commit": "f003428b9eebe3c59c997876bfdc819d585bfd84",
         "subdir": "targets"
       }
     },
@@ -276,7 +276,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "cli11/v2.5.0",
-        "commit": "4e561d988318eab7c1c315c52da5e1d0d41d2365",
+        "commit": "2fa3837779e891ebdf2c9fe9054ba33e5832a417",
         "subdir": "targets"
       }
     },
@@ -299,7 +299,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "fmt/v12.2.0",
-        "commit": "692b3effd3bbaaa40aef667830d29bdffb869396",
+        "commit": "3b196fc09a604311fc4bf431b7f535f01426e448",
         "subdir": "targets"
       }
     },
@@ -330,7 +330,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "lzma/v5.6.3",
-        "commit": "4a9578343888470b1088656955d68fe7c448da95",
+        "commit": "d4e1bfa3a798f1220fdb9e04a7ec1626798e4e3a",
         "subdir": "config"
       }
     },
@@ -339,7 +339,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "lzma/v5.6.3",
-        "commit": "4a9578343888470b1088656955d68fe7c448da95",
+        "commit": "d4e1bfa3a798f1220fdb9e04a7ec1626798e4e3a",
         "subdir": "targets"
       }
     },
@@ -362,7 +362,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "microsoft_gsl/v4.0.0",
-        "commit": "e316a4c1194273b16f2efd12b9fa3cb4b3b857ed",
+        "commit": "ab2179db8da02989559aafeddce2b7fcd6c87b18",
         "subdir": "targets"
       }
     },
@@ -385,7 +385,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "nlohmann_json/v3.11.3",
-        "commit": "c12e71b1fd0ac1def830aa189ee87827d56b44ab",
+        "commit": "2f1224798a809797e9e2750472ca6759dfd3d231",
         "subdir": "targets"
       }
     },
@@ -417,7 +417,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "re2/v2025-11-05",
-        "commit": "a6069bcab47edf4260fee2631ce9c2e90a68e8e8",
+        "commit": "12645207170dd71e131ead4d2a9a3a83c45f773d",
         "subdir": "config"
       }
     },
@@ -426,7 +426,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "re2/v2025-11-05",
-        "commit": "a6069bcab47edf4260fee2631ce9c2e90a68e8e8",
+        "commit": "12645207170dd71e131ead4d2a9a3a83c45f773d",
         "subdir": "targets"
       }
     },
@@ -449,7 +449,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "zlib/v1.3.1",
-        "commit": "944d9ed967c4b8c37dd3b52947a071a14704c92b",
+        "commit": "bed9d827862863261b547d6ae45bfb4079102e4f",
         "subdir": "targets"
       }
     },
@@ -483,7 +483,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc.git",
         "branch": "curl/v8.6.0",
-        "commit": "7a3dfa319bdc559d80d6da550507a231be8944fc",
+        "commit": "49c0d973375ded889e2f9fc8b3855afe79b2b974",
         "subdir": "config"
       }
     },
@@ -492,7 +492,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc.git",
         "branch": "curl/v8.6.0",
-        "commit": "7a3dfa319bdc559d80d6da550507a231be8944fc",
+        "commit": "49c0d973375ded889e2f9fc8b3855afe79b2b974",
         "subdir": "targets"
       }
     },
@@ -527,7 +527,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc.git",
         "branch": "libarchive/v3.7.7",
-        "commit": "9fa42f83091d8f2ce25da1f00474a5bcd78537f7",
+        "commit": "9d08e3ea7ff1b5a4d9efd556aaaacfd5e4ef9ef4",
         "subdir": "config"
       }
     },
@@ -536,7 +536,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc.git",
         "branch": "libarchive/v3.7.7",
-        "commit": "9fa42f83091d8f2ce25da1f00474a5bcd78537f7",
+        "commit": "9d08e3ea7ff1b5a4d9efd556aaaacfd5e4ef9ef4",
         "subdir": "targets"
       }
     },
@@ -569,7 +569,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "libgit2/v1.7.2",
-        "commit": "7693d2d199454a6fc4fc0ee9fbc93b4163551eff",
+        "commit": "76dbfc846cc9a5e33fb2737af200ee306bb8d86b",
         "subdir": "config"
       }
     },
@@ -578,7 +578,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "libgit2/v1.7.2",
-        "commit": "7693d2d199454a6fc4fc0ee9fbc93b4163551eff",
+        "commit": "76dbfc846cc9a5e33fb2737af200ee306bb8d86b",
         "subdir": "targets"
       }
     },
@@ -611,7 +611,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "protobuf/v35.1",
-        "commit": "4ac7e0dd9a92b752140357cfeaabc9066e8d22a0",
+        "commit": "b5674c0aeca954c0eeaa804374931135131becf3",
         "subdir": "config"
       }
     },
@@ -620,7 +620,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "protobuf/v35.1",
-        "commit": "4ac7e0dd9a92b752140357cfeaabc9066e8d22a0",
+        "commit": "b5674c0aeca954c0eeaa804374931135131becf3",
         "subdir": "targets"
       }
     },
@@ -669,7 +669,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "grpc/v1.83.0",
-        "commit": "157d8cda229a38e5d543c7a1b6b905b58356add4",
+        "commit": "3fad66381cfa155e1f6bf3bb9521513f9c9b3349",
         "subdir": "config"
       }
     },
@@ -678,7 +678,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc.git",
         "branch": "protobuf/v35.1",
-        "commit": "d0601ee16421721b9c7cca10c332a2db8868a81e",
+        "commit": "e726ec464a97bc7af58fe04549bb6139c26e03ae",
         "subdir": "targets"
       }
     },
@@ -687,7 +687,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "grpc/v1.83.0",
-        "commit": "157d8cda229a38e5d543c7a1b6b905b58356add4",
+        "commit": "3fad66381cfa155e1f6bf3bb9521513f9c9b3349",
         "subdir": "targets"
       }
     },
@@ -706,7 +706,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
         "branch": "grpc/v1.83.0",
-        "commit": "ddd2c5b07904bb1e48d9befdda4ca95fd97787ca",
+        "commit": "181dc3270d15d23c1722226b3eb400cc7aa335c2",
         "subdir": "targets"
       }
     },
@@ -913,7 +913,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/rules-cc",
         "branch": "master",
-        "commit": "62c4b9f3524b456049e1cdf3601b7e07d0c9e4d0",
+        "commit": "9279f494cf11696d4ad28ad33480e1edfafb92c2",
         "subdir": "rules"
       }
     },
@@ -922,7 +922,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
         "branch": "system",
-        "commit": "93ba90ae5752d72041eb9849ad53e66c82826e20",
+        "commit": "c6ab89cb0f54ecf9dc7e7e37384466e81e9b09b4",
         "subdir": "targets"
       }
     },
@@ -931,7 +931,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/toolchains-cc",
         "branch": "clang-amd64-gnu/v18.1.8",
-        "commit": "16c3784a78f2a6ff7ca5ca4ad135bbf059793ff0",
+        "commit": "e0b095029387ce55a5e4a890b35a8e74cf07d4f0",
         "subdir": "targets"
       }
     }
