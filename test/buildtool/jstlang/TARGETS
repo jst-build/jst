@@ -1,0 +1,86 @@
+{
+  inline: {
+    type: @'rules//CC/test:test',
+    name: ['inline'],
+    srcs: ['inline.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:builtins',
+      @'src//src/buildtool/jstlang/ast:inline',
+      @'src//src/buildtool/jstlang/ast:parser',
+      @'src//src/buildtool/jstlang/ast:to_json_visitor',
+      @'src//src/buildtool/jstlang/ast/native:parser',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  preprocessor: {
+    type: @'rules//CC/test:test',
+    name: ['preprocessor'],
+    srcs: ['preprocessor.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang:preprocessor',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  ref: {
+    type: @'rules//CC/test:test',
+    name: ['ref'],
+    srcs: ['ref.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/jstlang:ref',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  lexer: {
+    type: @'rules//CC/test:test',
+    name: ['lexer'],
+    srcs: ['lexer.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/jstlang/ast/native:lexer',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  parser: {
+    type: @'rules//CC/test:test',
+    name: ['parser'],
+    srcs: ['parser.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:parser',
+      @'src//src/buildtool/jstlang/ast:to_string_visitor',
+      @'src//src/buildtool/jstlang/ast/native:parser',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['jstlang'],
+    deps: [
+      'inline',
+      'lexer',
+      'parser',
+      'preprocessor',
+      'ref',
+    ],
+  },
+}

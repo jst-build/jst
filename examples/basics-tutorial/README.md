@@ -10,7 +10,7 @@ minimalistic project with targets that only use [built-in rules](../../doc/conce
 For completing this tutorial, you will need:
 
 - `jst` installed in your `PATH`
-- optionally, the *Justlang* IDE extension for Visual Studio Code users
+- optionally, the *jst* IDE extension for Visual Studio Code users
 
 ### Tutorial structure
 
@@ -197,7 +197,7 @@ from the expression in field `data`. The expression concatenates the string
 `'Hello '` with the value from the configuration variable `GREETEE`, which
 defaults to the string `'Universe'` if not set.
 
-> Note: configuration variables are read using the function [`jst.env()`](../../extern/justlang/doc/stdlib.md#jstenvname-defaultnull).
+> Note: configuration variables are read using the function [`jst.env()`](../../doc/jstlang/stdlib.md#jstenvname-defaultnull).
 
 Build the `file_gen` target without variables:
 

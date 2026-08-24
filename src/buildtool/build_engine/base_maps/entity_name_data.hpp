@@ -25,10 +25,10 @@
 #include <utility>
 #include <variant>
 
-#include "justlang/ref.hpp"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/base_maps/module_name.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
+#include "src/buildtool/jstlang/ref.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/utils/cpp/hash_combine.hpp"
@@ -219,11 +219,11 @@ class EntityName {
         auto json = ToJson();
         if (json[0] == "@" and json.size() == 4) {
             return "'" +
-                   justlang::EncodeRefData(justlang::RefData{
-                       .type = justlang::RefType::Ext,
-                       .repo = json[1].get<std::string>(),
-                       .module = json[2].get<std::string>(),
-                       .target = json[3].get<std::string>()}) +
+                   jstlang::EncodeRefData(
+                       jstlang::RefData{.type = jstlang::RefType::Ext,
+                                        .repo = json[1].get<std::string>(),
+                                        .module = json[2].get<std::string>(),
+                                        .target = json[3].get<std::string>()}) +
                    "'";
         }
         return json.dump();

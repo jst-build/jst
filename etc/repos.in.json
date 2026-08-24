@@ -24,8 +24,7 @@
         "libgit2": "libgit2",
         "protoc": "protobuf",
         "libcurl": "curl",
-        "libarchive": "libarchive",
-        "justlang": "justlang"
+        "libarchive": "libarchive"
       }
     },
     "tests": {
@@ -43,8 +42,7 @@
         "googleapis": "google_apis",
         "bazel_remote_apis": "bazel_remote_apis",
         "libgit2": "libgit2",
-        "protoc": "protobuf",
-        "justlang_tests": "justlang_tests"
+        "protoc": "protobuf"
       }
     },
     "lint": {
@@ -53,8 +51,7 @@
         "rules": "rules",
         "jst": "jst",
         "tests": "tests",
-        "clang": "clang-18",
-        "justlang_lint": "justlang_lint"
+        "clang": "clang-18"
       }
     }
   },
@@ -99,31 +96,6 @@
       "url": "https://github.com/jst-build/toolchains-cc",
       "branch": "clang-amd64-gnu/v18.1.8",
       "repos": [{"repo": "clang", "alias": "clang-18"}]
-    },
-    {
-      "source": "file",
-      "path": "extern/justlang",
-      "repos": [
-        {
-          "alias": "justlang",
-          "map": {"toolchain": "toolchain", "json": "json"}
-        },
-        {
-          "repo": "tests",
-          "alias": "justlang_tests",
-          "map": {"toolchain": "toolchain", "json": "json", "catch2": "catch2"}
-        },
-        {
-          "repo": "lint",
-          "alias": "justlang_lint",
-          "map": {
-            "toolchain": "toolchain",
-            "json": "json",
-            "catch2": "catch2",
-            "clang-18": "clang-18"
-          }
-        }
-      ]
     }
   ]
 }

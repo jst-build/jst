@@ -118,14 +118,14 @@ auto CreateJsonFileMap(
                     true);
                 return;
             }
-            // failed, so try justlang
-            auto jlang_ast = root->ReadJustlang(key.repository,
-                                                json_file_path,
-                                                std::move(*file_content),
-                                                kFileType);
+            // failed, so try jstlang
+            auto jlang_ast = root->ReadJstlang(key.repository,
+                                               json_file_path,
+                                               std::move(*file_content),
+                                               kFileType);
             if (not jlang_ast) {
                 (*logger)(fmt::format("Parsing file {} failed. It does not "
-                                      "contain valid JSON nor Justlang code.",
+                                      "contain valid JSON nor Jstlang code.",
                                       json_file_path.string()),
                           true);
                 return;

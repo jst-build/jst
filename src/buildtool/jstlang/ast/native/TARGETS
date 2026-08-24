@@ -1,0 +1,31 @@
+{
+  lexer: {
+    type: @'rules//CC:library',
+    name: ['lexer'],
+    hdrs: [
+      'lexer.hpp',
+      'static_error.hpp',
+    ],
+    srcs: ['lexer.cpp'],
+    deps: [
+      @'//src/buildtool/jstlang:file_data',
+      @'//src/buildtool/jstlang/ast:ast',
+    ],
+    stage: ['src', 'buildtool', 'jstlang', 'ast', 'native'],
+  },
+
+  parser: {
+    type: @'rules//CC:library',
+    name: ['parser'],
+    hdrs: ['parser.hpp'],
+    srcs: ['parser.cpp'],
+    deps: [
+      'lexer',
+      @'//src/buildtool/jstlang:file_data',
+      @'//src/buildtool/jstlang/ast:ast',
+      @'//src/buildtool/jstlang/ast:parser',
+    ],
+    'private-deps': [@'//src/buildtool/jstlang:ref'],
+    stage: ['src', 'buildtool', 'jstlang', 'ast', 'native'],
+  },
+}

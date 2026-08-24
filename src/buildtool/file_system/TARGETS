@@ -219,7 +219,7 @@
       @'//src/utils/cpp:hex_string',
       @'//src/utils/cpp:json',
     ],
-    'private-deps': [@'justlang//:preprocessor'],
+    'private-deps': [@'//src/buildtool/jstlang:preprocessor'],
     stage: ['src', 'buildtool', 'file_system'],
   },
 

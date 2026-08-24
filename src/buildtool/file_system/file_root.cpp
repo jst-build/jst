@@ -21,38 +21,38 @@
 
 #include "fmt/core.h"
 #include "gsl/gsl"
-#include "justlang/preprocessor.hpp"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/jstlang/preprocessor.hpp"
 
 namespace Frontend {
 
 class Processor {
   public:
-    explicit Processor(justlang::FileData::reader_t file_reader,
-                       justlang::Preprocessor::logger_t logger)
+    explicit Processor(jstlang::FileData::reader_t file_reader,
+                       jstlang::Preprocessor::logger_t logger)
         : lang_proc_{
-              std::make_unique<justlang::Preprocessor>(std::move(file_reader),
-                                                       std::move(logger))} {}
+              std::make_unique<jstlang::Preprocessor>(std::move(file_reader),
+                                                      std::move(logger))} {}
 
     [[nodiscard]] static auto Create(gsl::not_null<FileRoot const*> root)
         -> ProcessorPtr {
         auto const logger =
-            justlang::Preprocessor::logger_t{[](auto type, auto const& msg) {
+            jstlang::Preprocessor::logger_t{[](auto type, auto const& msg) {
                 switch (type) {
-                    case justlang::Preprocessor::LogType::Debug:
+                    case jstlang::Preprocessor::LogType::Debug:
                         Logger::Log(LogLevel::Debug, msg);
                         break;
-                    case justlang::Preprocessor::LogType::Error:
+                    case jstlang::Preprocessor::LogType::Error:
                         Logger::Log(LogLevel::Error, msg);
                         break;
                 }
             }};
 
-        auto file_reader = justlang::FileData::reader_t{
+        auto file_reader = jstlang::FileData::reader_t{
             [root](
-                justlang::FileLocation const& imported_from,
+                jstlang::FileLocation const& imported_from,
                 std::filesystem::path const& filename,
-                std::string const* repo) -> std::optional<justlang::FileData> {
+                std::string const* repo) -> std::optional<jstlang::FileData> {
                 if (repo != nullptr) {
                     Logger::Log(
                         LogLevel::Error,
@@ -73,12 +73,12 @@ class Processor {
                         .lexically_normal();
 
                 if (auto content = root->ReadContent(full_path)) {
-                    auto location = justlang::FileLocation{
+                    auto location = jstlang::FileLocation{
                         .repo = imported_from.repo,
                         .path = std::move(full_path),
                         .content = std::make_shared<std::string>(*content)};
-                    return justlang::FileData{.location = std::move(location),
-                                              .content = std::move(*content)};
+                    return jstlang::FileData{.location = std::move(location),
+                                             .content = std::move(*content)};
                 }
 
                 Logger::Log(LogLevel::Error,
@@ -94,11 +94,11 @@ class Processor {
     [[nodiscard]] auto Process(std::string const& global_repo_name,
                                std::filesystem::path const& path,
                                std::string content,
-                               justlang::FileType file_type)
+                               jstlang::FileType file_type)
         -> std::optional<nlohmann::json> {
-        auto file_data = justlang::FileData{
+        auto file_data = jstlang::FileData{
             .location =
-                justlang::FileLocation{.repo = global_repo_name, .path = path},
+                jstlang::FileLocation{.repo = global_repo_name, .path = path},
             .content = std::move(content)};
         file_data.location.content =
             std::make_shared<std::string>(file_data.content);
@@ -111,34 +111,34 @@ class Processor {
     }
 
   private:
-    std::unique_ptr<justlang::Preprocessor> lang_proc_;
+    std::unique_ptr<jstlang::Preprocessor> lang_proc_;
 };
 
 }  // namespace Frontend
 
 namespace {
 
-[[nodiscard]] auto ToFileType(JustFileType type) -> justlang::FileType {
+[[nodiscard]] auto ToFileType(JustFileType type) -> jstlang::FileType {
     switch (type) {
         case JustFileType::kPlain:
-            return justlang::FileType::Plain;
+            return jstlang::FileType::Plain;
         case JustFileType::kTargets:
-            return justlang::FileType::Targets;
+            return jstlang::FileType::Targets;
         case JustFileType::kRules:
-            return justlang::FileType::Rules;
+            return jstlang::FileType::Rules;
         case JustFileType::kExpressions:
-            return justlang::FileType::Expressions;
+            return jstlang::FileType::Expressions;
     }
-    return justlang::FileType::Plain;
+    return jstlang::FileType::Plain;
 }
 
 }  // namespace
 
-[[nodiscard]] auto FileRoot::ReadJustlang(
-    std::string const& global_repo_name,
-    std::filesystem::path const& file_path,
-    std::string file_content,
-    JustFileType file_type) const noexcept -> std::optional<nlohmann::json> {
+[[nodiscard]] auto FileRoot::ReadJstlang(std::string const& global_repo_name,
+                                         std::filesystem::path const& file_path,
+                                         std::string file_content,
+                                         JustFileType file_type) const noexcept
+    -> std::optional<nlohmann::json> {
     auto const& file_proc = file_proc_.SetOnceAndGet(
         [root = this]() { return Frontend::Processor::Create(root); });
     if (file_proc) {

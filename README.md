@@ -70,11 +70,11 @@ Hello World!
 - [Basics](examples/basics-tutorial/README.md)
 - [C/C++](examples/cpp-tutorial/README.md)
 
-## Justlang documentation
+## Jstlang documentation
 
-- [Getting Started](extern/justlang/doc/getting-started.md)
-- [Standard Library](extern/justlang/doc/stdlib.md)
-- [Troubleshooting](doc/justlang/troubleshoot.md)
+- [Getting Started](doc/jstlang/getting-started.md)
+- [Standard Library](doc/jstlang/stdlib.md)
+- [Troubleshooting](doc/jstlang/troubleshoot.md)
 
 ## General documentation
 

@@ -15,6 +15,10 @@
 ### Other changes
 
 - `serve` and `execute` are now known `jst` subcommands.
+- The `jstlang` language implementation, formerly vendored as a separate
+  repository under `extern/justlang`, now lives in the main source tree at
+  `src/buildtool/jstlang`. Its compiler binary is available as the export
+  target `jstlangc`, which is deliberately not part of `INSTALL`.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the
@@ -26,7 +30,7 @@
 
 ### Fixes
 
-- The `justlang` lexer no longer reads past the end of the source buffer when
+- The `jstlang` lexer no longer reads past the end of the source buffer when
   the input ends in trailing whitespace or an unterminated comment.
 - Merged fixes from upstream version `1.6.6`.
 - The output-content check for actions (`OutputsCheck`) now also considers

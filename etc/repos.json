@@ -33,8 +33,7 @@
         "libgit2": "libgit2",
         "protoc": "protobuf",
         "libcurl": "curl",
-        "libarchive": "libarchive",
-        "justlang": "justlang"
+        "libarchive": "libarchive"
       }
     },
     "tests": {
@@ -55,8 +54,7 @@
         "googleapis": "google_apis",
         "bazel_remote_apis": "bazel_remote_apis",
         "libgit2": "libgit2",
-        "protoc": "protobuf",
-        "justlang_tests": "justlang_tests"
+        "protoc": "protobuf"
       }
     },
     "lint": {
@@ -68,8 +66,7 @@
         "rules": "rules",
         "jst": "jst",
         "tests": "tests",
-        "clang": "clang-18",
-        "justlang_lint": "justlang_lint"
+        "clang": "clang-18"
       }
     },
     "base_rules": {
@@ -256,54 +253,6 @@
         "branch": "clang-amd64-gnu/v18.1.8",
         "commit": "e0b095029387ce55a5e4a890b35a8e74cf07d4f0",
         "subdir": "targets"
-      }
-    },
-    "justlang": {
-      "repository": {
-        "type": "file",
-        "path": "extern/justlang/."
-      },
-      "bindings": {
-        "rules": "justlang/rules",
-        "json": "json"
-      }
-    },
-    "justlang/rules": {
-      "repository": "toolchain",
-      "target_root": "justlang/config",
-      "rule_root": "toolchain",
-      "bindings": {
-        "toolchain": "toolchain"
-      }
-    },
-    "justlang/config": {
-      "repository": {
-        "type": "file",
-        "path": "extern/justlang/etc/config"
-      }
-    },
-    "justlang_tests": {
-      "repository": {
-        "type": "file",
-        "path": "extern/justlang/test"
-      },
-      "bindings": {
-        "rules": "justlang/rules",
-        "json": "json",
-        "catch2": "catch2",
-        "justlang": "justlang"
-      }
-    },
-    "justlang_lint": {
-      "repository": {
-        "type": "file",
-        "path": "extern/justlang/lint"
-      },
-      "bindings": {
-        "rules": "justlang/rules",
-        "clang": "clang-18",
-        "justlang": "justlang",
-        "tests": "justlang_tests"
       }
     }
   }

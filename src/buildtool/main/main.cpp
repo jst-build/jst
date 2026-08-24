@@ -447,19 +447,19 @@ void SetupFileChunker() {
     try {
         json = nlohmann::json::parse(*file_content);
     } catch (std::exception const& e) {
-        auto jlang_ast = target_root->ReadJustlang(main_repo,
-                                                   target_file,
-                                                   std::move(*file_content),
-                                                   JustFileType::kTargets);
-        if (not jlang_ast) {
+        auto jstlang_ast = target_root->ReadJstlang(main_repo,
+                                                    target_file,
+                                                    std::move(*file_content),
+                                                    JustFileType::kTargets);
+        if (not jstlang_ast) {
             Logger::Log(LogLevel::Error,
                         "While searching for the default target in {}:\n"
                         "Parsing failed as it does not contain valid JSON nor "
-                        "Justlang code.",
+                        "Jstlang code.",
                         target_file);
             std::exit(kExitFailure);
         }
-        json = std::move(*jlang_ast);
+        json = std::move(*jstlang_ast);
     }
     if (not json.is_object()) {
         Logger::Log(
@@ -807,11 +807,11 @@ auto main(int argc, char* argv[]) -> int {
                 json = nlohmann::json::parse(content);
             } catch (...) {
                 Logger::Log(LogLevel::Debug,
-                            "Parsing as JSON failed, retrying as Justlang.");
-                json = root.ReadJustlang("",
-                                         eval_args.file_path,
-                                         std::move(content),
-                                         eval_args.type);
+                            "Parsing as JSON failed, retrying as Jstlang.");
+                json = root.ReadJstlang("",
+                                        eval_args.file_path,
+                                        std::move(content),
+                                        eval_args.type);
             }
 
             if (not json) {

@@ -299,7 +299,7 @@ oldest generation.
 **`eval`**
 ----------
 
-The **`eval`** subcommand evaluates Justlang code from file (use `-`
+The **`eval`** subcommand evaluates Jstlang code from file (use `-`
 for evaluating code from stdin). Runtime data can injected via options
 **`--config`** and **`--defines`**. To stop the evaluation after
 preprocessing and print only the generated low-level JSON code, use the

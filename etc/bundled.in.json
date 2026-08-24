@@ -182,22 +182,6 @@
       "path": ".",
       "repos": [
         {
-          "repo": "justlang",
-          "map": {"toolchain": "toolchain", "json": "json"}
-        },
-        {
-          "repo": "justlang_tests",
-          "map": {"toolchain": "toolchain", "json": "json", "catch2": "catch2"}
-        },
-        {
-          "repo": "justlang_lint",
-          "map": {
-            "toolchain": "toolchain",
-            "json": "json",
-            "catch2": "catch2"
-          }
-        },
-        {
           "repo": "jst",
           "map": {
             "toolchain": "grpc_toolchain",
@@ -212,8 +196,7 @@
             "libgit2": "libgit2",
             "protobuf": "protobuf",
             "curl": "curl",
-            "libarchive": "libarchive",
-            "justlang": "justlang"
+            "libarchive": "libarchive"
           }
         },
         {
@@ -232,8 +215,7 @@
             "libgit2": "libgit2",
             "protobuf": "protobuf",
             "curl": "curl",
-            "libarchive": "libarchive",
-            "justlang_tests": "justlang_tests"
+            "libarchive": "libarchive"
           }
         },
         {
@@ -241,8 +223,7 @@
           "map": {
             "toolchain": "grpc_toolchain",
             "jst": "jst",
-            "tests": "tests",
-            "justlang_lint": "justlang_lint"
+            "tests": "tests"
           }
         }
       ]

@@ -716,48 +716,6 @@
         "subdir": "targets"
       }
     },
-    "justlang": {
-      "repository": {
-        "type": "file",
-        "path": "./extern/justlang"
-      },
-      "bindings": {
-        "rules": "justlang/justlang/rules",
-        "json": "json"
-      }
-    },
-    "justlang/justlang/rules": {
-      "repository": "toolchain",
-      "target_root": "tests/justlang/config",
-      "rule_root": "toolchain",
-      "bindings": {
-        "toolchain": "toolchain"
-      }
-    },
-    "justlang_tests": {
-      "repository": {
-        "type": "file",
-        "path": "./extern/justlang/test"
-      },
-      "bindings": {
-        "rules": "justlang/justlang/rules",
-        "json": "json",
-        "catch2": "catch2",
-        "justlang": "justlang"
-      }
-    },
-    "justlang_lint": {
-      "repository": {
-        "type": "file",
-        "path": "./extern/justlang/lint"
-      },
-      "bindings": {
-        "rules": "justlang/justlang/rules",
-        "clang": "lint/clang-18",
-        "justlang": "justlang",
-        "tests": "justlang_tests"
-      }
-    },
     "jst": {
       "repository": {
         "type": "file",
@@ -776,8 +734,7 @@
         "libgit2": "libgit2",
         "protoc": "protobuf",
         "libcurl": "curl",
-        "libarchive": "libarchive",
-        "justlang": "justlang"
+        "libarchive": "libarchive"
       }
     },
     "jst/rules": {
@@ -800,7 +757,7 @@
         "path": "./test"
       },
       "bindings": {
-        "src": "tests/jst",
+        "src": "jst",
         "rules": "jst/rules",
         "catch2": "catch2",
         "gsl": "gsl",
@@ -812,54 +769,7 @@
         "googleapis": "google_apis",
         "bazel_remote_apis": "bazel_remote_apis",
         "libgit2": "libgit2",
-        "protoc": "protobuf",
-        "justlang_tests": "justlang_tests"
-      }
-    },
-    "tests/jst": {
-      "repository": {
-        "type": "file",
-        "path": "./."
-      },
-      "bindings": {
-        "rules": "jst/rules",
-        "gsl": "gsl",
-        "cli11": "cli11",
-        "json": "json",
-        "fmt": "fmt",
-        "ssl": "ssl",
-        "grpc": "grpc",
-        "googleapis": "google_apis",
-        "bazel_remote_apis": "bazel_remote_apis",
-        "libgit2": "libgit2",
-        "protoc": "protobuf",
-        "libcurl": "curl",
-        "libarchive": "libarchive",
-        "justlang": "tests/justlang"
-      }
-    },
-    "tests/justlang": {
-      "repository": {
-        "type": "file",
-        "path": "./extern/justlang"
-      },
-      "bindings": {
-        "rules": "tests/justlang/rules",
-        "json": "json"
-      }
-    },
-    "tests/justlang/rules": {
-      "repository": "grpc_toolchain",
-      "target_root": "tests/justlang/config",
-      "rule_root": "grpc_toolchain",
-      "bindings": {
-        "toolchain": "grpc_toolchain"
-      }
-    },
-    "tests/justlang/config": {
-      "repository": {
-        "type": "file",
-        "path": "./extern/justlang/etc/config"
+        "protoc": "protobuf"
       }
     },
     "lint": {
@@ -871,8 +781,7 @@
         "rules": "jst/rules",
         "jst": "jst",
         "tests": "tests",
-        "clang": "lint/clang-18",
-        "justlang_lint": "justlang_lint"
+        "clang": "lint/clang-18"
       }
     },
     "lint/clang-18": {

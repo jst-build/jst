@@ -10,6 +10,7 @@
       @'./execution_engine:TESTS',
       @'./file_system:TESTS',
       @'./graph_traverser:TESTS',
+      @'./jstlang:TESTS',
       @'./logging:TESTS',
       @'./main:TESTS',
       @'./multithreading:TESTS',

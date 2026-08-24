@@ -650,11 +650,11 @@ class FileRoot {
         return DirectoryEntries{DirectoryEntries::pairs_t{}};
     }
 
-    /// \brief Read Justlang file
-    [[nodiscard]] auto ReadJustlang(std::string const& global_repo_name,
-                                    std::filesystem::path const& file_path,
-                                    std::string file_content,
-                                    JustFileType file_type) const noexcept
+    /// \brief Read jstlang file
+    [[nodiscard]] auto ReadJstlang(std::string const& global_repo_name,
+                                   std::filesystem::path const& file_path,
+                                   std::string file_content,
+                                   JustFileType file_type) const noexcept
         -> std::optional<nlohmann::json>;
 
     /// \brief Get type of blob at given path in non-absent root.

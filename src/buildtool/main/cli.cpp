@@ -209,7 +209,7 @@ void CreateBackendSubcommands(CLI::App& app) {
         "execute", "Start single node execution service on this machine.");
     auto* cmd_serve =
         app.add_subcommand("serve", "Provide target dependencies for a build.");
-    auto* cmd_eval = app.add_subcommand("eval", "Evaluate Justlang code.");
+    auto* cmd_eval = app.add_subcommand("eval", "Evaluate Jstlang code.");
     auto* cmd_traverse =
         app.group("")  // group for creating hidden options
             ->add_subcommand("traverse",

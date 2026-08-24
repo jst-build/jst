@@ -19,8 +19,6 @@
       ['run_clang_tidy', 'clang-tidy'],
       ['run_clang_format', 'clang-format'],
       ['run_strict_deps', 'strict_deps'],
-      [@'justlang_lint//:run_clang_tidy', 'justlang_clang-tidy'],
-      [@'justlang_lint//:run_clang_format', 'justlang_clang-format'],
     ],
   },
 
@@ -44,6 +42,7 @@
     targets: [
       @'jst//:jst_configured',
       @'jst//:jst_backend_configured',
+      @'jst//:jstlangc_configured',
       @'tests//:ALL',
     ],
   },
@@ -62,6 +61,7 @@
     targets: [
       @'jst//:jst_configured',
       @'jst//:jst_backend_configured',
+      @'jst//:jstlangc_configured',
       @'tests//:ALL',
     ],
   },
@@ -76,6 +76,7 @@
     targets: [
       @'jst//:jst_configured',
       @'jst//:jst_backend_configured',
+      @'jst//:jstlangc_configured',
       @'tests//:ALL',
     ],
   },

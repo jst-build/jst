@@ -1,0 +1,61 @@
+{
+  jstlangc: {
+    type: @'rules//CC:binary',
+    name: ['jstlangc'],
+    srcs: ['main.cpp'],
+    'private-deps': [
+      'file_data',
+      'preprocessor',
+    ],
+  },
+
+  ref: {
+    type: @'rules//CC:library',
+    name: ['ref'],
+    hdrs: ['ref.hpp'],
+    srcs: ['ref.cpp'],
+    'private-deps': [
+      'json_string',
+      @'json//:json',
+    ],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
+  preprocessor: {
+    type: @'rules//CC:library',
+    name: ['preprocessor'],
+    hdrs: ['preprocessor.hpp'],
+    srcs: ['preprocessor.cpp'],
+    deps: [
+      'file_data',
+      @'json//:json',
+      @'//src/buildtool/jstlang/ast:ast',
+    ],
+    'private-deps': [
+      @'//src/buildtool/jstlang/ast:analyze',
+      @'//src/buildtool/jstlang/ast:augment',
+      @'//src/buildtool/jstlang/ast:builtins',
+      @'//src/buildtool/jstlang/ast:inline',
+      @'//src/buildtool/jstlang/ast:parser',
+      @'//src/buildtool/jstlang/ast:to_json_visitor',
+      @'//src/buildtool/jstlang/ast:to_string_visitor',
+      @'//src/buildtool/jstlang/ast/native:parser',
+    ],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
+  json_string: {
+    type: @'rules//CC:library',
+    name: ['json_string'],
+    hdrs: ['json_string.hpp'],
+    deps: [@'json//:json'],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
+  file_data: {
+    type: @'rules//CC:library',
+    hdrs: ['file_data.hpp'],
+    deps: ['ref'],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+}

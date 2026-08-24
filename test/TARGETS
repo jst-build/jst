@@ -31,7 +31,6 @@ local unset_key(key, map) =
         'unit tests with compatibility',
         @'./utils:TESTS',
         @'./other_tools:TESTS',
-        'justlang_tests',
       ]
       + (if !jst.env('DROP_END_TO_END_TESTS') then
            [@'./end-to-end:TESTS'])
@@ -152,12 +151,6 @@ local unset_key(key, map) =
       'unit tests with compatibility, compatible',
       'unit tests with compatibility, native',
     ],
-  },
-
-  justlang_tests: {
-    type: 'install',
-    tainted: ['test'],
-    dirs: [[@'justlang_tests//:ALL', 'other_tools/justlang']],
   },
 
   'bootstrap-test': {

@@ -281,8 +281,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     dep_flags = setup_deps(os.path.join(ro_srcdir, repos_config))
     # handle proto
     flags = ["-I", ro_srcdir] + dep_flags["include"] + [
-        "-I", os.path.join(g_LOCALBASE, "include"),
-        "-I", os.path.join(ro_srcdir, 'extern/justlang/src')
+        "-I", os.path.join(g_LOCALBASE, "include")
     ]
     cpp_files: List[str] = []
     for root, dirs, files in os.walk(ro_srcdir):
@@ -304,11 +303,13 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
             dirs.remove('examples')
         if 'etc/rules' in root:
             continue
-        if 'extern/justlang' in root and not 'src/justlang' in root:
-            continue
         base = os.path.relpath(root, ro_srcdir)
         for f in files:
             if f.endswith(".cpp"):
+                # the jstlangc binary has its own main(), which must not end up
+                # in the bootstrap backend
+                if os.path.join(base, f) == 'src/buildtool/jstlang/main.cpp':
+                    continue
                 cpp_files.append(os.path.join(base, f))
     object_files: List[str] = []
     with ThreadPoolExecutor(max_workers=1 if DEBUG else None) as ts:

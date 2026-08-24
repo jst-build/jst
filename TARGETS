@@ -133,6 +133,14 @@ local default_options =
     flexible_config: jst.keys(options_doc),
   },
 
+  // The jstlang compiler binary. Not part of INSTALL.
+  jstlangc: {
+    type: 'export',
+    target: 'jstlangc_configured',
+    config_doc: options_doc,
+    flexible_config: jst.keys(options_doc),
+  },
+
   // Sets default options (OS/ARCH) for the jst main binary.
   jst_configured: {
     type: 'configure',
@@ -146,6 +154,14 @@ local default_options =
     type: 'configure',
     arguments_config: ['OS', 'ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
     target: @'//src/buildtool/main:jst_backend',
+    config: default_options,
+  },
+
+  // Sets default options (OS/ARCH) for the jstlang compiler binary.
+  jstlangc_configured: {
+    type: 'configure',
+    arguments_config: ['OS', 'ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
+    target: @'//src/buildtool/jstlang:jstlangc',
     config: default_options,
   },
 
@@ -245,7 +261,6 @@ local default_options =
       [jst.tree('src/buildtool'), '.'],
       [jst.tree('src/other_tools'), '.'],
       [jst.tree('src/utils'), '.'],
-      [jst.tree('extern'), '.'],
     ],
     deps: [
       'ROOT',

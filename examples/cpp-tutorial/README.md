@@ -11,7 +11,7 @@ For completing this tutorial, you will need:
 
 - `jst` and `jst-lock` installed in your `PATH`
 - a working internet connection (for fetching rules, toolchain, externals, etc.)
-- optionally, the *Justlang* IDE extension for Visual Studio Code users
+- optionally, the *jst* IDE extension for Visual Studio Code users
 
 > Note: without an internet connection, you need to configure local mirrors
 > for the required external repositories, explained in section [Company setup](#company-setup)
