@@ -25,4 +25,11 @@
     ],
     stage: ['src', 'buildtool', 'system'],
   },
+
+  terminal: {
+    type: @'rules//CC:library',
+    name: ['terminal'],
+    hdrs: ['terminal.hpp'],
+    stage: ['src', 'buildtool', 'system'],
+  },
 }

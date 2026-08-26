@@ -89,6 +89,9 @@
       @'//src/buildtool/common:statistics',
       @'//src/buildtool/logging:logging',
     ],
-    'private-deps': [@'fmt//:fmt'],
+    'private-deps': [
+      @'fmt//:fmt',
+      @'//src/buildtool/system:terminal',
+    ],
   },
 }

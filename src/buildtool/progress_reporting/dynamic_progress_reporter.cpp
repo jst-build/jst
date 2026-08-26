@@ -20,11 +20,9 @@
 #include <string>
 #include <vector>
 
-#include <sys/ioctl.h>
-#include <unistd.h>
-
 #include "fmt/color.h"
 #include "fmt/core.h"
+#include "src/buildtool/system/terminal.hpp"
 
 namespace {
 
@@ -101,7 +99,7 @@ class DynamicProgressReporterImpl {
         auto active = state_.queued - state_.run - state_.cached;
 
         // determine terminal width
-        auto width = TerminalWidth();
+        auto width = Terminal::Width();
         if (not width) {
             width = UINT_MAX;
         }
@@ -285,15 +283,6 @@ class DynamicProgressReporterImpl {
         result += std::string((max_width - 2) - done_bar_width, empty);
         result += "]";
         return result;
-    }
-
-    [[nodiscard]] static auto TerminalWidth() -> std::optional<unsigned int> {
-        struct winsize ws {};
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
-        if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) == -1) {
-            return std::nullopt;
-        }
-        return ws.ws_col;
     }
 
     [[nodiscard]] static auto Green(std::string const& msg) -> std::string {
