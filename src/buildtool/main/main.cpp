@@ -1136,7 +1136,10 @@ auto main(int argc, char* argv[]) -> int {
             std::move(stage_args),
             std::move(rebuild_args)};
 
-        auto dynamic = not arguments.log.plain_progress;
+        // use the interactive progress reporter only if we are actually
+        // running interactively and plain log output was not requested
+        auto dynamic =
+            not arguments.log.plain_progress and Terminal::IsInteractive();
         GraphTraverser const traverser{
             traverse_args,
             &exec_context,
