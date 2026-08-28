@@ -364,42 +364,47 @@ its `"deps"` in a product of configurations, with `TEST_MATRIX` cleared there.
 ``` shell
 $ jst describe test matrix
 INFO: Found 4 repositories involved
-['""//test:matrix',{}] is defined by user-defined rule 'toolchain//test:matrix'.
+TARGET  '""//test:matrix'
+RULE    'toolchain//test:matrix'  (user-defined)
 
- | Given a group of tests, build them in a variety of configurations.
- | 
- | The configuration variable TEST_MATRIX is expected to be a map with
- | each value being a map itself. Sequentially for each key, all possible
- | values of the associated map are tried and staged to the appropriate
- | key. Thus, the tests in "deps" are built in an exponential number of
- | configurations.
- | 
- | If TEST_MATRIX is unset, {} will be assumed, i.e., all the "deps" will
- | be built precisely once, in the current configuration. In this way,
- | the "matrix" rule can be used instead of the "suite" rule to allow
- | user-defined configuration matrices, dispatching over parameters for
- | dependencies (e.g., the toolchain).
- String fields
- - "stage"
-   | The logical location this test suite is to be placed.
-   | Individual entries will be joined with "/".
- Target fields
- - "deps"
-   | The targets that suite is composed of.
- Variables taken from the configuration
- - "TEST_MATRIX"
-   | Map describing the dimensions of the matrix to run the tests for.
-   | 
-   | Keys are config variables. The value for each key has to be a map
-   | mapping the stage name to the corresponding value for that config
-   | variable.
- Result
- - Artifacts
-   | The disjoint union of the runfiles of the "deps" targets,
-   | evaluated and staged as requested by TEST_MATRIX and finally
-   | staged to the location given by "stage".
- - Runfiles
-   | Same as artifacts.
+  Given a group of tests, build them in a variety of configurations.
+
+  The configuration variable TEST_MATRIX is expected to be a map with
+  each value being a map itself. Sequentially for each key, all possible
+  values of the associated map are tried and staged to the appropriate
+  key. Thus, the tests in "deps" are built in an exponential number of
+  configurations.
+
+  If TEST_MATRIX is unset, {} will be assumed, i.e., all the "deps" will
+  be built precisely once, in the current configuration. In this way,
+  the "matrix" rule can be used instead of the "suite" rule to allow
+  user-defined configuration matrices, dispatching over parameters for
+  dependencies (e.g., the toolchain).
+
+STRING FIELDS (1)
+  stage
+    The logical location this test suite is to be placed.
+    Individual entries will be joined with "/".
+
+TARGET FIELDS (1)
+  deps
+    The targets that suite is composed of.
+
+CONFIGURATION VARIABLES (1)
+  TEST_MATRIX
+    Map describing the dimensions of the matrix to run the tests for.
+
+    Keys are config variables. The value for each key has to be a map
+    mapping the stage name to the corresponding value for that config
+    variable.
+
+RESULT
+  artifacts
+    The disjoint union of the runfiles of the "deps" targets,
+    evaluated and staged as requested by TEST_MATRIX and finally
+    staged to the location given by "stage".
+  runfiles
+    Same as artifacts.
 ```
 
 Typically, one sets the matrix of desired configurations in a `"configure"`

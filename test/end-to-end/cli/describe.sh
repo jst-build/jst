@@ -67,7 +67,7 @@ cat "${OUT}/export.doc"
 echo
 echo
 # - rule name
-grep '"export"' "${OUT}/export.doc"
+grep "'export'" "${OUT}/export.doc"
 # - top-level description
 grep GREETING "${OUT}/export.doc"
 # - flexible config
@@ -85,10 +85,10 @@ cat "${OUT}/configure.doc"
 echo
 echo
 # - rule name
-grep '"configure"' "${OUT}/configure.doc"
+grep "'configure'" "${OUT}/configure.doc"
 # - top-level description
 grep DEFAULT "${OUT}/configure.doc"
 # - the expression defining what to configure
-grep '"exported-target"' "${OUT}/configure.doc"
+grep "exported-target'" "${OUT}/configure.doc"
 
 echo OK

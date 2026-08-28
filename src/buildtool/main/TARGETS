@@ -125,6 +125,7 @@
       @'//src/buildtool/file_system:object_type',
       @'//src/buildtool/logging:log_level',
       @'//src/buildtool/logging:logging',
+      @'//src/buildtool/system:terminal',
       @'//src/buildtool/multithreading:task_system',
     ],
   },

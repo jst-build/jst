@@ -86,7 +86,9 @@ struct AnalysisArguments {
 /// \brief Arguments required for describing targets/rules.
 struct DescribeArguments {
     bool print_json{};
+    bool brief{};
     bool describe_rule{};
+    bool no_pager{};
 };
 
 /// \brief Arguments required for running diagnostics.
@@ -424,9 +426,16 @@ static inline auto SetupDescribeArguments(
     app->add_flag("--json",
                   clargs->print_json,
                   "Omit pretty-printing and describe rule in JSON format.");
+    app->add_flag("--brief",
+                  clargs->brief,
+                  "Omit documentation and describe rule by listing the names "
+                  "of its fields and configuration variables only.");
     app->add_flag("--rule",
                   clargs->describe_rule,
                   "Positional arguments refer to rule instead of target.");
+    app->add_flag("--no-pager",
+                  clargs->no_pager,
+                  "Do not pipe the description through a pager.");
 }
 
 static inline auto SetupDiagnosticArguments(

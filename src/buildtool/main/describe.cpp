@@ -16,6 +16,9 @@
 
 #include "src/buildtool/main/describe.hpp"
 
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -25,6 +28,9 @@
 #include <string_view>
 #include <vector>
 
+#include <unistd.h>
+
+#include "fmt/color.h"
 #include "fmt/format.h"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
@@ -41,132 +47,377 @@
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/exit_codes.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
+#include "src/buildtool/system/terminal.hpp"
 
 namespace {
 
 namespace Base = BuildMaps::Base;
 
+// Fallback width used if the output is not attached to a terminal.
+auto constexpr kDefaultWidth = 80U;
+
+// Indentation of the different levels of the description.
+auto constexpr kIndentWidth = std::size_t{2};
+auto constexpr kIndentEntry = "  ";
+auto constexpr kIndentEntryDoc = "    ";
+auto constexpr kIndentSubEntry = "    ";
+auto constexpr kIndentSubEntryDoc = "      ";
+
+auto const kStyleSection = fmt::emphasis::bold | fg(fmt::color::lime_green);
+auto const kStyleName = fmt::emphasis::bold | fg(fmt::color::light_blue);
+auto const kStyleVar = fmt::text_style{fg(fmt::color::orchid)};
+auto const kStyleEntity = fmt::text_style{fmt::emphasis::bold};
+auto const kStyleEntityType = fmt::emphasis::bold | fg(fmt::color::yellow);
+auto const kStyleDim = fmt::text_style{fmt::emphasis::faint};
+
+/// \brief Styling of the description. Structure is highlighted in green, names
+/// that can be set in a targets file in blue, and configuration variables,
+/// which live in a different namespace, in magenta. Decoration is dimmed and
+/// documentation is left unstyled, as it is the text to actually read.
+class Style {
+  public:
+    explicit Style(bool colored) noexcept : colored_{colored} {}
+
+    /// \brief Header of a section, e.g., "STRING FIELDS (11)".
+    [[nodiscard]] auto Section(std::string const& msg) const -> std::string {
+        return Apply(kStyleSection, msg);
+    }
+
+    /// \brief Name of a field or provider, as written in a targets file.
+    [[nodiscard]] auto Name(std::string const& msg) const -> std::string {
+        return Apply(kStyleName, msg);
+    }
+
+    /// \brief Name of a configuration variable.
+    [[nodiscard]] auto Var(std::string const& msg) const -> std::string {
+        return Apply(kStyleVar, msg);
+    }
+
+    /// \brief Name of entity type, e.g., "TARGET"/"RULE"
+    [[nodiscard]] auto EntityType(std::string const& msg) const -> std::string {
+        return Apply(kStyleEntityType, msg);
+    }
+
+    /// \brief Name of a target, including rules and expressions.
+    [[nodiscard]] auto Entity(std::string const& msg) const -> std::string {
+        return Apply(kStyleEntity, msg);
+    }
+
+    /// \brief Decoration that should not attract attention.
+    [[nodiscard]] auto Dim(std::string const& msg) const -> std::string {
+        return Apply(kStyleDim, msg);
+    }
+
+  private:
+    bool colored_;
+
+    [[nodiscard]] auto Apply(fmt::text_style const& style,
+                             std::string const& msg) const -> std::string {
+        return colored_ ? fmt::format(style, "{}", msg) : msg;
+    }
+};
+
+/// \brief Quote a name with single quotes, unless it is a simple identifier
+/// that can be read without quotes.
+[[nodiscard]] auto QuoteName(std::string const& name) -> std::string {
+    auto const simple =
+        not name.empty() and std::all_of(name.begin(), name.end(), [](char c) {
+            return std::isalnum(static_cast<unsigned char>(c)) != 0 or c == '_';
+        });
+    return simple ? name : fmt::format("'{}'", name);
+}
+
+/// \brief Quote the name of a target with single quotes, the way entity names
+/// are reported everywhere else. Rules, including built-in ones, are targets.
+[[nodiscard]] auto QuoteEntity(std::string const& name) -> std::string {
+    return fmt::format("'{}'", name);
+}
+
+/// \brief Obtain the name of a target as it should be reported: resolved and
+/// quoted, if it is a name, and as plain JSON otherwise.
+[[nodiscard]] auto ResolveTargetName(
+    nlohmann::json const& target,
+    BuildMaps::Base::EntityName const& relative_to,
+    gsl::not_null<const RepositoryConfig*> const& repo_config) -> std::string {
+    auto resolved = BuildMaps::Base::ParseEntityNameFromJson(
+        target, relative_to, repo_config, [](std::string const& /*unused*/) {});
+    if (resolved) {
+        return resolved->ToString();
+    }
+    if (target.is_string()) {
+        return QuoteEntity(target.get<std::string>());
+    }
+    return target.dump();
+}
+
+/// \brief Obtain the keys of a JSON object as an array of names.
+[[nodiscard]] auto Keys(nlohmann::json const& object) -> nlohmann::json {
+    auto keys = nlohmann::json::array();
+    for (auto const& el : object.items()) {
+        keys.push_back(el.key());
+    }
+    return keys;
+}
+
 void PrintDoc(const nlohmann::json& doc, const std::string& indent) {
     if (not doc.is_array()) {
         return;
     }
+    // Print a single line of documentation. Blank lines, which are used to
+    // separate paragraphs, are printed without indentation, as to not leave
+    // any trailing whitespace behind.
+    auto const print_line = [&indent](std::string_view line) {
+        if (line.find_first_not_of(" \t") == std::string_view::npos) {
+            std::cout << "\n";
+        }
+        else {
+            std::cout << indent << line << "\n";
+        }
+    };
     for (auto const& line : doc) {
         if (line.is_string()) {
             auto const& str = line.get<std::string>();
             std::size_t start{};
             auto end = str.find('\n', start);
             while (end != std::string::npos) {
-                std::cout << indent
-                          << std::string_view{&str[start], end - start} << "\n";
+                print_line(std::string_view{&str[start], end - start});
                 start = end + 1;
                 end = str.find('\n', start);
             }
             if (start < str.size()) {
-                std::cout << indent
-                          << std::string_view{&str[start], str.size() - start}
-                          << "\n";
+                print_line(std::string_view{&str[start], str.size() - start});
+            }
+            else if (str.empty()) {
+                print_line(std::string_view{});
             }
         }
     }
 }
 
-void PrintFields(nlohmann::json const& fields,
-                 const nlohmann::json& fdoc,
-                 const std::string& indent_field,
-                 const std::string& indent_field_doc) {
-    for (auto const& f : fields) {
-        std::cout << indent_field << f << "\n";
-        auto doc = fdoc.find(f);
-        if (doc != fdoc.end()) {
-            PrintDoc(*doc, indent_field_doc);
+void PrintTargetHeader(Style const& style, std::string const& target) {
+    std::cout << style.EntityType("TARGET  ") << style.Entity(target) << "\n";
+}
+
+void PrintRuleHeader(Style const& style,
+                     std::string const& rule,
+                     bool built_in) {
+    std::cout << style.EntityType("RULE    ") << style.Entity(rule) << "  "
+              << style.Dim(built_in ? "(built-in)" : "(user-defined)") << "\n";
+}
+
+void PrintDescription(nlohmann::json const& desc) {
+    if (auto doc = desc.find("doc"); doc != desc.end()) {
+        std::cout << "\n";
+        PrintDoc(*doc, kIndentEntry);
+    }
+}
+
+void PrintSection(Style const& style,
+                  std::string const& title,
+                  std::optional<std::size_t> count = std::nullopt) {
+    std::cout << "\n"
+              << style.Section(count ? fmt::format("{} ({})", title, *count)
+                                     : title)
+              << "\n";
+}
+
+/// \brief Print the given names only, filled into the available width.
+void PrintNames(Style const& style, nlohmann::json const& names, bool is_var) {
+    auto const width = Terminal::Width(STDOUT_FILENO).value_or(kDefaultWidth);
+    std::size_t column{};
+    for (auto const& entry : names) {
+        if (not entry.is_string()) {
+            continue;
+        }
+        auto const name = QuoteName(entry.get<std::string>());
+        if (column == 0) {
+            std::cout << kIndentEntry;
+            column = kIndentWidth;
+        }
+        else if (column + kIndentWidth + name.size() > width) {
+            std::cout << "\n" << kIndentEntry;
+            column = kIndentWidth;
+        }
+        else {
+            std::cout << kIndentEntry;
+            column += kIndentWidth;
+        }
+        std::cout << (is_var ? style.Var(name) : style.Name(name));
+        column += name.size();
+    }
+    if (column > 0) {
+        std::cout << "\n";
+    }
+}
+
+/// \brief Print the given names, each followed by its documentation.
+void PrintNamesWithDoc(Style const& style,
+                       nlohmann::json const& names,
+                       nlohmann::json const& docs,
+                       bool is_var) {
+    for (auto const& entry : names) {
+        if (not entry.is_string()) {
+            continue;
+        }
+        auto const name = QuoteName(entry.get<std::string>());
+        std::cout << kIndentEntry
+                  << (is_var ? style.Var(name) : style.Name(name)) << "\n";
+        if (auto doc = docs.find(entry); doc != docs.end()) {
+            PrintDoc(*doc, kIndentEntryDoc);
         }
     }
 }
 
-void PrettyPrintRule(
-    nlohmann::json const& rdesc,
-    BuildMaps::Base::EntityName const& rule_name,
-    gsl::not_null<const RepositoryConfig*> const& repo_config) {
-    auto doc = rdesc.find("doc");
-    if (doc != rdesc.end()) {
-        PrintDoc(*doc, " | ");
+void PrintNamedSection(Style const& style,
+                       std::string const& title,
+                       nlohmann::json const& names,
+                       nlohmann::json const& docs,
+                       bool brief,
+                       bool is_var = false) {
+    if (names.empty()) {
+        return;
     }
-    auto field_doc = nlohmann::json::object();
-    auto field_doc_it = rdesc.find("field_doc");
-    if (field_doc_it != rdesc.end() and field_doc_it->is_object()) {
-        field_doc = *field_doc_it;
+    PrintSection(style, title, names.size());
+    if (brief) {
+        PrintNames(style, names, is_var);
     }
-    auto string_fields = rdesc.find("string_fields");
-    if (string_fields != rdesc.end() and (not string_fields->empty())) {
-        std::cout << " String fields\n";
-        PrintFields(*string_fields, field_doc, " - ", "   | ");
+    else {
+        PrintNamesWithDoc(style, names, docs, is_var);
     }
-    auto target_fields = rdesc.find("target_fields");
-    if (target_fields != rdesc.end() and (not target_fields->empty())) {
-        std::cout << " Target fields\n";
-        PrintFields(*target_fields, field_doc, " - ", "   | ");
+}
+
+/// \brief Obtain the object stored under the given key, if any.
+[[nodiscard]] auto GetObject(nlohmann::json const& desc,
+                             std::string const& key) -> nlohmann::json {
+    if (auto value = desc.find(key);
+        value != desc.end() and value->is_object()) {
+        return *value;
     }
-    auto implicit_targets = rdesc.find("implicit");
-    if (implicit_targets != rdesc.end()) {
-        for (auto const& [key, value] : implicit_targets->items()) {
-            std::cout << " - implicit dependency\n";  //
-            auto doc = field_doc.find(key);
-            if (doc != field_doc.end()) {
-                PrintDoc(*doc, "   | ");
-            }
-            for (auto const& entry : value) {
-                auto resolved_entry = BuildMaps::Base::ParseEntityNameFromJson(
-                    entry,
-                    rule_name,
-                    repo_config,
-                    [&entry, &rule_name](std::string const& parse_err) {
-                        Logger::Log(LogLevel::Warning,
+    return nlohmann::json::object();
+}
+
+/// \brief Obtain the array stored under the given key, if any.
+[[nodiscard]] auto GetArray(nlohmann::json const& desc,
+                            std::string const& key) -> nlohmann::json {
+    if (auto value = desc.find(key); value != desc.end()) {
+        return *value;
+    }
+    return nlohmann::json::array();
+}
+
+/// \brief Print the description of an export target, which is used for targets
+/// with present as well as with absent roots and hence has to be identical for
+/// both.
+void PrintExportDescription(Style const& style,
+                            nlohmann::json const& desc,
+                            bool brief) {
+    PrintDescription(desc);
+    PrintNamedSection(style,
+                      "FLEXIBLE CONFIGURATION VARIABLES",
+                      GetArray(desc, "flexible_config"),
+                      GetObject(desc, "config_doc"),
+                      brief,
+                      /*is_var=*/true);
+}
+
+void PrettyPrintRule(nlohmann::json const& rdesc,
+                     BuildMaps::Base::EntityName const& rule_name,
+                     gsl::not_null<const RepositoryConfig*> const& repo_config,
+                     Style const& style,
+                     bool brief) {
+    PrintRuleHeader(style, rule_name.ToString(), /*built_in=*/false);
+    PrintDescription(rdesc);
+
+    auto const field_doc = GetObject(rdesc, "field_doc");
+    PrintNamedSection(style,
+                      "STRING FIELDS",
+                      GetArray(rdesc, "string_fields"),
+                      field_doc,
+                      brief);
+    PrintNamedSection(style,
+                      "TARGET FIELDS",
+                      GetArray(rdesc, "target_fields"),
+                      field_doc,
+                      brief);
+
+    auto const implicit_targets = GetObject(rdesc, "implicit");
+    if (not implicit_targets.empty()) {
+        PrintSection(style, "IMPLICIT DEPENDENCIES", implicit_targets.size());
+        if (brief) {
+            PrintNames(style, Keys(implicit_targets), /*is_var=*/false);
+        }
+        else {
+            for (auto const& [key, value] : implicit_targets.items()) {
+                std::cout << kIndentEntry << style.Name(QuoteName(key)) << "\n";
+                if (auto doc = field_doc.find(key); doc != field_doc.end()) {
+                    PrintDoc(*doc, kIndentEntryDoc);
+                }
+                for (auto const& entry : value) {
+                    auto resolved_entry =
+                        BuildMaps::Base::ParseEntityNameFromJson(
+                            entry,
+                            rule_name,
+                            repo_config,
+                            [&entry, &rule_name](std::string const& parse_err) {
+                                Logger::Log(
+                                    LogLevel::Warning,
                                     "Failed to resolve {} relative to {}:\n{}",
                                     entry.dump(),
                                     rule_name.ToString(),
                                     parse_err);
-                    });
-                if (resolved_entry) {
-                    std::cout << "   - " << resolved_entry->ToString() << "\n";
+                            });
+                    if (resolved_entry) {
+                        std::cout << kIndentEntryDoc << style.Dim("- ")
+                                  << style.Entity(resolved_entry->ToString())
+                                  << "\n";
+                    }
                 }
             }
         }
     }
-    auto config_fields = rdesc.find("config_fields");
-    if (config_fields != rdesc.end() and (not config_fields->empty())) {
-        std::cout << " Config fields\n";
-        PrintFields(*config_fields, field_doc, " - ", "   | ");
+
+    PrintNamedSection(style,
+                      "CONFIG FIELDS",
+                      GetArray(rdesc, "config_fields"),
+                      field_doc,
+                      brief);
+    PrintNamedSection(style,
+                      "CONFIGURATION VARIABLES",
+                      GetArray(rdesc, "config_vars"),
+                      GetObject(rdesc, "config_doc"),
+                      brief,
+                      /*is_var=*/true);
+
+    auto const provides_doc = GetObject(rdesc, "provides_doc");
+    if (brief) {
+        if (not provides_doc.empty()) {
+            PrintSection(style, "PROVIDERS", provides_doc.size());
+            PrintNames(style, Keys(provides_doc), /*is_var=*/false);
+        }
+        std::cout << std::flush;
+        return;
     }
-    auto config_doc = nlohmann::json::object();
-    auto config_doc_it = rdesc.find("config_doc");
-    if (config_doc_it != rdesc.end() and config_doc_it->is_object()) {
-        config_doc = *config_doc_it;
+
+    PrintSection(style, "RESULT");
+    std::cout << kIndentEntry << style.Name("artifacts") << "\n";
+    if (auto doc = rdesc.find("artifacts_doc"); doc != rdesc.end()) {
+        PrintDoc(*doc, kIndentEntryDoc);
     }
-    auto config_vars = rdesc.find("config_vars");
-    if (config_vars != rdesc.end() and (not config_vars->empty())) {
-        std::cout << " Variables taken from the configuration\n";
-        PrintFields(*config_vars, config_doc, " - ", "   | ");
+    std::cout << kIndentEntry << style.Name("runfiles") << "\n";
+    if (auto doc = rdesc.find("runfiles_doc"); doc != rdesc.end()) {
+        PrintDoc(*doc, kIndentEntryDoc);
     }
-    std::cout << " Result\n";
-    std::cout << " - Artifacts\n";
-    auto artifacts_doc = rdesc.find("artifacts_doc");
-    if (artifacts_doc != rdesc.end()) {
-        PrintDoc(*artifacts_doc, "   | ");
-    }
-    std::cout << " - Runfiles\n";
-    auto runfiles_doc = rdesc.find("runfiles_doc");
-    if (runfiles_doc != rdesc.end()) {
-        PrintDoc(*runfiles_doc, "   | ");
-    }
-    auto provides_doc = rdesc.find("provides_doc");
-    if (provides_doc != rdesc.end()) {
-        std::cout << " - Documented providers\n";
-        for (auto const& el : provides_doc->items()) {
-            std::cout << "   - " << el.key() << "\n";
-            PrintDoc(el.value(), "     | ");
+    if (not provides_doc.empty()) {
+        std::cout << kIndentEntry << style.Name("providers") << " "
+                  << style.Dim(fmt::format("({})", provides_doc.size()))
+                  << "\n";
+        for (auto const& el : provides_doc.items()) {
+            std::cout << kIndentSubEntry << style.Name(QuoteName(el.key()))
+                      << "\n";
+            PrintDoc(el.value(), kIndentSubEntryDoc);
         }
     }
-    std::cout << std::endl;
+    std::cout << std::flush;
 }
 
 void PrintRuleAsOrderedJson(nlohmann::json const& rdesc,
@@ -255,7 +506,7 @@ auto DescribeUserDefinedRule(
     BuildMaps::Base::EntityName const& rule_name,
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     std::size_t jobs,
-    bool print_json) -> int {
+    DescribeOptions const& options) -> int {
     bool failed{};
     auto rule_file_map = Base::CreateRuleFileMap(repo_config, jobs);
     nlohmann::json rules_file;
@@ -282,11 +533,15 @@ auto DescribeUserDefinedRule(
                     rule_name.ToString());
         return kExitAnalysisFailure;
     }
-    if (print_json) {
+    if (options.print_json) {
         PrintRuleAsOrderedJson(*ruledesc_it, rule_name.ToJson());
         return kExitSuccess;
     }
-    PrettyPrintRule(*ruledesc_it, rule_name, repo_config);
+    PrettyPrintRule(*ruledesc_it,
+                    rule_name,
+                    repo_config,
+                    Style{options.colored},
+                    options.brief);
     return kExitSuccess;
 }
 
@@ -295,7 +550,8 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
                     std::optional<ServeApi> const& serve,
                     ApiBundle const& apis,
                     std::size_t jobs,
-                    bool print_json) -> int {
+                    DescribeOptions const& options) -> int {
+    Style const style{options.colored};
     // check if target root is absent
     if (repo_config->TargetRoot(id.target.ToModule().repository)->IsAbsent()) {
         // check that we have a serve endpoint configured
@@ -334,7 +590,7 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             // if we're only asked to provide rule description as JSON, as this
             // is an export target, we don't need the blob and can directly
             // provide the user the information
-            if (print_json) {
+            if (options.print_json) {
                 std::cout << nlohmann::json({{"type", "export"}}).dump(2)
                           << std::endl;
                 return kExitSuccess;
@@ -369,24 +625,10 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             }
             // serve endpoint already checked that this target is of
             // "type": "export", so we can just print the description
-            std::cout << id.ToString()
-                      << " is defined by built-in rule \"export\"."
-                      << std::endl;
-            auto doc = desc.find("doc");
-            if (doc != desc.end()) {
-                PrintDoc(*doc, " | ");
-            }
-            auto config_doc = nlohmann::json::object();
-            auto config_doc_it = desc.find("config_doc");
-            if (config_doc_it != desc.end() and config_doc_it->is_object()) {
-                config_doc = *config_doc_it;
-            }
-            auto flexible_config = desc.find("flexible_config");
-            if (flexible_config != desc.end() and
-                (not flexible_config->empty())) {
-                std::cout << " Flexible configuration variables\n";
-                PrintFields(*flexible_config, config_doc, " - ", "   | ");
-            }
+            PrintTargetHeader(style, id.target.ToString());
+            PrintRuleHeader(style, QuoteEntity("export"), /*built_in=*/true);
+            PrintExportDescription(style, desc, options.brief);
+            std::cout << std::flush;
             return kExitSuccess;
         }
         // report failure to serve description
@@ -419,8 +661,9 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
     }
     auto desc_it = targets_file.find(id.target.GetNamedTarget().name);
     if (desc_it == targets_file.end()) {
-        std::cout << id.ToString() << " is implicitly a source file."
-                  << std::endl;
+        PrintTargetHeader(style, id.target.ToString());
+        std::cout << style.Dim("        implicitly a source file") << "\n"
+                  << std::flush;
         return kExitSuccess;
     }
     nlohmann::json desc = *desc_it;
@@ -432,44 +675,31 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
         return kExitAnalysisFailure;
     }
     if (BuildMaps::Target::IsBuiltInRule(*rule_it)) {
-        if (print_json) {
+        if (options.print_json) {
             // For built-in rules, we have no user-defined description to
             // provide other than informing the user that it is a built-in rule.
             std::cout << nlohmann::json({{"type", *rule_it}}).dump(2)
                       << std::endl;
             return kExitSuccess;
         }
-        std::cout << id.ToString() << " is defined by built-in rule "
-                  << rule_it->dump() << "." << std::endl;
+        PrintTargetHeader(style, id.target.ToString());
+        PrintRuleHeader(
+            style, QuoteEntity(rule_it->get<std::string>()), /*built_in=*/true);
         if (*rule_it == "export") {
             // export targets may have doc fields of their own.
-            auto doc = desc.find("doc");
-            if (doc != desc.end()) {
-                PrintDoc(*doc, " | ");
-            }
-            auto config_doc = nlohmann::json::object();
-            auto config_doc_it = desc.find("config_doc");
-            if (config_doc_it != desc.end() and config_doc_it->is_object()) {
-                config_doc = *config_doc_it;
-            }
-            auto flexible_config = desc.find("flexible_config");
-            if (flexible_config != desc.end() and
-                (not flexible_config->empty())) {
-                std::cout << " Flexible configuration variables\n";
-                PrintFields(*flexible_config, config_doc, " - ", "   | ");
-            }
+            PrintExportDescription(style, desc, options.brief);
         }
         else if (*rule_it == "configure") {
-            auto target = desc.find("target");
-            auto doc = desc.find("doc");
-            if (doc != desc.end()) {
-                PrintDoc(*doc, " | ");
-            }
-            if (target != desc.end()) {
-                std::cout << "The target to be configured is defined as "
-                          << target->dump() << "." << std::endl;
+            PrintDescription(desc);
+            if (auto target = desc.find("target"); target != desc.end()) {
+                PrintSection(style, "CONFIGURED TARGET");
+                std::cout << kIndentEntry
+                          << style.Entity(ResolveTargetName(
+                                 *target, id.target, repo_config))
+                          << "\n";
             }
         }
+        std::cout << std::flush;
         return kExitSuccess;
     }
     auto rule_name = BuildMaps::Base::ParseEntityNameFromJson(
@@ -486,11 +716,10 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
     if (not rule_name) {
         return kExitAnalysisFailure;
     }
-    if (not print_json) {
-        std::cout << id.ToString() << " is defined by user-defined rule "
-                  << rule_name->ToString() << ".\n\n";
+    if (not options.print_json) {
+        PrintTargetHeader(style, id.target.ToString());
     }
-    return DescribeUserDefinedRule(*rule_name, repo_config, jobs, print_json);
+    return DescribeUserDefinedRule(*rule_name, repo_config, jobs, options);
 }
 
 #endif  // BOOTSTRAP_BUILD_TOOL

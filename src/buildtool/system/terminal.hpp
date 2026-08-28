@@ -31,20 +31,22 @@ namespace Terminal {
     return value != nullptr and *value != '\0';
 }
 
-/// \brief Check whether stderr is attached to a terminal.
-[[nodiscard]] static inline auto IsTty() noexcept -> bool {
-    return isatty(STDERR_FILENO) == 1;
+/// \brief Check whether the given file descriptor, stderr by default, is
+/// attached to a terminal.
+[[nodiscard]] static inline auto IsTty(int fd = STDERR_FILENO) noexcept
+    -> bool {
+    return isatty(fd) == 1;
 }
 
-/// \brief Obtain the width of the terminal attached to stderr, if any. Note
-/// that a terminal may as well report a width of zero, e.g., if it has been
-/// allocated without specifying a window size. In this case the width is
-/// reported as unknown.
-[[nodiscard]] static inline auto Width() noexcept
+/// \brief Obtain the width of the terminal attached to the given file
+/// descriptor, stderr by default, if any. Note that a terminal may as well
+/// report a width of zero, e.g., if it has been allocated without specifying a
+/// window size. In this case the width is reported as unknown.
+[[nodiscard]] static inline auto Width(int fd = STDERR_FILENO) noexcept
     -> std::optional<unsigned int> {
     struct winsize ws {};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
-    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) == -1 or ws.ws_col == 0) {
+    if (ioctl(fd, TIOCGWINSZ, &ws) == -1 or ws.ws_col == 0) {
         return std::nullopt;
     }
     return ws.ws_col;
@@ -61,14 +63,15 @@ namespace Terminal {
 /// against colors. The environment variables FORCE_COLOR (only ever enables
 /// colors) and NO_COLOR (see https://no-color.org) are honored, in this
 /// order, before falling back to terminal detection.
-[[nodiscard]] static inline auto UseColor() noexcept -> bool {
+[[nodiscard]] static inline auto UseColor(int fd = STDERR_FILENO) noexcept
+    -> bool {
     if (IsEnvSet("FORCE_COLOR")) {
         return true;
     }
     if (IsEnvSet("NO_COLOR")) {
         return false;
     }
-    return IsTty();
+    return IsTty(fd);
 }
 
 }  // namespace Terminal

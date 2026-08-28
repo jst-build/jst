@@ -31,6 +31,8 @@
 #include <variant>
 #include <vector>
 
+#include <unistd.h>
+
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/analysed_target/analysed_target.hpp"
@@ -1231,18 +1233,23 @@ auto main(int argc, char* argv[]) -> int {
                                                      main_ws_root,
                                                      &repo_config,
                                                      arguments.analysis)) {
+                DescribeOptions const options{
+                    .print_json = arguments.describe.print_json,
+                    .brief = arguments.describe.brief,
+                    .colored = arguments.log.color.value_or(
+                        Terminal::UseColor(STDOUT_FILENO))};
                 auto result =
                     arguments.describe.describe_rule
                         ? DescribeUserDefinedRule(id->target,
                                                   &repo_config,
                                                   arguments.common.jobs,
-                                                  arguments.describe.print_json)
+                                                  options)
                         : DescribeTarget(*id,
                                          &repo_config,
                                          serve,
                                          main_apis,
                                          arguments.common.jobs,
-                                         arguments.describe.print_json);
+                                         options);
                 if (profile != nullptr) {
                     profile->Write(result);
                 }

@@ -111,29 +111,33 @@ seen via `jst describe`.
 ``` sh
 $ jst describe tests greet
 INFO: Found 3 repositories involved
-['tutorial//tests:greet',{}] is defined by user-defined rule 'rules-cc//CC/test:test'.
+TARGET  'tutorial//tests:greet'
+RULE    'rules-cc//CC/test:test'  (user-defined)
 
- | A test written in C++
- String fields
- - "name"
-   | The name of the test
+  A test written in C++
+
+STRING FIELDS (7)
+  name
+    The name of the test
 ...
- - implicit dependency
-   | The C/C++ toolchain to use
-   - 'rules-cc//CC:defaults'
- - implicit dependency
-   | The test runner which starts the actual test binary after providing
-   | the respective environment. The runner also takes care of capturing
-   | stdout/stderr and timing information.
-   - 'rules-cc//CC/test:runner'
- - implicit dependency
-   | The shell toolchain to use PATH from for calling the summary action
-   - 'rules-cc//shell:defaults'
- - implicit dependency
-   | Tool to aggregate the results of individual test runs (for flakyness
-   | detection) to an overall test result. If more fields than the result
-   | itself is needed, those can be specified using the "summarizer" rule.
-   - 'rules-cc//shell/test:summarizer'
+
+IMPLICIT DEPENDENCIES (4)
+  defaults
+    The C/C++ toolchain to use
+    - 'rules-cc//CC:defaults'
+  runner
+    The test runner which starts the actual test binary after providing
+    the respective environment. The runner also takes care of capturing
+    stdout/stderr and timing information.
+    - 'rules-cc//CC/test:runner'
+  'shell-defaults'
+    The shell toolchain to use PATH from for calling the summary action
+    - 'rules-cc//shell:defaults'
+  summarizer
+    Tool to aggregate the results of individual test runs (for flakyness
+    detection) to an overall test result. If more fields than the result
+    itself is needed, those can be specified using the "summarizer" rule.
+    - 'rules-cc//shell/test:summarizer'
 ...
 ```
 

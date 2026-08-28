@@ -25,18 +25,29 @@
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
 #include "src/buildtool/serve_api/remote/serve_api.hpp"
 
+/// \brief Options for describing rules and targets.
+struct DescribeOptions {
+    // Print the description as JSON instead of pretty-printing it. Takes
+    // precedence over brief.
+    bool print_json{};
+    // Omit any documentation and print names only.
+    bool brief{};
+    // Use ANSI escape sequences to highlight the description.
+    bool colored{};
+};
+
 [[nodiscard]] auto DescribeTarget(
     BuildMaps::Target::ConfiguredTarget const& id,
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     std::optional<ServeApi> const& serve,
     ApiBundle const& apis,
     std::size_t jobs,
-    bool print_json) -> int;
+    DescribeOptions const& options) -> int;
 
 [[nodiscard]] auto DescribeUserDefinedRule(
     BuildMaps::Base::EntityName const& rule_name,
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     std::size_t jobs,
-    bool print_json) -> int;
+    DescribeOptions const& options) -> int;
 
 #endif  // INCLUDED_SRC_BUILDTOOL_MAIN_DESCRIBE_HPP
