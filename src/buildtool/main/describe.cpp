@@ -28,8 +28,6 @@
 #include <string_view>
 #include <vector>
 
-#include <unistd.h>
-
 #include "fmt/color.h"
 #include "fmt/format.h"
 #include "nlohmann/json.hpp"
@@ -47,14 +45,10 @@
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/exit_codes.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
-#include "src/buildtool/system/terminal.hpp"
 
 namespace {
 
 namespace Base = BuildMaps::Base;
-
-// Fallback width used if the output is not attached to a terminal.
-auto constexpr kDefaultWidth = 80U;
 
 // Indentation of the different levels of the description.
 auto constexpr kIndentWidth = std::size_t{2};
@@ -222,8 +216,10 @@ void PrintSection(Style const& style,
 }
 
 /// \brief Print the given names only, filled into the available width.
-void PrintNames(Style const& style, nlohmann::json const& names, bool is_var) {
-    auto const width = Terminal::Width(STDOUT_FILENO).value_or(kDefaultWidth);
+void PrintNames(Style const& style,
+                nlohmann::json const& names,
+                bool is_var,
+                unsigned int width) {
     std::size_t column{};
     for (auto const& entry : names) {
         if (not entry.is_string()) {
@@ -272,14 +268,14 @@ void PrintNamedSection(Style const& style,
                        std::string const& title,
                        nlohmann::json const& names,
                        nlohmann::json const& docs,
-                       bool brief,
+                       DescribeOptions const& options,
                        bool is_var = false) {
     if (names.empty()) {
         return;
     }
     PrintSection(style, title, names.size());
-    if (brief) {
-        PrintNames(style, names, is_var);
+    if (options.brief) {
+        PrintNames(style, names, is_var, options.width);
     }
     else {
         PrintNamesWithDoc(style, names, docs, is_var);
@@ -310,13 +306,13 @@ void PrintNamedSection(Style const& style,
 /// both.
 void PrintExportDescription(Style const& style,
                             nlohmann::json const& desc,
-                            bool brief) {
+                            DescribeOptions const& options) {
     PrintDescription(desc);
     PrintNamedSection(style,
                       "FLEXIBLE CONFIGURATION VARIABLES",
                       GetArray(desc, "flexible_config"),
                       GetObject(desc, "config_doc"),
-                      brief,
+                      options,
                       /*is_var=*/true);
 }
 
@@ -324,7 +320,7 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
                      BuildMaps::Base::EntityName const& rule_name,
                      gsl::not_null<const RepositoryConfig*> const& repo_config,
                      Style const& style,
-                     bool brief) {
+                     DescribeOptions const& options) {
     PrintRuleHeader(style, rule_name.ToString(), /*built_in=*/false);
     PrintDescription(rdesc);
 
@@ -333,18 +329,19 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
                       "STRING FIELDS",
                       GetArray(rdesc, "string_fields"),
                       field_doc,
-                      brief);
+                      options);
     PrintNamedSection(style,
                       "TARGET FIELDS",
                       GetArray(rdesc, "target_fields"),
                       field_doc,
-                      brief);
+                      options);
 
     auto const implicit_targets = GetObject(rdesc, "implicit");
     if (not implicit_targets.empty()) {
         PrintSection(style, "IMPLICIT DEPENDENCIES", implicit_targets.size());
-        if (brief) {
-            PrintNames(style, Keys(implicit_targets), /*is_var=*/false);
+        if (options.brief) {
+            PrintNames(
+                style, Keys(implicit_targets), /*is_var=*/false, options.width);
         }
         else {
             for (auto const& [key, value] : implicit_targets.items()) {
@@ -380,19 +377,20 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
                       "CONFIG FIELDS",
                       GetArray(rdesc, "config_fields"),
                       field_doc,
-                      brief);
+                      options);
     PrintNamedSection(style,
                       "CONFIGURATION VARIABLES",
                       GetArray(rdesc, "config_vars"),
                       GetObject(rdesc, "config_doc"),
-                      brief,
+                      options,
                       /*is_var=*/true);
 
     auto const provides_doc = GetObject(rdesc, "provides_doc");
-    if (brief) {
+    if (options.brief) {
         if (not provides_doc.empty()) {
             PrintSection(style, "PROVIDERS", provides_doc.size());
-            PrintNames(style, Keys(provides_doc), /*is_var=*/false);
+            PrintNames(
+                style, Keys(provides_doc), /*is_var=*/false, options.width);
         }
         std::cout << std::flush;
         return;
@@ -537,11 +535,8 @@ auto DescribeUserDefinedRule(
         PrintRuleAsOrderedJson(*ruledesc_it, rule_name.ToJson());
         return kExitSuccess;
     }
-    PrettyPrintRule(*ruledesc_it,
-                    rule_name,
-                    repo_config,
-                    Style{options.colored},
-                    options.brief);
+    PrettyPrintRule(
+        *ruledesc_it, rule_name, repo_config, Style{options.colored}, options);
     return kExitSuccess;
 }
 
@@ -627,7 +622,7 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             // "type": "export", so we can just print the description
             PrintTargetHeader(style, id.target.ToString());
             PrintRuleHeader(style, QuoteEntity("export"), /*built_in=*/true);
-            PrintExportDescription(style, desc, options.brief);
+            PrintExportDescription(style, desc, options);
             std::cout << std::flush;
             return kExitSuccess;
         }
@@ -687,7 +682,7 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             style, QuoteEntity(rule_it->get<std::string>()), /*built_in=*/true);
         if (*rule_it == "export") {
             // export targets may have doc fields of their own.
-            PrintExportDescription(style, desc, options.brief);
+            PrintExportDescription(style, desc, options);
         }
         else if (*rule_it == "configure") {
             PrintDescription(desc);

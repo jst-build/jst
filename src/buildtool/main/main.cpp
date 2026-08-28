@@ -70,6 +70,7 @@
 #include "src/buildtool/main/diagnose.hpp"
 #include "src/buildtool/main/exit_codes.hpp"
 #include "src/buildtool/main/install_cas.hpp"
+#include "src/buildtool/main/pager.hpp"
 #include "src/buildtool/main/version.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
 #include "src/buildtool/profile/profile.hpp"
@@ -1237,19 +1238,26 @@ auto main(int argc, char* argv[]) -> int {
                     .print_json = arguments.describe.print_json,
                     .brief = arguments.describe.brief,
                     .colored = arguments.log.color.value_or(
-                        Terminal::UseColor(STDOUT_FILENO))};
-                auto result =
-                    arguments.describe.describe_rule
-                        ? DescribeUserDefinedRule(id->target,
-                                                  &repo_config,
-                                                  arguments.common.jobs,
-                                                  options)
-                        : DescribeTarget(*id,
-                                         &repo_config,
-                                         serve,
-                                         main_apis,
-                                         arguments.common.jobs,
-                                         options);
+                        Terminal::UseColor(STDOUT_FILENO)),
+                    .width = Terminal::Width(STDOUT_FILENO)
+                                 .value_or(kDefaultDescribeWidth)};
+                int result{};
+                {
+                    // the description can be long, so let it be browsed
+                    Pager const pager{not arguments.describe.no_pager};
+                    result =
+                        arguments.describe.describe_rule
+                            ? DescribeUserDefinedRule(id->target,
+                                                      &repo_config,
+                                                      arguments.common.jobs,
+                                                      options)
+                            : DescribeTarget(*id,
+                                             &repo_config,
+                                             serve,
+                                             main_apis,
+                                             arguments.common.jobs,
+                                             options);
+                }
                 if (profile != nullptr) {
                     profile->Write(result);
                 }

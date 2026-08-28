@@ -25,6 +25,9 @@
 #include "src/buildtool/execution_api/common/api_bundle.hpp"
 #include "src/buildtool/serve_api/remote/serve_api.hpp"
 
+// Width assumed for the description if the output is not a terminal.
+inline constexpr auto kDefaultDescribeWidth = 80U;
+
 /// \brief Options for describing rules and targets.
 struct DescribeOptions {
     // Print the description as JSON instead of pretty-printing it. Takes
@@ -34,6 +37,8 @@ struct DescribeOptions {
     bool brief{};
     // Use ANSI escape sequences to highlight the description.
     bool colored{};
+    // Width available for the description, e.g., for filling in names.
+    unsigned int width{kDefaultDescribeWidth};
 };
 
 [[nodiscard]] auto DescribeTarget(
