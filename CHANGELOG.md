@@ -15,6 +15,10 @@
 ### Other changes
 
 - `serve` and `execute` are now known `jst` subcommands.
+- The single-node execution service (`jst execute`) now rejects batch requests
+  whose total blob size exceeds the supported limit with `INVALID_ARGUMENT`, as
+  foreseen by the remote build execution protocol, instead of answering them
+  with a response of arbitrary size.
 - The `jstlang` language implementation, formerly vendored as a separate
   repository under `extern/justlang`, now lives in the main source tree at
   `src/buildtool/jstlang`. Its compiler binary is available as the export
