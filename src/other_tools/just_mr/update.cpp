@@ -36,10 +36,12 @@
 #include "src/buildtool/multithreading/async_map_utils.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
 #include "src/buildtool/progress_reporting/base_progress_reporter.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
 #include "src/other_tools/just_mr/exit_codes.hpp"
 #include "src/other_tools/just_mr/progress_reporting/progress.hpp"
-#include "src/other_tools/just_mr/progress_reporting/progress_reporter.hpp"
+#include "src/other_tools/just_mr/progress_reporting/setup_log.hpp"
+#include "src/other_tools/just_mr/progress_reporting/setup_reporter.hpp"
 #include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 #include "src/other_tools/just_mr/utils.hpp"
 #include "src/other_tools/ops_maps/git_update_map.hpp"
@@ -244,10 +246,19 @@ auto MultiRepoUpdate(std::shared_ptr<Configuration> const& config,
                                              &progress,
                                              common_args.jobs);
 
+    // report what is currently being worked on if running interactively, or
+    // else one line for each repository that had to be set up
+    auto const live_report = Terminal::IsInteractive();
+    SetupLog setup_log{&progress, /*quiet=*/live_report};
+    progress.SetStartHook([&setup_log](auto const& repo, auto index) {
+        setup_log.NotifyStart(repo, index);
+    });
+
     // set up progress observer
     std::atomic<bool> done{false};
     std::condition_variable cv{};
-    auto reporter = JustMRProgressReporter::Reporter(&stats, &progress);
+    auto reporter = live_report ? SetupReporter::Reporter(&progress)
+                                : BaseProgressReporter::Reporter([]() {});
     auto observer =
         std::thread([reporter, &done, &cv]() { reporter(&done, &cv); });
 

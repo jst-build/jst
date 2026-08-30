@@ -18,7 +18,6 @@
 #include <optional>
 
 #include "fmt/format.h"
-#include "src/buildtool/progress_reporting/task_tracker.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
 
 auto CreateGitUpdateMap(
@@ -58,7 +57,7 @@ auto CreateGitUpdateMap(
                 MirrorsUtils::GetInheritEnv(mirrors, key.inherit_env);
             // update commit
             auto id = fmt::format("{}:{}", key.repo, key.branch);
-            progress->TaskTracker().Start(id);
+            progress->Start(id, SetupPhase::kFetching);
             auto new_commit = git_repo->UpdateCommitViaTmpRepo(*storage_config,
                                                                key.repo,
                                                                key.branch,
@@ -66,11 +65,12 @@ auto CreateGitUpdateMap(
                                                                git_bin,
                                                                launcher,
                                                                wrapped_logger);
-            progress->TaskTracker().Stop(id);
+            progress->Stop(id);
             if (not new_commit) {
                 return;
             }
             stats->IncrementExecutedCounter();
+            progress->Done(id);
             (*setter)(new_commit->c_str());
         };
     return AsyncMapConsumer<RepoDescriptionForUpdating, std::string>(

@@ -51,10 +51,13 @@
 #include "src/buildtool/multithreading/async_map_utils.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
 #include "src/buildtool/progress_reporting/base_progress_reporter.hpp"
+#include "src/buildtool/progress_reporting/progress_style.hpp"
 #include "src/buildtool/serve_api/remote/serve_api.hpp"
 #include "src/buildtool/storage/garbage_collector.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/other_tools/just_mr/progress_reporting/progress.hpp"
-#include "src/other_tools/just_mr/progress_reporting/progress_reporter.hpp"
+#include "src/other_tools/just_mr/progress_reporting/setup_log.hpp"
+#include "src/other_tools/just_mr/progress_reporting/setup_reporter.hpp"
 #include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 #include "src/other_tools/just_mr/setup_utils.hpp"
 #include "src/other_tools/just_mr/utils.hpp"
@@ -74,6 +77,7 @@
 
 auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                     MultiRepoCommonArguments const& common_args,
+                    MultiRepoLogArguments const& log_args,
                     MultiRepoSetupArguments const& setup_args,
                     MultiRepoJustSubCmdsArguments const& just_cmd_args,
                     MultiRepoRemoteAuthArguments const& auth_args,
@@ -419,12 +423,23 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                                                     &tree_id_git_map,
                                                     common_args.fetch_absent,
                                                     &stats,
+                                                    &progress,
                                                     common_args.jobs);
+
+    // report what is currently being worked on if running interactively, or
+    // else one line for each repository that had to be set up
+    auto const live_report =
+        Terminal::IsInteractive() and not log_args.plain_progress;
+    SetupLog setup_log{&progress, /*quiet=*/live_report};
+    progress.SetStartHook([&setup_log](auto const& repo, auto index) {
+        setup_log.NotifyStart(repo, index);
+    });
 
     // set up progress observer
     std::atomic<bool> done{false};
     std::condition_variable cv{};
-    auto reporter = JustMRProgressReporter::Reporter(&stats, &progress);
+    auto reporter = live_report ? SetupReporter::Reporter(&progress)
+                                : BaseProgressReporter::Reporter([]() {});
     auto observer =
         std::thread([reporter, &done, &cv]() { reporter(&done, &cv); });
 
@@ -524,6 +539,22 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
     done = true;
     cv.notify_all();
     observer.join();
+
+    auto const work_count = setup_log.GetWorkCount();
+    if (work_count > 0) {
+        // report the end of the setup, which also clears the progress report
+        Logger::Log(LogLevel::Info,
+                    "Processed {} repositories in {} ({} pre-existed).",
+                    work_count,
+                    FormatDuration(progress.GetDuration()),
+                    setup_repos->to_setup.size() - work_count);
+    }
+    else {
+        // clear progress report
+        Logger::LogRaw(nullptr, LogLevel::Info, [](bool /*colored*/) {
+            return std::string{};
+        });
+    }
 
     if (failed) {
         return std::nullopt;

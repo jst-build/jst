@@ -443,6 +443,7 @@ auto main(int argc, char* argv[]) -> int {
             auto mr_config_path = MultiRepoSetup(
                 config,
                 arguments.common,
+                arguments.log,
                 arguments.setup,
                 arguments.just_cmd,
                 arguments.auth,

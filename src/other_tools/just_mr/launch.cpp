@@ -119,6 +119,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
                 use_config = true;
                 mr_config_pair = MultiRepoSetup(config,
                                                 common_args,
+                                                log_args,
                                                 setup_args,
                                                 just_cmd_args,
                                                 auth_args,

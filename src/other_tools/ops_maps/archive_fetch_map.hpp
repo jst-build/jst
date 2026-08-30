@@ -25,6 +25,7 @@
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/multithreading/async_map_consumer.hpp"
 #include "src/buildtool/storage/storage.hpp"
+#include "src/other_tools/just_mr/progress_reporting/progress.hpp"
 #include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 #include "src/other_tools/ops_maps/content_cas_map.hpp"
 
@@ -38,6 +39,7 @@ using ArchiveFetchMap = AsyncMapConsumer<ArchiveContent, bool>;
     gsl::not_null<IExecutionApi const*> const& local_api,
     IExecutionApi const* remote_api,
     gsl::not_null<JustMRStatistics*> const& stats,
+    gsl::not_null<JustMRProgress*> const& progress,
     std::size_t jobs) -> ArchiveFetchMap;
 
 // use explicit cast to std::function to allow template deduction when used

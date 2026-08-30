@@ -26,7 +26,6 @@
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_repo.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
-#include "src/buildtool/progress_reporting/task_tracker.hpp"
 #include "src/buildtool/storage/fs_utils.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
@@ -102,7 +101,7 @@ void FetchFromNetwork(ArchiveContent const& key,
             /*fatal=*/true);
         return;
     }
-    progress->TaskTracker().Stop(key.origin);
+    progress->Stop(key.origin);
     // success!
     (*setter)(nullptr);
 }
@@ -255,7 +254,7 @@ auto CreateContentCASMap(
                 }
 
                 // blob not found in Git cache
-                progress->TaskTracker().Start(key.origin);
+                progress->Start(key.origin, SetupPhase::kFetching);
                 // add distfile to native CAS
                 auto repo_distfile =
                     (key.distfile ? key.distfile.value()
@@ -267,7 +266,7 @@ auto CreateContentCASMap(
                 // check if content is in native CAS now
                 if (native_cas.BlobPath(native_digest,
                                         /*is_executable=*/false)) {
-                    progress->TaskTracker().Stop(key.origin);
+                    progress->Stop(key.origin);
                     (*setter)(nullptr);
                     return;
                 }
@@ -283,7 +282,7 @@ auto CreateContentCASMap(
                                                      .type = ObjectType::File}};
                         if (remote_api->RetrieveToCas(remote_content_info,
                                                       *local_api)) {
-                            progress->TaskTracker().Stop(key.origin);
+                            progress->Stop(key.origin);
                             if (remote_digest->hash() ==
                                 key.content_hash.Hash()) {
                                 // content is in native local CAS, so all done
@@ -349,7 +348,7 @@ auto CreateContentCASMap(
                     remote_api != nullptr and
                     remote_api->RetrieveToCas(native_content_info,
                                               *local_api)) {
-                    progress->TaskTracker().Stop(key.origin);
+                    progress->Stop(key.origin);
                     (*setter)(nullptr);
                     return;
                 }

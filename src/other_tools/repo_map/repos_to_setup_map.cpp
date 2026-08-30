@@ -64,6 +64,7 @@ void GitCheckout(ExpressionPtr const& repo_desc,
                  std::string const& repo_name,
                  gsl::not_null<CommitGitMap*> const& commit_git_map,
                  gsl::not_null<JustMRStatistics*> const& stats,
+                 gsl::not_null<JustMRProgress*> const& progress,
                  gsl::not_null<TaskSystem*> const& ts,
                  ReposToSetupMap::SetterPtr const& setter,
                  ReposToSetupMap::LoggerPtr const& logger) {
@@ -197,7 +198,7 @@ void GitCheckout(ExpressionPtr const& repo_desc,
     commit_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(git_repo_info)},
-        [repos = std::move(repos), repo_name, stats, setter](
+        [repos = std::move(repos), repo_name, stats, progress, setter](
             auto const& values) {
             auto ws_root = values[0]->first;
             nlohmann::json cfg({});
@@ -205,9 +206,11 @@ void GitCheckout(ExpressionPtr const& repo_desc,
             SetReposTakeOver(&cfg, repos, repo_name);
             if (values[0]->second) {
                 stats->IncrementCacheHitsCounter();
+                progress->Done(repo_name);
             }
             else {
                 stats->IncrementExecutedCounter();
+                progress->Done(repo_name);
             }
             (*setter)(std::move(cfg));
         },
@@ -228,6 +231,7 @@ void ArchiveCheckout(ExpressionPtr const& repo_desc,
                      std::string const& repo_type,
                      gsl::not_null<ContentGitMap*> const& content_git_map,
                      gsl::not_null<JustMRStatistics*> const& stats,
+                     gsl::not_null<JustMRProgress*> const& progress,
                      gsl::not_null<TaskSystem*> const& ts,
                      ReposToSetupMap::SetterPtr const& setter,
                      ReposToSetupMap::LoggerPtr const& logger) {
@@ -240,7 +244,7 @@ void ArchiveCheckout(ExpressionPtr const& repo_desc,
     content_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(*archive_repo_info)},
-        [repos = std::move(repos), repo_name, stats, setter](
+        [repos = std::move(repos), repo_name, stats, progress, setter](
             auto const& values) {
             auto ws_root = values[0]->first;
             nlohmann::json cfg({});
@@ -248,9 +252,11 @@ void ArchiveCheckout(ExpressionPtr const& repo_desc,
             SetReposTakeOver(&cfg, repos, repo_name);
             if (values[0]->second) {
                 stats->IncrementCacheHitsCounter();
+                progress->Done(repo_name);
             }
             else {
                 stats->IncrementExecutedCounter();
+                progress->Done(repo_name);
             }
             (*setter)(std::move(cfg));
         },
@@ -272,6 +278,7 @@ void ForeignFileCheckout(
     std::string const& repo_name,
     gsl::not_null<ForeignFileGitMap*> const& foreign_file_git_map,
     gsl::not_null<JustMRStatistics*> const& stats,
+    gsl::not_null<JustMRProgress*> const& progress,
     gsl::not_null<TaskSystem*> const& ts,
     ReposToSetupMap::SetterPtr const& setter,
     ReposToSetupMap::LoggerPtr const& logger) {
@@ -284,7 +291,7 @@ void ForeignFileCheckout(
     foreign_file_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(*foreign_file_repo_info)},
-        [repos = std::move(repos), repo_name, stats, setter](
+        [repos = std::move(repos), repo_name, stats, progress, setter](
             auto const& values) {
             auto ws_root = values[0]->first;
             nlohmann::json cfg({});
@@ -292,9 +299,11 @@ void ForeignFileCheckout(
             SetReposTakeOver(&cfg, repos, repo_name);
             if (values[0]->second) {
                 stats->IncrementCacheHitsCounter();
+                progress->Done(repo_name);
             }
             else {
                 stats->IncrementExecutedCounter();
+                progress->Done(repo_name);
             }
             (*setter)(std::move(cfg));
         },
@@ -315,6 +324,7 @@ void FileCheckout(ExpressionPtr const& repo_desc,
                   gsl::not_null<FilePathGitMap*> const& fpath_git_map,
                   bool fetch_absent,
                   gsl::not_null<JustMRStatistics*> const& stats,
+                  gsl::not_null<JustMRProgress*> const& progress,
                   gsl::not_null<TaskSystem*> const& ts,
                   ReposToSetupMap::SetterPtr const& setter,
                   ReposToSetupMap::LoggerPtr const& logger) {
@@ -373,7 +383,7 @@ void FileCheckout(ExpressionPtr const& repo_desc,
         fpath_git_map->ConsumeAfterKeysReady(
             ts,
             {std::move(fpath_info)},
-            [repos = std::move(repos), repo_name, stats, setter](
+            [repos = std::move(repos), repo_name, stats, progress, setter](
                 auto const& values) {
                 auto ws_root = *values[0];
                 nlohmann::json cfg({});
@@ -382,6 +392,7 @@ void FileCheckout(ExpressionPtr const& repo_desc,
                 (*setter)(std::move(cfg));
                 // report work done
                 stats->IncrementLocalPathsCounter();
+                progress->Done(repo_name);
             },
             [logger, repo_name](auto const& msg, bool fatal) {
                 (*logger)(fmt::format("While setting the workspace root for "
@@ -403,6 +414,7 @@ void FileCheckout(ExpressionPtr const& repo_desc,
         (*setter)(std::move(cfg));
         // report local path
         stats->IncrementLocalPathsCounter();
+        progress->Done(repo_name);
     }
 }
 
@@ -414,6 +426,7 @@ void DistdirCheckout(ExpressionPtr const& repo_desc,
                      gsl::not_null<DistdirGitMap*> const& distdir_git_map,
                      bool fetch_absent,
                      gsl::not_null<JustMRStatistics*> const& stats,
+                     gsl::not_null<JustMRProgress*> const& progress,
                      gsl::not_null<TaskSystem*> const& ts,
                      ReposToSetupMap::SetterPtr const& setter,
                      ReposToSetupMap::LoggerPtr const& logger) {
@@ -557,7 +570,7 @@ void DistdirCheckout(ExpressionPtr const& repo_desc,
     distdir_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(distdir_info)},
-        [repos = std::move(repos), repo_name, stats, setter](
+        [repos = std::move(repos), repo_name, stats, progress, setter](
             auto const& values) {
             auto ws_root = values[0]->first;
             nlohmann::json cfg({});
@@ -565,9 +578,11 @@ void DistdirCheckout(ExpressionPtr const& repo_desc,
             SetReposTakeOver(&cfg, repos, repo_name);
             if (values[0]->second) {
                 stats->IncrementCacheHitsCounter();
+                progress->Done(repo_name);
             }
             else {
                 stats->IncrementExecutedCounter();
+                progress->Done(repo_name);
             }
             (*setter)(std::move(cfg));
         },
@@ -588,6 +603,7 @@ void GitTreeCheckout(ExpressionPtr const& repo_desc,
                      gsl::not_null<TreeIdGitMap*> const& tree_id_git_map,
                      bool fetch_absent,
                      gsl::not_null<JustMRStatistics*> const& stats,
+                     gsl::not_null<JustMRProgress*> const& progress,
                      gsl::not_null<TaskSystem*> const& ts,
                      ReposToSetupMap::SetterPtr const& setter,
                      ReposToSetupMap::LoggerPtr const& logger) {
@@ -625,7 +641,7 @@ void GitTreeCheckout(ExpressionPtr const& repo_desc,
     tree_id_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(tree_id_info)},
-        [repos = std::move(repos), repo_name, stats, setter](
+        [repos = std::move(repos), repo_name, stats, progress, setter](
             auto const& values) {
             auto ws_root = values[0]->first;
             nlohmann::json cfg({});
@@ -633,9 +649,11 @@ void GitTreeCheckout(ExpressionPtr const& repo_desc,
             SetReposTakeOver(&cfg, repos, repo_name);
             if (values[0]->second) {
                 stats->IncrementCacheHitsCounter();
+                progress->Done(repo_name);
             }
             else {
                 stats->IncrementExecutedCounter();
+                progress->Done(repo_name);
             }
             (*setter)(std::move(cfg));
         },
@@ -715,6 +733,7 @@ auto CreateReposToSetupMap(
     gsl::not_null<TreeIdGitMap*> const& tree_id_git_map,
     bool fetch_absent,
     gsl::not_null<JustMRStatistics*> const& stats,
+    gsl::not_null<JustMRProgress*> const& progress,
     std::size_t jobs) -> ReposToSetupMap {
     auto setup_repo = [config,
                        main,
@@ -726,17 +745,19 @@ auto CreateReposToSetupMap(
                        distdir_git_map,
                        tree_id_git_map,
                        fetch_absent,
-                       stats](auto ts,
-                              auto setter,
-                              auto logger,
-                              auto subcaller,
-                              auto const& key) {
+                       stats,
+                       progress](auto ts,
+                                 auto setter,
+                                 auto logger,
+                                 auto subcaller,
+                                 auto const& key) {
         auto repos = (*config)["repositories"];
         if (main and (key == *main) and interactive) {
             // no repository checkout required
             nlohmann::json cfg({});
             SetReposTakeOver(&cfg, repos, key);
             stats->IncrementLocalPathsCounter();
+            progress->Done(key);
             (*setter)(std::move(cfg));
         }
         else {
@@ -823,6 +844,7 @@ auto CreateReposToSetupMap(
                                 key,
                                 commit_git_map,
                                 stats,
+                                progress,
                                 ts,
                                 setter,
                                 wrapped_logger);
@@ -835,6 +857,7 @@ auto CreateReposToSetupMap(
                                     repo_type_str,
                                     content_git_map,
                                     stats,
+                                    progress,
                                     ts,
                                     setter,
                                     wrapped_logger);
@@ -846,6 +869,7 @@ auto CreateReposToSetupMap(
                                         key,
                                         foreign_file_git_map,
                                         stats,
+                                        progress,
                                         ts,
                                         setter,
                                         wrapped_logger);
@@ -858,6 +882,7 @@ auto CreateReposToSetupMap(
                                  fpath_git_map,
                                  fetch_absent,
                                  stats,
+                                 progress,
                                  ts,
                                  setter,
                                  wrapped_logger);
@@ -870,6 +895,7 @@ auto CreateReposToSetupMap(
                                     distdir_git_map,
                                     fetch_absent,
                                     stats,
+                                    progress,
                                     ts,
                                     setter,
                                     wrapped_logger);
@@ -882,6 +908,7 @@ auto CreateReposToSetupMap(
                                     tree_id_git_map,
                                     fetch_absent,
                                     stats,
+                                    progress,
                                     ts,
                                     setter,
                                     wrapped_logger);
@@ -889,6 +916,7 @@ auto CreateReposToSetupMap(
                 }
                 case CheckoutType::Precomputed: {
                     stats->IncrementComputedCounter();
+                    progress->Done(key);
                     PrecomputedRootCheckout(*resolved_repo_desc,
                                             std::move(repos),
                                             key,

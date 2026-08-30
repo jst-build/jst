@@ -31,7 +31,6 @@
 #include "src/buildtool/file_system/git_types.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
-#include "src/buildtool/progress_reporting/task_tracker.hpp"
 #include "src/buildtool/storage/fs_utils.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
@@ -260,7 +259,7 @@ void TagAndSetRoot(std::filesystem::path const& repo_root,
             }
             // set the workspace root as present
             if (finish_task) {
-                progress->TaskTracker().Stop(repo_info.origin);
+                progress->Stop(repo_info.origin);
             }
             (*ws_setter)(
                 std::pair(nlohmann::json::array(
@@ -505,7 +504,7 @@ void NetworkFetchAndSetPresentRoot(
             return;
         }
         // set the workspace root as present
-        progress->TaskTracker().Stop(repo_info.origin);
+        progress->Stop(repo_info.origin);
         (*ws_setter)(std::pair(
             nlohmann::json::array({repo_info.ignore_special
                                        ? FileRoot::kGitTreeIgnoreSpecialMarker
@@ -665,7 +664,7 @@ void EnsureCommit(
         // older generations
 
         // Not present locally, we have to fetch
-        progress->TaskTracker().Start(repo_info.origin);
+        progress->Start(repo_info.origin, SetupPhase::kFetching);
         // check if commit is known to remote serve service
         if (serve != nullptr) {
             // if root purely absent, request only the subdir tree
@@ -676,7 +675,7 @@ void EnsureCommit(
                                                   /*sync_tree = */ false);
                 if (serve_result) {
                     // set the workspace root as absent
-                    progress->TaskTracker().Stop(repo_info.origin);
+                    progress->Stop(repo_info.origin);
                     (*ws_setter)(std::pair(
                         nlohmann::json::array(
                             {repo_info.ignore_special
@@ -782,7 +781,7 @@ void EnsureCommit(
                                 return;
                             }
                             if (*tree_present) {
-                                progress->TaskTracker().Stop(repo_info.origin);
+                                progress->Stop(repo_info.origin);
                                 // write association to id file, get subdir
                                 // tree, and set the workspace root as present
                                 WriteIdFileAndSetWSRoot(
@@ -833,8 +832,7 @@ void EnsureCommit(
                                     return;
                                 }
                                 if (*tree_present) {
-                                    progress->TaskTracker().Stop(
-                                        repo_info.origin);
+                                    progress->Stop(repo_info.origin);
                                     // get subdir tree and set the workspace
                                     // root as present; as this tree is not in
                                     // our Git cache, no file association should
@@ -886,8 +884,7 @@ void EnsureCommit(
                                         .type = ObjectType::Tree}};
                                 if (remote_api->RetrieveToCas(remote_tree_info,
                                                               *local_api)) {
-                                    progress->TaskTracker().Stop(
-                                        repo_info.origin);
+                                    progress->Stop(repo_info.origin);
                                     // Move tree from local CAS to local Git
                                     // storage
                                     auto tmp_dir = native_storage_config
@@ -1047,7 +1044,6 @@ void EnsureCommit(
     }
     else {
         // commit is present in given repository
-        progress->TaskTracker().Start(repo_info.origin);
         // setup wrapped logger
         auto wrapped_logger = std::make_shared<AsyncMapConsumerLogger>(
             [logger](auto const& msg, bool fatal) {
@@ -1064,6 +1060,8 @@ void EnsureCommit(
         auto subtree = *std::move(res);
         // set the workspace root
         if (repo_info.absent and not fetch_absent) {
+            // only report the repository if it actually has to be set up
+            progress->Start(repo_info.origin, SetupPhase::kFetching);
             // try by all available means to generate and set the absent root
             EnsureRootAsAbsent(
                 subtree, repo_root, repo_info, serve, ws_setter, logger);

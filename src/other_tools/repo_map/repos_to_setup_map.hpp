@@ -25,6 +25,7 @@
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/multithreading/async_map_consumer.hpp"
+#include "src/other_tools/just_mr/progress_reporting/progress.hpp"
 #include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 #include "src/other_tools/root_maps/commit_git_map.hpp"
 #include "src/other_tools/root_maps/content_git_map.hpp"
@@ -49,6 +50,7 @@ auto CreateReposToSetupMap(
     gsl::not_null<TreeIdGitMap*> const& tree_id_git_map,
     bool fetch_absent,
     gsl::not_null<JustMRStatistics*> const& stats,
+    gsl::not_null<JustMRProgress*> const& progress,
     std::size_t jobs) -> ReposToSetupMap;
 
 // use explicit cast to std::function to allow template deduction when used

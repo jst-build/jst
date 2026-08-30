@@ -31,7 +31,6 @@
 #include "src/buildtool/file_system/git_cas.hpp"
 #include "src/buildtool/file_system/git_types.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
-#include "src/buildtool/progress_reporting/task_tracker.hpp"
 #include "src/buildtool/storage/fs_utils.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
@@ -916,7 +915,7 @@ auto CreateContentGitMap(
                         /*sync_tree = */ false);
                     if (serve_result) {
                         // set the workspace root as absent
-                        progress->TaskTracker().Stop(key.archive.origin);
+                        progress->Stop(key.archive.origin);
                         (*setter)(std::pair(
                             nlohmann::json::array(
                                 {FileRoot::kGitTreeMarker, serve_result->tree}),
@@ -1060,7 +1059,8 @@ auto CreateContentGitMap(
                                       /*fatal=*/true);
                             return;
                         }
-                        progress->TaskTracker().Start(key.archive.origin);
+                        progress->Start(key.archive.origin,
+                                        SetupPhase::kImporting);
                         // add distfile to CAS
                         auto repo_distfile =
                             (key.archive.distfile
@@ -1073,7 +1073,7 @@ auto CreateContentGitMap(
                         // check if content is in CAS now
                         if (auto content_cas_path = native_cas.BlobPath(
                                 digest, /*is_executable=*/false)) {
-                            progress->TaskTracker().Stop(key.archive.origin);
+                            progress->Stop(key.archive.origin);
                             ExtractAndImportToGit(key,
                                                   *content_cas_path,
                                                   archive_tree_id_file,

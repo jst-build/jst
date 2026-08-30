@@ -33,6 +33,8 @@ void ProcessContent(std::filesystem::path const& content_path,
                     IExecutionApi const* remote_api,
                     ArtifactDigest const& content_digest,
                     gsl::not_null<JustMRStatistics*> const& stats,
+                    gsl::not_null<JustMRProgress*> const& progress,
+                    std::string const& origin,
                     ArchiveFetchMap::SetterPtr const& setter,
                     ArchiveFetchMap::LoggerPtr const& logger) {
     // try to back up to remote CAS
@@ -63,6 +65,7 @@ void ProcessContent(std::filesystem::path const& content_path,
     }
     // success
     stats->IncrementExecutedCounter();
+    progress->Done(origin);
     (*setter)(true);
 }
 
@@ -74,17 +77,19 @@ auto CreateArchiveFetchMap(gsl::not_null<ContentCASMap*> const& content_cas_map,
                            gsl::not_null<IExecutionApi const*> const& local_api,
                            IExecutionApi const* remote_api,
                            gsl::not_null<JustMRStatistics*> const& stats,
+                           gsl::not_null<JustMRProgress*> const& progress,
                            std::size_t jobs) -> ArchiveFetchMap {
     auto fetch_archive = [content_cas_map,
                           fetch_dir,
                           storage,
                           local_api,
                           remote_api,
-                          stats](auto ts,
-                                 auto setter,
-                                 auto logger,
-                                 auto /* unused */,
-                                 auto const& key) {
+                          stats,
+                          progress](auto ts,
+                                    auto setter,
+                                    auto logger,
+                                    auto /* unused */,
+                                    auto const& key) {
         // get corresponding distfile
         auto distfile =
             (key.distfile
@@ -101,6 +106,8 @@ auto CreateArchiveFetchMap(gsl::not_null<ContentCASMap*> const& content_cas_map,
              remote_api,
              hash_info = key.content_hash,
              stats,
+             progress,
+             origin = key.origin,
              setter,
              logger]([[maybe_unused]] auto const& values) {
                 // content is in local CAS now
@@ -115,6 +122,8 @@ auto CreateArchiveFetchMap(gsl::not_null<ContentCASMap*> const& content_cas_map,
                                remote_api,
                                digest,
                                stats,
+                               progress,
+                               origin,
                                setter,
                                logger);
             },

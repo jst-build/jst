@@ -32,6 +32,7 @@
 [[nodiscard]] auto MultiRepoSetup(
     std::shared_ptr<Configuration> const& config,
     MultiRepoCommonArguments const& common_args,
+    MultiRepoLogArguments const& log_args,
     MultiRepoSetupArguments const& setup_args,
     MultiRepoJustSubCmdsArguments const& just_cmd_args,
     MultiRepoRemoteAuthArguments const& auth_args,

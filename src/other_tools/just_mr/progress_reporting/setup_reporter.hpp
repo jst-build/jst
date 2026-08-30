@@ -1,4 +1,4 @@
-// Copyright 2023 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_PROGRESS_REPORTER_HPP
-#define INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_PROGRESS_REPORTER_HPP
+#ifndef INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_REPORTER_HPP
+#define INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_REPORTER_HPP
+
+#include <cstdint>
 
 #include "gsl/gsl"
 #include "src/buildtool/progress_reporting/base_progress_reporter.hpp"
 #include "src/other_tools/just_mr/progress_reporting/progress.hpp"
-#include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 
-class JustMRProgressReporter final {
+class SetupReporter {
   public:
+    /// \brief Reporter constantly displaying the repositories currently being
+    /// set up. Requires an interactive terminal.
     [[nodiscard]] static auto Reporter(
-        gsl::not_null<JustMRStatistics*> const& stats,
         gsl::not_null<JustMRProgress*> const& progress) noexcept
         -> progress_reporter_t;
+
+  private:
+    static auto constexpr kDefaultPeriod = std::int64_t{100};
 };
 
-#endif  // INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_PROGRESS_REPORTER_HPP
+#endif  // INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_REPORTER_HPP

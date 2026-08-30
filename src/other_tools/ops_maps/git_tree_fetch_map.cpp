@@ -32,7 +32,6 @@
 #include "src/buildtool/file_system/git_repo.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
-#include "src/buildtool/progress_reporting/task_tracker.hpp"
 #include "src/buildtool/system/system_command.hpp"
 #include "src/other_tools/git_operations/git_ops_types.hpp"
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
@@ -442,7 +441,7 @@ auto CreateGitTreeFetchMap(
                     // done!
                     return;
                 }
-                progress->TaskTracker().Start(key.origin);
+                progress->Start(key.origin, SetupPhase::kComputing);
                 // check if tree is known to remote serve service and can be
                 // provided via the remote CAS
                 if (serve != nullptr and remote_api != nullptr) {
@@ -459,7 +458,7 @@ auto CreateGitTreeFetchMap(
                                                      .type = ObjectType::Tree}};
                         if (remote_api->RetrieveToCas(remote_tree_info,
                                                       *local_api)) {
-                            progress->TaskTracker().Stop(key.origin);
+                            progress->Stop(key.origin);
                             MoveCASTreeToGit(key.tree_hash,
                                              *remote_digest,
                                              import_to_git_map,
@@ -485,7 +484,7 @@ auto CreateGitTreeFetchMap(
                 if (compat_storage_config == nullptr and
                     remote_api != nullptr and
                     remote_api->RetrieveToCas(native_tree_info, *local_api)) {
-                    progress->TaskTracker().Stop(key.origin);
+                    progress->Stop(key.origin);
                     MoveCASTreeToGit(key.tree_hash,
                                      native_digest,
                                      import_to_git_map,
@@ -732,7 +731,7 @@ auto CreateGitTreeFetchMap(
                                               /*fatal=*/true);
                                     return;
                                 }
-                                progress->TaskTracker().Stop(key.origin);
+                                progress->Stop(key.origin);
                                 // backup to remote if needed and in native mode
                                 if (backup_to_remote and
                                     remote_api != nullptr) {
