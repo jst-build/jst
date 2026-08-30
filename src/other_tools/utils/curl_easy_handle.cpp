@@ -14,9 +14,11 @@
 
 #include "src/other_tools/utils/curl_easy_handle.hpp"
 
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <fstream>
+#include <optional>
 
 #include "fmt/format.h"
 #include "src/buildtool/file_system/file_system_manager.hpp"
@@ -57,6 +59,30 @@ auto read_stream_data(gsl::not_null<std::FILE*> const& stream) noexcept
                     size);
     }
     return content;
+}
+
+/// \brief Progress callback for curl, reporting to the CurlEasyHandle's
+/// progress callback given as payload. Returns 0 to continue the download.
+auto report_progress(void* payload,
+                     curl_off_t dltotal,
+                     curl_off_t dlnow,
+                     curl_off_t /*ultotal*/,
+                     curl_off_t /*ulnow*/) -> int {
+    try {
+        auto const* progress =
+            static_cast<CurlEasyHandle::ProgressCallback const*>(payload);
+        // the total is unknown, e.g., for chunked transfer encoding
+        auto const total =
+            dltotal > 0 ? std::optional{static_cast<std::uint64_t>(dltotal)}
+                        : std::nullopt;
+        (*progress)(static_cast<std::uint64_t>(dlnow), total);
+    } catch (std::exception const& ex) {
+        Logger::Log(LogLevel::Debug,
+                    "reporting the download progress failed with:\n{}",
+                    ex.what());
+        // continue with the download
+    }
+    return 0;
 }
 
 }  // namespace
@@ -195,7 +221,8 @@ auto CurlEasyHandle::DownloadToFile(
     }
 }
 
-auto CurlEasyHandle::DownloadToString(std::string const& url) noexcept
+auto CurlEasyHandle::DownloadToString(std::string const& url,
+                                      ProgressCallback const& progress) noexcept
     -> std::optional<std::string> {
     // create temporary file to capture curl debug output
     gsl::owner<std::FILE*> tmp_file = std::tmpfile();
@@ -221,6 +248,17 @@ auto CurlEasyHandle::DownloadToString(std::string const& url) noexcept
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
         curl_easy_setopt(
             handle_.get(), CURLOPT_WRITEDATA, static_cast<void*>(&content));
+
+        // set callback for reporting the download progress
+        if (progress) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
+            curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, 0);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
+            curl_easy_setopt(
+                handle_.get(), CURLOPT_XFERINFOFUNCTION, report_progress);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
+            curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, &progress);
+        }
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg, hicpp-vararg)
         curl_easy_setopt(handle_.get(), CURLOPT_VERBOSE, 1);

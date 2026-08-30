@@ -16,7 +16,9 @@
 #define INCLUDED_SRC_OTHER_TOOLS_UTILS_CURL_EASY_HANDLE_HPP
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <optional>
@@ -66,9 +68,19 @@ class CurlEasyHandle {
         std::string const& url,
         std::filesystem::path const& file_path) noexcept -> int;
 
+    /// \brief Callback reporting the number of bytes downloaded so far and,
+    /// if the server announces it, the total number of bytes to download.
+    /// Called from the downloading thread and must not throw.
+    using ProgressCallback =
+        std::function<void(std::uint64_t downloaded,
+                           std::optional<std::uint64_t> total)>;
+
     /// \brief Download file from URL into string as binary.
+    /// Reports the download progress, if a callback is given.
     /// Returns the content or nullopt if download failure.
-    [[nodiscard]] auto DownloadToString(std::string const& url) noexcept
+    [[nodiscard]] auto DownloadToString(
+        std::string const& url,
+        ProgressCallback const& progress = {}) noexcept
         -> std::optional<std::string>;
 
   private:

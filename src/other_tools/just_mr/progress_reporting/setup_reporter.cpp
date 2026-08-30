@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -41,17 +42,20 @@ namespace {
 // There is one line for each of the repositories worked on the longest (at
 // most kMaxRepos), holding a spinner and the name of the repository, the time
 // the repository is being worked on already, and the kind of work currently
-// done for it. If even more repositories are being worked on, this is stated
-// in an additional line. The bottom line holds a progress bar in terms of
-// repositories set up, including the ones that pre-existed, the time the setup
-// is running already, and statistics about the repositories. For a terminal
-// width of 80, the report may look as follows:
+// done for it, together with the progress of any transfer. If even more
+// repositories are being worked on, this is stated in an additional line. The
+// bottom line holds a progress bar in terms of repositories set up, including
+// the ones that pre-existed, the time the setup is running already, and
+// statistics about the repositories and the data fetched. For a terminal width
+// of 72, the report may look as follows (with amounts cut that do not fit):
 //
-//     ⠼ re2/config                     0.5s  fetching
+//     ⠼ re2/config                     0.5s  fetching ━━━━━───── 332.4 KiB
+//     ⠼ absl                           1.2s  fetching ╸─────────
+//     ⠼ protobuf                     11m21s  fetching ━━━━━╸────
 //     ⠼ curl/config                    3.1s  unpacking
-//     ⠼ protobuf                     11m21s  importing
+//     ⠼ libgit2                        0.1s  fetching
 //       ... and 16 more
-//        Setting up ━━━━━━━────────  11m21s  34/68 done
+//        Setting up ━━━━━━━────────  11m21s  34/68 done, fetched 10.7 MiB
 //
 // For the widths of the columns and how they adapt to the width of the
 // terminal, see the constants below.
@@ -94,13 +98,18 @@ class SetupReporterImpl {
     // Duration column: kDurationWidth wide, right-aligned, never cut.
 
     // Operation column: the kind of work done for the repository (at most
-    // kPhaseMaxWidth chars). It is left-aligned and exceeding content is cut
-    // on the right; it has no maximum width. In the bottom line, it holds the
-    // statistics, of which the number of repositories done is always shown.
-    // If the terminal is too narrow, the operation column shrinks first, and
-    // only once it reached its minimum width, the repository column shrinks as
-    // well.
+    // kPhaseMaxWidth chars) + " " + progress bar of the transfer (kBarWidth
+    // chars, if the amount to transfer is known) + " " + the amount
+    // transferred. It is left-aligned and exceeding content is cut on the
+    // right, where the amount is dropped as a whole if it does not fit, while
+    // phase and bar always fit the minimum width; it has no maximum width. In
+    // the bottom line, it holds the statistics, of which the total amount to
+    // fetch and then the amount fetched are dropped if they do not fit, but
+    // the number of repositories done is always shown. If the terminal is too
+    // narrow, the operation column shrinks first, and only once it reached its
+    // minimum width, the repository column shrinks as well.
     static auto constexpr kPhaseMaxWidth = 9U;
+    static auto constexpr kBarWidth = 10U;
     static auto constexpr kOperationMinWidth = 20U;
 
     struct ColumnWidths {
@@ -176,13 +185,54 @@ class SetupReporterImpl {
             fmt::format("{:>{}}", FormatDuration(duration), kDurationWidth));
     }
 
-    /// \brief The kind of work done for a repository, cut on the right to fit
-    /// the given width.
+    /// \brief The kind of work done for a repository and the progress of its
+    /// transfer, if any data has been transferred yet, cut on the right to fit
+    /// the given width. A progress bar is shown whenever the amount to transfer
+    /// is known; for git fetches, this is the number of objects, while the
+    /// amount of data is reported as a number.
     [[nodiscard]] static auto OperationString(RepoProgress const& entry,
-                                              std::size_t width)
+                                              std::size_t width,
+                                              ProgressStyle const& style)
         -> std::string {
         auto operation = ToString(entry.phase).substr(0, kPhaseMaxWidth);
-        return operation.substr(0, width);
+        // the number of columns the operation occupies on the terminal, as
+        // the progress bar might consist of characters of multiple bytes
+        auto columns = operation.size();
+        if (entry.bytes.current > 0) {
+            auto fraction = Fraction(entry.bytes);
+            if (not fraction) {
+                fraction = Fraction(entry.objects);
+            }
+            if (fraction) {
+                operation +=
+                    fmt::format(" {}", style.Bar(*fraction, kBarWidth));
+                columns += 1 + kBarWidth;
+            }
+            auto const amount =
+                entry.bytes.total
+                    ? fmt::format("{}/{}",
+                                  FormatBytes(entry.bytes.current),
+                                  FormatBytes(*entry.bytes.total))
+                    : FormatBytes(entry.bytes.current);
+            // the amount is only reported as a whole
+            if (columns + 1 + amount.size() <= width) {
+                operation += fmt::format(" {}", amount);
+                columns += 1 + amount.size();
+            }
+        }
+        // phase and bar always fit the minimum width, so only a phase
+        // without a bar might need to be cut
+        return columns > width ? operation.substr(0, width) : operation;
+    }
+
+    /// \brief The fraction of a transfer that is done, if its total is known.
+    [[nodiscard]] static auto Fraction(TransferProgress const& transfer)
+        -> std::optional<double> {
+        if (not transfer.total or *transfer.total == 0) {
+            return std::nullopt;
+        }
+        return static_cast<double>(transfer.current) /
+               static_cast<double>(*transfer.total);
     }
 
     /// \brief One line per repository: its name, for how long it is being
@@ -202,7 +252,7 @@ class SetupReporterImpl {
                             "{:<{}}", repo.substr(0, name_width), name_width))),
             DurationString(std::chrono::steady_clock::now() - entry.start,
                            style),
-            OperationString(entry, widths.operation));
+            OperationString(entry, widths.operation, style));
     }
 
     /// \brief The bottom line, summarizing the overall progress.
@@ -222,7 +272,38 @@ class SetupReporterImpl {
                                       static_cast<double>(total),
                                   static_cast<unsigned int>(bar_width))),
             DurationString(progress_->GetDuration(), style),
-            fmt::format("{}/{} done", done, total));
+            SummaryString(done, total, widths.operation));
+    }
+
+    /// \brief The statistics about the repositories, of which the total
+    /// amount to fetch and then the amount fetched are dropped if they do not
+    /// fit.
+    [[nodiscard]] auto SummaryString(std::size_t done,
+                                     std::size_t total,
+                                     std::size_t max_width) const
+        -> std::string {
+        auto summary = fmt::format("{}/{} done", done, total);
+        auto const fetched = progress_->GetFetched();
+        if (fetched == 0) {
+            return summary;
+        }
+        // the goal is only known for the transfers that announce their size;
+        // it is reported as the lower bound it is, and only for as long as it
+        // tells more than the amount fetched so far
+        auto const goal = progress_->GetGoal();
+        auto with_goal = fmt::format("{}, fetched {}/{}+",
+                                     summary,
+                                     FormatBytes(fetched),
+                                     FormatBytes(goal));
+        if (goal > fetched and with_goal.size() <= max_width) {
+            return with_goal;
+        }
+        auto with_fetched =
+            fmt::format("{}, fetched {}", summary, FormatBytes(fetched));
+        if (with_fetched.size() <= max_width) {
+            return with_fetched;
+        }
+        return summary;
     }
 };
 

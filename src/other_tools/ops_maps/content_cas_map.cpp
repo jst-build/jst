@@ -14,8 +14,10 @@
 
 #include "src/other_tools/ops_maps/content_cas_map.hpp"
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <utility>  // std::move
 
 #include "fmt/format.h"
@@ -47,9 +49,16 @@ void FetchFromNetwork(ArchiveContent const& key,
                   /*fatal=*/true);
         return;
     }
-    // now do the actual fetch
+    // now do the actual fetch, reporting its progress
     auto data = NetworkFetchWithMirrors(
-        key.fetch_url, key.mirrors, ca_info, additional_mirrors);
+        key.fetch_url,
+        key.mirrors,
+        ca_info,
+        additional_mirrors,
+        [&progress, &key](std::uint64_t downloaded,
+                          std::optional<std::uint64_t> total) {
+            progress->SetBytes(key.origin, downloaded, total);
+        });
     if (not data) {
         (*logger)(fmt::format("Failed to fetch a file with id {} from provided "
                               "remotes:{}",

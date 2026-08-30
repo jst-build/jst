@@ -14,6 +14,7 @@
 
 #include "src/other_tools/root_maps/commit_git_map.hpp"
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -425,13 +426,20 @@ void NetworkFetchAndSetPresentRoot(
                 err_messages += fmt::format(
                     "While attempting fetch from URL {}:\n{}\n", mirror, msg);
             });
-        if (git_repo->FetchViaTmpRepo(native_storage_config,
-                                      mirror,
-                                      repo_info.branch,
-                                      inherit_env,
-                                      git_bin,
-                                      launcher,
-                                      wrapped_logger)) {
+        if (git_repo->FetchViaTmpRepo(
+                native_storage_config,
+                mirror,
+                repo_info.branch,
+                inherit_env,
+                git_bin,
+                launcher,
+                wrapped_logger,
+                [&progress, &repo_info](std::uint64_t bytes,
+                                        std::uint64_t objects,
+                                        std::uint64_t total) {
+                    progress->SetBytes(repo_info.origin, bytes);
+                    progress->SetObjects(repo_info.origin, objects, total);
+                })) {
             fetched = true;
             break;
         }

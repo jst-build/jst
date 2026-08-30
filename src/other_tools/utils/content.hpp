@@ -33,25 +33,30 @@
 
 /// \brief Fetches a file from the internet and stores its content in memory.
 /// \returns the content.
-[[nodiscard]] static inline auto NetworkFetch(std::string const& fetch_url,
-                                              CAInfoPtr const& ca_info) noexcept
+[[nodiscard]] static inline auto NetworkFetch(
+    std::string const& fetch_url,
+    CAInfoPtr const& ca_info,
+    CurlEasyHandle::ProgressCallback const& progress = {}) noexcept
     -> std::optional<std::string> {
     auto curl_handle = CurlEasyHandle::Create(
         ca_info->no_ssl_verify, ca_info->ca_bundle, LogLevel::Debug);
     if (not curl_handle) {
         return std::nullopt;
     }
-    return curl_handle->DownloadToString(fetch_url);
+    return curl_handle->DownloadToString(fetch_url, progress);
 }
 
 /// \brief Fetches a file from the internet and stores its content in memory.
 /// Tries not only a given remote, but also all associated remote locations.
+/// Reports the download progress, if a callback is given; note that trying
+/// another remote restarts the download, and thus also its progress.
 /// \returns The fetched data on success or an unexpected error as string.
 [[nodiscard]] static inline auto NetworkFetchWithMirrors(
     std::string const& fetch_url,
     std::vector<std::string> const& mirrors,
     CAInfoPtr const& ca_info,
-    MirrorsPtr const& additional_mirrors) noexcept
+    MirrorsPtr const& additional_mirrors,
+    CurlEasyHandle::ProgressCallback const& progress = {}) noexcept
     -> expected<std::string, std::string> {
     // keep all remotes tried, to report in case fetch fails
     std::string remotes_buffer{};
@@ -76,7 +81,7 @@
         all_mirrors.begin(), local_mirrors.begin(), local_mirrors.end());
 
     for (auto const& mirror : all_mirrors) {
-        if (data = NetworkFetch(mirror, ca_info); data) {
+        if (data = NetworkFetch(mirror, ca_info, progress); data) {
             break;
         }
         // add local mirror to buffer

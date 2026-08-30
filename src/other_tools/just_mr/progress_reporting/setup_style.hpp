@@ -15,8 +15,12 @@
 #ifndef INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_STYLE_HPP
 #define INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_STYLE_HPP
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
+#include "fmt/format.h"
 #include "src/other_tools/just_mr/progress_reporting/progress.hpp"
 
 /// \brief Obtain a human-readable description of what is done for a
@@ -33,6 +37,25 @@
             break;
     }
     return "fetching";
+}
+
+/// \brief Obtain a human-readable amount of data, e.g., "1.2 MiB". As
+/// mandated by ISO 80000-13, the unit is separated from the value by a space.
+[[nodiscard]] static inline auto FormatBytes(std::uint64_t bytes)
+    -> std::string {
+    static constexpr std::array kUnits{"B", "KiB", "MiB", "GiB", "TiB"};
+    static constexpr auto kUnitFactor = 1024.0;
+    auto value = static_cast<double>(bytes);
+    std::size_t unit{};
+    while (value >= kUnitFactor and unit + 1 < kUnits.size()) {
+        value /= kUnitFactor;
+        ++unit;
+    }
+    // amounts of full bytes are reported without a decimal place
+    if (unit == 0) {
+        return fmt::format("{} B", bytes);
+    }
+    return fmt::format("{:.1f} {}", value, kUnits.at(unit));
 }
 
 #endif  // INCLUDED_SRC_OTHER_TOOLS_JUST_MR_PROGRESS_REPORTING_SETUP_STYLE_HPP

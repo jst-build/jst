@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -40,6 +41,13 @@ enum class SetupPhase : std::uint8_t {
     kComputing
 };
 
+/// \brief Progress of an ongoing transfer, e.g., a download. The total amount
+/// to transfer is not always known beforehand.
+struct TransferProgress {
+    std::uint64_t current{};
+    std::optional<std::uint64_t> total{};
+};
+
 /// \brief Progress of a single repository.
 struct RepoProgress {
     SetupPhase phase{};
@@ -48,6 +56,10 @@ struct RepoProgress {
     std::uint64_t prio{};
     // whether work is currently being done for this repository
     bool active{};
+    // transfer of the current phase, in bytes and, for git fetches, also in
+    // objects; both are reset whenever a new phase is started
+    TransferProgress bytes{};
+    TransferProgress objects{};
 };
 
 /// \brief Tracks what is currently done for each repository to be set up, as
@@ -95,7 +107,42 @@ class JustMRProgress final {
         std::lock_guard lock{mutex_};
         if (auto entry = repos_.find(repo); entry != repos_.end()) {
             entry->second.phase = phase;
+            entry->second.bytes = {};
+            entry->second.objects = {};
         }
+    }
+
+    /// \brief Report the number of bytes transferred over the network for a
+    /// repository so far in the current phase, and the total number of bytes
+    /// to transfer, if known. A transfer that starts over, e.g., because a
+    /// mirror is tried, is counted from the beginning again.
+    void SetBytes(std::string const& repo,
+                  std::uint64_t bytes,
+                  std::optional<std::uint64_t> total = std::nullopt) noexcept {
+        std::lock_guard lock{mutex_};
+        auto& entry = repos_[repo];
+        // a transfer that starts over reports fewer bytes than before
+        auto const delta =
+            bytes >= entry.bytes.current ? bytes - entry.bytes.current : bytes;
+        entry.bytes.current = bytes;
+        fetched_ += delta;
+        // the overall goal only ever grows, as it is a lower bound of what is
+        // still unknown; hence, only take note of an increased total
+        if (total and *total > entry.bytes.total.value_or(0)) {
+            goal_ += *total - entry.bytes.total.value_or(0);
+            entry.bytes.total = total;
+        }
+    }
+
+    /// \brief Report the number of git objects received for a repository so
+    /// far in the current phase, out of the total number to receive.
+    void SetObjects(std::string const& repo,
+                    std::uint64_t objects,
+                    std::uint64_t total) noexcept {
+        std::lock_guard lock{mutex_};
+        auto& entry = repos_[repo];
+        entry.objects.current = objects;
+        entry.objects.total = total;
     }
 
     /// \brief Report that work on a repository has stopped, at least for now.
@@ -127,6 +174,20 @@ class JustMRProgress final {
     [[nodiscard]] auto GetDuration() const noexcept
         -> std::chrono::steady_clock::duration {
         return std::chrono::steady_clock::now() - start_;
+    }
+
+    /// \brief Obtain the number of bytes fetched from the network in total.
+    [[nodiscard]] auto GetFetched() const noexcept -> std::uint64_t {
+        std::lock_guard lock{mutex_};
+        return fetched_;
+    }
+
+    /// \brief Obtain the number of bytes known to be fetched from the network
+    /// in total. As sizes are only discovered while setting up, this is a
+    /// lower bound that grows over time.
+    [[nodiscard]] auto GetGoal() const noexcept -> std::uint64_t {
+        std::lock_guard lock{mutex_};
+        return goal_;
     }
 
     /// \brief Obtain the number of repositories that are set up.
@@ -167,6 +228,8 @@ class JustMRProgress final {
     mutable std::mutex mutex_;
     std::unordered_map<std::string, RepoProgress> repos_;
     std::uint64_t prio_{};
+    std::uint64_t fetched_{};
+    std::uint64_t goal_{};
     // number of repositories set up, including the ones that pre-existed
     std::size_t done_{};
     // number of repositories started to be worked on or found to pre-exist

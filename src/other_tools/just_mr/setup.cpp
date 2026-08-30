@@ -58,6 +58,7 @@
 #include "src/other_tools/just_mr/progress_reporting/progress.hpp"
 #include "src/other_tools/just_mr/progress_reporting/setup_log.hpp"
 #include "src/other_tools/just_mr/progress_reporting/setup_reporter.hpp"
+#include "src/other_tools/just_mr/progress_reporting/setup_style.hpp"
 #include "src/other_tools/just_mr/progress_reporting/statistics.hpp"
 #include "src/other_tools/just_mr/setup_utils.hpp"
 #include "src/other_tools/just_mr/utils.hpp"
@@ -542,12 +543,16 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
 
     auto const work_count = setup_log.GetWorkCount();
     if (work_count > 0) {
+        auto const fetched = progress.GetFetched();
+        auto const amount =
+            fetched > 0 ? ", fetched " + FormatBytes(fetched) : std::string{};
         // report the end of the setup, which also clears the progress report
         Logger::Log(LogLevel::Info,
-                    "Processed {} repositories in {} ({} pre-existed).",
+                    "Processed {} repositories in {} ({} pre-existed){}.",
                     work_count,
                     FormatDuration(progress.GetDuration()),
-                    setup_repos->to_setup.size() - work_count);
+                    setup_repos->to_setup.size() - work_count,
+                    amount);
     }
     else {
         // clear progress report

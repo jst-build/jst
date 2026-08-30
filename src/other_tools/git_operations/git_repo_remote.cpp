@@ -15,6 +15,7 @@
 #include "src/other_tools/git_operations/git_repo_remote.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <functional>
@@ -94,6 +95,25 @@ void fetch_backend_free(git_odb_backend* /*_backend*/) {}
 
 // A backend that can be used to fetch from the remote of another repository.
 auto const kFetchIntoODBParent = CreateFetchIntoODBParent();
+
+/// \brief Progress callback for libgit2, reporting to the fetch progress
+/// callback given as payload. Returns 0 to continue the fetch.
+[[nodiscard]] auto report_transfer_progress(git_indexer_progress const* stats,
+                                            void* payload) -> int {
+    try {
+        auto const* progress =
+            static_cast<GitRepoRemote::fetch_progress_t*>(payload);
+        (*progress)(static_cast<std::uint64_t>(stats->received_bytes),
+                    static_cast<std::uint64_t>(stats->received_objects),
+                    static_cast<std::uint64_t>(stats->total_objects));
+    } catch (std::exception const& ex) {
+        Logger::Log(LogLevel::Debug,
+                    "reporting the fetch progress failed with:\n{}",
+                    ex.what());
+        // continue with the fetch
+    }
+    return 0;
+}
 
 }  // namespace
 
@@ -336,7 +356,8 @@ auto GitRepoRemote::GetCommitFromRemote(std::shared_ptr<git_config> cfg,
 auto GitRepoRemote::FetchFromRemote(std::shared_ptr<git_config> cfg,
                                     std::string const& repo_url,
                                     std::optional<std::string> const& branch,
-                                    anon_logger_ptr const& logger) noexcept
+                                    anon_logger_ptr const& logger,
+                                    fetch_progress_t const& progress) noexcept
     -> bool {
     try {
         // only possible for real repository!
@@ -422,6 +443,14 @@ auto GitRepoRemote::FetchFromRemote(std::shared_ptr<git_config> cfg,
             return false;
         }
         fetch_opts.callbacks.certificate_check = *cert_check;
+
+        // set callback for reporting the progress of the fetch; libgit2 hands
+        // the payload back as a mutable pointer, hence keep a copy of it here
+        auto progress_cb = progress;
+        if (progress_cb) {
+            fetch_opts.callbacks.transfer_progress = report_transfer_progress;
+            fetch_opts.callbacks.payload = &progress_cb;
+        }
 
         // disable update of the FETCH_HEAD pointer
         fetch_opts.update_fetchhead = 0;
@@ -603,7 +632,8 @@ auto GitRepoRemote::FetchViaTmpRepo(StorageConfig const& storage_config,
                                     std::vector<std::string> const& inherit_env,
                                     std::string const& git_bin,
                                     std::vector<std::string> const& launcher,
-                                    anon_logger_ptr const& logger) noexcept
+                                    anon_logger_ptr const& logger,
+                                    fetch_progress_t const& progress) noexcept
     -> bool {
     try {
         auto tmp_dir = storage_config.CreateTypedTmpDir("fetch");
@@ -658,7 +688,7 @@ auto GitRepoRemote::FetchViaTmpRepo(StorageConfig const& storage_config,
                     return false;
                 }
                 return tmp_repo->FetchFromRemote(
-                    cfg, repo_url, branch, wrapped_logger);
+                    cfg, repo_url, branch, wrapped_logger, progress);
             }
             return false;
         }

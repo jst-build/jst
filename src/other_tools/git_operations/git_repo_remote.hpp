@@ -15,7 +15,9 @@
 #ifndef INCLUDED_SRC_OTHER_TOOLS_GIT_OPERATIONS_GIT_REPO_REMOTE_HPP
 #define INCLUDED_SRC_OTHER_TOOLS_GIT_OPERATIONS_GIT_REPO_REMOTE_HPP
 
+#include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,6 +35,13 @@ struct git_config;
 /// \brief Extension to a Git repository, allowing remote Git operations.
 class GitRepoRemote : public GitRepo {
   public:
+    /// \brief Callback reporting the progress of an ongoing fetch: the amount
+    /// of data received so far, as well as the number of objects received so
+    /// far and the total number of objects to receive. Called from the
+    /// fetching thread and must not throw.
+    using fetch_progress_t = std::function<
+        void(std::uint64_t bytes, std::uint64_t objects, std::uint64_t total)>;
+
     GitRepoRemote() = delete;  // no default ctor
     ~GitRepoRemote() noexcept = default;
 
@@ -87,13 +96,15 @@ class GitRepoRemote : public GitRepo {
     /// Only possible with real repository and thus non-thread-safe.
     /// If non-null, use given config snapshot to interact with config entries;
     /// otherwise, use a snapshot from the current repo and share pointer to it.
+    /// Reports the progress of the fetch, if a callback is given.
     /// Returns a success flag. It guarantees the logger is called
     /// exactly once with fatal if failure.
-    [[nodiscard]] auto FetchFromRemote(std::shared_ptr<git_config> cfg,
-                                       std::string const& repo_url,
-                                       std::optional<std::string> const& branch,
-                                       anon_logger_ptr const& logger) noexcept
-        -> bool;
+    [[nodiscard]] auto FetchFromRemote(
+        std::shared_ptr<git_config> cfg,
+        std::string const& repo_url,
+        std::optional<std::string> const& branch,
+        anon_logger_ptr const& logger,
+        fetch_progress_t const& progress = {}) noexcept -> bool;
 
     /// \brief Get commit from given branch on the remote. For URLs libgit2
     /// cannot handle itself, shells out to system git to perform an ls-remote
@@ -120,6 +131,8 @@ class GitRepoRemote : public GitRepo {
     /// includes SSH URLs if libgit2 has native SSH support, see
     /// HasNativeSshSupport().
     /// Uses either a given branch, or fetches all (with base refspecs).
+    /// Reports the progress of the fetch, if a callback is given; note that
+    /// no progress is reported if the fetch has to shell out to git.
     /// Returns a success flag.
     /// It guarantees the logger is called exactly once with fatal if failure.
     [[nodiscard]] auto FetchViaTmpRepo(
@@ -129,7 +142,8 @@ class GitRepoRemote : public GitRepo {
         std::vector<std::string> const& inherit_env,
         std::string const& git_bin,
         std::vector<std::string> const& launcher,
-        anon_logger_ptr const& logger) noexcept -> bool;
+        anon_logger_ptr const& logger,
+        fetch_progress_t const& progress = {}) noexcept -> bool;
 
   private:
     /// \brief Open "fake" repository wrapper for existing CAS.
