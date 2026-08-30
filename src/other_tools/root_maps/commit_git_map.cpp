@@ -437,7 +437,7 @@ void NetworkFetchAndSetPresentRoot(
                 [&progress, &repo_info](std::uint64_t bytes,
                                         std::uint64_t objects,
                                         std::uint64_t total) {
-                    progress->SetBytes(repo_info.origin, bytes);
+                    progress->SetFetched(repo_info.origin, bytes);
                     progress->SetObjects(repo_info.origin, objects, total);
                 })) {
             fetched = true;

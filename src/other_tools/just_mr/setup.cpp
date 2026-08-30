@@ -324,6 +324,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                              common_args.git_path->string(),
                              *common_args.local_launcher,
                              &native_storage_config,
+                             &progress,
                              common_args.jobs);
 
     auto git_tree_fetch_map = CreateGitTreeFetchMap(
@@ -544,8 +545,12 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
     auto const work_count = setup_log.GetWorkCount();
     if (work_count > 0) {
         auto const fetched = progress.GetFetched();
-        auto const amount =
+        auto const imported = progress.GetImported();
+        auto amount =
             fetched > 0 ? ", fetched " + FormatBytes(fetched) : std::string{};
+        if (imported > 0) {
+            amount += ", imported " + FormatBytes(imported);
+        }
         // report the end of the setup, which also clears the progress report
         Logger::Log(LogLevel::Info,
                     "Processed {} repositories in {} ({} pre-existed){}.",

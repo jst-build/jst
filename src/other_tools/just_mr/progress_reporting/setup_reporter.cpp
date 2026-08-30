@@ -53,7 +53,7 @@ namespace {
 //     ⠼ absl                           1.2s  fetching ╸─────────
 //     ⠼ protobuf                     11m21s  fetching ━━━━━╸────
 //     ⠼ curl/config                    3.1s  unpacking
-//     ⠼ libgit2                        0.1s  fetching
+//     ⠼ libgit2                        0.1s  importing 7.4 MiB
 //       ... and 16 more
 //        Setting up ━━━━━━━────────  11m21s  34/68 done, fetched 10.7 MiB
 //
@@ -99,8 +99,8 @@ class SetupReporterImpl {
 
     // Operation column: the kind of work done for the repository (at most
     // kPhaseMaxWidth chars) + " " + progress bar of the transfer (kBarWidth
-    // chars, if the amount to transfer is known) + " " + the amount
-    // transferred. It is left-aligned and exceeding content is cut on the
+    // chars, if the amount to transfer is known) + " " + the amount fetched
+    // or imported. It is left-aligned and exceeding content is cut on the
     // right, where the amount is dropped as a whole if it does not fit, while
     // phase and bar always fit the minimum width; it has no maximum width. In
     // the bottom line, it holds the statistics, of which the total amount to
@@ -189,7 +189,8 @@ class SetupReporterImpl {
     /// transfer, if any data has been transferred yet, cut on the right to fit
     /// the given width. A progress bar is shown whenever the amount to transfer
     /// is known; for git fetches, this is the number of objects, while the
-    /// amount of data is reported as a number.
+    /// amount of data is reported as a number. Imports are only known as a
+    /// whole, so they come without a progress bar.
     [[nodiscard]] static auto OperationString(RepoProgress const& entry,
                                               std::size_t width,
                                               ProgressStyle const& style)

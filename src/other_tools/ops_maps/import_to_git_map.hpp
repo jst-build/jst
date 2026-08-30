@@ -26,6 +26,7 @@
 #include "src/buildtool/file_system/git_cas.hpp"
 #include "src/buildtool/multithreading/async_map_consumer.hpp"
 #include "src/buildtool/storage/config.hpp"
+#include "src/other_tools/just_mr/progress_reporting/progress.hpp"
 #include "src/other_tools/ops_maps/critical_git_op_map.hpp"
 #include "src/utils/cpp/path.hpp"
 #include "src/utils/cpp/path_hash.hpp"
@@ -34,13 +35,18 @@ struct CommitInfo {
     std::filesystem::path target_path; /*key*/
     std::string repo_type;
     std::string content;  // hash or path
+    // name of repository for which work is done; used in progress reporting,
+    // and empty if the import is not done for a specific repository
+    std::string origin;
 
     CommitInfo(std::filesystem::path const& target_path_,
                std::string repo_type_,
-               std::string content_)
+               std::string content_,
+               std::string origin_ = {})
         : target_path{std::filesystem::absolute(ToNormalPath(target_path_))},
           repo_type{std::move(repo_type_)},
-          content{std::move(content_)} {};
+          content{std::move(content_)},
+          origin{std::move(origin_)} {};
 
     [[nodiscard]] auto operator==(CommitInfo const& other) const noexcept
         -> bool {
@@ -70,6 +76,7 @@ using ImportToGitMap =
     std::string const& git_bin,
     std::vector<std::string> const& launcher,
     gsl::not_null<StorageConfig const*> const& storage_config,
+    gsl::not_null<JustMRProgress*> const& progress,
     std::size_t jobs) -> ImportToGitMap;
 
 #endif  // INCLUDED_SRC_OTHER_TOOLS_OPS_MAPS_IMPORT_TO_GIT_MAP_HPP

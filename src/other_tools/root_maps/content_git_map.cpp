@@ -402,10 +402,12 @@ void ExtractAndImportToGit(
     gsl::not_null<CriticalGitOpMap*> const& critical_git_op_map,
     gsl::not_null<ImportToGitMap*> const& import_to_git_map,
     gsl::not_null<ResolveSymlinksMap*> const& resolve_symlinks_map,
+    gsl::not_null<JustMRProgress*> const& progress,
     gsl::not_null<TaskSystem*> const& ts,
     ContentGitMap::SetterPtr const& setter,
     ContentGitMap::LoggerPtr const& logger) {
     // extract archive
+    progress->Start(key.archive.origin, SetupPhase::kUnpacking);
     auto tmp_dir = native_storage_config->CreateTypedTmpDir(key.repo_type);
     if (not tmp_dir) {
         (*logger)(fmt::format("Failed to create tmp path for {} target {}",
@@ -425,8 +427,10 @@ void ExtractAndImportToGit(
         return;
     }
     // import to git
-    CommitInfo c_info{
-        tmp_dir->GetPath(), key.repo_type, key.archive.content_hash.Hash()};
+    CommitInfo c_info{tmp_dir->GetPath(),
+                      key.repo_type,
+                      key.archive.content_hash.Hash(),
+                      key.archive.origin};
     import_to_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(c_info)},
@@ -951,6 +955,7 @@ auto CreateContentGitMap(
                                           critical_git_op_map,
                                           import_to_git_map,
                                           resolve_symlinks_map,
+                                          progress,
                                           ts,
                                           setter,
                                           logger);
@@ -1045,6 +1050,7 @@ auto CreateContentGitMap(
                                                       critical_git_op_map,
                                                       import_to_git_map,
                                                       resolve_symlinks_map,
+                                                      progress,
                                                       ts,
                                                       setter,
                                                       logger);
@@ -1083,6 +1089,7 @@ auto CreateContentGitMap(
                                                   critical_git_op_map,
                                                   import_to_git_map,
                                                   resolve_symlinks_map,
+                                                  progress,
                                                   ts,
                                                   setter,
                                                   logger);
@@ -1116,6 +1123,7 @@ auto CreateContentGitMap(
                      critical_git_op_map,
                      import_to_git_map,
                      resolve_symlinks_map,
+                     progress,
                      ts,
                      setter,
                      logger]([[maybe_unused]] auto const& values) {
@@ -1138,6 +1146,7 @@ auto CreateContentGitMap(
                                               critical_git_op_map,
                                               import_to_git_map,
                                               resolve_symlinks_map,
+                                              progress,
                                               ts,
                                               setter,
                                               logger);

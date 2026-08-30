@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <system_error>
 #include <utility>  // std::move
 
 #include "fmt/format.h"
@@ -35,6 +36,14 @@
 #include "src/utils/cpp/expected.hpp"
 
 namespace {
+
+/// \brief Obtain the size of a file, or zero if it cannot be determined.
+[[nodiscard]] auto FileSize(std::filesystem::path const& path) noexcept
+    -> std::uint64_t {
+    std::error_code ec{};
+    auto const size = std::filesystem::file_size(path, ec);
+    return ec ? 0 : size;
+}
 
 void FetchFromNetwork(ArchiveContent const& key,
                       MirrorsPtr const& additional_mirrors,
@@ -57,7 +66,7 @@ void FetchFromNetwork(ArchiveContent const& key,
         additional_mirrors,
         [&progress, &key](std::uint64_t downloaded,
                           std::optional<std::uint64_t> total) {
-            progress->SetBytes(key.origin, downloaded, total);
+            progress->SetFetched(key.origin, downloaded, total);
         });
     if (not data) {
         (*logger)(fmt::format("Failed to fetch a file with id {} from provided "
@@ -92,6 +101,7 @@ void FetchFromNetwork(ArchiveContent const& key,
     }
     // add the fetched data to native CAS
     auto path = StorageUtils::AddToCAS(native_storage, *data);
+    progress->AddImported(key.origin, data->size());
     // check one last time if content is in native CAS now
     if (not path) {
         (*logger)(fmt::format("Failed to store fetched content from {}",
@@ -226,6 +236,7 @@ auto CreateContentCASMap(
                         return;
                     }
                     // content stored to native CAS
+                    progress->AddImported(key.origin, res.second->size());
                     (*setter)(nullptr);
                     return;
                 }
@@ -255,6 +266,8 @@ auto CreateContentCASMap(
                                     return;
                                 }
                                 // content stored in native CAS
+                                progress->AddImported(key.origin,
+                                                      res.second->size());
                                 (*setter)(nullptr);
                                 return;
                             }
@@ -273,8 +286,10 @@ auto CreateContentCASMap(
                 StorageUtils::AddDistfileToCAS(
                     *native_storage, repo_distfile, just_mr_paths);
                 // check if content is in native CAS now
-                if (native_cas.BlobPath(native_digest,
-                                        /*is_executable=*/false)) {
+                if (auto const cas_path =
+                        native_cas.BlobPath(native_digest,
+                                            /*is_executable=*/false)) {
+                    progress->AddImported(key.origin, FileSize(*cas_path));
                     progress->Stop(key.origin);
                     (*setter)(nullptr);
                     return;
@@ -295,6 +310,12 @@ auto CreateContentCASMap(
                             if (remote_digest->hash() ==
                                 key.content_hash.Hash()) {
                                 // content is in native local CAS, so all done
+                                if (auto const cas_path = native_cas.BlobPath(
+                                        native_digest,
+                                        /*is_executable=*/false)) {
+                                    progress->AddImported(key.origin,
+                                                          FileSize(*cas_path));
+                                }
                                 (*setter)(nullptr);
                                 return;
                             }
@@ -343,7 +364,11 @@ auto CreateContentCASMap(
                                           /*fatal=*/true);
                                 return;
                             }
-                            // content is in native local CAS now
+                            // content is in native local CAS now; its size
+                            // is known from the digest it was retrieved with,
+                            // so there is no need to stat the file size
+                            progress->AddImported(key.origin,
+                                                  remote_digest->size());
                             (*setter)(nullptr);
                             return;
                         }
@@ -357,6 +382,11 @@ auto CreateContentCASMap(
                     remote_api != nullptr and
                     remote_api->RetrieveToCas(native_content_info,
                                               *local_api)) {
+                    if (auto const cas_path =
+                            native_cas.BlobPath(native_digest,
+                                                /*is_executable=*/false)) {
+                        progress->AddImported(key.origin, FileSize(*cas_path));
+                    }
                     progress->Stop(key.origin);
                     (*setter)(nullptr);
                     return;

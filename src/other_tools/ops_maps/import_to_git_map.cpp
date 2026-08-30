@@ -14,8 +14,11 @@
 
 #include "src/other_tools/ops_maps/import_to_git_map.hpp"
 
+#include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
+#include <system_error>
 
 #include "fmt/format.h"
 #include "src/buildtool/multithreading/task_system.hpp"
@@ -24,6 +27,29 @@
 #include "src/utils/cpp/tmp_dir.hpp"
 
 namespace {
+
+/// \brief Obtain the amount of data in a directory, i.e., the total size of
+/// the regular files it contains; symbolic links are not followed. Whatever
+/// cannot be determined does not contribute to the result.
+[[nodiscard]] auto DirectorySize(std::filesystem::path const& dir) noexcept
+    -> std::uint64_t {
+    std::error_code ec{};
+    auto it = std::filesystem::recursive_directory_iterator{
+        dir, std::filesystem::directory_options::skip_permission_denied, ec};
+    auto const end = std::filesystem::recursive_directory_iterator{};
+    std::uint64_t size{};
+    while (not ec and it != end) {
+        if (std::filesystem::is_regular_file(it->symlink_status(ec)) and
+            not ec) {
+            if (auto const file_size = it->file_size(ec); not ec) {
+                size += file_size;
+            }
+        }
+        ec.clear();
+        it.increment(ec);
+    }
+    return size;
+}
 
 void KeepCommitAndSetTree(
     gsl::not_null<CriticalGitOpMap*> const& critical_git_op_map,
@@ -95,15 +121,22 @@ auto CreateImportToGitMap(
     std::string const& git_bin,
     std::vector<std::string> const& launcher,
     gsl::not_null<StorageConfig const*> const& storage_config,
+    gsl::not_null<JustMRProgress*> const& progress,
     std::size_t jobs) -> ImportToGitMap {
     auto import_to_git = [critical_git_op_map,
                           git_bin,
                           launcher,
-                          storage_config](auto ts,
-                                          auto setter,
-                                          auto logger,
-                                          auto /*unused*/,
-                                          auto const& key) {
+                          storage_config,
+                          progress](auto ts,
+                                    auto setter,
+                                    auto logger,
+                                    auto /*unused*/,
+                                    auto const& key) {
+        if (not key.origin.empty()) {
+            // report the amount of data that is imported to git
+            progress->Start(key.origin, SetupPhase::kImporting);
+            progress->AddImported(key.origin, DirectorySize(key.target_path));
+        }
         // The repository path that imports the content must be separate from
         // the content path, to avoid polluting the entries
         auto repo_dir = storage_config->CreateTypedTmpDir("import-repo");

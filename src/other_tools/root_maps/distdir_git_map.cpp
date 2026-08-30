@@ -98,7 +98,8 @@ void ImportFromCASAndSetRoot(
         return;
     }
     // do import to git
-    CommitInfo c_info{tmp_dir->GetPath(), "distdir", key.content_id};
+    CommitInfo c_info{
+        tmp_dir->GetPath(), "distdir", key.content_id, key.origin};
     import_to_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(c_info)},

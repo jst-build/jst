@@ -64,6 +64,7 @@ void MoveCASTreeToGitAndProcess(
     gsl::not_null<ImportToGitMap*> const& import_to_git_map,
     gsl::not_null<IExecutionApi const*> const& local_api,
     bool ignore_special,
+    std::string const& origin,
     gsl::not_null<TaskSystem*> const& ts,
     TreeIdGitMap::SetterPtr const& setter,
     TreeIdGitMap::LoggerPtr const& logger) {
@@ -86,7 +87,7 @@ void MoveCASTreeToGitAndProcess(
                   true);
         return;
     }
-    CommitInfo c_info{tmp_dir->GetPath(), "tree", digest.hash()};
+    CommitInfo c_info{tmp_dir->GetPath(), "tree", digest.hash(), origin};
     import_to_git_map->ConsumeAfterKeysReady(
         ts,
         {std::move(c_info)},
@@ -288,6 +289,7 @@ auto CreateTreeIdGitMap(
                                                        import_to_git_map,
                                                        local_api,
                                                        key.ignore_special,
+                                                       key.tree_info.origin,
                                                        ts,
                                                        setter,
                                                        logger);

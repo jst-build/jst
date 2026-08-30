@@ -99,6 +99,11 @@ class JustMRProgress final {
                 }
             }
         }
+        if (entry.phase != phase) {
+            // the transfers are those of the current phase
+            entry.bytes = {};
+            entry.objects = {};
+        }
         entry.phase = phase;
     }
 
@@ -116,9 +121,10 @@ class JustMRProgress final {
     /// repository so far in the current phase, and the total number of bytes
     /// to transfer, if known. A transfer that starts over, e.g., because a
     /// mirror is tried, is counted from the beginning again.
-    void SetBytes(std::string const& repo,
-                  std::uint64_t bytes,
-                  std::optional<std::uint64_t> total = std::nullopt) noexcept {
+    void SetFetched(
+        std::string const& repo,
+        std::uint64_t bytes,
+        std::optional<std::uint64_t> total = std::nullopt) noexcept {
         std::lock_guard lock{mutex_};
         auto& entry = repos_[repo];
         // a transfer that starts over reports fewer bytes than before
@@ -131,6 +137,19 @@ class JustMRProgress final {
         if (total and *total > entry.bytes.total.value_or(0)) {
             goal_ += *total - entry.bytes.total.value_or(0);
             entry.bytes.total = total;
+        }
+    }
+
+    /// \brief Report data imported to the local CAS or to git for a
+    /// repository, in addition to what has been imported for it so far. As
+    /// the amount is only known as a whole, it is not reported as a progress,
+    /// but merely displayed while the repository is being imported.
+    void AddImported(std::string const& repo, std::uint64_t bytes) noexcept {
+        std::lock_guard lock{mutex_};
+        auto& entry = repos_[repo];
+        imported_ += bytes;
+        if (entry.phase == SetupPhase::kImporting) {
+            entry.bytes = {.current = bytes, .total = std::nullopt};
         }
     }
 
@@ -190,6 +209,13 @@ class JustMRProgress final {
         return goal_;
     }
 
+    /// \brief Obtain the number of bytes imported to the local CAS or to git
+    /// in total.
+    [[nodiscard]] auto GetImported() const noexcept -> std::uint64_t {
+        std::lock_guard lock{mutex_};
+        return imported_;
+    }
+
     /// \brief Obtain the number of repositories that are set up.
     [[nodiscard]] auto GetDone() const noexcept -> std::size_t {
         std::lock_guard lock{mutex_};
@@ -230,6 +256,7 @@ class JustMRProgress final {
     std::uint64_t prio_{};
     std::uint64_t fetched_{};
     std::uint64_t goal_{};
+    std::uint64_t imported_{};
     // number of repositories set up, including the ones that pre-existed
     std::size_t done_{};
     // number of repositories started to be worked on or found to pre-exist

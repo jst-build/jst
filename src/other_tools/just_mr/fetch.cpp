@@ -522,6 +522,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
                              common_args.git_path->string(),
                              *common_args.local_launcher,
                              &native_storage_config,
+                             &progress,
                              common_args.jobs);
 
     auto git_tree_fetch_map = CreateGitTreeFetchMap(
