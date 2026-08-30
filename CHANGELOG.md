@@ -30,6 +30,14 @@
 
 ### Fixes
 
+- Batch transfers to and from a remote-execution service no longer fail if the
+  service enforces a stricter limit on the total size of a batch request than
+  the one it announces via its capabilities; the protocol explicitly allows a
+  service to announce no limit at all, while still being subject to a message
+  size limitation of its own. Rejected batch requests now lower the assumed
+  limit for that remote-execution instance and are retried with smaller
+  batches, falling back to the streaming API for blobs that do not fit a batch
+  request.
 - The `jstlang` lexer no longer reads past the end of the source buffer when
   the input ends in trailing whitespace or an unterminated comment.
 - Merged fixes from upstream version `1.6.6`.
