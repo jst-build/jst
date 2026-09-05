@@ -25,6 +25,7 @@
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"
+#include "src/buildtool/logging/log_sink.hpp"
 #include "src/buildtool/logging/log_sink_cmdline.hpp"
 
 [[nodiscard]] static auto NumberOfLines(std::filesystem::path const& file_path)
@@ -65,9 +66,9 @@ TEST_CASE("LogSinkFile", "[logging]") {
     SECTION("Overwrite mode") {
         LogSinkFile sink{filename, LogSinkFile::Mode::Overwrite};
 
-        sink.Emit(nullptr, LogLevel::Info, "first", /*clear=*/false);
-        sink.Emit(nullptr, LogLevel::Info, "second", /*clear=*/false);
-        sink.Emit(nullptr, LogLevel::Info, "third", /*clear=*/false);
+        sink.Emit(nullptr, LogLevel::Info, "first", MessageStyle::Normal);
+        sink.Emit(nullptr, LogLevel::Info, "second", MessageStyle::Normal);
+        sink.Emit(nullptr, LogLevel::Info, "third", MessageStyle::Normal);
 
         // read file and check line numbers
         CHECK(NumberOfLines(filename) == 3);
@@ -76,12 +77,31 @@ TEST_CASE("LogSinkFile", "[logging]") {
     SECTION("Append mode") {
         LogSinkFile sink{filename, LogSinkFile::Mode::Append};
 
-        sink.Emit(nullptr, LogLevel::Info, "first", /*clear=*/false);
-        sink.Emit(nullptr, LogLevel::Info, "second", /*clear=*/false);
-        sink.Emit(nullptr, LogLevel::Info, "third", /*clear=*/false);
+        sink.Emit(nullptr, LogLevel::Info, "first", MessageStyle::Normal);
+        sink.Emit(nullptr, LogLevel::Info, "second", MessageStyle::Normal);
+        sink.Emit(nullptr, LogLevel::Info, "third", MessageStyle::Normal);
 
         // read file and check line numbers
         CHECK(NumberOfLines(filename) == 4);
+    }
+
+    SECTION("Styled message") {
+        LogSinkFile sink{filename, LogSinkFile::Mode::Overwrite};
+
+        // log files are never colored
+        sink.Emit(
+            nullptr,
+            LogLevel::Info,
+            [](bool colored) {
+                return std::string{colored ? "colored" : "plain"};
+            },
+            MessageStyle::Normal);
+
+        // note that the file is only cleared for the first sink created for
+        // it, so only check the message that was just emitted
+        auto lines = GetLines(filename);
+        REQUIRE(not lines.empty());
+        CHECK_THAT(lines.back(), Catch::Matchers::EndsWith("plain"));
     }
 
     SECTION("Thread-safety") {
@@ -96,7 +116,7 @@ TEST_CASE("LogSinkFile", "[logging]") {
                     sink.Emit(nullptr,
                               LogLevel::Info,
                               "this is thread " + std::to_string(tid),
-                              /*clear=*/false);
+                              MessageStyle::Normal);
                 },
                 id);
         }

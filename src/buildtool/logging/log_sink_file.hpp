@@ -92,14 +92,30 @@ class LogSinkFile final : public ILogSink {
     auto operator=(LogSinkFile const&) noexcept -> LogSinkFile& = delete;
     auto operator=(LogSinkFile&&) noexcept -> LogSinkFile& = delete;
 
+    /// \brief Thread-safe emitting of styled log messages to file, which are
+    /// never colored, as escape sequences are of no use in a log file.
+    void Emit(Logger const* logger,
+              LogLevel level,
+              StyledMessage const& msg,
+              MessageStyle style) const noexcept final {
+        // do not even render volatile messages, which are not logged to file
+        if (style == MessageStyle::Volatile) {
+            return;
+        }
+        Emit(logger, level, msg(/*colored=*/false), style);
+    }
+
     /// \brief Thread-safe emitting of log messages to file.
     /// Race-conditions for file writes are resolved via a separate mutexes for
     /// every canonical file path shared across all instances of this class.
     void Emit(Logger const* logger,
               LogLevel level,
               std::string const& msg,
-              bool clear) const noexcept final {
-        std::ignore = clear;
+              MessageStyle style) const noexcept final {
+        // always use prefixed style, but ignore volatile
+        if (style == MessageStyle::Volatile) {
+            return;
+        }
 #ifdef __unix__  // support nanoseconds for timestamp
         timespec ts{};
         clock_gettime(CLOCK_REALTIME, &ts);

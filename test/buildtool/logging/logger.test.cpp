@@ -67,7 +67,7 @@ class LogSinkTest : public ILogSink {
     void Emit(Logger const* logger,
               LogLevel level,
               std::string const& msg,
-              bool /*unused*/) const noexcept final {
+              MessageStyle /*unused*/) const noexcept final {
         auto prefix = LogLevelToString(level);
 
         if (logger != nullptr) {

@@ -27,6 +27,16 @@
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/log_sink.hpp"
 
+/// \brief Logger with formatting features and sink support.
+/// Main logging methods:
+///     Logger::Log()
+///         Use for plain log messages (no color) prefixed by log level.
+///     Logger::LogVolatile()
+///         Use for raw log messages (no prefix) but with color support via
+///         StyledMessage. Message will clear (hence volatile) when the next
+///         message is emitted. For sinks without color support, color will be
+///         disabled. Some sinks may not support volatile and print no message
+///         at all.
 class Logger {
   public:
     using MessageCreateFunc = std::function<std::string()>;
@@ -77,7 +87,7 @@ class Logger {
                              sinks_,
                              level,
                              msg,
-                             /*clear=*/false,
+                             MessageStyle::Normal,
                              std::forward<TArgs>(args)...);
         }
     }
@@ -86,11 +96,8 @@ class Logger {
     void Emit(LogLevel level,
               MessageCreateFunc const& msg_creator) const noexcept {
         if (static_cast<int>(level) <= static_cast<int>(log_limit_)) {
-            FormatAndForward(this,
-                             sinks_,
-                             level,
-                             msg_creator(),
-                             /*clear=*/false);
+            FormatAndForward(
+                this, sinks_, level, msg_creator(), MessageStyle::Normal);
         }
     }
 
@@ -105,25 +112,21 @@ class Logger {
                              LogConfig::Sinks(),
                              level,
                              msg,
-                             /*clear=*/false,
+                             MessageStyle::Normal,
                              std::forward<TArgs>(args)...);
         }
     }
 
     /// \brief Log message that will be overwritten by the next log message.
     /// Not all sinks support overwrite.
-    template <class... TArgs>
-    static void LogVolatile(LogLevel level,
-                            std::string const& msg,
-                            TArgs&&... args) noexcept {
+    static void LogVolatile(LogLevel level, StyledMessage const& msg) noexcept {
         if (static_cast<int>(level) <=
             static_cast<int>(LogConfig::LogLimit())) {
-            FormatAndForward(nullptr,
-                             LogConfig::Sinks(),
-                             level,
-                             msg,
-                             /*clear=*/true,
-                             std::forward<TArgs>(args)...);
+            Forward(nullptr,
+                    LogConfig::Sinks(),
+                    level,
+                    msg,
+                    MessageStyle::Volatile);
         }
     }
 
@@ -136,7 +139,7 @@ class Logger {
                              LogConfig::Sinks(),
                              level,
                              msg_creator(),
-                             /*clear=*/false);
+                             MessageStyle::Normal);
         }
     }
 
@@ -156,7 +159,7 @@ class Logger {
                 logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
                 level,
                 msg,
-                /*clear=*/false,
+                MessageStyle::Normal,
                 std::forward<TArgs>(args)...);
         }
     }
@@ -165,20 +168,17 @@ class Logger {
     /// by the next log message. Provides a common interface between the global
     /// logger and named instances, hidden from the outside caller.
     /// For named instances no global configuration is used.
-    template <class... TArgs>
     static void LogVolatile(Logger const* logger,
                             LogLevel level,
-                            std::string const& msg,
-                            TArgs&&... args) noexcept {
+                            StyledMessage const& msg) noexcept {
         if (static_cast<int>(level) <=
             static_cast<int>(logger != nullptr ? logger->log_limit_
                                                : LogConfig::LogLimit())) {
-            FormatAndForward(logger,
-                             LogConfig::Sinks(),
-                             level,
-                             msg,
-                             /*clear=*/true,
-                             std::forward<TArgs>(args)...);
+            Forward(logger,
+                    logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
+                    level,
+                    msg,
+                    MessageStyle::Volatile);
         }
     }
 
@@ -197,7 +197,7 @@ class Logger {
                 logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
                 level,
                 msg_creator(),
-                /*clear=*/false);
+                MessageStyle::Normal);
         }
     }
 
@@ -206,6 +206,18 @@ class Logger {
     LogLevel log_limit_{};
     std::vector<ILogSink::Ptr> sinks_;
 
+    /// \brief Forward message to sinks.
+    template <class TMessage>
+    static void Forward(Logger const* logger,
+                        std::vector<ILogSink::Ptr> const& sinks,
+                        LogLevel level,
+                        TMessage const& msg,
+                        MessageStyle style) noexcept {
+        std::for_each(sinks.cbegin(), sinks.cend(), [&](auto& sink) {
+            sink->Emit(logger, level, msg, style);
+        });
+    }
+
     /// \brief Format message and forward to sinks.
     template <class... TArgs>
     static void FormatAndForward(
@@ -213,20 +225,17 @@ class Logger {
         std::vector<ILogSink::Ptr> const& sinks,
         LogLevel level,
         std::string const& msg,
-        bool clear,
+        MessageStyle style,
         // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
         TArgs&&... args) noexcept {
         if constexpr (sizeof...(TArgs) == 0) {
-            // forward to sinks
-            std::for_each(sinks.cbegin(), sinks.cend(), [&](auto& sink) {
-                sink->Emit(logger, level, msg, clear);
-            });
+            Forward(logger, sinks, level, msg, style);
         }
         else {
             // format the message
             auto fmsg = fmt::vformat(msg, fmt::make_format_args(args...));
             // recursive call without format arguments
-            FormatAndForward(logger, sinks, level, fmsg, clear);
+            FormatAndForward(logger, sinks, level, fmsg, style);
         }
     }
 };

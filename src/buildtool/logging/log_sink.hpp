@@ -15,6 +15,7 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_LOGGING_LOG_SINK_HPP
 #define INCLUDED_SRC_BUILDTOOL_LOGGING_LOG_SINK_HPP
 
+#include <cstdint>
 #include <functional>
 #include <istream>
 #include <memory>
@@ -24,6 +25,18 @@
 
 // forward declaration
 class Logger;
+
+/// \brief The style a log message is emitted in.
+enum class MessageStyle : std::uint8_t {
+    // Message is emitted with the usual log level prefix
+    Normal,
+    // Message is emitted without prefix and cleared by the next log message
+    Volatile
+};
+
+/// \brief A message that renders itself with or without styling, e.g.,
+/// coloring, depending on what the sink emitting it supports.
+using StyledMessage = std::function<std::string(bool colored)>;
 
 class ILogSink {
   public:
@@ -37,12 +50,22 @@ class ILogSink {
 
     /// \brief Thread-safe emitting of log messages.
     /// Logger might be 'nullptr' if called from the global context.
-    /// \param clear    Message will be emitted unmodified and cleared by next
-    ///                 log message.
+    /// \param style    Style the message is emitted in. Not all sinks support
+    ///                 all styles.
     virtual void Emit(Logger const* logger,
                       LogLevel level,
                       std::string const& msg,
-                      bool clear) const noexcept = 0;
+                      MessageStyle style) const noexcept = 0;
+
+    /// \brief Thread-safe emitting of log messages that can be styled.
+    /// Sinks that support styling are expected to override this method; by
+    /// default, the message is rendered without any styling.
+    virtual void Emit(Logger const* logger,
+                      LogLevel level,
+                      StyledMessage const& msg,
+                      MessageStyle style) const noexcept {
+        Emit(logger, level, msg(/*colored=*/false), style);
+    }
 
   protected:
     /// \brief Helper class for line iteration with std::istream_iterator.

@@ -112,20 +112,25 @@ class DynamicProgressReporterImpl {
             max_label_width = std::max(max_label_width, label_width);
         }
 
-        // print a line for each currently running task
-        std::string progress_message{};
-        for (auto const& sample : state_.samples) {
-            progress_message +=
-                TaskString(sample, *width, max_label_width) + "\n";
-        }
-        if (num_samples > 0 and active > num_samples) {
-            progress_message += TaskContinuationString(*width) + "\n";
-        }
+        Logger::LogVolatile(
+            logger_, LogLevel::Progress, [&, this](bool colored) {
+                // print a line for each currently running task
+                std::string progress_message{};
+                for (auto const& sample : state_.samples) {
+                    progress_message +=
+                        TaskString(sample, *width, max_label_width, colored) +
+                        "\n";
+                }
+                if (num_samples > 0 and active > num_samples) {
+                    progress_message += TaskContinuationString(*width) + "\n";
+                }
 
-        // print bottom line
-        progress_message += BottomLineString(done, total, active, *width);
+                // print bottom line
+                progress_message +=
+                    BottomLineString(done, total, active, *width, colored);
 
-        Logger::LogVolatile(logger_, LogLevel::Progress, progress_message);
+                return progress_message;
+            });
     }
 
   private:
@@ -201,7 +206,8 @@ class DynamicProgressReporterImpl {
     // is used for calculating the fractions for each part.
     [[nodiscard]] auto TaskString(std::string const& sample,
                                   unsigned int max_width,
-                                  unsigned int max_label_width) -> std::string {
+                                  unsigned int max_label_width,
+                                  bool colored) -> std::string {
         auto label_width = static_cast<unsigned int>(
             (std::min(max_width, kDefaultMaxWidth) - 3) * kTaskLabelFrac);
         label_width = std::min(label_width, max_label_width);
@@ -210,9 +216,10 @@ class DynamicProgressReporterImpl {
         return fmt::format(
             "  {} {}",
             Blue(fmt::format(
-                "{:.<{}}",
-                label_str + (label_str.size() < label_width ? " " : ""),
-                label_width)),
+                     "{:.<{}}",
+                     label_str + (label_str.size() < label_width ? " " : ""),
+                     label_width),
+                 colored),
             OriginString(sample, origin_width));
     }
 
@@ -249,7 +256,8 @@ class DynamicProgressReporterImpl {
     [[nodiscard]] auto BottomLineString(int done,
                                         int total,
                                         int active,
-                                        unsigned int max_width) -> std::string {
+                                        unsigned int max_width,
+                                        bool colored) -> std::string {
         auto desc_width = static_cast<unsigned int>(
             (std::min(max_width, kDefaultMaxWidth) - 2) * kDescriptionFrac);
         auto bar_width = static_cast<unsigned int>(
@@ -259,7 +267,8 @@ class DynamicProgressReporterImpl {
             "{} {} {}",
             Green(fmt::format("{:>{}}",
                               std::string{"Building"}.substr(0, desc_width),
-                              desc_width)),
+                              desc_width),
+                  colored),
             ProgressBar(done, total, bar_width),
             SummaryString(done, total, active, summary_width));
     }
@@ -285,12 +294,14 @@ class DynamicProgressReporterImpl {
         return result;
     }
 
-    [[nodiscard]] static auto Green(std::string const& msg) -> std::string {
-        return fmt::format(kColorGreen, "{}", msg);
+    [[nodiscard]] static auto Green(std::string const& msg,
+                                    bool colored) -> std::string {
+        return colored ? fmt::format(kColorGreen, "{}", msg) : msg;
     }
 
-    [[nodiscard]] static auto Blue(std::string const& msg) -> std::string {
-        return fmt::format(kColorBlue, "{}", msg);
+    [[nodiscard]] static auto Blue(std::string const& msg,
+                                   bool colored) -> std::string {
+        return colored ? fmt::format(kColorBlue, "{}", msg) : msg;
     }
 };
 
