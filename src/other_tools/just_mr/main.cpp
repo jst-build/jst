@@ -43,6 +43,7 @@
 #include "src/buildtool/storage/garbage_collector.hpp"
 #include "src/buildtool/storage/repository_garbage_collector.hpp"
 #include "src/buildtool/storage/storage.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/other_tools/just_mr/cli.hpp"
 #include "src/other_tools/just_mr/exit_codes.hpp"
 #include "src/other_tools/just_mr/fetch.hpp"
@@ -211,7 +212,7 @@ void SetupSetupCommandArguments(
 
 void SetupDefaultLogging() {
     LogConfig::SetLogLimit(kDefaultLogLevel);
-    LogConfig::SetSinks({LogSinkCmdLine::CreateFactory()});
+    LogConfig::SetSinks({LogSinkCmdLine::CreateFactory(Terminal::UseColor())});
 }
 
 void SetupLogging(MultiRepoLogArguments const& clargs) {
@@ -222,7 +223,8 @@ void SetupLogging(MultiRepoLogArguments const& clargs) {
         LogConfig::SetLogLimit(kDefaultLogLevel);
     }
     LogConfig::SetSinks({LogSinkCmdLine::CreateFactory(
-        not clargs.plain_log, clargs.restrict_stderr_log_limit)});
+        clargs.color.value_or(Terminal::UseColor()),
+        clargs.restrict_stderr_log_limit)});
     for (auto const& log_file : clargs.log_files) {
         LogConfig::AddSink(LogSinkFile::CreateFactory(
             log_file,

@@ -51,6 +51,7 @@
 #include "src/buildtool/storage/config.hpp"
 #include "src/buildtool/storage/garbage_collector.hpp"
 #include "src/buildtool/storage/repository_garbage_collector.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/other_tools/just_mr/exit_codes.hpp"
 #include "src/other_tools/just_mr/setup.hpp"
 #include "src/other_tools/just_mr/setup_utils.hpp"
@@ -186,6 +187,9 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     }
     if (log_args.plain_log) {
         cmd.emplace_back("--plain-log");
+    }
+    if (log_args.color) {
+        cmd.emplace_back(*log_args.color ? "--color" : "--no-color");
     }
     if (supports_defines) {
         if (just_cmd_args.config) {

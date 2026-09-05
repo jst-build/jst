@@ -42,6 +42,7 @@
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/build_utils.hpp"
 #include "src/buildtool/main/exit_codes.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/utils/cpp/expected.hpp"
 
 namespace {
@@ -213,6 +214,25 @@ void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs) {
                 std::exit(kExitFailure);
             }
             clargs->log.plain_log = plain->Bool();
+            if (clargs->log.plain_log) {
+                // plain log output implies no colors
+                clargs->log.color = false;
+            }
+        }
+        // read in whether to use colors; note that it is read after the
+        // plain flag, so that it wins over the colors it implies
+        auto color = logging->Get("color", Expression::none_t{});
+        if (color.IsNotNull()) {
+            if (not color->IsBool()) {
+                Logger::Log(
+                    LogLevel::Error,
+                    "In serve service config file {}:\nValue for logging key "
+                    "\"color\" has to be a flag, but found {}",
+                    clargs->serve.config.string(),
+                    color->ToString());
+                std::exit(kExitFailure);
+            }
+            clargs->log.color = color->Bool();
         }
         // read in files field
         auto files = logging->Get("files", Expression::none_t{});

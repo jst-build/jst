@@ -36,6 +36,7 @@
 #include "src/buildtool/common/retry_cli.hpp"
 #include "src/buildtool/common/user_structs.hpp"
 #include "src/buildtool/logging/log_level.hpp"
+#include "src/buildtool/logging/logger.hpp"
 #include "src/other_tools/just_mr/mirrors.hpp"
 #include "src/other_tools/just_mr/utils.hpp"
 
@@ -68,6 +69,7 @@ struct MultiRepoLogArguments {
     std::vector<std::filesystem::path> log_files;
     std::optional<LogLevel> log_limit;
     std::optional<LogLevel> restrict_stderr_log_limit;
+    std::optional<bool> color;
     bool plain_log{false};
     bool log_append{false};
 };
@@ -321,9 +323,21 @@ static inline auto SetupMultiRepoLogArguments(
            "Restrict logging on console to the minimum of the specified "
            "--log-limit and this value")
         ->type_name("NUM");
+    // Note: the flags below are triggered on parse, so that they are
+    // evaluated in the order they are given on the command line, the last
+    // one determining whether to use colors.
     app->add_flag("--plain-log",
                   clargs->plain_log,
-                  "Do not use ANSI escape sequences to highlight messages.");
+                  "Use plain, non-interactive log output; implies --no-color.")
+        ->trigger_on_parse()
+        ->each([clargs](auto const& /*unused*/) { clargs->color = false; });
+    app->add_flag("--color,!--no-color",
+                  clargs->color,
+                  "Whether to use ANSI escape sequences to highlight messages. "
+                  "If neither is given, the environment variables FORCE_COLOR "
+                  "and NO_COLOR are honored, in this order, before falling "
+                  "back to checking whether stderr is a terminal.")
+        ->trigger_on_parse();
     app->add_flag(
         "--log-append",
         clargs->log_append,

@@ -76,6 +76,7 @@
 #include "src/buildtool/storage/config.hpp"
 #include "src/buildtool/storage/file_chunker.hpp"
 #include "src/buildtool/storage/storage.hpp"
+#include "src/buildtool/system/terminal.hpp"
 #include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/json.hpp"
 #ifndef BOOTSTRAP_BUILD_TOOL
@@ -111,13 +112,14 @@ namespace Target = BuildMaps::Target;
 
 void SetupDefaultLogging() {
     LogConfig::SetLogLimit(kDefaultLogLevel);
-    LogConfig::SetSinks({LogSinkCmdLine::CreateFactory()});
+    LogConfig::SetSinks({LogSinkCmdLine::CreateFactory(Terminal::UseColor())});
 }
 
 void SetupLogging(LogArguments const& clargs) {
     LogConfig::SetLogLimit(clargs.log_limit);
     LogConfig::SetSinks({LogSinkCmdLine::CreateFactory(
-        not clargs.plain_log, clargs.restrict_stderr_log_limit)});
+        clargs.color.value_or(Terminal::UseColor()),
+        clargs.restrict_stderr_log_limit)});
     for (auto const& log_file : clargs.log_files) {
         LogConfig::AddSink(LogSinkFile::CreateFactory(
             log_file,
