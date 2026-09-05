@@ -26,6 +26,7 @@
 
 #include "fmt/format.h"
 #include "src/buildtool/progress_reporting/progress_style.hpp"
+#include "src/buildtool/progress_reporting/task_string.hpp"
 #include "src/buildtool/system/terminal.hpp"
 
 namespace {
@@ -197,17 +198,7 @@ class DynamicProgressReporterImpl {
 
     [[nodiscard]] auto OriginString(std::string const& sample,
                                     std::size_t max_width) -> std::string {
-        std::string result{};
-        auto const& origin_map = progress_->OriginMap();
-        auto origins = origin_map.find(sample);
-        if (origins != origin_map.end() and not origins->second.empty()) {
-            auto const& origin = origins->second[0];
-            result = fmt::format(
-                "{}#{}", origin.first.target.ToString(), origin.second);
-        }
-        else {
-            result = sample;
-        }
+        auto result = TaskOrigin(progress_, sample);
         if (result.size() <= max_width) {
             return result;
         }
@@ -304,21 +295,7 @@ class DynamicProgressReporterImpl {
     }
 
     [[nodiscard]] auto LabelString(std::string const& sample) -> std::string {
-        std::string result{};
-        if (progress_->TaskTracker().IsUploading(sample)) {
-            result = "Uploading";
-        }
-        else {
-            auto const& label_map = progress_->LabelMap();
-            auto label = label_map.find(sample);
-            if (label != label_map.end()) {
-                result = label->second;
-            }
-            else {
-                result = "Executing";
-            }
-        }
-        return result;
+        return TaskLabel(progress_, sample);
     }
 
     /// \brief The label of an action, padded to the given width or cut on the

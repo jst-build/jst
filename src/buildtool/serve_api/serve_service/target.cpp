@@ -52,8 +52,9 @@
 #include "src/buildtool/main/analyse_context.hpp"
 #include "src/buildtool/main/build_utils.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
+#include "src/buildtool/progress_reporting/base_progress_reporter.hpp"
+#include "src/buildtool/progress_reporting/build_log.hpp"
 #include "src/buildtool/progress_reporting/progress.hpp"
-#include "src/buildtool/progress_reporting/progress_reporter.hpp"
 #include "src/buildtool/serve_api/serve_service/target_utils.hpp"
 #include "src/buildtool/storage/backend_description.hpp"
 #include "src/buildtool/storage/config.hpp"
@@ -604,11 +605,17 @@ auto TargetService::ServeTargetImpl(
                                             .progress = &progress,
                                             .profile = std::nullopt};
 
-        GraphTraverser const traverser{
-            std::move(traverser_args),
-            &exec_context,
-            ProgressReporter::Reporter(&stats, &progress, &logger),
-            &logger};
+        // needs to be kept alive for the entire build
+        BuildLog build_log{&progress, &logger};
+        progress.SetActionStartHook(
+            [&build_log](auto const& id, bool executed) {
+                build_log.NotifyStart(id, executed);
+            });
+
+        GraphTraverser const traverser{std::move(traverser_args),
+                                       &exec_context,
+                                       BaseProgressReporter::Reporter([]() {}),
+                                       &logger};
 
         // get the output artifacts
         auto const [artifacts, runfiles] =

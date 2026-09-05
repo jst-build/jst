@@ -50,18 +50,31 @@ class Progress {
         return origin_map_;
     }
 
-    // Return a reference to the output map. It is the responsibility of the
-    // caller to ensure that access only happens in a single-threaded context.
-    [[nodiscard]] auto OutputMap() noexcept
-        -> std::unordered_map<std::string, std::string>& {
-        return output_map_;
-    }
-
     // Return a reference to the label map. It is the responsibility of the
     // caller to ensure that access only happens in a single-threaded context.
     [[nodiscard]] auto LabelMap() noexcept
         -> std::unordered_map<std::string, std::string>& {
         return label_map_;
+    }
+
+    // Set the hook that is called whenever an action is started to be
+    // executed or, for actions served from cache, once they are done. It is
+    // the responsibility of the caller to set the hook before the execution
+    // phase starts, as it is read from multiple threads during execution, and
+    // to ensure that the hook itself is thread-safe and does not throw.
+    void SetActionStartHook(
+        std::function<void(std::string const&, bool)> hook) {
+        action_start_hook_ = std::move(hook);
+    }
+
+    // Notify about the start of an action, reporting whether the action is
+    // actually executed or was served from cache. Thread-safe, given that the
+    // hook itself is thread-safe. The hook must not throw.
+    void NotifyActionStart(std::string const& action_id,
+                           bool executed) const noexcept {
+        if (action_start_hook_) {
+            action_start_hook_(action_id, executed);
+        }
     }
 
   private:
@@ -71,8 +84,8 @@ class Progress {
         std::vector<
             std::pair<BuildMaps::Target::ConfiguredTarget, std::size_t>>>
         origin_map_;
-    std::unordered_map<std::string, std::string> output_map_;
     std::unordered_map<std::string, std::string> label_map_;
+    std::function<void(std::string const&, bool)> action_start_hook_;
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_PROGRESS_HPP

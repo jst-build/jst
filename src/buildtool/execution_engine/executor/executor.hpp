@@ -88,6 +88,7 @@ class ExecutorImpl {
         gsl::not_null<Progress*> const& progress)
         -> std::optional<IExecutionResponse::Ptr> {
         progress->TaskTracker().Start(action->Content().Id());
+        progress->NotifyActionStart(action->Content().Id(), /*executed=*/true);
         std::vector<DependencyGraph::NamedArtifactNodePtr> inputs =
             action->Dependencies();
         std::sort(inputs.begin(), inputs.end(), [](auto a, auto b) {
@@ -247,6 +248,10 @@ class ExecutorImpl {
             // set action options
             remote_action->SetCacheFlag(cache_flag);
             remote_action->SetTimeout(timeout);
+            remote_action->SetStartCallback([&progress, &action]() {
+                progress->NotifyActionStart(action->Content().Id(),
+                                            /*executed=*/true);
+            });
 
             // execute action
             auto result = remote_action->Execute(&logger);
@@ -695,7 +700,8 @@ class ExecutorImpl {
             return false;
         }
 
-        if (not count_as_executed and response->IsCached()) {
+        bool const cached = not count_as_executed and response->IsCached();
+        if (cached) {
             logger.Emit(LogLevel::Trace, " - served from cache");
             stats->IncrementActionsCachedCounter();
         }
@@ -703,6 +709,12 @@ class ExecutorImpl {
             stats->IncrementActionsExecutedCounter();
         }
         progress->TaskTracker().Stop(action->Content().Id());
+        if (cached) {
+            // executed actions have already been reported when they were
+            // started to be executed
+            progress->NotifyActionStart(action->Content().Id(),
+                                        /*executed=*/false);
+        }
 
         PrintInfo(logger, action, response);
         bool action_failed = false;

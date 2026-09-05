@@ -194,11 +194,13 @@ following arguments.
  - `"label"` An optional label that describes the build task in a
    human-readable, concise manner, e.g., `Compiling xyz.cpp` or `Running
    test xyz`. It is not part of the action definition, but only used in
-   dynamic progress reporting, which constantly displays the tasks that
-   are executed during the build process. Due to space limitations in
-   the progress report, the label might be cropped after a certain
-   amount of characters. This field is optional and defaults to `null`,
-   in which case a generic label is used in progress reporting.
+   progress reporting: the dynamic progress report constantly displays
+   the tasks that are executed during the build process, and the plain
+   build log prints one line per action, at the time the action is
+   started. Due to space limitations in the dynamic progress report, the
+   label might be cropped after a certain amount of characters. This
+   field is optional and defaults to `null`, in which case a generic
+   label is used in progress reporting.
 
  - `"cwd"` The directory inside the action root to change to before
    executing the command. The directory has to be given as a string

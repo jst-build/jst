@@ -78,6 +78,10 @@ class LocalAction final : public IExecutionAction {
         timeout_ = timeout;
     }
 
+    void SetStartCallback(StartCallback callback) noexcept final {
+        start_callback_ = std::move(callback);
+    }
+
   private:
     Logger logger_{"LocalExecution"};
     LocalContext const& local_context_;
@@ -92,6 +96,7 @@ class LocalAction final : public IExecutionAction {
     std::chrono::milliseconds timeout_{kDefaultTimeout};
     CacheFlag cache_flag_{CacheFlag::CacheOutput};
     RequestMode mode_{};
+    StartCallback start_callback_{};
 
     explicit LocalAction(gsl::not_null<LocalContext const*> local_context,
                          ArtifactDigest root_digest,

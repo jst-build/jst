@@ -183,6 +183,7 @@ class TestAction : public IExecutionAction {
     }
     void SetCacheFlag(CacheFlag /*unused*/) noexcept final {}
     void SetTimeout(std::chrono::milliseconds /*unused*/) noexcept final {}
+    void SetStartCallback(StartCallback /*unused*/) noexcept final {}
 
   private:
     TestApiConfig config_{};

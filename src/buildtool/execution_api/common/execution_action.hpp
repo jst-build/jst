@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <memory>
 
 #include "src/buildtool/execution_api/common/execution_response.hpp"
@@ -62,9 +63,16 @@ class IExecutionAction {
     [[nodiscard]] virtual auto Execute(Logger const* logger = nullptr) noexcept
         -> IExecutionResponse::Ptr = 0;
 
+    /// \brief Callback that is invoked once it is known that the action's
+    /// result cannot be served from cache and the action is actually going to
+    /// be executed.
+    using StartCallback = std::function<void()>;
+
     virtual void SetCacheFlag(CacheFlag flag) noexcept = 0;
 
     virtual void SetTimeout(std::chrono::milliseconds timeout) noexcept = 0;
+
+    virtual void SetStartCallback(StartCallback callback) noexcept = 0;
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_EXECUTION_API_COMMON_REMOTE_EXECUTION_ACTION_HPP

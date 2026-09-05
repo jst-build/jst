@@ -21,25 +21,39 @@
     ],
   },
 
-  progress_reporter: {
+  task_string: {
     type: @'rules//CC:library',
-    name: ['progress_reporter'],
-    hdrs: ['progress_reporter.hpp'],
-    srcs: ['progress_reporter.cpp'],
+    name: ['task_string'],
+    hdrs: ['task_string.hpp'],
+    srcs: ['task_string.cpp'],
     stage: ['src', 'buildtool', 'progress_reporting'],
     deps: [
-      'base_progress_reporter',
       'progress',
       @'gsl//:gsl',
-      @'//src/buildtool/common:statistics',
-      @'//src/buildtool/logging:logging',
     ],
     'private-deps': [
       'task_tracker',
       @'fmt//:fmt',
-      @'json//:json',
       @'//src/buildtool/build_engine/base_maps:entity_name_data',
       @'//src/buildtool/build_engine/target_map:configured_target',
+    ],
+  },
+
+  build_log: {
+    type: @'rules//CC:library',
+    name: ['build_log'],
+    hdrs: ['build_log.hpp'],
+    srcs: ['build_log.cpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
+      'progress',
+      @'gsl//:gsl',
+      @'//src/buildtool/logging:logging',
+    ],
+    'private-deps': [
+      'progress_style',
+      'task_string',
+      @'fmt//:fmt',
       @'//src/buildtool/logging:log_level',
     ],
   },
@@ -91,6 +105,7 @@
     ],
     'private-deps': [
       'progress_style',
+      'task_string',
       @'fmt//:fmt',
       @'//src/buildtool/system:terminal',
     ],

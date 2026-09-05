@@ -22,6 +22,7 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
+#include <utility>  // std::move
 #include <vector>
 
 #include "src/buildtool/common/artifact_blob.hpp"
@@ -49,6 +50,9 @@ class BazelAction final : public IExecutionAction {
     void SetTimeout(std::chrono::milliseconds timeout) noexcept final {
         timeout_ = timeout;
     }
+    void SetStartCallback(StartCallback callback) noexcept final {
+        start_callback_ = std::move(callback);
+    }
 
   private:
     std::shared_ptr<BazelNetwork> const network_;
@@ -63,6 +67,7 @@ class BazelAction final : public IExecutionAction {
     CacheFlag cache_flag_{CacheFlag::CacheOutput};
     std::chrono::milliseconds timeout_{kDefaultTimeout};
     RequestMode mode_{};
+    StartCallback start_callback_{};
 
     explicit BazelAction(std::shared_ptr<BazelNetwork> network,
                          ArtifactDigest root_digest,

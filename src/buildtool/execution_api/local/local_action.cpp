@@ -149,6 +149,10 @@ auto LocalAction::Execute(Logger const* logger) noexcept
     }
 
     if (ExecutionEnabled(cache_flag_)) {
+        // the action is not served from cache, but actually executed
+        if (start_callback_) {
+            start_callback_();
+        }
         if (auto output = Run(*action)) {
             if (cache_flag_ == CacheFlag::PretendCached) {
                 // ensure the same id is created as if caching were enabled
