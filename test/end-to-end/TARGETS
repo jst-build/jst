@@ -43,9 +43,9 @@
     target: 'remote tests (unconfigured)',
     config: {
       TEST_MATRIX: {
-        TEST_COMAPTIBLE_REMOTE: {
+        TEST_COMPATIBLE_REMOTE: {
           'remote-compat': true,
-          'remote-native': 'false',
+          'remote-native': false,
         },
       },
     },
