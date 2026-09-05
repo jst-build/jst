@@ -18,7 +18,12 @@
 - The single-node execution service (`jst execute`) now rejects batch requests
   whose total blob size exceeds the supported limit with `INVALID_ARGUMENT`, as
   foreseen by the remote build execution protocol, instead of answering them
-  with a response of arbitrary size.
+  with a response of arbitrary size. That limit can be set with the new option
+  `--max-batch-size`; it defaults to the maximum gRPC message length of 3 MiB,
+  which is also the cap for larger values. The limit reported via the
+  capabilities service, by default the supported one, can be set independently
+  with the new option `--max-batch-size-reported`; a value of 0 reports that no
+  limit is set.
 - The `jstlang` language implementation, formerly vendored as a separate
   repository under `extern/justlang`, now lives in the main source tree at
   `src/buildtool/jstlang`. Its compiler binary is available as the export

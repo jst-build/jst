@@ -112,6 +112,7 @@
     stage: ['src', 'buildtool', 'execution_api', 'execution_service'],
     deps: [
       @'gsl//:gsl',
+      @'//src/buildtool/execution_api/common:message_limits',
       @'//src/buildtool/execution_api/local:context',
       @'//src/buildtool/execution_api/remote:context',
     ],
@@ -183,10 +184,10 @@
       @'grpc//:grpc++',
       @'//src/buildtool/common:bazel_types',
       @'//src/buildtool/crypto:hash_function',
+      @'//src/buildtool/execution_api/common:message_limits',
     ],
     'private-deps': [
       @'//src/buildtool/common:protocol_traits',
-      @'//src/buildtool/execution_api/common:message_limits',
     ],
   },
 
