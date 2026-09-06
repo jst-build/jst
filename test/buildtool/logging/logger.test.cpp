@@ -132,6 +132,22 @@ TEST_CASE_METHOD(OneGlobalSinkFixture,
 }
 
 TEST_CASE_METHOD(OneGlobalSinkFixture,
+                 "Styled message rendered by a sink without styling",
+                 "[logger]") {
+    // logs should be forwarded to sink instance: 0
+    int instance = 0;
+
+    // the test sink does not support styling, so the message must be
+    // rendered without it
+    Logger::LogRaw(nullptr, LogLevel::Info, [](bool colored) {
+        return std::string{colored ? "colored" : "plain"};
+    });
+    auto prints = TestPrints::Read(instance);
+    REQUIRE(prints.size() == 1);
+    CHECK(prints[0] == "INFO: plain");
+}
+
+TEST_CASE_METHOD(OneGlobalSinkFixture,
                  "Local named logger using one global sink",
                  "[logger]") {
     // create logger with sink instances from global LogConfig

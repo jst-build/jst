@@ -31,12 +31,14 @@
 /// Main logging methods:
 ///     Logger::Log()
 ///         Use for plain log messages (no color) prefixed by log level.
-///     Logger::LogVolatile()
+///     Logger::LogRaw()
 ///         Use for raw log messages (no prefix) but with color support via
-///         StyledMessage. Message will clear (hence volatile) when the next
-///         message is emitted. For sinks without color support, color will be
-///         disabled. Some sinks may not support volatile and print no message
-///         at all.
+///         StyledMessage. For sinks without color support, color will be
+///         disabled.
+///     Logger::LogVolatile()
+///         Use for raw log messages (same as LogRaw) that will clear (hence
+///         volatile) when the next message is emitted. Some sinks may not
+///         support volatile and print no message at all.
 class Logger {
   public:
     using MessageCreateFunc = std::function<std::string()>;
@@ -161,6 +163,25 @@ class Logger {
                 msg,
                 MessageStyle::Normal,
                 std::forward<TArgs>(args)...);
+        }
+    }
+
+    /// \brief Generic logging method with log message that is emitted
+    /// unmodified, that is, without any log level prefix. Provides a common
+    /// interface between the global logger and named instances, hidden from
+    /// the outside caller.
+    /// For named instances no global configuration is used.
+    static void LogRaw(Logger const* logger,
+                       LogLevel level,
+                       StyledMessage const& msg) noexcept {
+        if (static_cast<int>(level) <=
+            static_cast<int>(logger != nullptr ? logger->log_limit_
+                                               : LogConfig::LogLimit())) {
+            Forward(logger,
+                    logger != nullptr ? logger->sinks_ : LogConfig::Sinks(),
+                    level,
+                    msg,
+                    MessageStyle::Raw);
         }
     }
 

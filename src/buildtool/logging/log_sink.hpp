@@ -30,6 +30,8 @@ class Logger;
 enum class MessageStyle : std::uint8_t {
     // Message is emitted with the usual log level prefix
     Normal,
+    // Message is emitted without prefix
+    Raw,
     // Message is emitted without prefix and cleared by the next log message
     Volatile
 };
