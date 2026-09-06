@@ -249,6 +249,17 @@
     ],
   },
 
+  'git-ssh': {
+    type: @'rules//shell/test:script',
+    name: ['git-ssh'],
+    test: ['git-ssh.sh'],
+    deps: [
+      @'//:mr-tool-under-test',
+      @'//:tool-under-test',
+      @'//other_tools/git_operations:ssh_support_probe_install',
+    ],
+  },
+
   'foreign-file': {
     type: @'rules//shell/test:script',
     name: ['foreign-file'],
@@ -378,6 +389,7 @@
              'git-tree-verbosity',
              'git-tree-env',
              'git-env',
+             'git-ssh',
              'defaults',
              'absent-roots',
              'foreign-file',

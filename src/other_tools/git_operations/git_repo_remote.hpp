@@ -57,6 +57,19 @@ class GitRepoRemote : public GitRepo {
         std::filesystem::path const& repo_path,
         bool is_bare) noexcept -> std::optional<GitRepoRemote>;
 
+    /// \brief Check whether the linked libgit2 handles SSH remotes itself by
+    /// executing the system's ssh binary (built with USE_SSH=exec). Only then
+    /// does libgit2 honor the user's SSH setup (keys, ~/.ssh/config, agent,
+    /// ProxyCommand), making it a valid replacement for shelling out to git.
+    /// Returns false for a libgit2 using libssh2, lacking SSH support, or
+    /// older than 1.9.0, where the SSH backend cannot be queried.
+    [[nodiscard]] static auto HasNativeSshSupport() noexcept -> bool;
+
+    /// \brief Check whether the given URL can be handled by libgit2 directly,
+    /// instead of shelling out to the system git binary.
+    [[nodiscard]] static auto IsUrlNativelySupported(
+        std::string const& url) noexcept -> bool;
+
     /// \brief Retrieve commit hash from remote branch given its name.
     /// Only possible with real repository and thus non-thread-safe.
     /// If non-null, use given config snapshot to interact with config entries;
@@ -82,11 +95,12 @@ class GitRepoRemote : public GitRepo {
                                        anon_logger_ptr const& logger) noexcept
         -> bool;
 
-    /// \brief Get commit from given branch on the remote. If URL is SSH, shells
-    /// out to system git to perform an ls-remote call, ensuring correct
-    /// handling of the remote connection settings (in particular proxy and
-    /// SSH). For non-SSH URLs, the branch commit is retrieved asynchronously
-    /// using libgit2.
+    /// \brief Get commit from given branch on the remote. For URLs libgit2
+    /// cannot handle itself, shells out to system git to perform an ls-remote
+    /// call, ensuring correct handling of the remote connection settings (in
+    /// particular proxy and SSH). Otherwise, the branch commit is retrieved
+    /// asynchronously using libgit2; this includes SSH URLs if libgit2 has
+    /// native SSH support, see HasNativeSshSupport().
     /// Returns the commit hash, as a string, or nullopt if failure.
     /// It guarantees the logger is called exactly once with fatal if failure.
     [[nodiscard]] auto UpdateCommitViaTmpRepo(
@@ -99,10 +113,12 @@ class GitRepoRemote : public GitRepo {
         anon_logger_ptr const& logger) const noexcept
         -> std::optional<std::string>;
 
-    /// \brief Fetch from a remote. If URL is SSH, shells out to system git to
-    /// retrieve packs in a safe manner, with the only side-effect being that
-    /// there can be some redundancy in the fetched packs.
-    /// For non-SSH URLs an asynchronous fetch is performed using libgit2.
+    /// \brief Fetch from a remote. For URLs libgit2 cannot handle itself,
+    /// shells out to system git to retrieve packs in a safe manner, with the
+    /// only side-effect being that there can be some redundancy in the fetched
+    /// packs. Otherwise an asynchronous fetch is performed using libgit2; this
+    /// includes SSH URLs if libgit2 has native SSH support, see
+    /// HasNativeSshSupport().
     /// Uses either a given branch, or fetches all (with base refspecs).
     /// Returns a success flag.
     /// It guarantees the logger is called exactly once with fatal if failure.

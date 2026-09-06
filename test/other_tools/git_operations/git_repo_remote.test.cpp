@@ -417,3 +417,56 @@ TEST_CASE("Multi-threaded fake repository operations", "[git_repo_remote]") {
         }
     }
 }
+
+TEST_CASE("URL classification", "[git_repo_remote]") {
+    // Whether SSH remotes are handled by libgit2 depends on how it was built,
+    // so the expectation for SSH URLs follows the capabilities at hand.
+    auto const ssh = GitRepoRemote::HasNativeSshSupport();
+
+    SECTION("explicit schemes handled by libgit2") {
+        CHECK(GitRepoRemote::IsUrlNativelySupported("git://host/repo.git"));
+        CHECK(GitRepoRemote::IsUrlNativelySupported("http://host/repo.git"));
+        CHECK(GitRepoRemote::IsUrlNativelySupported("https://host/repo.git"));
+        CHECK(GitRepoRemote::IsUrlNativelySupported("file:///path/repo.git"));
+    }
+
+    SECTION("SSH schemes") {
+        CHECK(GitRepoRemote::IsUrlNativelySupported("ssh://user@host/repo") ==
+              ssh);
+        CHECK(GitRepoRemote::IsUrlNativelySupported(
+                  "git+ssh://user@host/repo") == ssh);
+        CHECK(GitRepoRemote::IsUrlNativelySupported(
+                  "ssh+git://user@host/repo") == ssh);
+    }
+
+    SECTION("scp-style locations") {
+        CHECK(GitRepoRemote::IsUrlNativelySupported("git@host:org/repo.git") ==
+              ssh);
+        CHECK(GitRepoRemote::IsUrlNativelySupported("host:path/repo.git") ==
+              ssh);
+        CHECK(GitRepoRemote::IsUrlNativelySupported("host:/abs/repo.git") ==
+              ssh);
+    }
+
+    SECTION("existing directories are handled by libgit2") {
+        auto const repo_path = TestUtils::CreateTestRepo(true);
+        REQUIRE(repo_path);
+        CHECK(GitRepoRemote::IsUrlNativelySupported(repo_path->string()));
+    }
+
+    SECTION("locations requiring a shell-out") {
+        // unknown protocols are left to the system git binary
+        CHECK_FALSE(GitRepoRemote::IsUrlNativelySupported(
+            "protocolcertainlynotknowntojust://host/repo"));
+        // non-existing local paths carry no colon and no scheme
+        CHECK_FALSE(
+            GitRepoRemote::IsUrlNativelySupported("/no/such/directory"));
+        CHECK_FALSE(GitRepoRemote::IsUrlNativelySupported("./no/such/dir"));
+        // a slash before the colon means a path, not an scp-style host
+        CHECK_FALSE(
+            GitRepoRemote::IsUrlNativelySupported("./no/such:dir/repo"));
+        // a leading colon has no host part
+        CHECK_FALSE(GitRepoRemote::IsUrlNativelySupported(":no/host/here"));
+        CHECK_FALSE(GitRepoRemote::IsUrlNativelySupported(""));
+    }
+}

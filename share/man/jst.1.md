@@ -199,7 +199,9 @@ a repository.
 
 **`--git`** *`PATH`*  
 Path to the git binary in *`PATH`* or path to the git binary. Used in
-the rare instances when shelling out to git is needed.  
+the rare instances when shelling out to git is needed. SSH remotes are
+among those instances only if the `libgit2` **`jst`** is built against
+does not support SSH by executing the system's `ssh` binary.  
 Default: *`"git"`*.
 
 **`--norc`**  

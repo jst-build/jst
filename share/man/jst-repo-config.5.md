@@ -119,7 +119,11 @@ The following fields are supported:
 
  - *`"inherit env"`* provides a list of variables. When `jst`
    shells out to `git`, those variables are inherited from the
-   environment `jst` is called within, if set there.
+   environment `jst` is called within, if set there. Note that
+   `jst` does not shell out for SSH remotes if the `libgit2` it
+   is built against supports SSH by executing the system's `ssh`
+   binary; in that case, `ssh` is invoked with the full environment
+   `jst` is called within and this entry has no effect.
 
 ### *`"git tree"`*
 

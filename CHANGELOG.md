@@ -36,6 +36,15 @@
   instead of the deprecated per-algorithm `SHA1_*`/`SHA256_*`/`SHA512_*`
   functions, fixing the build against OpenSSL 3.x while remaining compatible
   with BoringSSL.
+- If the `libgit2` version built against was configured to handle SSH
+  connections by executing an external OpenSSH command (like the `ssh` binary),
+  `jst` no longer shells out to `git` for remotes reached over SSH, i.e.,
+  `ssh://`, `git+ssh://`, `ssh+git://`, and scp-style `[user@]host:path`
+  locations. For `libgit2` versions lacking that capability, shelling out
+  remains the fallback to ensure that the user's SSH setup is properly honored,
+  and also to support protocols `libgit2` cannot handle. Note that `ssh`
+  inherits the full environment `jst` was called in, so the repository field
+  `"inherit env"` has no effect for such remotes.
 
 ### Fixes
 

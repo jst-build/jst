@@ -74,7 +74,9 @@ The jstrc is given by a JSON object.
 
  - The value for the key *`"git"`* is a single location object,
    specifying the path to the git binary to use in the instances when
-   **`jst`** needs to shell out.
+   **`jst`** needs to shell out. Note that SSH remotes do not require
+   shelling out if the `libgit2` **`jst`** is built against supports SSH
+   by executing the system's `ssh` binary.
 
  - The value for the key *`"local launcher"`*, if given, is list of
    strings setting the default for local launcher for **`jst`**;

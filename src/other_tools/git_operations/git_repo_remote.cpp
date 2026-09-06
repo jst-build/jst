@@ -20,6 +20,7 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <string_view>
 #include <utility>  // std::move
 
 #include "fmt/format.h"
@@ -40,19 +41,20 @@ extern "C" {
 
 namespace {
 
-/// \brief Basic check for libgit2 protocols we support. For all other cases, we
-/// should default to shell out to git instead.
-[[nodiscard]] auto IsSupported(std::string const& url) -> bool {
-    // look for explicit schemes
-    if (url.starts_with("git://") or url.starts_with("http://") or
-        url.starts_with("https://") or url.starts_with("file://")) {
-        return true;
+/// \brief Check for an scp-like remote location, i.e., "[user@]host:path".
+/// Mirrors the rule used by git itself: there must be a colon that is not
+/// preceded by a slash, and the part before it must be non-empty. Locations
+/// carrying an explicit scheme are handled by their scheme instead.
+[[nodiscard]] auto IsScpStyleUrl(std::string const& url) -> bool {
+    if (url.find("://") != std::string::npos) {
+        return false;
     }
-    // look for url as existing filesystem directory path
-    if (FileSystemManager::IsDirectory(std::filesystem::path(url))) {
-        return true;
+    auto const colon = url.find(':');
+    if (colon == std::string::npos or colon == 0) {
+        return false;
     }
-    return false;  // as default
+    // a slash before the colon means we are looking at a path, not a host
+    return url.find('/') > colon;
 }
 
 struct FetchIntoODBBackend {
@@ -139,6 +141,64 @@ auto GitRepoRemote::InitAndOpen(std::filesystem::path const& repo_path,
         return GitRepoRemote(std::move(*res));
     }
     return std::nullopt;
+}
+
+#ifdef LIBGIT2_VERSION_CHECK
+#if LIBGIT2_VERSION_CHECK(1, 9, 0)
+// git_libgit2_feature_backend() was introduced in libgit2 1.9.0
+#define HAVE_LIBGIT2_FEATURE_BACKEND
+#endif
+#endif
+
+auto GitRepoRemote::HasNativeSshSupport() noexcept -> bool {
+#ifdef HAVE_LIBGIT2_FEATURE_BACKEND
+    // The SSH backend cannot change at runtime, so query it only once. This
+    // runs on first use, i.e., well after GitContext has initialized libgit2.
+    static bool const kHasNativeSsh = []() -> bool {
+        auto const features = static_cast<unsigned int>(git_libgit2_features());
+        if ((features & static_cast<unsigned int>(GIT_FEATURE_SSH)) == 0) {
+            return false;
+        }
+        char const* backend = git_libgit2_feature_backend(GIT_FEATURE_SSH);
+        // Only the "exec" backend runs the system's ssh binary and thus honors
+        // the user's SSH setup; libssh2 does not, e.g., read ~/.ssh/config.
+        return backend != nullptr and std::string_view{backend} == "exec";
+    }();
+    return kHasNativeSsh;
+#else
+    return false;
+#endif
+}
+
+#undef HAVE_LIBGIT2_FEATURE_BACKEND
+
+auto GitRepoRemote::IsUrlNativelySupported(std::string const& url) noexcept
+    -> bool {
+    try {
+        // look for explicit schemes
+        if (url.starts_with("git://") or url.starts_with("http://") or
+            url.starts_with("https://") or url.starts_with("file://")) {
+            return true;
+        }
+        // SSH schemes, only if libgit2 shells out to ssh for us
+        if (url.starts_with("ssh://") or url.starts_with("git+ssh://") or
+            url.starts_with("ssh+git://")) {
+            return HasNativeSshSupport();
+        }
+        // look for url as existing filesystem directory path; done before the
+        // scp-style check, such that a directory containing a colon in its
+        // name is not mistaken for a remote location
+        if (FileSystemManager::IsDirectory(std::filesystem::path(url))) {
+            return true;
+        }
+        // scp-style remote locations are handled via SSH as well
+        if (IsScpStyleUrl(url)) {
+            return HasNativeSshSupport();
+        }
+        return false;  // as default
+    } catch (...) {
+        return false;
+    }
 }
 
 auto GitRepoRemote::GetCommitFromRemote(std::shared_ptr<git_config> cfg,
@@ -415,7 +475,10 @@ auto GitRepoRemote::UpdateCommitViaTmpRepo(
         }
         auto const& tmp_path = tmp_dir->GetPath();
         // check for internally supported protocols
-        if (IsSupported(repo_url)) {
+        if (IsUrlNativelySupported(repo_url)) {
+            Logger::Log(LogLevel::Debug,
+                        "Git commit update for remote {} is handled by libgit2",
+                        repo_url);
             // preferably with a "fake" repository!
             if (not IsRepoFake()) {
                 Logger::Log(LogLevel::Debug,
@@ -551,8 +614,10 @@ auto GitRepoRemote::FetchViaTmpRepo(StorageConfig const& storage_config,
         }
         auto const& tmp_path = tmp_dir->GetPath();
         // check for internally supported protocols
-        if (IsSupported(repo_url)) {
-            Logger::Log(LogLevel::Debug, "Try fetch from URL {}", repo_url);
+        if (IsUrlNativelySupported(repo_url)) {
+            Logger::Log(LogLevel::Debug,
+                        "Git fetch for remote {} is handled by libgit2",
+                        repo_url);
             // preferably with a "fake" repository!
             if (not IsRepoFake()) {
                 Logger::Log(LogLevel::Debug,

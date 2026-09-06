@@ -83,6 +83,24 @@
     deps: ['git_config_run'],
   },
 
+  ssh_support_probe: {
+    type: @'rules//CC:binary',
+    tainted: ['test'],
+    name: ['ssh_support_probe'],
+    srcs: ['ssh_support_probe.cpp'],
+    'private-deps': [
+      @'src//src/buildtool/file_system:git_context',
+      @'src//src/other_tools/git_operations:git_repo_remote',
+    ],
+    stage: ['src'],
+  },
+
+  ssh_support_probe_install: {
+    type: 'install',
+    tainted: ['test'],
+    files: {'utils/ssh-support-probe': 'ssh_support_probe'},
+  },
+
   TESTS: {
     type: @'rules//test:suite',
     stage: ['git_operations'],
