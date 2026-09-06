@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <cstdio>
@@ -50,6 +51,7 @@
 #include "src/buildtool/file_system/jsonfs.hpp"
 #include "src/buildtool/file_system/object_type.hpp"
 #include "src/buildtool/logging/log_level.hpp"
+#include "src/buildtool/progress_reporting/progress_style.hpp"
 #include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/json.hpp"
 #include "src/utils/cpp/path.hpp"
@@ -404,12 +406,13 @@ auto GraphTraverser::GetArtifactNodes(
     return nodes;
 }
 
-void GraphTraverser::LogStatistics() const noexcept {
+void GraphTraverser::LogStatistics(
+    std::chrono::steady_clock::duration duration) const noexcept {
     auto& stats = *context_.statistics;
     if (clargs_.rebuild) {
         std::stringstream ss{};
         ss << stats.RebuiltActionComparedCounter()
-           << " actions compared with cache";
+           << " actions compared with cache in " << FormatDuration(duration);
         if (stats.ActionsFlakyCounter() > 0) {
             ss << ", " << stats.ActionsFlakyCounter() << " flaky actions found";
             ss << " (" << stats.ActionsFlakyTaintedCounter()
@@ -425,8 +428,9 @@ void GraphTraverser::LogStatistics() const noexcept {
     else {
         Logger::Log(logger_,
                     LogLevel::Info,
-                    "Processed {} actions, {} cache hits.",
+                    "Processed {} actions in {} ({} cache hits).",
                     stats.ActionsQueuedCounter(),
+                    FormatDuration(duration),
                     stats.ActionsCachedCounter());
     }
 }
@@ -483,13 +487,15 @@ auto GraphTraverser::BuildArtifacts(
         return std::nullopt;
     }
 
+    auto const build_start = std::chrono::steady_clock::now();
     if (clargs_.rebuild ? not TraverseRebuild(*graph, artifact_ids)
                         : not Traverse(*graph, artifact_ids)) {
         Logger::Log(logger_, LogLevel::Error, "Build failed.");
         return std::nullopt;
     }
+    auto const build_duration = std::chrono::steady_clock::now() - build_start;
 
-    LogStatistics();
+    LogStatistics(build_duration);
 
     auto artifact_nodes = GetArtifactNodes(*graph, artifact_ids, logger_);
     if (not artifact_nodes) {

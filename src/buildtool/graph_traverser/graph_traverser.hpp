@@ -16,6 +16,7 @@
 #define INCLUDED_SRC_BUILDTOOL_GRAPH_TRAVERSER_GRAPH_TRAVERSER_HPP
 #ifndef BOOTSTRAP_BUILD_TOOL
 
+#include <chrono>
 #include <cstddef>
 #include <filesystem>
 #include <functional>
@@ -151,7 +152,8 @@ class GraphTraverser {
         Logger const* logger) noexcept
         -> std::optional<std::vector<DependencyGraph::ArtifactNode const*>>;
 
-    void LogStatistics() const noexcept;
+    void LogStatistics(
+        std::chrono::steady_clock::duration duration) const noexcept;
 
     [[nodiscard]] auto BuildArtifacts(
         gsl::not_null<DependencyGraph*> const& graph,

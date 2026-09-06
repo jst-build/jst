@@ -34,6 +34,7 @@
       @'//src/buildtool/file_system:jsonfs',
       @'//src/buildtool/file_system:object_type',
       @'//src/buildtool/logging:log_level',
+      @'//src/buildtool/progress_reporting:progress_style',
       @'//src/utils/cpp:expected',
       @'//src/utils/cpp:json',
       @'//src/utils/cpp:path',
