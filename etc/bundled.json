@@ -549,11 +549,11 @@
     "libgit2": {
       "repository": {
         "type": "archive",
-        "content": "80f999c62e8da8da7d64fe543c8eeb9953bf6974",
-        "fetch": "https://github.com/libgit2/libgit2/archive/refs/tags/v1.7.2.tar.gz",
-        "sha256": "de384e29d7efc9330c6cdb126ebf88342b5025d920dcb7c645defad85195ea7f",
-        "sha512": "825737e4a1991fba50ea535f15b0e560ebe76ead752e04aeba36925b944d0da77fe9826a70980a1aa3d0bf9afbedfab79dd92e799c9252931384c89ebec9b012",
-        "subdir": "libgit2-1.7.2"
+        "content": "998cc0932494b23c242b86fda3635ef077c1ad81",
+        "fetch": "https://github.com/libgit2/libgit2/archive/refs/tags/v1.9.7.tar.gz",
+        "sha256": "1a4fbe7589e814777ae76b64734ad80f4ecad22cd33a22682a2aaea4ae5375e7",
+        "sha512": "96924a4fd87669ad91d40669946cd249b646f3ce85380fc12b553b6c20338ff3c1df5faa6f168b2ca12ed20c8309116a05021f9710ee7ff61e5b8a249172b0ba",
+        "subdir": "libgit2-1.9.7"
       },
       "target_root": "libgit2/targets",
       "bindings": {
@@ -574,8 +574,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "libgit2/v1.7.2",
-        "commit": "76dbfc846cc9a5e33fb2737af200ee306bb8d86b",
+        "branch": "libgit2/v1.9.7",
+        "commit": "a72fdf5fcdc864c4b5124af25a10c7a48fff9740",
         "subdir": "config"
       }
     },
@@ -583,8 +583,8 @@
       "repository": {
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
-        "branch": "libgit2/v1.7.2",
-        "commit": "76dbfc846cc9a5e33fb2737af200ee306bb8d86b",
+        "branch": "libgit2/v1.9.7",
+        "commit": "a72fdf5fcdc864c4b5124af25a10c7a48fff9740",
         "subdir": "targets"
       }
     },

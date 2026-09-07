@@ -199,11 +199,10 @@ local default_options =
     type: 'configure',
     target: @'libgit2//:git2',
     config: {
-      USE_SHA1: 'OpenSSL',
-      USE_SHA256: 'OpenSSL',
-      USE_SSH: false,
       USE_HTTPS: 'OpenSSL',
-      USE_GSSAPI: false,
+      USE_SHA1: 'HTTPS',
+      USE_SHA256: 'HTTPS',
+      USE_SSH: 'exec',  // build with ssh exec, so we do not need to shell out
     },
   },
 

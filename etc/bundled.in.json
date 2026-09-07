@@ -123,7 +123,7 @@
     },
     {
       "source": "git",
-      "branch": "libgit2/v1.7.2",
+      "branch": "libgit2/v1.9.7",
       "url": "https://github.com/jst-build/imports-cc",
       "repos": [
         {

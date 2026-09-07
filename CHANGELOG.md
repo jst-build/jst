@@ -45,6 +45,13 @@
   and also to support protocols `libgit2` cannot handle. Note that `ssh`
   inherits the full environment `jst` was called in, so the repository field
   `"inherit env"` has no effect for such remotes.
+- The bundled `libgit2` has been upgraded to version `1.9.7` and is now built
+  with `USE_SSH=exec`, making `libgit2` handle the SSH transport itself by
+  executing the system's `ssh` binary. The main benefit is
+  that the bundled `jst` no longer requires `git` to be installed on the host
+  in order to fetch such repositories. The SSH setup of the user is honored as
+  before, as it is the system's `ssh` that is executed; `GIT_SSH_COMMAND`,
+  `GIT_SSH`, and `core.sshCommand` are taken into account as usual.
 
 ### Fixes
 
