@@ -167,7 +167,8 @@ class GraphTraverser {
         -> std::optional<
             std::tuple<std::vector<std::filesystem::path>,
                        std::vector<DependencyGraph::ArtifactNode const*>,
-                       std::vector<DependencyGraph::ArtifactNode const*>>>;
+                       std::vector<DependencyGraph::ArtifactNode const*>,
+                       std::chrono::nanoseconds>>;
 
     [[nodiscard]] auto PrepareOutputPaths(
         std::vector<std::filesystem::path> const& rel_paths) const

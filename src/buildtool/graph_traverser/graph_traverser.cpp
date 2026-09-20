@@ -77,7 +77,7 @@ auto GraphTraverser::BuildAndStage(
     if (not artifacts) {
         return std::nullopt;
     }
-    auto [rel_paths, artifact_nodes, extra_nodes] = *artifacts;
+    auto [rel_paths, artifact_nodes, extra_nodes, build_duration] = *artifacts;
 
     auto const object_infos = CollectObjectInfos(artifact_nodes, logger_);
     auto extra_infos = CollectObjectInfos(extra_nodes, logger_);
@@ -105,6 +105,7 @@ auto GraphTraverser::BuildAndStage(
                      rel_paths,
                      artifact_nodes,
                      runfile_descriptions);
+        LogStatistics(build_duration);
         MaybePrintToStdout(
             rel_paths,
             artifact_nodes,
@@ -133,6 +134,8 @@ auto GraphTraverser::BuildAndStage(
                  *output_paths,
                  artifact_nodes,
                  runfile_descriptions);
+
+    LogStatistics(build_duration);
 
     MaybePrintToStdout(
         rel_paths,
@@ -447,7 +450,8 @@ auto GraphTraverser::BuildArtifacts(
     -> std::optional<
         std::tuple<std::vector<std::filesystem::path>,
                    std::vector<DependencyGraph::ArtifactNode const*>,
-                   std::vector<DependencyGraph::ArtifactNode const*>>> {
+                   std::vector<DependencyGraph::ArtifactNode const*>,
+                   std::chrono::nanoseconds>> {
     if (not UploadBlobs(std::move(blobs))) {
         return std::nullopt;
     }
@@ -495,8 +499,6 @@ auto GraphTraverser::BuildArtifacts(
     }
     auto const build_duration = std::chrono::steady_clock::now() - build_start;
 
-    LogStatistics(build_duration);
-
     auto artifact_nodes = GetArtifactNodes(*graph, artifact_ids, logger_);
     if (not artifact_nodes) {
         return std::nullopt;
@@ -513,7 +515,8 @@ auto GraphTraverser::BuildArtifacts(
 
     return std::make_tuple(std::move(output_paths),
                            std::move(*artifact_nodes),
-                           std::move(extra_nodes));
+                           std::move(extra_nodes),
+                           build_duration);
 }
 
 auto GraphTraverser::PrepareOutputPaths(
