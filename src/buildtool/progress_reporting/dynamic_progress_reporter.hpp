@@ -32,7 +32,6 @@ class DynamicProgressReporter {
 
   private:
     static auto constexpr kDefaultPeriod = std::int64_t{100};
-    static auto constexpr kDefaultBackoffFactor = 1.0;
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_DYNAMIC_PROGRESS_REPORTER_HPP

@@ -28,9 +28,10 @@ using progress_reporter_t =
 
 /// \brief The base progress reporter class provides the central progress
 /// reporter loop with an externally-controlled exit condition (atomic bool) and
-/// activation (condition variable). Default behavior is periodic activation
-/// with exponential back-off. At each activation a user-defined report function
-/// is called.
+/// activation (condition variable), using a constant loop interval. The
+/// activations happen at fixed points in time, exactly one per interval, no
+/// matter how long the report takes; activations missed while reporting are
+/// skipped. At each activation a user-defined report function is called.
 ///
 /// The class provides a static function, which requires a user-defined report
 /// function as input parameter and returns the periodically activated progress
@@ -47,16 +48,11 @@ class BaseProgressReporter {
   public:
     [[nodiscard]] static auto Reporter(
         std::function<void(void)> report,
-        std::int64_t start_delay = kStartDelayMillis,
-        double backoff_factor =
-            static_cast<double>(kDelayScalingFactorNumerator) /
-            kDelayScalingFactorDenominator) noexcept -> progress_reporter_t;
+        std::int64_t interval = kDefaultIntervalMillis) noexcept
+        -> progress_reporter_t;
 
   private:
-    constexpr static std::int64_t kStartDelayMillis = 3000;
-    // Scaling is roughly sqrt(2)
-    constexpr static std::int64_t kDelayScalingFactorNumerator = 99;
-    constexpr static std::int64_t kDelayScalingFactorDenominator = 70;
+    constexpr static std::int64_t kDefaultIntervalMillis = 3000;
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_BASE_PROGRESS_REPORTER_HPP

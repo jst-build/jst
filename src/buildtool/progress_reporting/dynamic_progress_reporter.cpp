@@ -51,7 +51,6 @@ namespace {
 class DynamicProgressReporterImpl {
   private:
     static auto constexpr kMaxTasks = 8;
-    static auto constexpr kMaxCount = 10;
     static auto constexpr kDefaultMaxWidth = 80U;
     static auto constexpr kTaskLabelFrac = 38.0 / (kDefaultMaxWidth - 3);
     static auto constexpr kDescriptionFrac = 12.0 / (kDefaultMaxWidth - 2);
@@ -65,10 +64,6 @@ class DynamicProgressReporterImpl {
         int run;
         int queued;
         std::vector<std::string> samples;
-        auto operator==(State const& other) const -> bool {
-            return cached == other.cached and run == other.run and
-                   queued == other.queued and samples == other.samples;
-        }
     };
 
   public:
@@ -79,18 +74,13 @@ class DynamicProgressReporterImpl {
         : stats_{stats}, progress_{progress}, logger_{logger} {}
 
     auto operator()() -> void {
+        // Redraw on every call, even if nothing changed, so that the report is
+        // updated at a constant rate.
         // Note: order matters; queued has to be queried last
-        State state = {.cached = stats_->ActionsCachedCounter(),
-                       .run = stats_->ActionsExecutedCounter(),
-                       .queued = stats_->ActionsQueuedCounter(),
-                       .samples = progress_->TaskTracker().Sample(kMaxTasks)};
-
-        if (state_ == state and count_++ < kMaxCount) {
-            // only update on change, but honor max count to force redraw
-            return;
-        }
-        count_ = 0;
-        state_ = state;
+        state_ = {.cached = stats_->ActionsCachedCounter(),
+                  .run = stats_->ActionsExecutedCounter(),
+                  .queued = stats_->ActionsQueuedCounter(),
+                  .samples = progress_->TaskTracker().Sample(kMaxTasks)};
 
         // determine progress parameters
         auto total = gsl::narrow<int>(progress_->OriginMap().size());
@@ -137,7 +127,6 @@ class DynamicProgressReporterImpl {
     gsl::not_null<Statistics*> stats_;
     gsl::not_null<Progress*> progress_;
     Logger const* logger_;
-    int count_{};
     State state_{};
 
     [[nodiscard]] auto OriginString(std::string const& sample,
@@ -314,7 +303,5 @@ auto DynamicProgressReporter::Reporter(gsl::not_null<Statistics*> const& stats,
                                        Logger const* logger) noexcept
     -> progress_reporter_t {
     return BaseProgressReporter::Reporter(
-        DynamicProgressReporterImpl{stats, progress, logger},
-        kDefaultPeriod,
-        kDefaultBackoffFactor);
+        DynamicProgressReporterImpl{stats, progress, logger}, kDefaultPeriod);
 }

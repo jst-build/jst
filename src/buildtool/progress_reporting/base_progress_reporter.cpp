@@ -37,21 +37,29 @@ void CallReport(std::function<void(void)> const& report) noexcept {
 }  // namespace
 
 auto BaseProgressReporter::Reporter(std::function<void(void)> report,
-                                    std::int64_t start_delay,
-                                    double backoff_factor) noexcept
+                                    std::int64_t interval) noexcept
     -> progress_reporter_t {
-    return [report = std::move(report), start_delay, backoff_factor](
-               std::atomic<bool>* done, std::condition_variable* cv) {
+    return [report = std::move(report), interval](std::atomic<bool>* done,
+                                                  std::condition_variable* cv) {
         std::mutex m;
         std::unique_lock<std::mutex> lock(m);
-        std::int64_t delay = start_delay;
+        auto const period = std::chrono::milliseconds{interval};
+        auto next = std::chrono::steady_clock::now() + period;
         while (not *done) {
-            cv->wait_for(lock, std::chrono::milliseconds(delay));
-            if (not *done) {
-                CallReport(report);
+            // wait for the next activation; the predicate rules out spurious
+            // wake-ups, which would otherwise cause additional reports
+            if (cv->wait_until(lock, next, [done] { return done->load(); })) {
+                break;
             }
-            delay = static_cast<std::int64_t>(static_cast<double>(delay) *
-                                              backoff_factor);
+            CallReport(report);
+            // activations are due at fixed points in time, independent of how
+            // long the report takes; activations missed while reporting are
+            // skipped rather than caught up in a burst
+            next += period;
+            if (auto const now = std::chrono::steady_clock::now();
+                next <= now) {
+                next += ((now - next) / period + 1) * period;
+            }
         }
         // Call the reporter a final time to print the latest state.
         CallReport(report);
