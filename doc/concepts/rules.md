@@ -197,8 +197,11 @@ following arguments.
    progress reporting: the dynamic progress report constantly displays
    the tasks that are executed during the build process, and the plain
    build log prints one line per action, at the time the action is
-   started. Due to space limitations in the dynamic progress report, the
-   label might be cropped after a certain amount of characters. This
+   started. The progress reporting is laid out for labels of up to 40
+   characters, so labels should not exceed that length: longer labels
+   are cropped in the dynamic progress report and break the column
+   alignment of the plain build log (see
+   [progress reporting](progress-reporting.md)). This
    field is optional and defaults to `null`, in which case a generic
    label is used in progress reporting.
 

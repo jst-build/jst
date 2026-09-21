@@ -52,6 +52,32 @@
   in order to fetch such repositories. The SSH setup of the user is honored as
   before, as it is the system's `ssh` that is executed; `GIT_SSH_COMMAND`,
   `GIT_SSH`, and `core.sshCommand` are taken into account as usual.
+- The progress reporting has been redesigned, see the new concept
+  documentation [Progress Reporting](doc/concepts/progress-reporting.md).
+  On a terminal, the build now shows its running actions in columns that
+  adapt to the terminal width, each with a spinner and its running time,
+  above a bottom line with a progress bar, the total build time, and the
+  action statistics. Spinner and progress bar use Unicode characters if the
+  terminal can display them, and ASCII characters otherwise.
+- Outside of a terminal, or with the new option `--plain-progress`, the
+  build prints one line per executed action instead, prefixed by a counter.
+  Environments with the `CI` environment variable set are treated as
+  non-interactive as well. The option `--plain-log` is an alias for
+  `--plain-progress --no-color`.
+- The repository setup now reports its progress in the same way: on a
+  terminal with the repositories being worked on, including the progress of
+  downloads and the amounts imported, and otherwise with one line per
+  repository to be set up. Repositories that already exist locally are only
+  counted, so a setup that has nothing to do is silent. The final setup summary
+  states the time taken and the amounts fetched and imported.
+- The new options `--color` and `--no-color` control the highlighting of
+  the output; if neither is given, the environment variables `FORCE_COLOR`
+  and `NO_COLOR` are honored, in this order, before falling back to
+  checking whether stderr is a terminal. Of these options and `--plain-log`,
+  the one given last on the command line decides. In the configuration of
+  `jst backend serve`, the logging key `"color"` is a flag accordingly.
+- The build summary now states the time the build took and is printed
+  after the list of artifacts.
 
 ### Fixes
 
