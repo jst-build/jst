@@ -15,8 +15,11 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_SYSTEM_TERMINAL_HPP
 #define INCLUDED_SRC_BUILDTOOL_SYSTEM_TERMINAL_HPP
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <optional>
+#include <string>
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -50,6 +53,25 @@ namespace Terminal {
         return std::nullopt;
     }
     return ws.ws_col;
+}
+
+/// \brief Check whether the terminal is able to display non-ASCII characters,
+/// as indicated by the locale-related environment variables.
+[[nodiscard]] static inline auto SupportsUnicode() noexcept -> bool {
+    for (auto const* variable : {"LC_ALL", "LC_CTYPE", "LANG"}) {
+        char const* const value = std::getenv(variable);
+        if (value == nullptr or *value == '\0') {
+            continue;
+        }
+        std::string locale{value};
+        std::transform(
+            locale.begin(), locale.end(), locale.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+        return locale.find("utf-8") != std::string::npos or
+               locale.find("utf8") != std::string::npos;
+    }
+    return false;
 }
 
 /// \brief Check whether we are running interactively, that is, stderr is

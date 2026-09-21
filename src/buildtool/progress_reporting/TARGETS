@@ -90,6 +90,18 @@
       @'//src/buildtool/logging:logging',
     ],
     'private-deps': [
+      'progress_style',
+      @'fmt//:fmt',
+      @'//src/buildtool/system:terminal',
+    ],
+  },
+
+  progress_style: {
+    type: @'rules//CC:library',
+    name: ['progress_style'],
+    hdrs: ['progress_style.hpp'],
+    stage: ['src', 'buildtool', 'progress_reporting'],
+    deps: [
       @'fmt//:fmt',
       @'//src/buildtool/system:terminal',
     ],

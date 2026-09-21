@@ -1,4 +1,5 @@
 // Copyright 2023 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
 #define INCLUDED_SRC_BUILDTOOL_PROGRESS_REPORTING_TASK_TRACKER_HPP
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -51,6 +53,7 @@ class TaskTracker {
     struct TaskData {
         std::uint64_t prio{};
         TaskState state{};
+        std::chrono::steady_clock::time_point start{};
     };
 
   public:
@@ -128,6 +131,17 @@ class TaskTracker {
         return running_.size();
     }
 
+    /// \brief Obtain for how long a task is being worked on already. Returns
+    /// a zero duration for tasks that are not known.
+    [[nodiscard]] auto Duration(std::string const& id) noexcept
+        -> std::chrono::steady_clock::duration {
+        std::unique_lock lock(m_);
+        if (auto task = task_data_.find(id); task != task_data_.end()) {
+            return std::chrono::steady_clock::now() - task->second.start;
+        }
+        return {};
+    }
+
     [[nodiscard]] auto IsUploading(std::string const& sample) noexcept -> bool {
         std::unique_lock lock(m_);
         if (running_.contains(sample)) {
@@ -150,7 +164,11 @@ class TaskTracker {
             }
             else {
                 ++prio_;
-                task_data_.emplace(id, TaskData{prio_, state});
+                task_data_.emplace(
+                    id,
+                    TaskData{.prio = prio_,
+                             .state = state,
+                             .start = std::chrono::steady_clock::now()});
             }
             running_.emplace(id);
         } catch (...) {
