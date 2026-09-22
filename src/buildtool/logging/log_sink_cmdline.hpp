@@ -31,17 +31,23 @@
 #include "src/buildtool/logging/log_sink.hpp"
 #include "src/buildtool/logging/logger.hpp"
 
-// Escape-code sequence to clear previous line on a VT100 terminal
-//  - \033[A moves cursor up one line
-//  - \r brings cursor to the beginning of the line
-//  - \033[K clears line from cursor to the end
-constexpr auto kClearLineCmd = "\033[A\r\033[K";
 // Escape-code sequence to avoid partial redraw on a VT100 terminal
 //  - \033[?2026h and \033[?2026l begin and end a synchronized update, i.e.,
 //    the terminal does not display anything in between, but the result as a
 //    whole; terminals not supporting this mode simply ignore it
 constexpr std::string_view kBeginSynchronizedUpdate = "\033[?2026h";
 constexpr std::string_view kEndSynchronizedUpdate = "\033[?2026l";
+// Escape-code sequences to redraw a volatile message in place on a VT100
+// terminal, so that in the worst case some lines may be displayed blank, but
+// never the entire block:
+//  - \033[<N>A moves the cursor up N rows, to the first row of the message, and
+//    \r to the start of that row
+//  - \033[K clears the row from the cursor to its end, i.e., what is left of
+//    the previous content to the right of a new line
+//  - \033[J clears everything below the cursor, i.e., the remaining rows of a
+//    previous message that was taller
+constexpr std::string_view kClearToEndOfRow = "\033[K";
+constexpr std::string_view kClearBelow = "\033[J";
 
 class LogSinkCmdLine final : public ILogSink {
   public:
@@ -109,28 +115,41 @@ class LogSinkCmdLine final : public ILogSink {
             bool const clear = num_clear_lines > 0;
             if (clear) {
                 fmt::print(stderr, "{}", kBeginSynchronizedUpdate);
-                std::string clear_str{};
-                clear_str.reserve(num_clear_lines * std::strlen(kClearLineCmd));
-                for (std::size_t i{}; i < num_clear_lines; ++i) {
-                    clear_str.append(kClearLineCmd);
-                }
-                fmt::print(stderr, "{}", clear_str);
+                // move curser up N rows and just overwrite existing output
+                fmt::print(stderr, "\033[{}A\r", num_clear_lines);
             }
             num_clear_lines = clear_next ? num_lines : 0;
             if (msg_on_continuation and prefixed) {
+                if (clear) {
+                    fmt::print(stderr, "{}", kClearToEndOfRow);
+                }
                 fmt::print(stderr, "{}\n", prefix);
                 prefix = cont_prefix;
             }
             using it = std::istream_iterator<ILogSink::Line>;
             std::istringstream iss{msg};
             for_each(it{iss}, it{}, [&](auto const& line) {
+                if (clear) {
+                    // Unconditionally clear the entire row (in case the line to
+                    // overwrite is longer than the new content).
+                    // Q: Why cannot we just clear the remaining row after the
+                    //    new line was written?
+                    // A: If the line length fits exactly the terminal width,
+                    //    depending on the terminal (xterm, ghostty, but not
+                    //    tmux), the curser position will stay at the last
+                    //    column. In that case, the last char will be cleared
+                    //    as well in those terminals.
+                    fmt::print(stderr, "{}", kClearToEndOfRow);
+                }
                 if (prefixed) {
                     fmt::print(stderr, "{} ", prefix);
+                    prefix = cont_prefix;
                 }
                 fmt::print(stderr, "{}\n", line);
-                prefix = cont_prefix;
             });
             if (clear) {
+                // unconditionally clear everything below
+                fmt::print(stderr, "{}", kClearBelow);
                 fmt::print(stderr, "{}", kEndSynchronizedUpdate);
             }
             std::fflush(stderr);
