@@ -23,6 +23,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include "fmt/color.h"
 #include "fmt/format.h"
@@ -34,9 +35,13 @@
 //  - \033[A moves cursor up one line
 //  - \r brings cursor to the beginning of the line
 //  - \033[K clears line from cursor to the end
-#ifdef __unix__
 constexpr auto kClearLineCmd = "\033[A\r\033[K";
-#endif
+// Escape-code sequence to avoid partial redraw on a VT100 terminal
+//  - \033[?2026h and \033[?2026l begin and end a synchronized update, i.e.,
+//    the terminal does not display anything in between, but the result as a
+//    whole; terminals not supporting this mode simply ignore it
+constexpr std::string_view kBeginSynchronizedUpdate = "\033[?2026h";
+constexpr std::string_view kEndSynchronizedUpdate = "\033[?2026l";
 
 class LogSinkCmdLine final : public ILogSink {
   public:
@@ -100,9 +105,10 @@ class LogSinkCmdLine final : public ILogSink {
 
         {
             std::lock_guard lock{mutex};
-#ifdef __unix__
             static std::size_t num_clear_lines{};
-            if (num_clear_lines > 0) {
+            bool const clear = num_clear_lines > 0;
+            if (clear) {
+                fmt::print(stderr, "{}", kBeginSynchronizedUpdate);
                 std::string clear_str{};
                 clear_str.reserve(num_clear_lines * std::strlen(kClearLineCmd));
                 for (std::size_t i{}; i < num_clear_lines; ++i) {
@@ -111,7 +117,6 @@ class LogSinkCmdLine final : public ILogSink {
                 fmt::print(stderr, "{}", clear_str);
             }
             num_clear_lines = clear_next ? num_lines : 0;
-#endif
             if (msg_on_continuation and prefixed) {
                 fmt::print(stderr, "{}\n", prefix);
                 prefix = cont_prefix;
@@ -125,6 +130,9 @@ class LogSinkCmdLine final : public ILogSink {
                 fmt::print(stderr, "{}\n", line);
                 prefix = cont_prefix;
             });
+            if (clear) {
+                fmt::print(stderr, "{}", kEndSynchronizedUpdate);
+            }
             std::fflush(stderr);
         }
     }
