@@ -213,14 +213,9 @@ void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs) {
                     plain->ToString());
                 std::exit(kExitFailure);
             }
-            clargs->log.plain_log = plain->Bool();
-            if (clargs->log.plain_log) {
-                // plain log output implies no colors
-                clargs->log.color = false;
-            }
+            clargs->log.plain_progress = plain->Bool();
         }
-        // read in whether to use colors; note that it is read after the
-        // plain flag, so that it wins over the colors it implies
+        // read in whether to use colors
         auto color = logging->Get("color", Expression::none_t{});
         if (color.IsNotNull()) {
             if (not color->IsBool()) {

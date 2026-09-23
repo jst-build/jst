@@ -81,7 +81,6 @@
       @'//src/buildtool/common:retry_cli',
       @'//src/buildtool/common:user_structs',
       @'//src/buildtool/logging:log_level',
-      @'//src/buildtool/logging:logging',
     ],
     stage: ['src', 'other_tools', 'just_mr'],
   },

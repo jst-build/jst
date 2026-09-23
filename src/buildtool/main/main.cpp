@@ -1136,7 +1136,7 @@ auto main(int argc, char* argv[]) -> int {
             std::move(stage_args),
             std::move(rebuild_args)};
 
-        auto dynamic = not arguments.log.plain_log;
+        auto dynamic = not arguments.log.plain_progress;
         GraphTraverser const traverser{
             traverse_args,
             &exec_context,

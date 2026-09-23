@@ -185,8 +185,8 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
             std::to_string(static_cast<std::underlying_type_t<LogLevel>>(
                 *log_args.restrict_stderr_log_limit)));
     }
-    if (log_args.plain_log) {
-        cmd.emplace_back("--plain-log");
+    if (log_args.plain_progress) {
+        cmd.emplace_back("--plain-progress");
     }
     if (log_args.color) {
         cmd.emplace_back(*log_args.color ? "--color" : "--no-color");
