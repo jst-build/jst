@@ -131,8 +131,27 @@ Restrict logging on console to the minimum of the specified **`--log-limit`**
 and the value specified in this option. The default is to not additionally
 restrict the log level at the console.
 
+**`--plain-progress`**  
+Use plain, non-interactive progress output: instead of the interactive
+progress report, one line is printed for each action, at the time the action
+is started, prefixed by the number of processed actions and the total number
+of actions. Actions that were served from cache are counted, but not printed,
+which leaves gaps in the sequence of reported counter values. This is the
+default whenever standard error is not attached to a terminal or the
+environment variable **`CI`** is set.
+
 **`--plain-log`**  
-Do not use ANSI escape sequences to highlight messages.
+Alias for **`--plain-progress`**, which additionally implies
+**`--no-color`**; see **`--color`**.
+
+**`--color`**, **`--no-color`**  
+Whether to use ANSI escape sequences to highlight messages. If neither is
+given, the environment variables **`FORCE_COLOR`** (any non-empty value
+enables colors) and **`NO_COLOR`** (any non-empty value disables colors) are
+honored, in this order, before falling back to checking whether standard
+error is attached to a terminal. If several of these flags are given,
+including the **`--no-color`** implied by **`--plain-log`**, the last one on
+the command line wins.
 
 **`--log-append`**  
 Append messages to log file instead of overwriting existing.

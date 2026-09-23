@@ -44,8 +44,16 @@ The configuration file is given by a JSON object.
    the log limit.  
    For subkey *`"restrict stderr limit"`* the value is an integer setting a
    restriction for the log on stderr.  
-   For subkey *`"plain"`* the value is a flag. If set, do not use ANSI escape
-   sequences to highlight messages.  
+   For subkey *`"plain"`* the value is a flag. If set, use plain,
+   non-interactive progress output, that is, one line per executed action
+   instead of the interactive progress report; this is the default anyway
+   whenever standard error is not attached to a terminal or the environment
+   variable **`CI`** is set.  
+   For subkey *`"color"`* the value is a flag, specifying whether to use ANSI
+   escape sequences to highlight messages. If it is not given, the environment
+   variables **`FORCE_COLOR`** and **`NO_COLOR`** are honored, in this order,
+   before falling back to checking whether standard error is attached to a
+   terminal.  
    For subkey *`"append"`* the value is a flag. If set, append messages to log
    file instead of overwriting existing.
 

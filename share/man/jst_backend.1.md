@@ -488,8 +488,31 @@ restrict the log level at the console.
 Supported by:
 add-to-cas|analyse|build|describe|install|install-cas|rebuild|traverse|gc|execute.
 
+**`--plain-progress`**  
+Use plain, non-interactive progress output: instead of the interactive
+progress report, one line is printed for each action, at the time the action
+is started, prefixed by the number of processed actions and the total number
+of actions. Actions that were served from cache are counted, but not printed,
+which leaves gaps in the sequence of reported counter values. This is the
+default whenever standard error is not attached to a terminal or the
+environment variable **`CI`** is set.  
+Supported by:
+add-to-cas|analyse|build|describe|install|install-cas|rebuild|traverse|gc|execute.
+
 **`--plain-log`**  
-Do not use ANSI escape sequences to highlight messages.  
+Alias for **`--plain-progress`**, which additionally implies
+**`--no-color`**; see **`--color`**.  
+Supported by:
+add-to-cas|analyse|build|describe|install|install-cas|rebuild|traverse|gc|execute.
+
+**`--color`**, **`--no-color`**  
+Whether to use ANSI escape sequences to highlight messages. If neither is
+given, the environment variables **`FORCE_COLOR`** (any non-empty value
+enables colors) and **`NO_COLOR`** (any non-empty value disables colors) are
+honored, in this order, before falling back to checking whether standard
+error is attached to a terminal. If several of these flags are given,
+including the **`--no-color`** implied by **`--plain-log`**, the last one on
+the command line wins.  
 Supported by:
 add-to-cas|analyse|build|describe|install|install-cas|rebuild|traverse|gc|execute.
 
@@ -825,10 +848,20 @@ Path to a Git repository, containing blobs of potentially missing
 -------------------------------
 
 **`--json`**  
-Omit pretty-printing and describe rule in JSON format.
+Omit pretty-printing and describe rule in JSON format. Takes precedence over
+**`--brief`**.
+
+**`--brief`**  
+Omit documentation and describe rule by listing the names of its fields and
+configuration variables only.
 
 **`--rule`**  
 Module and target arguments refer to a rule instead of a target.
+
+**`--no-pager`**  
+Do not pipe the description through a pager. Paging happens only if standard
+output is attached to a terminal; see the **`JST_PAGER`** and **`PAGER`**
+environment variables.
 
 **`execute`** specific options
 ------------------------------
@@ -888,6 +921,21 @@ Incompatible with `--all`.
 Do not rotate garbage-collection generations and do not split large
 files. Instead, remove all cache generations at once. Incompatible with
 `--no-rotate`.
+
+ENVIRONMENT
+===========
+
+**`JST_PAGER`**, **`PAGER`**  
+The pager to pipe long output through, if standard output is attached to a
+terminal; **`JST_PAGER`** takes precedence. If neither is set, **`less`** is
+used, provided it can be found in **`PATH`**. Setting either of them to the
+empty string disables paging, as does **`--no-pager`**. Unless **`LESS`** is
+already set, **`less`** is invoked such that it quits if the output fits on a
+single screen and passes colors through.
+
+**`NO_COLOR`**, **`FORCE_COLOR`**  
+Control the use of ANSI escape sequences to highlight messages; see
+**`--color`**.
 
 EXIT STATUS
 ===========
