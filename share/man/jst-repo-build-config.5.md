@@ -1,15 +1,15 @@
-% JST_BACKEND REPO CONFIG(5) | File Formats Manual
+% JST REPO BUILD CONFIG(5) | File Formats Manual
 
 NAME
 ====
 
-jst_backend-repo-config - The format of the repository config used by
-**`jst_backend`**(1)
+jst-repo-build-config - The format of the repository build configuration
+used by **`jst_backend`**(1)
 
 DESCRIPTION
 ===========
 
-**`jst_backend`**'s repository configuration is read as JSON. Any other
+**`jst_backend`**'s repository build configuration is read as JSON. Any other
 serialization describing the same JSON object is equivalent. We assume,
 that in JSON objects, each key occurs at most once; it is implementation
 defined how repetitions of the same key are treated.

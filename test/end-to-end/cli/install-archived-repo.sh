@@ -103,7 +103,7 @@ RECONSTRUCTED_TREE=$(jq -r '.repositories."".workspace_root[1]' "${CONF}")
 [ "${RECONSTRUCTED_TREE}" = "${TREE}" ]
 
 # Build to get the tree unconditionally known to the local build root
-"${JUST}" build --local-build-root "${BUILD_ROOT_B}" -C "${CONF}" 2>&1
+"${JUST}" build --local-build-root "${BUILD_ROOT_B}" -B "${CONF}" 2>&1
 
 # - installing the tree as archive should give the same content
 "${JUST}" install-cas --local-build-root "${BUILD_ROOT_B}" \

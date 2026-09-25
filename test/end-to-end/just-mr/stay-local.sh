@@ -96,7 +96,7 @@ echo
 [ -f "${SERVER_STATE}/access" ] && cat "${SERVER_STATE}/access" && exit 1 || :
 
 # The obtained configuraiton should be suitable for building, also remotely
-"${JUST}" install -C "$(cat conf.json)" -o "${OUT}" \
+"${JUST}" install -B "$(cat conf.json)" -o "${OUT}" \
           --local-build-root "${LBR}" \
           -r "${REMOTE_EXECUTION_ADDRESS}" 2>&1
 echo

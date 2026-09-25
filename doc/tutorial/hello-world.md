@@ -146,11 +146,11 @@ individually. To do so, first run `jst` with `setup` and capture the
 path to the generated build configuration from stdout (above omitted from the
 log message as `"..."`) by assigning it to a shell variable (e.g., `CONF`).
 Afterwards, `jst_backend` can be called to perform the actual build by explicitly
-specifying the configuration file via `-C`, e.g.:
+specifying the repository build configuration via `-B`, e.g.:
 
 ``` sh
 $ CONF=$(jst setup tutorial)
-$ jst build -C $CONF helloworld
+$ jst_backend build -B $CONF helloworld
 ```
 
 Note that `jst` only needs to be run the very first time and only

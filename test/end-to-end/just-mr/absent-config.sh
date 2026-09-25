@@ -125,7 +125,7 @@ CONF=$("${JUST_MR}" --local-build-root "${LBR}" \
                     --fetch-absent setup)
 cat $CONF
 echo
-"${JUST}" install --local-build-root "${LBR}" -C "${CONF}" \
+"${JUST}" install --local-build-root "${LBR}" -B "${CONF}" \
           -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} -o "${OUT}" 2>&1
 grep 42 "${OUT}/out.txt"
 grep eg "${OUT}/out.txt"

@@ -11,6 +11,15 @@
   read now. The rc-file keys for the backend have been renamed and the legacy
   spellings dropped: `"just files"` is now `"jst files"`, and `"just args"` is
   now `"jst args"`.
+- The option naming the repository *build* configuration, i.e., the file
+  describing the roots to build from, is now `-B`,
+  `--repository-build-config`, instead of `-C`, `--repository-config`. This
+  removes the clash with `jst`'s own `-C`, which names the multi-repository
+  configuration and keeps its meaning. The format is called
+  jst-repo-build-config accordingly (see `jst-repo-build-config`(5),
+  previously `jst_backend-repo-config`(5)). Affected are `jst_backend` and
+  the bootstrap traversers; `jst`, `jst-lock` and `jst-import-git` are
+  unchanged.
 
 ### Other changes
 

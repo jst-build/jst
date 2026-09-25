@@ -82,7 +82,7 @@ CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" \
 cat $CONF
 
 # Check that we can build correctly
-${JUST} install --local-build-root "${LBR}" -C "${CONF}" \
+${JUST} install --local-build-root "${LBR}" -B "${CONF}" \
                 --remote-serve-address ${SERVE} \
                 --log-limit 6 \
                 -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \

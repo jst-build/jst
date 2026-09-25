@@ -344,7 +344,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     GRAPH: str = os.path.join(cast(str, g_WRKDIR), "graph.json")
     TO_BUILD: str = os.path.join(cast(str, g_WRKDIR), "to_build.json")
     run([
-        bootstrap_jst_backend, "analyse", "-C", CONF_FILE, "-D", CONF_STRING,
+        bootstrap_jst_backend, "analyse", "-B", CONF_FILE, "-D", CONF_STRING,
         "--dump-graph", GRAPH, "--dump-artifacts-to-build", TO_BUILD,
         MAIN_MODULE, MAIN_TARGET
     ],
@@ -355,7 +355,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
         traverser = "./bin/parallel-bootstrap-traverser.py"
     traverser = os.path.join(ro_srcdir, traverser)
     run([
-        traverser, "-C", CONF_FILE, "--default-workspace", objdir, GRAPH,
+        traverser, "-B", CONF_FILE, "--default-workspace", objdir, GRAPH,
         TO_BUILD
     ],
         cwd=objdir)
@@ -364,7 +364,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     OUT: str = os.path.join(cast(str, g_WRKDIR), "out")
     run([
         "./out-boot/%s" %
-        (MAIN_STAGE, ), "install", "-C", CONF_FILE, "-D", CONF_STRING, "-o",
+        (MAIN_STAGE, ), "install", "-B", CONF_FILE, "-D", CONF_STRING, "-o",
         OUT, BOOTSTRAP_MODULE, BOOTSTRAP_TARGET
     ],
         cwd=objdir)

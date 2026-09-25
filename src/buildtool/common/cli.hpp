@@ -226,9 +226,10 @@ struct EvalArguments final {
 static inline auto SetupCommonArguments(
     gsl::not_null<CLI::App*> const& app,
     gsl::not_null<CommonArguments*> const& clargs) {
-    app->add_option("-C,--repository-config",
+    app->add_option("-B,--repository-build-config",
                     clargs->repository_config,
-                    "Path to configuration file for multi-repository builds.")
+                    "Path to the repository build configuration, describing "
+                    "the roots of the repositories to build from.")
         ->type_name("PATH");
     app->add_option(
            "--main", clargs->main, "The repository to take the target from.")

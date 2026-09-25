@@ -145,7 +145,7 @@ CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "
 cat "${CONF}"
 echo
 # test that it fails without using just serve
-"${JUST}" analyse --local-build-root "${LBR}" -C "${CONF}" main && echo "this should fail" >&2 && exit 1
+"${JUST}" analyse --local-build-root "${LBR}" -B "${CONF}" main && echo "this should fail" >&2 && exit 1
 echo "failed as expected"
 
 # test that we can successfully compile using just serve

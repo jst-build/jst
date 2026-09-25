@@ -403,9 +403,10 @@ def traverse(*, graph: Json, to_build: Json, out: str, root: str,
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-C",
+    parser.add_argument("-B",
+                        "--repository-build-config",
                         dest="repository_config",
-                        help="Repository-description file to use",
+                        help="Repository build configuration to use",
                         metavar="FILE")
     parser.add_argument("-o",
                         dest="output_directory",

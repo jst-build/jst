@@ -62,7 +62,7 @@ EOF
 echo
 echo Build against computed root with absent base
 echo
-"${JUST}" install -o "${OUT}" -C repo-config.json \
+"${JUST}" install -o "${OUT}" -B repo-config.json \
           --local-build-root "${LBR}" \
           --remote-serve-address ${SERVE} \
           -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \

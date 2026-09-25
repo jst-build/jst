@@ -43,7 +43,7 @@ cat ${PRUNED_CONFIG}
 echo
 readonly CONF=$(./bin/jst.py -C ${PRUNED_CONFIG} --distdir=distdir --local-build-root="${LBRDIR}" setup jst)
 : ${BOOTSTRAP_CONF:="{}"}
-${JUST} install -C ${CONF} -D "${BOOTSTRAP_CONF}" -o "${OUTDIR}"/final-out --local-build-root="${LBRDIR}"
+${JUST} install -B ${CONF} -D "${BOOTSTRAP_CONF}" -o "${OUTDIR}"/final-out --local-build-root="${LBRDIR}"
 
 sha256sum "${OUTDIR}"/boot/out/bin/jst "${OUTDIR}"/final-out/bin/jst
 cmp "${OUTDIR}"/boot/out/bin/jst "${OUTDIR}"/final-out/bin/jst

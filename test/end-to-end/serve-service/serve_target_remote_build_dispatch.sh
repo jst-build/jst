@@ -121,7 +121,7 @@ echo
 
 # Check that we can build correctly
 FAILED=""
-${JUST} install --local-build-root "${LBRDIR}" -C "${CONF}" \
+${JUST} install --local-build-root "${LBRDIR}" -B "${CONF}" \
                 --remote-serve-address ${SERVE} \
                 -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
                 --endpoint-configuration dispatch.json \

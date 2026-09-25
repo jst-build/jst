@@ -154,7 +154,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
         cmd.emplace_back(*subcommand);
     }
     if (use_config and mr_config_pair) {
-        cmd.emplace_back("-C");
+        cmd.emplace_back("-B");
         cmd.emplace_back(mr_config_pair->first.string());
     }
     if (use_build_root and forward_build_root) {

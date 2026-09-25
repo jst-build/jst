@@ -920,7 +920,7 @@ def call_just(*, config: Json, main: Optional[str], args: List[str]) -> None:
         fail("Setup failed")
     cmd: List[str] = [g_JUST]
     cmd += [subcommand] if subcommand else []
-    cmd += ["-C", cast(str, setup_config)] if use_config else []
+    cmd += ["-B", cast(str, setup_config)] if use_config else []
     cmd += ["--local-build-root", g_ROOT] if use_build_root else []
     if subcommand and subcommand in g_JUST_ARGS:
         cmd += g_JUST_ARGS[subcommand]

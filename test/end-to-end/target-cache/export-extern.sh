@@ -51,19 +51,19 @@ EOF
 
 CONF=$("${JUST_MR}" --local-build-root "${LBRDIR}" setup '')
 
-"${JUST}" install --local-build-root "${LBRDIR}" -C "${CONF}" -o "${OUT}" local 2>&1
+"${JUST}" install --local-build-root "${LBRDIR}" -B "${CONF}" -o "${OUT}" local 2>&1
 cat ${OUT}/it
 echo
 grep 'target.*foo' ${OUT}/it
 echo
 
-"${JUST}" install --local-build-root "${LBRDIR}" -C "${CONF}" -o "${OUT}" distant 2>&1
+"${JUST}" install --local-build-root "${LBRDIR}" -B "${CONF}" -o "${OUT}" distant 2>&1
 cat ${OUT}/it
 echo
 grep 'target.*bar' ${OUT}/it
 echo
 
-"${JUST}" install --local-build-root "${LBRDIR}" -C "${CONF}" -o "${OUT}" file 2>&1
+"${JUST}" install --local-build-root "${LBRDIR}" -B "${CONF}" -o "${OUT}" file 2>&1
 cat ${OUT}/it
 echo
 grep 'file.*foo' ${OUT}/it

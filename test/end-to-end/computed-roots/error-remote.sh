@@ -66,7 +66,7 @@ cat repo-config.json
 echo
 echo 'Build depending on (failing) computed root'
 echo
-"${JUST}" build -C repo-config.json ${REMOTE_ARGS} \
+"${JUST}" build -B repo-config.json ${REMOTE_ARGS} \
           --local-build-root "${LBRA}" \
           -f "${OUT}/build.log" 2>&1 && exit 1 || :
 LOG_BLOB=$(grep 'see [a-zA-Z0-9]* for details' "${OUT}/build.log" | sed 's/.*see //' | sed 's/ for details.*//')

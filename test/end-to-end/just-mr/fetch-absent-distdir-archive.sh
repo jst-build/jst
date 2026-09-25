@@ -83,7 +83,7 @@ CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" \
                     --fetch-absent setup)
 cat $CONF
 echo
-"${JUST}" install --local-build-root "${LBR}" -C "${CONF}" \
+"${JUST}" install --local-build-root "${LBR}" -B "${CONF}" \
           -L '["env", "PATH='"${PATH}"'"]' \
           -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} -o "${OUT}" 2>&1
 grep 42 "${OUT}/out.txt"

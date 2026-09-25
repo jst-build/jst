@@ -23,7 +23,7 @@ The metadata file contains the following information.
   the program is the zeroth entry of the argument vector.
 
 - For the key *`"configuration"`* the blob identifier of the
-  **`jst_backend-repo-config`**(5) that is passed to the launched process,
+  **`jst-repo-build-config`**(5) that is passed to the launched process,
   if such a config is passed.
 
 - For the key *`"time"`* the time of the invocation in seconds since

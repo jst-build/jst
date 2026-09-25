@@ -60,7 +60,7 @@ cat repo-config.json
 echo
 echo Building with option -P
 echo
-"${JUST}" build --local-build-root "${LBR}" -C repo-config.json \
+"${JUST}" build --local-build-root "${LBR}" -B repo-config.json \
           -P out > "${OUT}/stdout" 2> "${OUT}/stderr"
 
 grep GoodOutput "${OUT}/stdout"

@@ -73,7 +73,7 @@ GIT_ROOT=$(jq -r '.repositories.""."workspace_root" | .[2]' "${CONF}")
 echo "Git root is ${GIT_ROOT}"
 echo
 
-"${JUST}" install -C "${CONF}" --local-build-root "${LBR}" \
+"${JUST}" install -B "${CONF}" --local-build-root "${LBR}" \
           -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}" 2>&1
 # sanity check
 grep VALUES "${OUT}/out.txt"

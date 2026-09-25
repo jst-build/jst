@@ -357,9 +357,10 @@ Supported by: analyse|build|install|rebuild|traverse.
 Path to configuration file.  
 Supported by: analyse|build|describe|install|rebuild.
 
-**`-C`**, **`--repository-config`** *`PATH`*  
-Path to configuration file for multi-repository builds. See
-**`stt_backend-repo-config`**(5) for more details.  
+**`-B`**, **`--repository-build-config`** *`PATH`*  
+Path to the repository build configuration, describing the roots of the
+repositories to build from. See **`jst-repo-build-config`**(5) for more
+details.  
 Supported by: analyse|build|describe|install|rebuild|traverse.
 
 **`-D`**, **`--defines`** *`JSON`*  
@@ -959,7 +960,7 @@ The exit status of **`jst_backend`** is one of the following values:
 See also
 ========
 
-**`jst_backend-repo-config`**(5),
+**`jst-repo-build-config`**(5),
 **`jst_backend-serve-config`**(5),
 **`jst_backend-graph-file`**(5),
 **`jst-profile`**(5),

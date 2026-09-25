@@ -264,7 +264,7 @@ also **`jst_backend`** uses.
 These subcommands fetch all required repositories and generate an
 appropriate multi-repository **`jst_backend`** configuration file. The resulting
 file is stored in CAS and its path is printed to stdout. See
-**`jst_backend-repo-config`**(5) for more details on the resulting
+**`jst-repo-build-config`**(5) for more details on the resulting
 configuration file format.
 
 If a main repository is provided in the input configuration or on
@@ -416,5 +416,5 @@ See also
 
 **`jstrc`**(5),
 **`jst-repo-config`**(5),
-**`jst_backend-repo-config`**(5),
+**`jst-repo-build-config`**(5),
 **`jst_backend`**(1)

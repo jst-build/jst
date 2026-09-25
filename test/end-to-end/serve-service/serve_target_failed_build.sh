@@ -79,7 +79,7 @@ cat $CONF
 echo
 
 # Check that we can build locally correctly
-${JUST} install --local-build-root "${LBR_1}" -C "${CONF}" \
+${JUST} install --local-build-root "${LBR_1}" -B "${CONF}" \
                 --log-limit 5 \
                 -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
                 -o "${OUTPUT_1}" 2>&1
@@ -94,7 +94,7 @@ echo
 # Reason: serve endpoint does not have the correct targets and rules root and
 # thus fails, but locally we can continue.
 
-${JUST} install --local-build-root "${LBR_2}" -C "${CONF}" \
+${JUST} install --local-build-root "${LBR_2}" -B "${CONF}" \
                 --log-limit 5 \
                 --remote-serve-address "${SERVE}" \
                 -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
@@ -146,7 +146,7 @@ CONF=$("${JUST_MR}" --norc --local-build-root "${LBR_3}" \
 cat $CONF
 echo
 
-${JUST} analyse --local-build-root "${LBR_3}" -C "${CONF}" \
+${JUST} analyse --local-build-root "${LBR_3}" -B "${CONF}" \
                 --log-limit 5 \
                 --remote-serve-address "${SERVE}" \
                 -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} 2>&1 && exit 1 || :

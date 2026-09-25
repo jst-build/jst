@@ -280,7 +280,7 @@ following fields are supported:
  - *`"main"`* contains a JSON string that determines which of the
    provided repositories is considered the main repository. This entry
    is optional, and if omitted, it will be omitted in the generated
-   **`jst_backend-repo-config`**.
+   **`jst-repo-build-config`**.
 
  - *`"repositories"`* contains a JSON object, where each key is the
    global name of a repository and its corresponding value is the
@@ -299,4 +299,4 @@ See also
 
 **`jst_backend`**(1),
 **`jst`**(1),
-**`jst_backend-repo-config`**(5)
+**`jst-repo-build-config`**(5)

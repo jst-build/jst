@@ -15,14 +15,13 @@ function of the referenced external targets.
 ### Binding in a separate repository configuration
 
 The actual binding of the free repository names is specified in a
-separate repository-configuration file, which is specified on the
-command line (via the `-C` option); this command-line argument is
-optional and the default is that the repository worked on has no
-external dependencies. Typically (but not necessarily), this
-repository-configuration file is located outside the referenced
-repositories and versioned separately or generated from such a file via
-`jst`. It serves as meta-data for a group of repositories
-belonging together.
+separate repository build configuration, which is specified on the
+command line of `jst_backend` (via the `-B` option); this command-line
+argument is optional and the default is that the repository worked on has
+no external dependencies. Typically (but not necessarily), this
+configuration file is located outside the referenced repositories and
+versioned separately or generated from such a file via `jst`. It serves as
+meta-data for a group of repositories belonging together.
 
 This file contains one JSON object. For the key `"repositories"` the
 value is an object; its keys are the global names of the specified
