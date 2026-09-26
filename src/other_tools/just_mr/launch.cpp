@@ -81,6 +81,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     }
 
     bool use_config{false};
+    bool use_jobs{false};
     bool use_build_root{false};
     bool use_launcher{false};
     bool supports_defines{false};
@@ -139,6 +140,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
                 }
             }
         }
+        use_jobs = flags.jobs;
         use_build_root = flags.build_root;
         use_launcher = flags.launch;
         supports_defines = flags.defines;
@@ -156,6 +158,10 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     if (use_config and mr_config_pair) {
         cmd.emplace_back("-B");
         cmd.emplace_back(mr_config_pair->first.string());
+    }
+    if (use_jobs) {
+        cmd.emplace_back("-j");
+        cmd.emplace_back(std::to_string(common_args.jobs));
     }
     if (use_build_root and forward_build_root) {
         cmd.emplace_back("--local-build-root");

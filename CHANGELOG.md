@@ -23,6 +23,13 @@
 
 ### Other changes
 
+- `jst`'s `--jobs` now also applies to the launched build tool backend, for
+  the subcommands supporting it (`analyse`, `build`, `describe`, `install`,
+  `rebuild`); previously it only governed `jst`'s own work. The new option
+  `--fetch-jobs` limits how many fetches, i.e., of archives and of git
+  repositories, are performed concurrently and defaults to the value of
+  `--jobs`; it takes effect for `fetch` and `update`, whose work consists
+  of fetching.
 - `serve` and `execute` are now known `jst` subcommands.
 - The single-node execution service (`jst execute`) now rejects batch requests
   whose total blob size exceeds the supported limit with `INVALID_ARGUMENT`, as

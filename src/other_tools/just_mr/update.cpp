@@ -262,11 +262,13 @@ auto MultiRepoUpdate(std::shared_ptr<Configuration> const& config,
     auto observer =
         std::thread([reporter, &done, &cv]() { reporter(&done, &cv); });
 
-    // do the update
+    // do the update; the remote references are queried over the network, so
+    // this is limited by the number of fetch jobs
+    auto const fetch_jobs = common_args.fetch_jobs.value_or(common_args.jobs);
     bool failed{false};
     bool has_value{false};
     {
-        TaskSystem ts{common_args.jobs};
+        TaskSystem ts{fetch_jobs};
         git_update_map.ConsumeAfterKeysReady(
             &ts,
             repos_to_update,

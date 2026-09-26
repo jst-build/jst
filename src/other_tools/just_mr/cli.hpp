@@ -56,6 +56,7 @@ struct MultiRepoCommonArguments {
     std::optional<std::filesystem::path> dump_rc{std::nullopt};
     bool norc{false};
     std::size_t jobs{std::max(1U, std::thread::hardware_concurrency())};
+    std::optional<std::size_t> fetch_jobs{std::nullopt};
     std::vector<std::string> defines;
     std::optional<std::string> remote_execution_address;
     std::optional<std::string> remote_instance_name;
@@ -247,9 +248,16 @@ static inline void SetupMultiRepoCommonArguments(
            "--dump-rc", clargs->dump_rc, "Dump the effective rc value.")
         ->type_name("PATH");
     app->add_flag("--norc", clargs->norc, "Do not use any jstrc file.");
-    app->add_option("-j, --jobs",
+    app->add_option("-j,--jobs",
                     clargs->jobs,
-                    "Number of jobs to run (Default: Number of cores).")
+                    "Number of jobs to run, also for the launched build tool "
+                    "backend (Default: Number of cores).")
+        ->type_name("NUM");
+    app->add_option("--fetch-jobs",
+                    clargs->fetch_jobs,
+                    "Number of fetches to perform concurrently, i.e., of "
+                    "archives and git repositories (Default: value of "
+                    "--jobs).")
         ->type_name("NUM");
     app->add_option_function<std::string>(
            "-D,--defines",

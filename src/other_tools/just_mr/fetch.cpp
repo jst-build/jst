@@ -556,11 +556,13 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
     auto observer =
         std::thread([reporter, &done, &cv]() { reporter(&done, &cv); });
 
-    // do the fetch
+    // do the fetch; the fetches are the only work done here, so they are
+    // limited by the number of fetch jobs
+    auto const fetch_jobs = common_args.fetch_jobs.value_or(common_args.jobs);
     bool failed_archives{false};
     bool has_value_archives{false};
     {
-        TaskSystem ts{common_args.jobs};
+        TaskSystem ts{fetch_jobs};
         archive_fetch_map.ConsumeAfterKeysReady(
             &ts,
             archives_to_fetch,
@@ -579,7 +581,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
     bool failed_git_trees{false};
     bool has_value_trees{false};
     {
-        TaskSystem ts{common_args.jobs};
+        TaskSystem ts{fetch_jobs};
         git_tree_fetch_map.ConsumeAfterKeysReady(
             &ts,
             git_trees_to_fetch,

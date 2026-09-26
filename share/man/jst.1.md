@@ -227,8 +227,19 @@ Default: *`"git"`*.
 Option to prevent reading any **`jstrc`**(5) file.
 
 **`-j`**, **`--jobs`** *`NUM`*  
-Number of jobs to run.  
+Number of jobs to run. The value is also passed on to the launched
+**`jst_backend`**(1) for the subcommands supporting it, i.e.,
+*`analyse`*, *`build`*, *`describe`*, *`install`* and *`rebuild`*.  
 Default: Number of cores.  
+
+**`--fetch-jobs`** *`NUM`*  
+Number of fetches to perform concurrently, i.e., of archives and of git
+repositories. Use it to limit the load on the network independently of the
+remaining parallelism. Note that this only takes effect for the
+subcommands whose work consists of fetching, i.e., *`fetch`* and
+*`update`*; during a *`setup`*, the fetches share the parallelism of the
+other work.  
+Default: value of **`--jobs`**.  
 
 Authentication options
 ----------------------
