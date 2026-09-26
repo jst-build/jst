@@ -61,7 +61,7 @@ EOI
 
 
 bin/tool-under-test build -L '["env", "PATH='"${PATH}"'"]' \
-    -J 1 --local-build-root .tool-root -f build.log --log-limit 2 2>&1
+    -j 1 --local-build-root .tool-root -f build.log --log-limit 2 2>&1
 cat build.log
 echo
 grep 'Processed.* 4 actions' build.log

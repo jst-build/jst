@@ -51,7 +51,7 @@ struct CommonArguments {
     std::optional<std::filesystem::path> workspace_root;
     std::optional<std::filesystem::path> repository_config;
     std::optional<std::string> main;
-    std::size_t jobs{std::max(1U, std::thread::hardware_concurrency())};
+    std::size_t parallel{std::max(1U, std::thread::hardware_concurrency())};
 };
 
 struct LogArguments {
@@ -253,9 +253,11 @@ static inline auto SetupCommonArguments(
            },
            "Path of the workspace's root directory.")
         ->type_name("PATH");
-    app->add_option("-j,--jobs",
-                    clargs->jobs,
-                    "Number of jobs to run (Default: Number of cores).")
+    app->add_option("--parallel",
+                    clargs->parallel,
+                    "Number of tasks to run in parallel, e.g., for analysing "
+                    "targets and building the action graph (Default: Number "
+                    "of cores).")
         ->type_name("NUM");
 }
 
@@ -585,9 +587,10 @@ static inline auto SetupBuildArguments(
         ->type_name("NUM");
 
     app->add_option(
-           "-J,--build-jobs",
+           "-j,--jobs,--build-jobs",
            clargs->build_jobs,
-           "Number of jobs to run during build phase (Default: same as jobs).")
+           "Number of jobs to run during the build phase (Default: value of "
+           "--parallel).")
         ->type_name("NUM");
 }
 

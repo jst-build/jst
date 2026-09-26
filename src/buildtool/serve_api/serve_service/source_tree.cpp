@@ -521,7 +521,7 @@ auto SourceTreeService::ResolveContentTree(
         std::optional<ResolvedGitObject> resolved_tree = std::nullopt;
         bool failed{false};
         {
-            TaskSystem ts{serve_config_.jobs};
+            TaskSystem ts{serve_config_.parallel};
             resolve_symlinks_map_.ConsumeAfterKeysReady(
                 &ts,
                 {GitObjectToResolve{tree_id,
@@ -1649,7 +1649,7 @@ auto SourceTreeService::GetRemoteTree(
             {Artifact::ObjectInfo{.digest = *remote_digest,
                                   .type = ObjectType::Tree}},
             *apis_.local,
-            serve_config_.jobs,
+            serve_config_.parallel,
             true)) {
         logger_->Emit(
             LogLevel::Error,

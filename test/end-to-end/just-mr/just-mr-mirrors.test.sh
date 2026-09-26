@@ -170,11 +170,11 @@ EOF
 
 echo "Test mirrors fetch"
 rm -rf ${BUILDROOT} ${DISTFILES}/*
-${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} ${DISTDIR_ARGS} -j 32 fetch --all -o ${DISTFILES}
+${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} ${DISTDIR_ARGS} --parallel 32 fetch --all -o ${DISTFILES}
 
 echo "Test mirrors setup"
 rm -rf ${BUILDROOT} ${DISTFILES}/*
-CONFIG_CPP=$(${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} ${DISTDIR_ARGS} -j 32 setup --all)
+CONFIG_CPP=$(${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} ${DISTDIR_ARGS} --parallel 32 setup --all)
 if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
 fi
@@ -249,11 +249,11 @@ EOF
 
 echo "Test 'local mirrors' fetch"
 rm -rf ${BUILDROOT} ${DISTFILES}/*
-${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json -j 32 fetch --all -o ${DISTFILES}
+${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json --parallel 32 fetch --all -o ${DISTFILES}
 
 echo "Test 'local mirrors' setup"
 rm -rf ${BUILDROOT} ${DISTFILES}/*
-CONFIG_CPP=$(${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json -j 32 setup --all)
+CONFIG_CPP=$(${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json --parallel 32 setup --all)
 if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
 fi
@@ -339,7 +339,7 @@ EOF
 
 echo "Test 'preferred hostnames' fetch"
 rm -rf ${BUILDROOT} ${DISTFILES}/*
-${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json -j 32 fetch --all -o ${DISTFILES}
+${JUST_MR_CPP} -C test-repos.json --norc --local-build-root ${BUILDROOT} --checkout-locations jst-local.json --parallel 32 fetch --all -o ${DISTFILES}
 if [ -f "${STATE_SERVER_ROOT}/access" ]; then
     cat "${STATE_SERVER_ROOT}/access"
     exit 1

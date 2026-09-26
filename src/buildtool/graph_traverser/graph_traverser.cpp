@@ -120,7 +120,10 @@ auto GraphTraverser::BuildAndStage(
 
     if (clargs_.stage->remember) {
         if (not context_.apis->remote->ParallelRetrieveToCas(
-                *object_infos, *context_.apis->local, clargs_.jobs, true)) {
+                *object_infos,
+                *context_.apis->local,
+                clargs_.build_jobs,
+                true)) {
             Logger::Log(
                 logger_, LogLevel::Warning, "Failed to copy objects to CAS");
         }
@@ -352,7 +355,7 @@ auto GraphTraverser::Traverse(
     auto observer =
         std::thread([this, &done, &cv]() { reporter_(&done, &cv); });
     {
-        Traverser t{executor, g, clargs_.jobs, &failed};
+        Traverser t{executor, g, clargs_.build_jobs, &failed};
         traversing =
             t.Traverse({std::begin(artifact_ids), std::end(artifact_ids)});
     }
@@ -373,7 +376,7 @@ auto GraphTraverser::TraverseRebuild(
     auto observer =
         std::thread([this, &done, &cv]() { reporter_(&done, &cv); });
     {
-        Traverser t{executor, g, clargs_.jobs, &failed};
+        Traverser t{executor, g, clargs_.build_jobs, &failed};
         traversing =
             t.Traverse({std::begin(artifact_ids), std::end(artifact_ids)});
     }

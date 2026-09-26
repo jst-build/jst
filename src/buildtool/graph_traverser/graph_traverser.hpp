@@ -45,7 +45,7 @@
 class GraphTraverser {
   public:
     struct CommandLineArguments {
-        std::size_t jobs;
+        std::size_t build_jobs;
         BuildArguments build;
         std::optional<StageArguments> stage;
         std::optional<RebuildArguments> rebuild;

@@ -561,7 +561,7 @@ auto TargetService::ServeTargetImpl(
     // analyse the configured target
     auto analyse_result = AnalyseTarget(&analyse_ctx,
                                         configured_target,
-                                        serve_config_.jobs,
+                                        serve_config_.parallel,
                                         std::nullopt /*request_action_input*/,
                                         &logger);
 
@@ -577,13 +577,13 @@ auto TargetService::ServeTargetImpl(
 
     auto jobs = serve_config_.build_jobs;
     if (jobs == 0) {
-        jobs = serve_config_.jobs;
+        jobs = serve_config_.parallel;
     }
 
     {
         // setup graph traverser
         GraphTraverser::CommandLineArguments traverser_args{};
-        traverser_args.jobs = jobs;
+        traverser_args.build_jobs = jobs;
         traverser_args.build.timeout = serve_config_.action_timeout;
         traverser_args.stage = std::nullopt;
         traverser_args.rebuild = std::nullopt;
@@ -631,7 +631,7 @@ auto TargetService::ServeTargetImpl(
 
         // Clean up analyse_result map, now that it is no longer needed
         {
-            TaskSystem ts{serve_config_.jobs};
+            TaskSystem ts{serve_config_.parallel};
             analyse_result->result_map.Clear(&ts);
         }
 

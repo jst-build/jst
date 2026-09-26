@@ -253,7 +253,7 @@ test_alone() {
   CONFIG_CPP=$("${JUST_MR_CPP}" -C test-repos.json --norc \
                                 --local-build-root "${BUILDROOT}" \
                                 -L '["env", "PATH='"${PATH}"'"]' \
-                                -j 32 setup "$1")
+                                --parallel 32 setup "$1")
   if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
   fi
@@ -281,7 +281,7 @@ test_all() {
   CONFIG_CPP=$("${JUST_MR_CPP}" -C test-repos.json --norc \
                                 --local-build-root "${BUILDROOT}" \
                                 -L '["env", "PATH='"${PATH}"'"]' \
-                                ${DISTDIR_ARGS} -j 32 setup --all)
+                                ${DISTDIR_ARGS} --parallel 32 setup --all)
   if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
   fi

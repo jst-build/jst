@@ -206,7 +206,7 @@ void SetupLogging(LogArguments const& clargs) {
     builder.SetRemoteAddress(srvargs.remote_serve_address)
         .SetClientExecutionAddress(srvargs.client_remote_address)
         .SetKnownRepositories(srvargs.repositories)
-        .SetJobs(cargs.jobs)
+        .SetParallel(cargs.parallel)
         .SetActionTimeout(bargs.timeout)
         .SetTCStrategy(tc.target_cache_write_strategy);
 
@@ -1096,7 +1096,7 @@ auto main(int argc, char* argv[]) -> int {
         auto const storage = Storage::Create(&*storage_config);
 
         auto jobs = arguments.build.build_jobs > 0 ? arguments.build.build_jobs
-                                                   : arguments.common.jobs;
+                                                   : arguments.common.parallel;
 
         auto stage_args = arguments.cmd == SubCommand::kInstall or
                                   arguments.cmd == SubCommand::kInstallCas or
@@ -1184,7 +1184,7 @@ auto main(int argc, char* argv[]) -> int {
                                                         arguments.analysis);
 
         auto eval_root_jobs = gsl::narrow<std::size_t>(
-            std::lround(std::ceil(std::sqrt(arguments.common.jobs))));
+            std::lround(std::ceil(std::sqrt(arguments.common.parallel))));
 #ifndef BOOTSTRAP_BUILD_TOOL
         std::optional<ServeApi> serve = ServeApi::Create(
             *serve_config, &local_context, &remote_context, &main_apis);
@@ -1258,13 +1258,13 @@ auto main(int argc, char* argv[]) -> int {
                         arguments.describe.describe_rule
                             ? DescribeUserDefinedRule(id->target,
                                                       &repo_config,
-                                                      arguments.common.jobs,
+                                                      arguments.common.parallel,
                                                       options)
                             : DescribeTarget(*id,
                                              &repo_config,
                                              serve,
                                              main_apis,
-                                             arguments.common.jobs,
+                                             arguments.common.parallel,
                                              options);
                 }
                 if (profile != nullptr) {
@@ -1312,7 +1312,7 @@ auto main(int argc, char* argv[]) -> int {
         auto analyse_result =
             AnalyseTarget(&analyse_ctx,
                           id,
-                          arguments.common.jobs,
+                          arguments.common.parallel,
                           arguments.analysis.request_action_input,
                           /*logger=*/nullptr,
                           &collect_serve_errors,
@@ -1365,7 +1365,7 @@ auto main(int argc, char* argv[]) -> int {
                 }
                 // Clean up in parallel
                 {
-                    TaskSystem ts{arguments.common.jobs};
+                    TaskSystem ts{arguments.common.parallel};
                     analyse_result->result_map.Clear(&ts);
                 }
             };

@@ -141,7 +141,8 @@ class TestProject {
         else {
             clargs.graph_description = root_dir_ / "graph_description";
         }
-        clargs.gtargs.jobs = std::max(1U, std::thread::hardware_concurrency());
+        clargs.gtargs.build_jobs =
+            std::max(1U, std::thread::hardware_concurrency());
         clargs.gtargs.stage = StageArguments{
             kOutputDirPrefix / (example_name_ + std::to_string(id++))};
         return clargs;

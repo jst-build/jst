@@ -20,16 +20,30 @@
   previously `jst_backend-repo-config`(5)). Affected are `jst_backend` and
   the bootstrap traversers; `jst`, `jst-lock` and `jst-import-git` are
   unchanged.
+- The job-related options have been renamed, as the unqualified "jobs" meant
+  different things in the two tools. The number of tasks run in parallel —
+  importing in `jst`, analysing and building the action graph in
+  `jst_backend` — is now `--parallel` (no short option), and it is the
+  default for the two qualified options. The build phase is named equally by
+  `-j`, `--jobs` and `--build-jobs`, so `--jobs` now sizes the build phase,
+  where it previously meant the overall parallelism; `-J` no longer belongs
+  to the build phase but to `jst`'s `--fetch-jobs`. Reserving `--jobs,-j` for
+  the build phase follows what build tools have long agreed on — GNU Make,
+  Ninja, Bazel, CMake, Meson and Buck all use `-j` for the number of
+  concurrent build jobs — so the flag most users reach for out of habit
+  controls the phase they expect it to. In the configuration of `jst backend
+  serve`, the key `"jobs"` is accordingly called `"parallel"`, while the
+  subkey `"build jobs"` keeps its name.
 
 ### Other changes
 
-- `jst`'s `--jobs` now also applies to the launched build tool backend, for
-  the subcommands supporting it (`analyse`, `build`, `describe`, `install`,
-  `rebuild`); previously it only governed `jst`'s own work. The new option
-  `--fetch-jobs` limits how many fetches, i.e., of archives and of git
-  repositories, are performed concurrently and defaults to the value of
-  `--jobs`; it takes effect for `fetch` and `update`, whose work consists
-  of fetching.
+- `jst`'s parallelism now also applies to the launched build tool backend,
+  for the subcommands supporting it (`analyse`, `build`, `describe`,
+  `install`, `rebuild`); previously it only governed `jst`'s own work. The
+  new option `-J`, `--fetch-jobs` limits how many fetches, i.e., of archives
+  and of git repositories, are performed concurrently and defaults to the
+  value of `--parallel`; it takes effect for `fetch` and `update`, whose work
+  consists of fetching.
 - `serve` and `execute` are now known `jst` subcommands.
 - The single-node execution service (`jst execute`) now rejects batch requests
   whose total blob size exceeds the supported limit with `INVALID_ARGUMENT`, as

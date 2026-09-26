@@ -110,14 +110,14 @@ The configuration file is given by a JSON object.
      it exceeds the `"max-backoff-seconds"` value. From that point, the waiting
      time is computed as `"max-backoff-seconds"` value plus a jitter.  
 
- - The value for the key *`"jobs"`* specifies the number of jobs to run. If
-   unset, the number of available cores is used.  
+ - The value for the key *`"parallel"`* specifies the number of tasks to run
+   in parallel. If unset, the number of available cores is used.  
 
  - The value for the key *`"build"`* is a JSON object specifying arguments used
    by **`jst_backend`** **`serve`** to orchestrate remote builds.  
    For subkey *`"build jobs"`* the value specifies the number of jobs to run
-   during a remote build. If unset, the same value as for outer key *`"jobs"`*
-   is used.  
+   during a remote build. If unset, the same value as for outer key
+   *`"parallel"`* is used.  
    For subkey *`"action timeout"`* the value in a number specifying the timeout
    limit in seconds for actions run during a remote build. If unset, the default
    value 300 is used.  
@@ -203,7 +203,7 @@ An example serve configuration file could look as follows.
       }
     ]
   },
-  "jobs": 8,
+  "parallel": 8,
   "build": {
     "build jobs": 128
   },

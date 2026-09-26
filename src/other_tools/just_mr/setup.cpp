@@ -317,7 +317,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         &(*apis.local),
         has_remote_api ? &*apis.remote : nullptr,
         &progress,
-        common_args.jobs);
+        common_args.parallel);
 
     auto import_to_git_map =
         CreateImportToGitMap(&critical_git_op_map,
@@ -325,7 +325,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                              *common_args.local_launcher,
                              &native_storage_config,
                              &progress,
-                             common_args.jobs);
+                             common_args.parallel);
 
     auto git_tree_fetch_map = CreateGitTreeFetchMap(
         &critical_git_op_map,
@@ -340,7 +340,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         has_remote_api ? &*apis.remote : nullptr,
         false, /* backup_to_remote */
         &progress,
-        common_args.jobs);
+        common_args.parallel);
 
     auto resolve_symlinks_map = CreateResolveSymlinksMap();
 
@@ -357,7 +357,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                            has_remote_api ? &*apis.remote : nullptr,
                            common_args.fetch_absent,
                            &progress,
-                           common_args.jobs);
+                           common_args.parallel);
 
     auto content_git_map = CreateContentGitMap(&content_cas_map,
                                                &import_to_git_map,
@@ -369,7 +369,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                                                &native_storage,
                                                common_args.fetch_absent,
                                                &progress,
-                                               common_args.jobs);
+                                               common_args.parallel);
 
     auto foreign_file_git_map =
         CreateForeignFileGitMap(&content_cas_map,
@@ -378,7 +378,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                                 &native_storage_config,
                                 &native_storage,
                                 common_args.fetch_absent,
-                                common_args.jobs);
+                                common_args.parallel);
 
     auto fpath_git_map = CreateFilePathGitMap(
         just_cmd_args.subcmd_name,
@@ -387,7 +387,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
         &resolve_symlinks_map,
         serve ? &*serve : nullptr,
         &native_storage_config,
-        common_args.jobs,
+        common_args.parallel,
         multi_repo_tool_name,
         common_args.just_path ? common_args.just_path->string()
                               : kDefaultBackendPath);
@@ -401,7 +401,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                             &native_storage,
                             &(*apis.local),
                             has_remote_api ? &*apis.remote : nullptr,
-                            common_args.jobs);
+                            common_args.parallel);
 
     auto tree_id_git_map =
         CreateTreeIdGitMap(&git_tree_fetch_map,
@@ -412,7 +412,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                            &native_storage_config,
                            &(*apis.local),
                            has_remote_api ? &*apis.remote : nullptr,
-                           common_args.jobs);
+                           common_args.parallel);
 
     auto repos_to_setup_map = CreateReposToSetupMap(config,
                                                     main,
@@ -426,7 +426,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
                                                     common_args.fetch_absent,
                                                     &stats,
                                                     &progress,
-                                                    common_args.jobs);
+                                                    common_args.parallel);
 
     // report what is currently being worked on if running interactively, or
     // else one line for each repository that had to be set up
@@ -450,7 +450,7 @@ auto MultiRepoSetup(std::shared_ptr<Configuration> const& config,
     bool has_value{false};
 
     {
-        TaskSystem ts{common_args.jobs};
+        TaskSystem ts{common_args.parallel};
         repos_to_setup_map.ConsumeAfterKeysReady(
             &ts,
             setup_repos->to_setup,

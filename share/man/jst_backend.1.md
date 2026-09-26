@@ -610,12 +610,14 @@ Supported by: install|traverse|install-cas.
 Parallelism options
 -------------------
 
-**`-J`**, **`--build-jobs`** *`NUM`*  
-Number of jobs to run during build phase. Default: same as **`--jobs`**.  
+**`-j`**, **`--jobs`**, **`--build-jobs`** *`NUM`*  
+Number of jobs to run during the build phase. Default: value of
+**`--parallel`**.  
 Supported by: analyse|build|install|rebuild|traverse.
 
-**`-j`**, **`--jobs`** *`NUM`*  
-Number of jobs to run. Default: Number of cores.  
+**`--parallel`** *`NUM`*  
+Number of tasks to run in parallel, e.g., for analysing targets and
+building the action graph. Default: Number of cores.  
 Supported by: analyse|build|describe|install|rebuild|traverse.
 
 Remote execution options

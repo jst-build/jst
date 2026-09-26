@@ -465,18 +465,18 @@ void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs) {
             std::exit(kExitFailure);
         }
     }
-    // read jobs value
-    auto jobs = serve_config["jobs"];
-    if (jobs.IsNotNull()) {
-        if (not jobs->IsNumber()) {
+    // read the number of tasks to run in parallel
+    auto parallel = serve_config["parallel"];
+    if (parallel.IsNotNull()) {
+        if (not parallel->IsNumber()) {
             Logger::Log(LogLevel::Error,
                         "In serve service config file {}:\nValue for key "
-                        "\"jobs\" has to be a number, but found {}",
+                        "\"parallel\" has to be a number, but found {}",
                         clargs->serve.config.string(),
-                        jobs->ToString());
+                        parallel->ToString());
             std::exit(kExitFailure);
         }
-        clargs->common.jobs = static_cast<std::size_t>(jobs->Number());
+        clargs->common.parallel = static_cast<std::size_t>(parallel->Number());
     }
     // read build options
     auto build_args = serve_config["build"];
@@ -505,7 +505,7 @@ void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs) {
                 static_cast<std::size_t>(build_jobs->Number());
         }
         else {
-            clargs->build.build_jobs = clargs->common.jobs;
+            clargs->build.build_jobs = clargs->common.parallel;
         }
         // read action timeout
         auto timeout = build_args->Get("action timeout", Expression::none_t{});

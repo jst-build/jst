@@ -49,7 +49,7 @@ std::vector<std::string> const kTakeOver = {"bindings",
 
 struct JustSubCmdFlags {
     bool config;        // requires setup
-    bool jobs;          // supports the number-of-jobs arg
+    bool parallel;      // supports the parallelism arg
     bool build_root;    // supports the local build root arg
     bool launch;        // supports the local launcher arg
     bool defines;       // supports defines arg
@@ -75,7 +75,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
     //  .does_build = false}},
     {"describe",
      {.config = true,
-      .jobs = true,
+      .parallel = true,
       .build_root = true,
       .launch = false,
       .defines = true,
@@ -86,7 +86,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = false}},
     {"analyse",
      {.config = true,
-      .jobs = true,
+      .parallel = true,
       .build_root = true,
       .launch = true,
       .defines = true,
@@ -97,7 +97,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = false}},
     {"build",
      {.config = true,
-      .jobs = true,
+      .parallel = true,
       .build_root = true,
       .launch = true,
       .defines = true,
@@ -108,7 +108,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = true}},
     {"install",
      {.config = true,
-      .jobs = true,
+      .parallel = true,
       .build_root = true,
       .launch = true,
       .defines = true,
@@ -119,7 +119,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = true}},
     {"rebuild",
      {.config = true,
-      .jobs = true,
+      .parallel = true,
       .build_root = true,
       .launch = true,
       .defines = true,
@@ -130,7 +130,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = true}},
     {"add-to-cas",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = true,
       .launch = false,
       .defines = false,
@@ -141,7 +141,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = false}},
     {"install-cas",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = true,
       .launch = false,
       .defines = false,
@@ -152,7 +152,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = false}},
     {"gc",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = true,
       .launch = false,
       .defines = false,
@@ -163,7 +163,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
       .does_build = false}},
     {"eval",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = false,
       .launch = false,
       .defines = true,
@@ -175,7 +175,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
     // No forwards, the serve service reads everything else from its own config.
     {"serve",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = false,
       .launch = false,
       .defines = false,
@@ -187,7 +187,7 @@ std::map<std::string, JustSubCmdFlags> const kKnownJustSubcommands{
     // The execution service the local build root and local launcher.
     {"execute",
      {.config = false,
-      .jobs = false,
+      .parallel = false,
       .build_root = true,
       .launch = true,
       .defines = false,

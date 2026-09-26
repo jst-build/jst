@@ -244,7 +244,7 @@ auto MultiRepoUpdate(std::shared_ptr<Configuration> const& config,
                                              &native_storage_config,
                                              &stats,
                                              &progress,
-                                             common_args.jobs);
+                                             common_args.parallel);
 
     // report what is currently being worked on if running interactively, or
     // else one line for each repository that had to be set up
@@ -264,7 +264,8 @@ auto MultiRepoUpdate(std::shared_ptr<Configuration> const& config,
 
     // do the update; the remote references are queried over the network, so
     // this is limited by the number of fetch jobs
-    auto const fetch_jobs = common_args.fetch_jobs.value_or(common_args.jobs);
+    auto const fetch_jobs =
+        common_args.fetch_jobs.value_or(common_args.parallel);
     bool failed{false};
     bool has_value{false};
     {

@@ -43,8 +43,8 @@ struct RemoteServeConfig final {
     // Known Git repositories to serve server.
     std::vector<std::filesystem::path> const known_repositories;
 
-    // Number of jobs
-    std::size_t const jobs = 0;
+    // Number of tasks to run in parallel
+    std::size_t const parallel = 0;
 
     // Number of build jobs
     std::size_t const build_jobs = 0;
@@ -79,9 +79,9 @@ class RemoteServeConfig::Builder final {
         return *this;
     }
 
-    // Set the number of jobs
-    auto SetJobs(std::size_t value) noexcept -> Builder& {
-        jobs_ = value;
+    // Set the number of tasks to run in parallel
+    auto SetParallel(std::size_t value) noexcept -> Builder& {
+        parallel_ = value;
         return *this;
     }
 
@@ -139,15 +139,15 @@ class RemoteServeConfig::Builder final {
             }
         }
 
-        auto jobs = default_config.jobs;
-        if (jobs_.has_value()) {
-            jobs = *jobs_;
-            if (jobs == 0) {
-                return unexpected{std::string{"Setting jobs failed."}};
+        auto parallel = default_config.parallel;
+        if (parallel_.has_value()) {
+            parallel = *parallel_;
+            if (parallel == 0) {
+                return unexpected{std::string{"Setting parallel failed."}};
             }
         }
 
-        auto build_jobs = default_config.jobs;
+        auto build_jobs = default_config.parallel;
         if (build_jobs_.has_value()) {
             build_jobs = *build_jobs_;
             if (build_jobs == 0) {
@@ -174,7 +174,7 @@ class RemoteServeConfig::Builder final {
             .remote_address = std::move(remote_address),
             .client_execution_address = std::move(client_execution_address),
             .known_repositories = std::move(known_repositories),
-            .jobs = jobs,
+            .parallel = parallel,
             .build_jobs = build_jobs,
             .action_timeout = action_timeout,
             .tc_strategy = tc_strategy};
@@ -190,8 +190,8 @@ class RemoteServeConfig::Builder final {
     // Known Git repositories to serve server.
     std::optional<std::vector<std::filesystem::path>> known_repositories_;
 
-    // Number of jobs
-    std::optional<std::size_t> jobs_;
+    // Number of tasks to run in parallel
+    std::optional<std::size_t> parallel_;
 
     // Number of build jobs
     std::optional<std::size_t> build_jobs_;

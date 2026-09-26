@@ -504,7 +504,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
         &(*apis.local),
         has_remote_api ? &*apis.remote : nullptr,
         &progress,
-        common_args.jobs);
+        common_args.parallel);
 
     auto archive_fetch_map = CreateArchiveFetchMap(
         &content_cas_map,
@@ -515,7 +515,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
                                                          : nullptr,
         &stats,
         &progress,
-        common_args.jobs);
+        common_args.parallel);
 
     auto import_to_git_map =
         CreateImportToGitMap(&critical_git_op_map,
@@ -523,7 +523,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
                              *common_args.local_launcher,
                              &native_storage_config,
                              &progress,
-                             common_args.jobs);
+                             common_args.parallel);
 
     auto git_tree_fetch_map = CreateGitTreeFetchMap(
         &critical_git_op_map,
@@ -538,7 +538,7 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
         has_remote_api ? &*apis.remote : nullptr,
         fetch_args.backup_to_remote,
         &progress,
-        common_args.jobs);
+        common_args.parallel);
 
     // report what is currently being worked on if running interactively, or
     // else one line for each repository that had to be set up
@@ -558,7 +558,8 @@ auto MultiRepoFetch(std::shared_ptr<Configuration> const& config,
 
     // do the fetch; the fetches are the only work done here, so they are
     // limited by the number of fetch jobs
-    auto const fetch_jobs = common_args.fetch_jobs.value_or(common_args.jobs);
+    auto const fetch_jobs =
+        common_args.fetch_jobs.value_or(common_args.parallel);
     bool failed_archives{false};
     bool has_value_archives{false};
     {
