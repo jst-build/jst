@@ -34,6 +34,9 @@
   controls the phase they expect it to. In the configuration of `jst backend
   serve`, the key `"jobs"` is accordingly called `"parallel"`, while the
   subkey `"build jobs"` keeps its name.
+- The subcommand `do`, an alias for `backend`, has been removed; use
+  `jst backend` to specify the subcommands of the build tool backend
+  explicitly.
 - The legacy option `--just`, a synonym for `--backend` naming the build tool
   backend to be launched, has been removed from `jst`, `jst-lock` and the
   bootstrap launcher `bin/jst.py`; use `--backend` instead.

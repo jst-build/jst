@@ -1172,13 +1172,13 @@ def main():
                                help="Repository to update.")
 
     subcommands.add_parser(
-        "do",
-        help="Canonical way of specifying jst_backend subcommands",
+        "backend",
+        help="Canonical way of specifying backend subcommands",
         add_help=False)
 
     for cmd in KNOWN_JUST_SUBCOMMANDS:
         subcommands.add_parser(cmd,
-                               help=f"Run setup and call 'jst_backend {cmd}'",
+                               help=f"Run setup and call 'jst backend {cmd}'",
                                add_help=False)
 
     (options, args) = parser.parse_known_args()
@@ -1235,7 +1235,7 @@ def main():
     if options.subcommand in KNOWN_JUST_SUBCOMMANDS:
         call_just(config=config, main=main, args=[options.subcommand] + args)
         return
-    if options.subcommand == "do":
+    if options.subcommand == "backend":
         call_just(config=config, main=main, args=args)
         return
 

@@ -120,13 +120,11 @@ void SetupSetupCommandArguments(
     auto* cmd_update = app.add_subcommand(
         "update",
         "Advance Git commit IDs and print updated jst configuration.");
-    auto* cmd_do =
-        app.add_subcommand("backend",
-                           "Canonical way of specifying backend subcommands.")
-            ->alias("do");
+    auto* cmd_backend = app.add_subcommand(
+        "backend", "Canonical way of specifying backend subcommands.");
     auto* cmd_gc_repo = app.add_subcommand(
         "gc-repo", "Perform garbage collection on the repository roots.");
-    cmd_do->set_help_flag();  // disable help flag
+    cmd_backend->set_help_flag();  // disable help flag
     // define just subcommands
     CLI::App app_backend_subcommands("jst_backend subcommands.");
     CreateBackendSubcommands(app_backend_subcommands);
@@ -153,7 +151,7 @@ void SetupSetupCommandArguments(
     SetupUpdateGcArguments(cmd_gc_repo, &clargs);
 
     // for 'just' calls, allow extra arguments
-    cmd_do->allow_extras();
+    cmd_backend->allow_extras();
     for (auto const& sub_cmd : cmd_just_subcmds) {
         sub_cmd->allow_extras();
     }
@@ -189,10 +187,10 @@ void SetupSetupCommandArguments(
     else if (*cmd_gc_repo) {
         clargs.cmd = SubCommand::kGcRepo;
     }
-    else if (*cmd_do) {
-        clargs.cmd = SubCommand::kJustDo;
+    else if (*cmd_backend) {
+        clargs.cmd = SubCommand::kJustBackend;
         // get remaining args
-        clargs.just_cmd.additional_just_args = cmd_do->remaining();
+        clargs.just_cmd.additional_just_args = cmd_backend->remaining();
     }
     else {
         for (auto const& sub_cmd : cmd_just_subcmds) {
@@ -402,8 +400,8 @@ auto main(int argc, char* argv[]) -> int {
          */
         GitContext::Create();
 
-        // Run subcommands known to just and `do`
-        if (arguments.cmd == SubCommand::kJustDo or
+        // Run subcommands known to the backend and `backend` itself
+        if (arguments.cmd == SubCommand::kJustBackend or
             arguments.cmd == SubCommand::kJustSubCmd) {
             return CallJust(config_file,
                             arguments.invocation_log,

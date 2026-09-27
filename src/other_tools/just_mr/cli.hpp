@@ -132,7 +132,7 @@ enum class SubCommand : std::uint8_t {
     kUpdate,
     kSetup,
     kSetupEnv,
-    kJustDo,
+    kJustBackend,
     kJustSubCmd,
     kGcRepo
 };
