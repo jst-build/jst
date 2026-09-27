@@ -175,10 +175,10 @@ test "$(cat "${PARSE_DIR}/launcher")" = 'null'
 
 ## Command-line -D
 
-# ignored on non-build commands
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${PARSE}" \
-             -D 'this is not json' backend version "${PARSE_DIR}" 2>&1
-test $(jq '. == [] ' "${PARSE_DIR}/defines") = "true"
+# not interpreted by jst for the backend passthrough, but forwarded unchanged
+"${JUST_MR}" backend --norc --backend "${PARSE}" \
+             version -D '{"foo": "bar"}' "${PARSE_DIR}" 2>&1
+test $(jq '. == [ {"foo": "bar"}] ' "${PARSE_DIR}/defines") = "true"
 
 # not forwarded, if empty
 "${JUST_MR}" build --norc --local-build-root "${LBR}" --backend "${PARSE}" \

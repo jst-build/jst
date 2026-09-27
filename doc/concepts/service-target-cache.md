@@ -78,24 +78,24 @@ be defined in any way, as long as
 The auxiliary changes to `jst` described later in this document
 provide one possible way to handle archives in this way. Moreover, this
 additional flexibility will be necessary if we ever support computed
-roots, i.e., roots that are the output of a `jst_backend` build.
+roots, i.e., roots that are the output of a `jst backend` build.
 
-### Delegation: absent roots in `jst_backend` repository specification
+### Delegation: absent roots in `jst backend` repository specification
 
-In order for `jst_backend` to know for which repositories to delegate the build
+In order for `jst backend` to know for which repositories to delegate the build
 to the designated `jst serve` endpoint, the repository configuration
-for `jst_backend` can mark roots as _absent_; this is done by only giving the
+for `jst backend` can mark roots as _absent_; this is done by only giving the
 type as `"git tree"` (or the corresponding ignore-special variant
 thereof) and the tree identifier in the root specification, but no
 witnessing repository.
 
 Any repository containing an absent root has to be content fixed, but
-not all roots have to be absent (as `jst_backend` can always upload those trees
+not all roots have to be absent (as `jst backend` can always upload those trees
 to CAS). It is an error if, outside the computations delegated to
 `jst serve`, a non-export target is requested from a repository
 containing an absent root. Moreover, whenever there is a dependency on a
 repository containing an absent root, a `jst serve` endpoint has to be
-specified in the invocation of `jst_backend`.
+specified in the invocation of `jst backend`.
 
 Protocol description
 --------------------
@@ -139,7 +139,7 @@ root, not an export target, build failure, etc.).
 
 #### Auxiliary request: flexible variables of an `export` target
 
-To allow `jst_backend` to compute the target-level cache key without
+To allow `jst backend` to compute the target-level cache key without
 knowledge of an absent tree, `jst serve` also answers questions
 about the flexible variables of an `export` target. Such an `export`
 target is specified by the tree of its target-level root, the name
@@ -287,7 +287,7 @@ During the analysis of an export target, querying the `jst serve` endpoint
 is exclusively linked to the presence of at least one _absent_ root.
 
 The first time that we need to query `jst serve` we verify that its remote
-endpoint coincides with the one given to `jst_backend`.
+endpoint coincides with the one given to `jst backend`.
 
 If the _target root_ for this export target is marked as absent:
  - We query the `jst serve` for retrieving the flexible configuration
@@ -321,7 +321,7 @@ the repository locally. For example, in the typical case of a `git`
 repository the auxiliary `jst serve` function to obtain the tree of a
 commit is used. To allow this communication, `jst` also accepts
 arguments describing a `jst serve` endpoint and forwards them as
-early arguments to `jst_backend`, in the same way as it does, e.g., with
+early arguments to `jst backend`, in the same way as it does, e.g., with
 `--local-build-root`.
 
 If a `jst serve` endpoint is given to `jst`, the tool ensures
@@ -336,9 +336,9 @@ regard.
 In line with the idea that fetching sources from upstream should
 happen only once and not once per developer, we have added remote
 execution as another way of obtaining files to `jst`. More precisely,
-`jst` now supports the options `jst_backend` accepts to connect to the
-remote CAS. When given, those are forwarded to `jst_backend` as early
-arguments (so that later `jst_backend`-only ones can override them);
+`jst` now supports the options `jst backend` accepts to connect to the
+remote CAS. When given, those are forwarded to `jst backend` as early
+arguments (so that later `jst backend`-only ones can override them);
 moreover, when a file needed to set up a (present) root is found
 neither in local CAS nor in one of the specified distdirs, `jst`
 first asks the remote CAS for the missing file before trying to
@@ -382,9 +382,9 @@ content-fixed roots as absent.
 
 ### Target-level cache writing in the presence of some targets served
 
-When building, `jst_backend` normally does not create an entry for
+When building, `jst backend` normally does not create an entry for
 target-level cache hit received from `jst serve`. However, it
-might happen that `jst_backend` has to analyse an eligible `export`
+might happen that `jst backend` has to analyse an eligible `export`
 target locally, as the `jst serve` instance cannot provide it, and
 during that analysis `export` targets provided by `jst serve` are
 encountered. In this case, the writing of the export targets depending

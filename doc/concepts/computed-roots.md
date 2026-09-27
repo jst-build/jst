@@ -61,7 +61,7 @@ describe the targets in a way that gives proper incrementality.
 
 ### Root type `"computed"`
 
-The `jst_backend` multi-repository configuration allows a type of root,
+The `jst backend` multi-repository configuration allows a type of root,
 called `"computed"`. A `"computed"` root is given by
 
  - the (global) name of a repository
@@ -124,12 +124,12 @@ out. This strategy is also applied for tree-structure roots.
 
 ### `jst` support for computed roots
 
-To allow simply setting up a `jst_backend` configuration using computed
+To allow simply setting up a `jst backend` configuration using computed
 roots, `jst` allows a repository type `"computed"` with the same
 parameters as a computed root, as well as a repository type `"tree
 structure"` with another root as parameter. These repositories can
 be used as roots, like any other `jst` repository type. When
-generating the `jst_backend` multi-repository configuration, the definition
+generating the `jst backend` multi-repository configuration, the definition
 of a `"computed"` repository is just forwarded as computed root.
 
 ### Computed roots and `jst serve`
@@ -161,7 +161,7 @@ be used for computed roots as well. `jst` will also honor
 the passed absent specification (via `--absent` or implicitly via
 the rc file) for computed roots the same way as for other roots.
 
-In a `jst_backend` repository config, computed roots are given by the
+In a `jst backend` repository config, computed roots are given by the
 tuple `["computed", <repository>, <module>, <target>, <config>]`.
 Optionally, an additional entry can be added; that entry has to be
 an object. A computed root is absent if that additional argument

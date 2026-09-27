@@ -16,7 +16,7 @@ function of the referenced external targets.
 
 The actual binding of the free repository names is specified in a
 separate repository build configuration, which is specified on the
-command line of `jst_backend` (via the `-B` option); this command-line
+command line of `jst backend` (via the `-B` option); this command-line
 argument is optional and the default is that the repository worked on has
 no external dependencies. Typically (but not necessarily), this
 configuration file is located outside the referenced repositories and

@@ -138,19 +138,19 @@ via the `--main` option.
 `jst` reads the repository configuration, fetches externals (if
 any), generates the actual build configuration, and stores it in its
 cache directory (by default under `$HOME/.cache/jst`). Afterwards, the
-generated configuration is used to call the `jst_backend` binary, which
-performs the actual build.
+generated configuration is used to call the build backend, which performs
+the actual build.
 
-Note that these two programs, `jst` and `jst_backend`, can also be run
+Note that these two steps, the setup and the build itself, can also be run
 individually. To do so, first run `jst` with `setup` and capture the
 path to the generated build configuration from stdout (above omitted from the
 log message as `"..."`) by assigning it to a shell variable (e.g., `CONF`).
-Afterwards, `jst_backend` can be called to perform the actual build by explicitly
+Afterwards, `jst backend` can be called to perform the actual build by explicitly
 specifying the repository build configuration via `-B`, e.g.:
 
 ``` sh
 $ CONF=$(jst setup tutorial)
-$ jst_backend build -B $CONF helloworld
+$ jst backend build -B $CONF helloworld
 ```
 
 Note that `jst` only needs to be run the very first time and only
@@ -290,7 +290,7 @@ Note that the output binary has changed due to different defaults.
 
 In this tutorial we simply set the correct parameters of the defaults target.
 It is, however, not necessary to remember all the fields of a rule; we can
-always ask `jst_backend` to present us the available field names and configuration
+always ask `jst backend` to present us the available field names and configuration
 variables together with any documentation the rule author provided. For
 this, we use the `describe` subcommand; as we're interested in a target of
 the `rules-cc` repository, which is not the default repository, we also

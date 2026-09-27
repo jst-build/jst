@@ -34,7 +34,7 @@ imported into the Git cache, which is a cheap local operation.
 
 ### CAS locations
 
-`jst_backend` provides a default local build root location for where the local CAS
+`jst backend` provides a default local build root location for where the local CAS
 should be stored. However, a useful use-case of this new subcommand would be
 to populate a specific (and possibly existing) CAS. Therefore an option to
 specify the local build root will be available.
@@ -62,7 +62,7 @@ to CAS is only suppored in native mode.
 ### Other notes
 
 The only mandatory argument is the path to the filesystem object to be hashed,
-with all other options optional, as sensible defaults exist already in `jst_backend`.
+with all other options optional, as sensible defaults exist already in `jst backend`.
 
 Logging options will also be available for this subcommand.
 

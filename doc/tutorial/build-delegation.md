@@ -62,7 +62,7 @@ repositories.
 
 To analyse a data set, we need, besides the actual data, also a
 target description and, potentially, additional tools. Here we use
-that `jst_backend` allows separate layers for sources and targets. So we
+that `jst backend` allows separate layers for sources and targets. So we
 can add a separate repository with the targets file for analysing
 the data. As that one will typically be small, we can write it
 locally (allowing us to experiment with different kinds of statistics

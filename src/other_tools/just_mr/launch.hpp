@@ -24,6 +24,13 @@
 #include "src/buildtool/storage/storage.hpp"
 #include "src/other_tools/just_mr/cli.hpp"
 
+/// \brief Runs execvp for the build tool backend with the given arguments
+/// unchanged, without performing any of the operations jst does itself. Only
+/// returns if execvp fails.
+[[nodiscard]] auto CallBackend(
+    MultiRepoCommonArguments const& common_args,
+    MultiRepoJustSubCmdsArguments const& just_cmd_args) -> int;
+
 /// \brief Runs execvp for configured command. Only returns if execvp fails.
 [[nodiscard]] auto CallJust(
     std::optional<std::filesystem::path> const& config_file,

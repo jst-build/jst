@@ -189,6 +189,18 @@ constexpr JustSubCmdFlags kGcRepoFlags{.config = false,
                                        .serve = false,
                                        .dispatch = false,
                                        .does_build = false};
+// The backend passthrough hands over to the backend directly, so only the
+// options of jst concerning that call itself apply to it.
+constexpr JustSubCmdFlags kBackendFlags{.config = false,
+                                        .parallel = false,
+                                        .build_root = false,
+                                        .launch = false,
+                                        .defines = false,
+                                        .remote = false,
+                                        .remote_props = false,
+                                        .serve = false,
+                                        .dispatch = false,
+                                        .does_build = false};
 // All root-level options of jst itself, as accepted before the subcommand
 constexpr JustSubCmdFlags kRootFlags{.config = true,
                                      .parallel = true,
@@ -356,7 +368,7 @@ void SetupBackendOnlySubcommandArguments(
         "update",
         "Advance Git commit IDs and print updated jst configuration.");
     auto* cmd_backend = app.add_subcommand(
-        "backend", "Canonical way of specifying backend subcommands.");
+        "backend", "Canonical way to call the build backend directly.");
     auto* cmd_gc_repo = app.add_subcommand(
         "gc-repo", "Perform garbage collection on the repository roots.");
     cmd_backend->set_help_flag();  // disable help flag
@@ -386,6 +398,8 @@ void SetupBackendOnlySubcommandArguments(
     SetupJstArguments(cmd_fetch, kSetupFlags, &clargs);
     SetupJstArguments(cmd_update, kUpdateFlags, &clargs);
     SetupJstArguments(cmd_gc_repo, kGcRepoFlags, &clargs);
+    SetupJstArguments(
+        cmd_backend, kBackendFlags, &clargs, /*launches_backend=*/true);
 
     // setup the normal jst subcommand arguments
     SetupSetupCommandArguments(cmd_setup, &clargs);
@@ -410,6 +424,9 @@ void SetupBackendOnlySubcommandArguments(
 
     // for 'just' calls, allow extra arguments
     cmd_backend->allow_extras();
+    // stop parsing at the backend subcommand, so that everything from there on
+    // is forwarded unchanged
+    cmd_backend->prefix_command();
     for (auto const& sub_cmd : cmd_just_subcmds) {
         sub_cmd->allow_extras();
     }
@@ -625,6 +642,12 @@ auto main(int argc, char* argv[]) -> int {
             arguments.common.explicit_distdirs.begin(),
             arguments.common.explicit_distdirs.end());
 
+        // "backend" hands over to the build tool backend directly, without
+        // any of the operations jst performs itself
+        if (arguments.cmd == SubCommand::kJustBackend) {
+            return CallBackend(arguments.common, arguments.just_cmd);
+        }
+
         // Setup LocalStorageConfig to store the local_build_root properly
         // and make the cas and git cache roots available. A native storage is
         // always instantiated, while a compatible one only if needed.
@@ -672,9 +695,9 @@ auto main(int argc, char* argv[]) -> int {
          */
         GitContext::Create();
 
-        // Run subcommands known to the backend and `backend` itself
-        if (arguments.cmd == SubCommand::kJustBackend or
-            arguments.cmd == SubCommand::kJustSubCmd) {
+        // Run subcommands known to the backend, with the setup jst performs
+        // for them
+        if (arguments.cmd == SubCommand::kJustSubCmd) {
             return CallJust(config_file,
                             arguments.invocation_log,
                             arguments.common,

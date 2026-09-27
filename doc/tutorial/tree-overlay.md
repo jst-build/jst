@@ -16,7 +16,7 @@ There are, however, a few examples where opaque trees have to be
 combined into a single one, e.g., if there is an external requirement
 that certain files be staged flatly in a single directory.
 
-To also support those rare use cases, `jst_backend` supports in-memory
+To also support those rare use cases, `jst backend` supports in-memory
 actions to compute the overlay of two trees, optionally rejecting
 conflicts instead of resolving them in a latest-wins way. Those
 actions can be requested in user-defined rules, as well as by the

@@ -1,7 +1,7 @@
 Getting Started
 ===============
 
-In order to use *jst-build*, first make sure that `jst_backend`, `jst`, and
+In order to use *jst-build*, first make sure that `jst` and
 `jst-import-git` are available in your `PATH`.
 
 Creating a new project

@@ -24,7 +24,7 @@ import time
 import zlib
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple, Union, cast
 
-from argparse import SUPPRESS, ArgumentParser
+from argparse import REMAINDER, SUPPRESS, ArgumentParser
 from pathlib import Path
 
 from enum import Enum
@@ -902,6 +902,19 @@ def setup(*,
     return add_to_cas(json.dumps(mr_config, indent=2, sort_keys=True))
 
 
+def call_backend(args: List[str]) -> None:
+    """Hand over to the build backend directly, without any of the operations
+    jst performs itself."""
+    cmd: List[str] = [g_JUST] + args
+    log("Exec %s" % (cmd, ))
+    try:
+        os.execvp(g_JUST, cmd)
+    except Exception as e:
+        log(str(e))
+    finally:
+        fail(f"exec failed", 64)
+
+
 def call_just(*, config: Json, main: Optional[str], args: List[str]) -> None:
     subcommand = args[0] if len(args) > 0 else None
     args = args[1:]
@@ -1189,10 +1202,15 @@ def main():
                                default=[],
                                help="Repository to update.")
 
-    subcommands.add_parser(
+    backend_parser = subcommands.add_parser(
         "backend",
-        help="Canonical way of specifying backend subcommands",
+        parents=[jst_parser],
+        help="Canonical way to call the build backend directly",
         add_help=False)
+    # stop at the backend subcommand and forward everything from there on
+    backend_parser.add_argument("passthrough_args",
+                                metavar="ARG",
+                                nargs=REMAINDER)
 
     for cmd in KNOWN_JUST_SUBCOMMANDS:
         # Adding the jst arguments to the backend subcommand and parsing only
@@ -1262,7 +1280,7 @@ def main():
         call_just(config=config, main=main, args=[options.subcommand] + args)
         return
     if options.subcommand == "backend":
-        call_just(config=config, main=main, args=args)
+        call_backend(options.passthrough_args)
         return
 
     if args:

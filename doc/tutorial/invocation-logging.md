@@ -1,7 +1,7 @@
 # Invocation Logging and Profiling
 
 For large projects, it can be helpful to find out which actions
-make, e.g., the runs of the continuous integration slow. `jst_backend` has
+make, e.g., the runs of the continuous integration slow. `jst backend` has
 an option `--profile` that instructs it to write a profile file to
 the specified location on disk. That profile file contains (among
 other things, see `jst-profile(5)`) for each action that was
@@ -61,7 +61,7 @@ be specified.
 
  - `"--profile"` specifies the file name within the invocation-log
    directory to be used when generating the `--profile` option in
-   the command line for the `jst_backend` invocation.
+   the command line for the `jst backend` invocation.
  - `"--dump-graph"` does the same for the `--dump-graph` option.
  - `"--dump-artifacts-to-build"` does the same for the
    `--dump-artifacts-to-build` option.
@@ -73,10 +73,10 @@ be specified.
    directory, to which `jst` should write a metadata file; that file
    contains, in particular, the full command line that is executed
    and the blob identifier of the repository configuration file
-   used in that invocation of `jst_backend` (if any).
+   used in that invocation of `jst backend` (if any).
  - `"context variables"` specifies a list of environment variables
    for which the value should be recorded in the metadata file;
-   while `jst_backend` is designed to deliberately ignore environment
+   while `jst backend` is designed to deliberately ignore environment
    variables for the build, environment variables can be used to
    communicate some context for the invocation, especially when
    run on a CI system. This can later also be used for an analysis

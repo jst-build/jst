@@ -38,6 +38,7 @@
 
 #include "fmt/chrono.h"
 #include "fmt/format.h"
+#include "gsl/gsl"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
@@ -58,6 +59,41 @@
 #include "src/other_tools/just_mr/utils.hpp"
 #include "src/utils/cpp/file_locking.hpp"
 #include "src/utils/cpp/path.hpp"
+
+namespace {
+
+/// \brief Replace the current process by the given command. Only returns if
+/// execvp fails.
+[[nodiscard]] auto Exec(gsl::not_null<std::vector<std::string>*> const& cmd)
+    -> int {
+    // create argv
+    std::vector<char*> argv{};
+    std::transform(std::begin(*cmd),
+                   std::end(*cmd),
+                   std::back_inserter(argv),
+                   [](auto& str) { return str.data(); });
+    argv.push_back(nullptr);
+    // run execvp; will only return if failure
+    [[maybe_unused]] auto res =
+        execvp(argv[0], static_cast<char* const*>(argv.data()));
+    // execvp returns only if command errored out
+    Logger::Log(LogLevel::Error, "execvp failed with:\n{}", strerror(errno));
+    return kExitExecError;
+}
+
+}  // namespace
+
+auto CallBackend(MultiRepoCommonArguments const& common_args,
+                 MultiRepoJustSubCmdsArguments const& just_cmd_args) -> int {
+    std::vector<std::string> cmd = {common_args.just_path->string()};
+    cmd.insert(cmd.end(),
+               just_cmd_args.additional_just_args.begin(),
+               just_cmd_args.additional_just_args.end());
+
+    Logger::Log(LogLevel::Verbose, "Exec {}", nlohmann::json(cmd).dump());
+
+    return Exec(&cmd);
+}
 
 auto CallJust(std::optional<std::filesystem::path> const& config_file,
               InvocationLogArguments const& invocation_log,
@@ -97,12 +133,7 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
     std::optional<LockFile> lock{};
     std::optional<LockFile> repo_lock{};
 
-    auto last_arg = just_cmd_args.additional_just_args.empty()
-                        ? std::string{}
-                        : *just_cmd_args.additional_just_args.rbegin();
-    if (subcommand and kKnownJustSubcommands.contains(*subcommand) and
-        // do not setup the mr-config for printing the help dialog
-        last_arg != "-h" and last_arg != "--help") {
+    if (subcommand and kKnownJustSubcommands.contains(*subcommand)) {
         auto const& flags = kKnownJustSubcommands.at(*subcommand);
         // Read the config file if needed
         if (flags.config) {
@@ -431,17 +462,5 @@ auto CallJust(std::optional<std::filesystem::path> const& config_file,
                 "Setup finished, exec {}",
                 nlohmann::json(cmd).dump());
 
-    // create argv
-    std::vector<char*> argv{};
-    std::transform(std::begin(cmd),
-                   std::end(cmd),
-                   std::back_inserter(argv),
-                   [](auto& str) { return str.data(); });
-    argv.push_back(nullptr);
-    // run execvp; will only return if failure
-    [[maybe_unused]] auto res =
-        execvp(argv[0], static_cast<char* const*>(argv.data()));
-    // execvp returns only if command errored out
-    Logger::Log(LogLevel::Error, "execvp failed with:\n{}", strerror(errno));
-    return kExitExecError;
+    return Exec(&cmd);
 }

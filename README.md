@@ -24,7 +24,7 @@ What sets `jst` apart from other build systems:
   company builds alike
 - Decoupling files from their local path: ["staging"](doc/concepts/overview.md#staging)
 - Action graph pruning via [target-level caching](doc/concepts/target-cache.md)
-- Building without the sources via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst_backend-repository-specification)
+- Building without the sources via [absent roots](doc/concepts/service-target-cache.md#delegation-absent-roots-in-jst-backend-repository-specification)
 - Reduced network traffic via [blob splitting](doc/concepts/blob-splitting.md), which
   also shrinks the on-disk footprint of large artifacts such as disk images via
   [cache compactification](doc/concepts/garbage.md#compactification-as-part-of-garbage-collection)

@@ -230,8 +230,8 @@ binary, we need to do two things.
 To continue the example, let's say we set up an `arm64` machine,
 e.g., a Raspberry Pi, in the local network. On that machine, we can
 simply run a single-node execution service using `jst execute`;
-note that the `jst_backend` binary used there has to be an `arm64` binary,
-e.g., obtained by cross compiling.
+note that the build backend used there has to be an `arm64` build, e.g.,
+obtained by cross compiling.
 
 The next step is to tell *jst-build* how to reach that machine;
 as we only want to use it for certain actions, we can't simply
@@ -270,7 +270,7 @@ we set `ARCH_DISPATCH` to `{"arm64": {"runner": "arm64-worker"}}`.
 
 Finally, we have to provide the credentials needed for mutual
 authentication with the remote-execution endpoint by setting `--tls-*`
-options appropriately. `jst_backend` assumes that the same credentials
+options appropriately. `jst backend` assumes that the same credentials
 can be used for all remote-execution endpoints involved. In our example
 we're building locally (where the build process starts the actions
 itself) which does not require any credentials; nevertheless, it
@@ -314,7 +314,7 @@ be set in the `"jst args"` entry of the `.jstrc` file.
 
 When inspecting the result, we can use `jst install-cas` as usual,
 without any special arguments. Whenever dispatching an action to
-a non-default endpoint, `jst_backend` will take care of syncing back the
+a non-default endpoint, `jst backend` will take care of syncing back the
 artifacts to the default CAS.
 
 Testing a matrix of configurations

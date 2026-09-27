@@ -80,10 +80,10 @@ invocations are much more informative if the data is complete (or
 at least sampled in an unbiased way). Therefore, the build-data
 collection should be configured in a configuration file. The
 only tool we have that routinely reads a configuration file is
-`jst`. As this is also routinely used as a launcher for `jst_backend`,
+`jst`. As this is also the tool routinely launching the build itself,
 its configuration file is a good place to configure build-insight
 logging. Following the current design, we let `jst` do all the
-necessary setup and let `jst_backend` strictly follow instructions.
+necessary setup and let `jst backend` strictly follow instructions.
 
 ## Relevant interfaces
 
@@ -99,7 +99,7 @@ attempted despite being requested, e.g., due to failure in analysis.
 The file contains a single JSON object, with the following key (and
 more keys possibly added in the future).
 
- - The key `"exit code"` contains the exit value of the `jst_backend`
+ - The key `"exit code"` contains the exit value of the `jst backend`
    process; this allows easy filtering on the build and test results.
  - The key `"target"` contains the target in fully-qualified form.
    The reason we include the target is that `jst` also allows it to be

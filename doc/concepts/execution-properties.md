@@ -70,7 +70,7 @@ remote-execution properties specified at the invocation of the build
 precedence).
 
 Local execution continues to ignore any execution properties specified.
-However, with the dispatch functionality of `jst_backend` described later, such
+However, with the dispatch functionality of `jst backend` described later, such
 execution properties can also influence a build that is local by
 default.
 
@@ -92,12 +92,12 @@ and `"execution properties"` are taken as additional arguments to
 the underlying action, with the same semantics as the respective
 fields of the `"ACTION"` constructor.
 
-### `jst_backend` dispatching based on remote-execution properties
+### `jst backend` dispatching based on remote-execution properties
 
 In simple setups, like using `jst execute`, the remote execution is not
 capable of dispatching to different workers based on remote-execution
 properties. To nevertheless have the benefits of using different
-execution environments, `jst_backend` allows an optional configuration file
+execution environments, `jst backend` allows an optional configuration file
 to be passed on the command line via a new option
 `--endpoint-configuration`. This configuration file contains a list
 of pairs of remote-execution properties and remote-execution endpoints.
@@ -108,7 +108,7 @@ used; if no entry matches, the default remote-execution endpoint is
 used. In any case, the remote-execution properties are forwarded to the
 chosen remote-execution endpoint without modification.
 
-When connecting to a non-standard remote-execution endpoint, `jst_backend` will
+When connecting to a non-standard remote-execution endpoint, `jst backend` will
 ensure that the applicable CAS of that endpoint will have all the needed
 artifacts for that action. It will also transfer all result artifacts
 back to the CAS of the default remote-execution endpoint.

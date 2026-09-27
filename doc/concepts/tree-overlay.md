@@ -69,7 +69,7 @@ this position in the first tree.
 
 ## Computation of `"tree overlays"` in the presence of remote execution
 
-The evaluation of `"tree overlays"` happens in memory in the `jst_backend`
+The evaluation of `"tree overlays"` happens in memory in the `jst backend`
 process. To do so, the actual tree objects have to be inspected, in
 fact downwards for all common paths. In particular, as opposed to
 all other operations, trees in this operation cannot be passed
@@ -80,7 +80,7 @@ objects are fetched without the blobs or tree objects outside
 common paths, even if that means that those objects cannot be put
 into the local CAS (as that would violate the tree invariant). In
 any case, when adding the new tree objects that are part of the
-overlaid tree, `jst_backend` adds them to the applicable
+overlaid tree, `jst backend` adds them to the applicable
 CAS in topological order, in order to keep the tree invariant.
 
 ## Functions in rule definition: `TREE_OVERLAY` and `DISJOINT_TREE_OVERLAY`
