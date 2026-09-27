@@ -21,7 +21,7 @@ readonly JUST_ARGS="--local-build-root ${LBR}"
 
 readonly JUST_MR="${PWD}/bin/mr-tool-under-test"
 readonly LBR_MR="${TEST_TMPDIR}/local-build-root-mr"
-readonly JUST_MR_ARGS="--norc --local-build-root ${LBR_MR} --just ${JUST}"
+readonly JUST_MR_ARGS="--norc --local-build-root ${LBR_MR} --backend ${JUST}"
 
 readonly OUT="${TEST_TMPDIR}/out"
 mkdir -p "${OUT}"

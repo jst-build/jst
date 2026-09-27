@@ -143,7 +143,7 @@ echo "Absent tree structure root of an absent root. Expected to be computed on s
     --local-build-root "${LBRDIR}/absent_absent" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_foo -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --just "${JUST}" install -o "${OUT}/absent_absent" 2>&1) \
+    --backend "${JUST}" install -o "${OUT}/absent_absent" 2>&1) \
     > "${OUT}/log_absent_absent"
 
 echo
@@ -168,7 +168,7 @@ echo "Expected to be computed on serve and downloaded:"
     --local-build-root "${LBRDIR}/local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_foo -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --just "${JUST}" install -o "${OUT}/result_foo" 2>&1) \
+    --backend "${JUST}" install -o "${OUT}/result_foo" 2>&1) \
     > "${OUT}/log_result_foo"
 
 echo
@@ -187,7 +187,7 @@ echo "Expected to be taken from local cache:"
     --local-build-root "${LBRDIR}/local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_bar -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --just "${JUST}" install -o "${OUT}/result_bar" 2>&1) \
+    --backend "${JUST}" install -o "${OUT}/result_bar" 2>&1) \
     > "${OUT}/log_result_bar"
 
 echo
@@ -217,7 +217,7 @@ echo "Expected to be computed locally and uploaded to serve:"
     --local-build-root "${LBRDIR}/absent_local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_local -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --just "${JUST}" install -o "${OUT}/absent_local" 2>&1) \
+    --backend "${JUST}" install -o "${OUT}/absent_local" 2>&1) \
     > "${OUT}/log_absent_local"
 
 echo

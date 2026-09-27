@@ -141,7 +141,7 @@ echo
 grep -q "${SUBTREE_ID}" repos-gen.json
 
 # Check successful build
-"${JUST_MR}" --norc -L '["env", "PATH='"${PATH}"'"]' --just "${JUST}" \
+"${JUST_MR}" --norc -L '["env", "PATH='"${PATH}"'"]' --backend "${JUST}" \
              --local-build-root "${LBR3}" install -o "${OUT}" 2>&1
 echo
 grep checkout "${OUT}/out.txt"

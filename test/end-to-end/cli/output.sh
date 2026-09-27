@@ -40,7 +40,7 @@ cat > TARGETS <<'EOF'
 EOF
 
 ${JUST_MR} --norc -L '["env", "PATH='"${PATH}"'"]' --local-build-root "${LBR}" \
-           --just "${JUST}" \
+           --backend "${JUST}" \
            -f "${LOG}" build 2>&1
 echo
 

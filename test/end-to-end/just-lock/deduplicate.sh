@@ -121,7 +121,7 @@ echo
 echo
 cat repos-keep.json
 echo
-"${JUST_MR}" -C repos-keep.json --norc --just "${JUST}" \
+"${JUST_MR}" -C repos-keep.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" analyse \
              --dump-plain-graph actions-keep.json 2>&1
 echo
@@ -153,7 +153,7 @@ echo
 echo
 cat repos.json
 echo
-"${JUST_MR}" -C repos.json --norc --just "${JUST}" \
+"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" analyse \
              --dump-plain-graph actions.json 2>&1
 echo

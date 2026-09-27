@@ -80,7 +80,7 @@ EOF
 
 # Succesfull build
 
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
              --checkout-locations local.json \
              install -o "${OUT}" '' sources.txt 2>&1
 grep checked-out "${OUT}/sources.txt"

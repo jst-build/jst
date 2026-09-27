@@ -74,21 +74,21 @@ echo
 
 echo
 echo Local build
-"${JUST_MR}" --norc --local-build-root "${LBR_A}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR_A}" --backend "${JUST}" \
              --distdir "${DISTDIR}" ${COMPAT} build \
              --log-limit 4 \
              --dump-artifacts local.json 2>&1
 
 echo
 echo Remote build
-"${JUST_MR}" --norc --local-build-root "${LBR_B}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR_B}" --backend "${JUST}" \
              --distdir "${DISTDIR}" ${REMOTE} build \
              --log-limit 4 \
              --dump-artifacts remote.json 2>&1
 
 echo
 echo Serve build
-"${JUST_MR}" --norc --local-build-root "${LBR_C}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR_C}" --backend "${JUST}" \
              --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} build \
              --log-limit 4 \
              --dump-artifacts serve.json 2>&1
@@ -96,7 +96,7 @@ echo Serve build
 echo
 echo Absent build
 echo -n '[""]' > abs
-"${JUST_MR}" --norc --local-build-root "${LBR_D}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR_D}" --backend "${JUST}" \
              --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} --absent abs build \
              --log-limit 4 \
              --dump-artifacts absent.json 2>&1

@@ -69,7 +69,7 @@ echo
 echo '=== setup sucessfull, but fork failed ==='
 exit_code=0
 echo '{"repositories": {"": {"repository": {"type": "file", "path": "."}}}}' > repos.json
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${BINDIR}/does-not-exist" build 2>&1 || exit_code=$?
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${BINDIR}/does-not-exist" build 2>&1 || exit_code=$?
 echo "Exit code $exit_code"
 [ "$exit_code" -eq 64 ]
 
@@ -82,7 +82,7 @@ EOI
 chmod 755 "${BINDIR}/return-42"
 exit_code=0
 echo '{"repositories": {"": {"repository": {"type": "file", "path": "."}}}}' > repos.json
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${BINDIR}/return-42" build 2>&1 || exit_code=$?
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${BINDIR}/return-42" build 2>&1 || exit_code=$?
 echo "Exit code $exit_code"
 [ "$exit_code" -eq 42 ]
 
@@ -90,7 +90,7 @@ echo
 echo '=== exit code 0 from build tool ==='
 exit_code=0
 echo '{"repositories": {"": {"repository": {"type": "file", "path": "."}}}}' > repos.json
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "true" build 2>&1 || exit_code=$?
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "true" build 2>&1 || exit_code=$?
 echo "Exit code $exit_code"
 [ "$exit_code" -eq 0 ]
 

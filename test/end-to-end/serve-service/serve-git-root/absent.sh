@@ -75,7 +75,7 @@ EOF
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup absent)
@@ -88,7 +88,7 @@ test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE_0}"
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup present)

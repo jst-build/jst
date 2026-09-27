@@ -64,7 +64,7 @@ EOF
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup main)

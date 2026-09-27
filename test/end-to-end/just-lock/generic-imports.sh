@@ -112,7 +112,7 @@ echo
 echo
 cat repos.json
 echo
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out.txt"
 echo

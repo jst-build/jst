@@ -223,7 +223,7 @@ static inline void SetupMultiRepoCommonArguments(
            "archives from remote.")
         ->type_name("CA_BUNDLE");
     app->add_option(
-           "--backend,--just",
+           "--backend",
            clargs->just_path,
            fmt::format("The build tool backend to be launched (default: {}).",
                        kDefaultBackendPath))

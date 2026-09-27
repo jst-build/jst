@@ -84,7 +84,7 @@ EOF
 
 # As from the 3 absent export targets two coincide on the flexible
 # variables, we should only get two export targets served.
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
              -R "${SERVE}" -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
              build -f "${LOG}" --log-limit 4 2>&1
 echo
@@ -93,7 +93,7 @@ echo
 
 # The same should be true on the second run, when everything is in
 # the cache of serve.
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
              -R "${SERVE}" -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
              build -f "${LOG}" --log-limit 4 2>&1
 echo

@@ -3024,7 +3024,6 @@ def main():
                         help="Root for CAS, repository space, etc",
                         metavar="PATH")
     parser.add_argument("--backend",
-                        "--just",
                         dest="just_bin",
                         help="Path to the 'jst_backend' binary",
                         metavar="PATH")

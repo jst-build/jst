@@ -64,9 +64,6 @@ Default: path *`".cache/jst"`* in user's home directory.
 Path to the **`jst_backend`** binary in *`PATH`* or path to the **`jst_backend`** binary.
 Default: *`"jst_backend"`*.
 
-**`--just`** *`PATH`*  
-Legacy option to specify the backend binary, same as **`--backend`**.
-
 **`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
 JSON array with the list of strings representing the launcher to prepend
 any commands being executed locally.  

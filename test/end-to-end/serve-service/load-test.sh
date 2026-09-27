@@ -56,7 +56,7 @@ do "${JUST_MR}" --norc --local-build-root "${LBR}" \
                 -f "${OUT}/build${i}.log" \
                 --restrict-stderr-log-limit 1 \
                 -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-                --just "${JUST}" \
+                --backend "${JUST}" \
                 install -o "${OUT}/out${i}" 2>&1 &
 pid="$!"
 pids="${pids} ${pid}"

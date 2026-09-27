@@ -55,7 +55,7 @@ EOF
              --remote-serve-address ${SERVE} \
              -f "${OUT}/build.log" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-             --just "${JUST}" \
+             --backend "${JUST}" \
              install --remember -o "${OUT}/result" \
              -D '{"DEPTH": "900"}' \
              --dump-artifacts artifacts.json \
@@ -73,14 +73,14 @@ echo
 
 "${JUST_MR}" --norc --local-build-root "${LBRB}" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-             --just "${JUST}" \
+             --backend "${JUST}" \
              install-cas --remember -o "${OUT}/first-copy" \
              $(jq -r '."'"${OUT}/result/out"'".id'  artifacts.json)::t \
              2>&1
 
 "${JUST_MR}" --norc --local-build-root "${LBRC}" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-             --just "${JUST}" \
+             --backend "${JUST}" \
              install-cas -o "${OUT}/second-copy" \
              $(jq -r '."'"${OUT}/result/out"'".id'  artifacts.json)::t \
              2>&1

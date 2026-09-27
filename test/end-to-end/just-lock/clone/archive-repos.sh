@@ -92,7 +92,7 @@ cat repos.in.json
 echo
 
 # Check setup with archived content
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
                       -C repos.in.json --distdir "${DISTDIR}" \
                       --local-build-root "${LBR_ARCHIVES}" setup --all) 2>&1
 echo
@@ -107,7 +107,7 @@ cat > clone.json <<EOF
 }
 EOF
 "${JUST_LOCK}" -C repos.in.json -o repos.json --local-build-root "${LOCK_LBR}" \
-               --just "${JUST}" --clone $(cat clone.json | jq -c) 2>&1
+               --backend "${JUST}" --clone $(cat clone.json | jq -c) 2>&1
 echo
 echo Output config:
 cat repos.json
@@ -124,7 +124,7 @@ grep ignore repos.json
 echo
 
 # Check setup with local clones:
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
              -C repos.json --local-build-root "${LBR_CLONES}" setup --all 2>&1
 echo
 

@@ -104,7 +104,7 @@ cat > TARGETS <<EOF
 EOF
 cat TARGETS
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
              -R "${SERVE}" -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
              install -o "${OUT}" 2>&1
 

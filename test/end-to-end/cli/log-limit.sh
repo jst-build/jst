@@ -137,7 +137,7 @@ cat > repos.json <<'EOF'
 {"repositories": {"": {"repository": {"type": "file", "path": "."}}}}
 EOF
 rm -f file.log console.log
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" -f file.log \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" -f file.log \
           -L '["env", "PATH='"${PATH}"'"]' \
           --verbose \
           --restrict-stderr-log-limit 1 build 2>console.log || :

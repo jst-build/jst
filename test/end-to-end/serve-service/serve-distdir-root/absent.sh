@@ -92,7 +92,7 @@ EOF
 
 # Compute present root locally from scratch (via distfile)
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --distdir "${DISTDIR}" \
                     --log-limit 6 \
@@ -110,7 +110,7 @@ rm -rf "${DISTDIR}"
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup absent)
@@ -122,7 +122,7 @@ test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE}"
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup present)

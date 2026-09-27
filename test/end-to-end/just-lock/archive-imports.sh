@@ -115,7 +115,7 @@ cat repos.in.json
 "${JUST_LOCK}" -C repos.in.json -o repos.json --local-build-root "${LOCK_LBR}" 2>&1
 cat repos.json
 echo
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
              --distdir "${DISTDIR}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out.txt"

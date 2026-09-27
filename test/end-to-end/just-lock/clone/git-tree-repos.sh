@@ -70,7 +70,7 @@ cat repos.in.json
 echo
 
 # Check initial setup
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
                     -C repos.in.json --local-build-root "${LBR_1}" setup) 2>&1
 echo
 
@@ -91,7 +91,7 @@ grep "${CLONE_TO}" repos.json
 echo
 
 # Check setup with local clones:
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
              -C repos.json --local-build-root "${LBR_2}" setup 2>&1
 echo
 

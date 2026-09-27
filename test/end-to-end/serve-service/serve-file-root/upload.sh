@@ -87,7 +87,7 @@ EOF
 # endpoint is given then we try to set it up there as well. As this serve
 # endpoint does not know the tree, it will try to upload through the remote CAS.
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup present_file)
@@ -100,7 +100,7 @@ test $(jq -r '.repositories.present_file.workspace_root[1]' "${CONF}") = "${TREE
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup absent_git_tree)

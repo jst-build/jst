@@ -88,7 +88,7 @@ rm -rf "${DISTDIR}"
 rm -rf "${FETCH_TO_DIR}"
 
 # Setup for building should still be possible
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
              install -o "${INSTALL_DIR}" 2>&1
 test "$(cat "${INSTALL_DIR}/out.txt")" = "${TEST_DATA}"
 

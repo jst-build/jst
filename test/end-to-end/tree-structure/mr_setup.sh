@@ -142,7 +142,7 @@ echo
 echo "Building tree_structure_1 (expected a new cache entry):"
 echo
 ("${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
-            --main tree_structure_1  --just "${JUST}" \
+            --main tree_structure_1  --backend "${JUST}" \
             install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
             --log-limit 4 -o "${OUT}/tree_structure_1" 2>&1) > "${OUT}/log"
 
@@ -160,7 +160,7 @@ echo
 echo "Building tree_structure_2 (expected to be taken from cache):"
 echo
 ("${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
-            --main tree_structure_2  --just "${JUST}" \
+            --main tree_structure_2  --backend "${JUST}" \
             install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
             --log-limit 4 -o "${OUT}/tree_structure_2" 2>&1) > "${OUT}/log2"
 

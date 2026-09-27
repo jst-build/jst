@@ -63,7 +63,7 @@ EOF
 
 # Compute present root by asking the serve endpoint to set it up for us.
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup main)
@@ -76,7 +76,7 @@ ${JUST} gc --local-build-root ${LBR} 2>&1
 ${JUST} gc --local-build-root ${LBR} 2>&1
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     setup main)
@@ -104,7 +104,7 @@ cat > repos.json <<EOF
 EOF
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     setup main)

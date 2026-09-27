@@ -134,7 +134,7 @@ run_scenario() {
   }
 }
 EOF
-  "${JUST_MR}" --norc --just "${JUST}" \
+  "${JUST_MR}" --norc --backend "${JUST}" \
                --local-build-root "${TEST_TMPDIR}/lbr-$$-${SCENARIO}" \
                --git "${MOCK_GIT}" --log-limit 5 \
                install -o "${OUT}" '' sources.txt 2>&1

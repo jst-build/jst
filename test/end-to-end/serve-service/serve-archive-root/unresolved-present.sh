@@ -73,7 +73,7 @@ EOF
 
 # Compute present root locally from scratch (via distfile)
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --distdir "${DISTDIR}" \
                     --log-limit 6 \
@@ -90,7 +90,7 @@ ${JUST} gc --local-build-root ${LBR} 2>&1
 ${JUST} gc --local-build-root ${LBR} 2>&1
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     setup main)
@@ -103,7 +103,7 @@ test $(jq -r '.repositories.main.workspace_root[1]' "${CONF}") = "${TREE}"
 rm -rf "${LBR}"
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     ${ENDPOINT_ARGS} setup main)
@@ -117,7 +117,7 @@ ${JUST} gc --local-build-root ${LBR} 2>&1
 ${JUST} gc --local-build-root ${LBR} 2>&1
 
 CONF=$("${JUST_MR}" --norc -C repos.json \
-                    --just "${JUST}" \
+                    --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
                     setup main)

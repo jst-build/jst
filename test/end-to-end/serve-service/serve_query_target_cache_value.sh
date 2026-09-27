@@ -108,7 +108,7 @@ echo
 rm -rf "${TOOLS_DIR}"
 
 # Setup for a build in a new build root
-CONF=$("${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" setup)
+CONF=$("${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" setup)
 
 echo "generated conf":
 cat "${CONF}"

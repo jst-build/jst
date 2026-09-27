@@ -108,7 +108,7 @@ echo
 # remote-execution endpoint should work now, even if the provided
 # distdir is empty
 mkdir -p "${EMPTY}"
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR2}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR2}" \
              -r "${REMOTE_EXECUTION_ADDRESS}" \
              --distdir ${EMPTY} \
              install -o "${OUT2}" 2>&1

@@ -133,7 +133,7 @@ echo
 
 echo
 echo Check main repo build:
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
              --local-build-root "${LBR_1}" install -o "${OUT_1}" 2>&1
 echo
 cat "${OUT_1}/out.txt"
@@ -159,7 +159,7 @@ grep pragma repos.json
 
 echo
 echo Check build with cloned repo:
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" \
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
              --local-build-root "${LBR_2}" install -o "${OUT_2}" 2>&1
 echo
 cat "${OUT_1}/out.txt"

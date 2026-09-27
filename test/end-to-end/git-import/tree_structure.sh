@@ -203,7 +203,7 @@ cat repos-full.json
 
 # Dump the graph before deduplication:
 echo
-"${JUST_MR}" -C repos-full.json --norc --just "${JUST}" \
+"${JUST_MR}" -C repos-full.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
              -L '["env", "PATH='"${PATH}"'"]' analyse \
              --dump-plain-graph actions-full.json 2>&1
@@ -215,7 +215,7 @@ cat repos.json
 echo
 
 # Dump the graph after deduplication:
-"${JUST_MR}" -C repos.json --norc --just "${JUST}" \
+"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
              -L '["env", "PATH='"${PATH}"'"]' analyse \
              --dump-plain-graph actions.json 2>&1
@@ -227,7 +227,7 @@ cmp actions-full.json actions.json
 
 # Check the result can be built after deduplication:
 echo
-"${JUST_MR}" -C repos.json --norc --just "${JUST}" \
+"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
              -L '["env", "PATH='"${PATH}"'"]' install \
              -o "${OUT}/result" 2>&1

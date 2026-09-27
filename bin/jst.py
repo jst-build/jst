@@ -1104,7 +1104,7 @@ def main():
                         default=[],
                         help="Directory to look for distfiles before fetching",
                         metavar="PATH")
-    parser.add_argument("--backend", "--just",
+    parser.add_argument("--backend",
                         dest="just",
                         help="Path to the jst_backend binary",
                         metavar="PATH")

@@ -81,7 +81,7 @@ grep 42 "${OUT}/out.txt"
 # As the last call of just-mr had --fetch-absent, all relevent information
 # about the root should now be available locally, so we can build without
 # a serve or remote endpoint with still (logically) fetching absent roots.
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              --fetch-absent install -o "${OUT2}" 2>&1
 grep 42 "${OUT2}/out.txt"
@@ -117,7 +117,7 @@ EOF
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              -L '["env", "PATH='"${PATH}"'"]' \
-             --just "${JUST}" \
+             --backend "${JUST}" \
              --fetch-absent install -o "${OUT3}" 2>&1
 grep 42 "${OUT3}/out.txt"
 
@@ -157,7 +157,7 @@ echo
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              -L '["env", "PATH='"${PATH}"'"]' \
-             --just "${JUST}" \
+             --backend "${JUST}" \
              install -o "${OUT_NON_ABSENT}" 2>&1
 grep 42 "${OUT_NON_ABSENT}/out.txt"
 

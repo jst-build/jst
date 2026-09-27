@@ -88,14 +88,14 @@ grep VALUES "${OUT}/out.txt"
 # After gc rotation, the original git root should no longer exist
 [ -e "${GIT_ROOT}" ] && exit 1 || :
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc 2>&1
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
 
 
 # Building should nevertheless succeed, due to the old repo generation
 # =====================================================================
 
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
           -L '["env", "PATH='"${PATH}"'"]' install -o "${OUT}" 2>&1
 # sanity check
 grep VALUES "${OUT}/out.txt"
@@ -116,9 +116,9 @@ echo "Git root is ${GIT_ROOT}"
 "${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc-repo 2>&1
 [ -e "${GIT_ROOT}" ] && exit 1 || :
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
           -L '["env", "PATH='"${PATH}"'"]' install -o "${OUT}" 2>&1
 grep VALUES "${OUT}/out.txt"
 rm -f "${OUT}/out.txt"

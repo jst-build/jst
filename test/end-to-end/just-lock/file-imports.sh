@@ -98,7 +98,7 @@ echo
 [ $(jq -r '.repositories.foo.repository.pragma.special' repos.json) = "resolve-completely" ]
 [ $(jq -r '.repositories.foo.repository.pragma.to_git' repos.json) = true ]
 # Check the symlink gets resolved as expected
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --just "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
+"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out.txt"
 echo

@@ -18,7 +18,7 @@ set -eu
 readonly JUST="${PWD}/bin/tool-under-test"
 readonly LBR="${TEST_TMPDIR}/local-build-root"
 readonly JUST_MR="${PWD}/bin/mr-tool-under-test"
-readonly JUST_MR_ARGS="--norc --local-build-root ${LBR} --just ${JUST}"
+readonly JUST_MR_ARGS="--norc --local-build-root ${LBR} --backend ${JUST}"
 
 mkdir repo
 cd repo

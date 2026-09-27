@@ -134,7 +134,7 @@ _jst_options(){
 
 _jst_parse_subcommand() {
     local readonly FLAGS=("--help\n-h\n--norc\nbackend") # treat 'backend' as flag
-    local readonly OPTIONS=("--distdir\n--backend\n--just\n--local-build-root\n--main\n--rc\n-C\n-L")
+    local readonly OPTIONS=("--distdir\n--backend\n--local-build-root\n--main\n--rc\n-C\n-L")
     shift
     while [ -n "$1" ]; do
         if echo -e "$FLAGS" | grep -q -- "^$1$"; then shift; continue; fi
@@ -175,7 +175,7 @@ _jst_completion(){
     then
         local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -W "${_repos[*]}}" -- $word))
-    elif [ "$prev" = "--distdir" ] || [ "$prev" = "--backend" ] || [ "$prev" = "--just" ] || [ "$prev" = "--local-build-root" ] || [ "$prev" = "--rc" ] || [ "$prev" = "-C" ] || [ "$prev" = "-L" ]
+    elif [ "$prev" = "--distdir" ] || [ "$prev" = "--backend" ] || [ "$prev" = "--local-build-root" ] || [ "$prev" = "--rc" ] || [ "$prev" = "-C" ] || [ "$prev" = "-L" ]
     then
         compopt -o bashdefault -o default
     elif [[ "$cmd" =~ ^(setup|setup-env|fetch|update) ]]

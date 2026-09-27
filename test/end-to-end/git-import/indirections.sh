@@ -168,7 +168,7 @@ echo
 echo
 echo Check: can build
 echo
-"${JUST_MR}" --norc --just "${JUST}" \
+"${JUST_MR}" --norc --backend "${JUST}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              -C repos.json \
              --local-build-root "${LBR}" \

@@ -105,7 +105,7 @@ EOF
 cat repos.json
 echo
 
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${CLIENT_A}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${CLIENT_A}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              install -o "${OUT_A}" 2>&1
 
@@ -138,7 +138,7 @@ EOF
 cat repos.json
 echo
 
-"${JUST_MR}" --norc --just "${JUST}" --local-build-root "${CLIENT_B}" \
+"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${CLIENT_B}" \
              ${REMOTE_EXECUTION_ARGS} \
              install -o "${OUT_B}" 2>&1
 

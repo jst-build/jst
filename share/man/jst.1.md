@@ -202,9 +202,6 @@ option can be used to match the artifacts expected by the remote endpoint.
 Name of the backend binary in *`PATH`* or path to the backend binary.  
 Default: *`"jst_backend"`*.
 
-**`--just`** *`PATH`*  
-Legacy option to specify the backend binary, same as **`--backend`**.
-
 **`--rc`** *`PATH`*  
 Path to the jstrc file to use. See **`jstrc`**(5) for more
 details.  

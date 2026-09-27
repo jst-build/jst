@@ -72,7 +72,7 @@ echo
 
 mkdir -p "${OUT}"
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" \
+"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
              ${ENDPOINT_ARGS} \
              install -o "${OUT}" 2>&1
 

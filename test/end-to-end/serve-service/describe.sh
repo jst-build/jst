@@ -67,7 +67,7 @@ echo
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --log-limit 6 \
-             --just "${JUST}" describe > "${OUT}/describe"
+             --backend "${JUST}" describe > "${OUT}/describe"
 cat "${OUT}/describe"
 echo
 
