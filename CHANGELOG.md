@@ -34,6 +34,14 @@
   controls the phase they expect it to. In the configuration of `jst backend
   serve`, the key `"jobs"` is accordingly called `"parallel"`, while the
   subkey `"build jobs"` keeps its name.
+- The documentation no longer presents the build backend as a tool of its own:
+  which binary carries out a build is an implementation detail, and `jst` — in
+  particular `jst backend` — is the supported way of calling it. Accordingly,
+  the manual page `jst_backend`(1) has been merged into `jst`(1), which now
+  documents every subcommand and option of the whole tool, and the two file
+  formats have been renamed to `jst-serve-config`(5) (previously
+  `jst_backend-serve-config`(5)) and `jst-graph-file`(5) (previously
+  `jst_backend-graph-file`(5)).
 - The subcommand `backend` is the canonical way to call the build backend
   directly: it hands the remaining arguments over unchanged and performs none
   of the operations `jst` does itself, in particular no repository setup. A

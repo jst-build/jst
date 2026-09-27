@@ -61,7 +61,8 @@ it does not exist already.
 Default: path *`".cache/jst"`* in user's home directory.
 
 **`--backend`** *`PATH`*  
-Path to the **`jst_backend`** binary in *`PATH`* or path to the **`jst_backend`** binary.
+Name in *`PATH`* of, or path to, the binary carrying out the build; which
+binary that is, is an implementation detail of **`jst`**(1).
 Default: *`"jst_backend"`*.
 
 **`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  

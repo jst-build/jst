@@ -69,8 +69,8 @@ The jstrc is given by a JSON object.
    details, see **`jst`**(1).
 
  - The value for the key *`"backend"`* is a single location object,
-   specifying the path to the **`jst_backend`** binary to use for execution, if
-   **`jst`** is used as a launcher.
+   specifying the binary that carries out the build; which binary that is, is
+   an implementation detail of **`jst`**(1).
 
  - The value for the key *`"git"`* is a single location object,
    specifying the path to the git binary to use in the instances when
@@ -146,18 +146,17 @@ The jstrc is given by a JSON object.
    attempts of an rpc, not counting the jitter.
 
  - The value for the key *`"jst files"`* is a JSON object. The keys correspond
-   to options that some **`jst_backend`** subcommands accept and require a file as
+   to options that some **`jst`** subcommands accept and require a file as
    argument. For each key, the value is a list of location objects. When
    **`jst`** is used as a launcher and the invoked subcommand is known to
-   support this option, this option is set in the **`jst_backend`** invocation with
+   support this option, this option is set in the **`jst`** invocation with
    the first matching entry, if any. The supported options are *`"config"`*
    and *`endpoint-configuration`*.
 
  - The value for the key *`"jst args"`* is a JSON object. Its keys are
-   **`jst_backend`** subcommands and its value is a JSON list of strings. For the
-   corresponding subcommand, these strings are prefixed to the **`jst_backend`**
-   argument vector (after all other options provided through the rc file),
-   if **`jst`** is used as a launcher.
+   **`jst`** subcommands and its value is a JSON list of strings. For the
+   corresponding subcommand, these strings are prefixed to the arguments of
+   the build (after all other options provided through the rc file).
 
  - The value for the key *`"rc files"`*, if given, is a list of
    location objects. For those location objects that refer to

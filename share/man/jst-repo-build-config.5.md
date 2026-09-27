@@ -4,12 +4,12 @@ NAME
 ====
 
 jst-repo-build-config - The format of the repository build configuration
-used by **`jst_backend`**(1)
+used by **`jst`**(1)
 
 DESCRIPTION
 ===========
 
-**`jst_backend`**'s repository build configuration is read as JSON. Any other
+**`jst`**'s repository build configuration is read as JSON. Any other
 serialization describing the same JSON object is equivalent. We assume,
 that in JSON objects, each key occurs at most once; it is implementation
 defined how repetitions of the same key are treated.
@@ -61,7 +61,7 @@ contains *`file roots`*, file names, and bindings to other repositories.
 Specifically the following fields are supported:
 
  - *`"workspace_root"`* contains the *`file root`* where source files
-   are located. If this entry is missing for the main repository, **`jst_backend`**
+   are located. If this entry is missing for the main repository, **`jst`**
    will perform the normal workspace root resolution starting from the
    current working directory.
 
@@ -102,7 +102,7 @@ keys:
 
  - *`"main"`* contains a string, which defines the repository name to
    consider by default if not explicitly specified on the command line
-   (i.e., via **`--main`**). This entry is optional and if omitted **`jst_backend`**
+   (i.e., via **`--main`**). This entry is optional and if omitted **`jst`**
    will use the lexicographically first repository, as usual.
 
  - *`"repositories"`* contains a JSON object that defines all
@@ -121,6 +121,5 @@ configuration generation, but not necessarily the only one.
 See also
 ========
 
-**`jst_backend`**(1),
 **`jst`**(1),
 **`jst-repo-config`**(5)

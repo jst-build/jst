@@ -3,14 +3,14 @@
 NAME
 ====
 
-jst-profile - The format of profile files written by **`jst`**(1) and **`jst_backend`**(1)
+jst-profile - The format of profile files written by **`jst`**(1)
 
 DESCRIPTION
 ===========
 
 If profiling is enabled through the *`"invocation log"`* key in
 the **`jstrc`**(5) file, **`jst`**(1) can be told to write
-a metadata file, and the launched **`jst_backend`**(1) process to write a
+a metadata file, and the build itself to write a
 profile file. Both files contain a single JSON object.
 
 Metadata file
@@ -63,14 +63,14 @@ The profile file contains the following information.
     of pairs (arrays of length two) of a property map and an endpoint
     as `address:port` string.
 
-- For the key *`"exit code"`* the exit code of the **`jst_backend`**(1) process.
+- For the key *`"exit code"`* the exit code of the **`jst`**(1) process.
 
 - For the key *`"analysis errors"`*, if present, a list of error messages
   describing each an error that occurred during analysis.
 
 - For the key *`"actions"`* an object. For each action that was looked at
   in the build phase there is an entry, with the key being the action
-  identifier; the identifier is the same as in the **`jst_backend-graph-file`**(5)
+  identifier; the identifier is the same as in the **`jst-graph-file`**(5)
   that is written as a result of the `--dump-graph` option. The value is
   an object with the following entries.
 
@@ -104,6 +104,5 @@ See also
 ========
 
 **`jstrc`**(5),
-**`jst_backend-graph-file`**(5),
-**`jst`**(1),
-**`jst_backend`**(1)
+**`jst-graph-file`**(5),
+**`jst`**(1)

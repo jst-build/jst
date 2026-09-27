@@ -10,7 +10,7 @@ DESCRIPTION
 ===========
 
 In order for the **`jst`**(1) tool to generate a repository
-configuration file usable by the **`jst_backend`**(1) multi-repository build
+configuration file usable by the **`jst`**(1) multi-repository build
 system, it requires a configuration file describing repositories and
 their dependencies.
 
@@ -167,7 +167,7 @@ The following fields are supported:
 
 It defines as workspace root a directory with the distribution archives
 of the specified repositories. Usually this root is realized as a Git
-tree in the Git repository in **`jst_backend`**'s local build root.
+tree in the Git repository in **`jst`**'s local build root.
 
 The following fields are supported:
 
@@ -219,7 +219,7 @@ supported. If its value is *`true`* then it indicates that the workspace
 root should be returned as a Git tree. If the root directory is already
 part of a Git repository, its Git tree identifier is used; otherwise,
 the workspace root will be realized as a Git tree in the Git repository
-in **`jst_backend`**'s local build root.
+in **`jst`**'s local build root.
 
 For all workspace roots except *`"distdir"`*, *`"computed"`*,
 and *`"tree structure"`*, the pragma key *`"special"`* is
@@ -297,6 +297,5 @@ this format might give specific meanings to these extra keys.
 See also
 ========
 
-**`jst_backend`**(1),
 **`jst`**(1),
 **`jst-repo-build-config`**(5)

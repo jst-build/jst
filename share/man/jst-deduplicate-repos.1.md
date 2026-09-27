@@ -24,7 +24,7 @@ repositories cannot be merged into one (as both have to be kept).
 RATIONALE
 =========
 
-As **`jst_backend`**(1) is a multi-repository build system, typically
+As **`jst`**(1) is a multi-repository build system, typically
 imported dependencies also contain multi-repository set up. Hence,
 a project typically has three components to describe the involved
 logical repositories.

@@ -179,13 +179,12 @@ local default_options =
       pandoc -s -t man share/man/jst-lock.1.md -o man1/jst-lock.1
       pandoc -s -t man share/man/jst-import-git.1.md -o man1/jst-import-git.1
       pandoc -s -t man share/man/jst-deduplicate-repos.1.md -o man1/jst-deduplicate-repos.1
-      pandoc -s -t man share/man/jst_backend.1.md -o man1/jst_backend.1
       pandoc -s -t man share/man/jstrc.5.md -o man5/jstrc.5
       pandoc -s -t man share/man/jst-repo-config.5.md -o man5/jst-repo-config.5
       pandoc -s -t man share/man/jst-lock-config.5.md -o man5/jst-lock-config.5
       pandoc -s -t man share/man/jst-repo-build-config.5.md -o man5/jst-repo-build-config.5
-      pandoc -s -t man share/man/jst_backend-serve-config.5.md -o man5/jst_backend-serve-config.5
-      pandoc -s -t man share/man/jst_backend-graph-file.5.md -o man5/jst_backend-graph-file.5
+      pandoc -s -t man share/man/jst-serve-config.5.md -o man5/jst-serve-config.5
+      pandoc -s -t man share/man/jst-graph-file.5.md -o man5/jst-graph-file.5
     |||],
     out_dirs: [
       'man1',
