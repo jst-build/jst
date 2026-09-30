@@ -109,7 +109,7 @@ is set. The precise location of those implicit dependencies can be
 seen via `jst describe`.
 
 ``` sh
-$ jst describe tests greet
+$ jst describe //tests:greet
 INFO: Found 3 repositories involved
 TARGET  'tutorial//tests:greet'
 RULE    'rules-cc//CC/test:test'  (user-defined)
@@ -174,7 +174,7 @@ indicating that we simply use the defaults for the shell.
 Now we can run the test (i.e., build the test result):
 
 ``` sh
-$ jst build tests greet
+$ jst build //tests:greet
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//tests:greet' with config: {}
 INFO: Target tainted ["test"].
@@ -368,7 +368,7 @@ for summarizing results.
 Now we can run the shell test (i.e., build the test result):
 
 ``` sh
-$ jst build tests helloworld
+$ jst build //tests:helloworld
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//tests:helloworld' with config: {}
 INFO: Target tainted ["test"].
@@ -420,7 +420,7 @@ Now we can run all tests at once by just building the compound test
 target `"ALL-simple"`:
 
 ``` sh
-$ jst build tests ALL-simple
+$ jst build //tests:ALL-simple
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//tests:ALL-simple' with config: {}
 INFO: Target tainted ["test"].
@@ -456,7 +456,7 @@ is similar, and, as a test target, it is also implicitly tainted.
 
 Again, we can run all tests at once by building the compound target.
 ``` sh
-$ jst build tests ALL
+$ jst build //tests:ALL
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//tests:ALL' with config: {}
 INFO: Target tainted ["test"].

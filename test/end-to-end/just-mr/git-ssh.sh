@@ -137,7 +137,7 @@ EOF
   "${JUST_MR}" install --norc --backend "${JUST}" \
                --local-build-root "${TEST_TMPDIR}/lbr-$$-${SCENARIO}" \
                --git "${MOCK_GIT}" --log-limit 5 \
-               -o "${OUT}" '' sources.txt 2>&1
+               -o "${OUT}" //:sources.txt 2>&1
   grep checked-out "${OUT}/sources.txt"
 
   # The stub ssh must have been used; that is the only way to reach upstream

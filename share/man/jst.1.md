@@ -13,10 +13,10 @@ SYNOPSIS
 **`jst`** **`fetch`** \[*`OPTION`*\]... \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
 **`jst`** **`update`** \[*`OPTION`*\]... \[*`repo`*\]...  
 **`jst`** **`gc-repo`** \[*`OPTION`*\]... \[**`--drop-only`**\]  
-**`jst`** {**`analyse`**|**`build`**} \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
-**`jst`** **`install`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* \[\[*`module`*\] *`target`*\]  
-**`jst`** **`rebuild`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
-**`jst`** **`describe`** \[*`OPTION`*\]... \[\[*`module`*\] *`target`*\]  
+**`jst`** {**`analyse`**|**`build`**} \[*`OPTION`*\]... \[*`target-reference`*\]  
+**`jst`** **`install`** \[*`OPTION`*\]... **`-o`** *`OUTPUT_DIR`* \[*`target-reference`*\]  
+**`jst`** **`rebuild`** \[*`OPTION`*\]... \[*`target-reference`*\]  
+**`jst`** **`describe`** \[*`OPTION`*\]... \[*`target-reference`*\]  
 **`jst`** **`install-cas`** \[*`OPTION`*\]... *`OBJECT_ID`*  
 **`jst`** **`add-to-cas`** \[*`OPTION`*\]... *`PATH`*  
 **`jst`** **`gc`** \[*`OPTION`*\]...  
@@ -44,26 +44,50 @@ the empty string. Specifying the correct repository, target root,
 module, and target name allows that target to be processed independently of
 the current working directory.
 
-If the module is not specified on the command line, **`jst`** sets the
-module corresponding to the current working directory.
+A target is named on the command line by a single *target-reference*, of
+the same syntax that target files use:
+*`[<repository>//][<module>][:[<target>]]`*. Two shortcuts exist that a
+target file does not have: a bare name is the target of that name in the
+module of the current working directory (so **`baz`** is the same as
+**`:baz`**), and an empty target segment denotes the default target of the
+module (**`:`**, **`./sub:`**, **`//tests:`**, *`repo`***`//:`**). Without
+any argument, the default target of the current module is built, which is
+the same as **`:`**.
 
-If a target is not specified, the lexicographically-first target,
-according to native byte order, is used. So, a target named with an
-empty string will always be the default target for that module.
+A module given as **`//`***`module`* is relative to the target root, one
+given as **`./`***`module`* is relative to the module of the current
+working directory, and a module escaping the workspace is an error. A
+reference of the form **`//`***`foo/bar`* without a target segment is the
+target *`bar`* of the module *`foo/bar`*, not its default target; the
+latter is **`//`***`foo/bar`***`:`**.
+
+The default target of a module is its lexicographically-first target,
+according to native byte order. So, a target named with an empty string
+will always be the default target for that module.
 
 If a target depends on other targets defined in other modules or
 repositories, **`jst`** will recursively visit all and only the required
 modules.
 
-The main repository is the repository containing the target specified on
-the command line. The main repository can either be read from the
-multi-repository configuration file if it contains the key *`"main"`* or
-through the option **`--main`**. The command-line option **`--main`**
-overrides what is eventually read from the multi-repository
-configuration file. If neither the multi-repository configuration file
-contains the *`"main"`* key nor the **`--main`** option is provided, the
-lexicographical first repository from the multi-repository configuration
-file is used as main.
+The main repository is the repository the target is named from. It can
+either be read from the multi-repository configuration file if it
+contains the key *`"main"`* or through the option **`--main`**. The
+command-line option **`--main`** overrides what is eventually read from
+the multi-repository configuration file. If neither the multi-repository
+configuration file contains the *`"main"`* key nor the **`--main`**
+option is provided, the lexicographical first repository from the
+multi-repository configuration file is used as main.
+
+The *`<repository>`* segment of a reference means the same thing on the
+command line as it does in a target file: a name bound in the
+*`"bindings"`* of the repository the reference is read from, which on the
+command line is the main repository. A reference can therefore be moved
+between a target file and the command line unchanged. Note that a
+repository is thus named by how the main repository binds it, not by its
+own name in the multi-repository configuration, and that a repository
+does not bind itself; a repository the main repository does not bind
+cannot be named by a reference at all, and is reached by making it the
+main repository with **`--main`**.
 
 The *`workspace_root`* of the main repository is then defined as
 follows. If the option **`--workspace-root`** is provided, then
@@ -259,7 +283,9 @@ in the **`jstrc`**(5) file.
 Default: the single file path *`".distfiles"`* in user's home directory.
 
 **`--main`** *`NAME`*  
-The repository to take the target from.
+The repository to take the target from. The *`<repository>`* segment of
+the target reference is resolved against the *`"bindings"`* of this
+repository.
 
 **`--git`** *`PATH`*  
 Path to the git binary in *`PATH`* or path to the git binary. Used in

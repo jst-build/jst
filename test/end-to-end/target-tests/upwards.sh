@@ -39,7 +39,7 @@ EOF
 
 ./bin/tool-under-test install -o out --workspace-root src \
 	-L '["env", "PATH='"${PATH}"'"]' \
-	--local-build-root .root . it 2>&1
+	--local-build-root .root //:it 2>&1
 
 grep OK out/out
 grep BAD out/out && exit 1 || :
@@ -63,7 +63,7 @@ EOF
 
 ./bin/tool-under-test install -o out2 --workspace-root src \
 	-L '["env", "PATH='"${PATH}"'"]' \
-	--local-build-root .root deep  'OK up' 2>&1
+	--local-build-root .root '//deep:OK up' 2>&1
 grep OK out2/out
 
 # Upwards refernces and targets outside the repo are not OK
@@ -89,7 +89,7 @@ EOF
 
 cat src/TARGETS
 
-./bin/tool-under-test analyse --workspace-root src . it 2>&1 && exit 1 || :
+./bin/tool-under-test analyse --workspace-root src //:it 2>&1 && exit 1 || :
 
 done
 

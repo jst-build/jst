@@ -415,7 +415,7 @@ To only build the static library target `"greet"` from module `"greet"`,
 run the following command:
 
 ``` sh
-$ jst build greet greet
+$ jst build //greet:greet
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//greet:greet' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
@@ -432,7 +432,7 @@ second artifact arrangement. We can also have a look at the other information
 that library provides.
 
 ``` sh
-$ jst analyse greet greet
+$ jst analyse //greet:greet
 INFO: Found 3 repositories involved
 INFO: Requested target 'tutorial//greet:greet' with config: {}
 INFO: Result of target ['tutorial//greet:greet',{}]: {

@@ -68,7 +68,7 @@ struct AnalysisArguments {
     std::optional<std::size_t> expression_log_limit;
     std::vector<std::string> defines;
     std::filesystem::path config_file;
-    std::optional<nlohmann::json> target;
+    std::optional<std::string> target;
     std::optional<std::string> request_action_input;
     std::optional<std::string> target_file_name;
     std::optional<std::string> rule_file_name;
@@ -352,18 +352,12 @@ static inline auto SetupAnalysisArguments(
            clargs->request_action_input,
            "Instead of the target result, request input for this action.")
         ->type_name("ACTION");
-    app->add_option_function<std::vector<std::string>>(
+    app->add_option(
         "target",
-        [clargs](auto const& target_raw) {
-            if (target_raw.size() == 1) {
-                clargs->target = nlohmann::json(target_raw[0]);
-            }
-            else {
-                clargs->target = nlohmann::json(target_raw);
-            }
-        },
-        "Module and target name to build.\n"
-        "Assumes current module if module name is omitted.");
+        clargs->target,
+        "Target to build, as the reference '[<repo>//][<module>]:[<target>]'.\n"
+        "A bare name is the target of the current module; an empty target\n"
+        "segment is the default target of the module.");
     app->add_option("--target-root",
                     clargs->target_root,
                     "Path of the target files' root directory.\n"

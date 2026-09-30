@@ -88,14 +88,8 @@ void Profile::SetCLI(CommandLineArguments const& cli) {
             return;
     }
     if (cli.analysis.target) {
-        if (cli.analysis.target->is_array()) {
-            profile_["subcommand args"] = *cli.analysis.target;
-        }
-        else {
-            auto args = nlohmann::json::array();
-            args.push_back(*cli.analysis.target);
-            profile_["subcommand args"] = args;
-        }
+        profile_["subcommand args"] =
+            nlohmann::json::array({*cli.analysis.target});
     }
     else {
         profile_["subcommand args"] = nlohmann::json::array();

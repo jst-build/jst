@@ -180,7 +180,7 @@ specifies the binary `name` and the `srcs` to use.
 Use subcommand `build` to build the binary:
 
 ``` sh
-$ jst build src helloworld
+$ jst build //src:helloworld
 ```
 
 The first argument is `src`, which specifies the module path of the target,
@@ -318,7 +318,7 @@ to the private dependencies specified in the field `private-deps`.
 Build the `helloworld` binary again.
 
 ``` sh
-$ jst build src helloworld
+$ jst build //src:helloworld
 ```
 
 You can see that the build succeeds, now with four processed actions in total.
@@ -578,7 +578,7 @@ It collects the test reports from `test_libgreet` and `test_helloworld` and
 stages them to the output directory `test`.
 
 ``` sh
-$ jst build test ALL
+$ jst build //test:ALL
 ```
 
 Failing tests will be reported as a separate warning message by `jst`. If no

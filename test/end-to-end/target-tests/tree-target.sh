@@ -31,7 +31,7 @@ echo data > src/tree/foo/bar
 
 ./bin/tool-under-test analyse --workspace-root src \
         -L '["env", "PATH='"${PATH}"'"]' \
-        --local-build-root .root . '' --dump-provides provides.json 2>&1
+        --local-build-root .root '//:""' --dump-provides provides.json 2>&1
 
 cat provides.json
 [ "$(jq '. == {}' provides.json)" = "true" ]
@@ -86,7 +86,7 @@ echo data > src2/tree/foo/bar
 
 ./bin/tool-under-test install -o . --workspace-root src2 \
         -L '["env", "PATH='"${PATH}"'"]' \
-        --local-build-root .root . '' 2>&1
+        --local-build-root .root '//:""' 2>&1
 
 cat provides-list.json
 [ "$(jq '. == ["default"]' provides-list.json)" = "true" ]
