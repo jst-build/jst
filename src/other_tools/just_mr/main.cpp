@@ -36,6 +36,7 @@
 #include "src/buildtool/crypto/hash_function.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
 #include "src/buildtool/file_system/git_context.hpp"
+#include "src/buildtool/jstlang/ref.hpp"
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/log_sink_cmdline.hpp"
@@ -409,7 +410,7 @@ void SetupBackendOnlySubcommandArguments(
     SetupGcRepoCommandArguments(cmd_gc_repo, &clargs);
 
     // setup the backend subcommands so that all arguments are understood
-    Backend::CommandLineArguments backend_clargs{};
+    auto backend_clargs = std::make_shared<Backend::CommandLineArguments>();
     RecordedArgs recorded_args{};
     for (auto* sub_cmd : cmd_just_subcmds) {
         auto const& flags = kKnownJustSubcommands.at(sub_cmd->get_name());
@@ -417,7 +418,7 @@ void SetupBackendOnlySubcommandArguments(
         // that are also supported by jst (filtered out to avoid collision);
         // the ones only the backend knows are recorded while parsing
         SetupBackendOnlySubcommandArguments(
-            sub_cmd, flags, &backend_clargs, &recorded_args);
+            sub_cmd, flags, &*backend_clargs, &recorded_args);
         // setup common jst arguments, only the relevant subset steered by flags
         SetupJstArguments(sub_cmd, flags, &clargs, /*launches_backend=*/true);
     }
@@ -475,6 +476,24 @@ void SetupBackendOnlySubcommandArguments(
                     sub_cmd->get_name();  // get name of subcommand
                 clargs.just_cmd.additional_just_args =
                     ReconstructBackendArgV(recorded_args, sub_cmd->remaining());
+                // a target reference naming a repository selects it as the
+                // main repository, the same way --main does
+                if (auto const& target = backend_clargs->analysis.target) {
+                    try {
+                        auto const ref = jstlang::DecodeRefString(
+                            *target, jstlang::RefContext::CLI);
+                        if (ref.repo) {
+                            clargs.common.main = *ref.repo;
+                        }
+                    } catch (std::exception const& ex) {
+                        // not a reference naming a repository; the backend
+                        // reports the error once it is launched
+                        Logger::Log(LogLevel::Debug,
+                                    "Not a repository-qualified target ({})",
+                                    ex.what());
+                    }
+                }
+                clargs.just_cmd.backend_clargs = std::move(backend_clargs);
                 break;  // no need to go further
             }
         }

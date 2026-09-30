@@ -40,6 +40,10 @@
 #include "src/other_tools/just_mr/mirrors.hpp"
 #include "src/other_tools/just_mr/utils.hpp"
 
+namespace Buildtool {
+struct CommandLineArguments;
+}
+
 /// \brief Arguments common to all just-mr subcommands
 struct MultiRepoCommonArguments {
     std::optional<std::filesystem::path> repository_config{std::nullopt};
@@ -110,6 +114,9 @@ struct InvocationLogArguments {
 struct MultiRepoJustSubCmdsArguments {
     std::optional<std::string> subcmd_name{std::nullopt};
     std::vector<std::string> additional_just_args;
+    /// \brief The arguments to forward, as understood by the backend itself;
+    /// only set for the subcommands that launch it.
+    std::shared_ptr<Buildtool::CommandLineArguments> backend_clargs;
     std::unordered_map<std::string, std::vector<std::string>> just_args;
     std::optional<std::filesystem::path> config;
     std::optional<std::filesystem::path> endpoint_configuration;

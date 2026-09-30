@@ -347,7 +347,7 @@ matrix: {
 If run without special configuration, it also behaves like a test suite.
 
 ``` shell
-$ jst build test matrix
+$ jst build //test:matrix
 INFO: Found 4 repositories involved
 INFO: Requested target '""//test:matrix' with config: {}
 INFO: Target tainted ["test"].
@@ -362,7 +362,7 @@ But we can instruct it via the configuration variable `TEST_MATRIX` to run
 its `"deps"` in a product of configurations, with `TEST_MATRIX` cleared there.
 
 ``` shell
-$ jst describe test matrix
+$ jst describe //test:matrix
 INFO: Found 4 repositories involved
 TARGET  '""//test:matrix'
 RULE    'toolchain//test:matrix'  (user-defined)

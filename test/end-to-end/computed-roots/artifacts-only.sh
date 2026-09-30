@@ -122,7 +122,7 @@ echo
 echo Analyse base root to demonstrate the setup
 echo
 "${JUST}" analyse --local-build-root "${LBR}" -L '["env", "PATH='"${PATH}"'"]' \
-   -B repo-config.json --main "base" 2>&1
+   -B repo-config.json 'base//:' 2>&1
 
 
 echo

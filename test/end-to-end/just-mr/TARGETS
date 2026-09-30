@@ -77,6 +77,13 @@
     deps: [@'//:mr-tool-under-test'],
   },
 
+  target_reference_repo: {
+    type: @'rules//shell/test:script',
+    name: ['target-reference-repo'],
+    test: ['target-reference-repo.sh'],
+    deps: [@'//:mr-tool-under-test'],
+  },
+
   'install-roots': {
     type: @'rules//shell/test:script',
     name: ['install-roots'],
@@ -380,6 +387,7 @@
         'fetch',
         'fetch-gc',
         'install-roots',
+        'target_reference_repo',
       ]
       + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
            [

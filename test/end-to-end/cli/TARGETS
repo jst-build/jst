@@ -13,6 +13,13 @@
     deps: [@'//:tool-under-test'],
   },
 
+  target_reference: {
+    type: @'rules//shell/test:script',
+    name: ['target-reference'],
+    test: ['target-reference.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
   install: {
     type: @'rules//shell/test:script',
     name: ['install'],
@@ -157,6 +164,7 @@
         'install archived repo',
         'conflict report',
         'describe',
+        'target_reference',
       ]
       + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
            [

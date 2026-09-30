@@ -82,7 +82,7 @@ EOF
 
 "${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
              --checkout-locations local.json \
-             -o "${OUT}" '' sources.txt 2>&1
+             -o "${OUT}" //:sources.txt 2>&1
 grep checked-out "${OUT}/sources.txt"
 
 # Verify the local.json is needed

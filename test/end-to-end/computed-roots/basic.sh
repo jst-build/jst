@@ -92,7 +92,7 @@ echo Building base, for reference
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main base -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
+    'base//:' -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
 echo
 cat "${OUT}/base/TARGETS"
 
@@ -101,7 +101,7 @@ echo Building computed
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --log-limit 4 --main derived -o "${OUT}/derived" 2>&1
+    --log-limit 4 'derived//:' -o "${OUT}/derived" 2>&1
 echo
 
 [ "$(cat "${OUT}/derived/out" | wc -l)" -eq 55 ]
@@ -112,7 +112,7 @@ echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log" \
-    --main 'other derived' -o "${OUT}/other-derived" 2>&1
+    'other derived//:' -o "${OUT}/other-derived" 2>&1
 echo
 
 [ "$(cat "${OUT}/other-derived/out" | wc -l)" -eq 78 ]
@@ -138,7 +138,7 @@ echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log2" \
-    --main 'other derived' 2>&1
+    'other derived//:' 2>&1
 echo
 grep '[Rr]oot.*from cache' "${OUT}/log2"
 

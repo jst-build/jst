@@ -902,6 +902,36 @@ def setup(*,
     return add_to_cas(json.dumps(mr_config, indent=2, sort_keys=True))
 
 
+def repo_from_target_ref(backend_args: List[str]) -> Optional[str]:
+    """Extract repository name from target reference '<repo>//...' specified as
+    positional argument to the backend."""
+
+    # Heuristic: Guess positionals by ignoring arguments starting with '-' and
+    #            try parse them as target references.
+    positional_only = False
+    for arg in backend_args:
+        if not positional_only:
+            if arg == "--":
+                positional_only = True
+                continue
+            if arg.startswith("-"):
+                continue  # an option of the backend
+        if arg.startswith('"'):
+            # a repository containing '//', ':' or a leading './' is quoted
+            try:
+                repo, end = json.JSONDecoder().raw_decode(arg)
+            except ValueError:
+                continue
+            if isinstance(repo, str) and arg[end:].startswith("//"):
+                return repo
+            continue
+        repo, sep, _ = arg.partition("//")
+        # an unquoted repository may not be empty, nor start with ':' or './'.
+        if sep and repo and not repo.startswith(":") and not repo.startswith("./"):
+            return repo
+    return None
+
+
 def call_backend(args: List[str]) -> None:
     """Hand over to the build backend directly, without any of the operations
     jst performs itself."""
@@ -1277,6 +1307,8 @@ def main():
     main: Optional[str] = sub_main or options.main
 
     if options.subcommand in KNOWN_JUST_SUBCOMMANDS:
+        # a target reference naming a repository selects it, as --main does
+        main = repo_from_target_ref(args) or main
         call_just(config=config, main=main, args=[options.subcommand] + args)
         return
     if options.subcommand == "backend":

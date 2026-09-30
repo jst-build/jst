@@ -98,7 +98,7 @@ echo Building locally, to get a local target-cache entry
 echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main base --log-limit 4 -f "${OUT}/base-local.log" \
+    'base//:' --log-limit 4 -f "${OUT}/base-local.log" \
     -P TARGETS 2>&1
 echo
 # Now at least the action should be in cache, so the local
@@ -111,7 +111,7 @@ echo
 "${JUST}" install -o "${OUT}/derived-local" \
     -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main derived --log-limit 4 -f "${OUT}/derived-local.log" 2>&1
+    'derived//:' --log-limit 4 -f "${OUT}/derived-local.log" 2>&1
 echo
 grep 'locally' "${OUT}/derived-local/out"
 
@@ -121,7 +121,7 @@ echo
 "${JUST}" install -o "${OUT}/derived-local2" \
     -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main derived --log-limit 4 -f "${OUT}/derived-local2.log" 2>&1
+    'derived//:' --log-limit 4 -f "${OUT}/derived-local2.log" 2>&1
 echo
 grep 'locally' "${OUT}/derived-local2/out"
 
@@ -131,7 +131,7 @@ echo Verify remote build
 echo
 "${JUST}" install ${REMOTE_ARGS} -o "${OUT}/derived-remote" \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main derived --log-limit 4 -f "${OUT}/derived-remote.log" 2>&1
+    'derived//:' --log-limit 4 -f "${OUT}/derived-remote.log" 2>&1
 echo
 grep 'remotely' "${OUT}/derived-remote/out"
 echo
@@ -144,7 +144,7 @@ echo Verify remote build, again, ensuring the correct cache is used
 echo
 "${JUST}" install ${REMOTE_ARGS} -o "${OUT}/derived-remote2" \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main derived --log-limit 4 -f "${OUT}/derived-remote2.log" 2>&1
+    'derived//:' --log-limit 4 -f "${OUT}/derived-remote2.log" 2>&1
 echo
 grep 'remotely' "${OUT}/derived-remote2/out"
 

@@ -28,6 +28,7 @@
       @'//src/buildtool/logging:logging',
       @'//src/buildtool/system:terminal',
       @'//src/buildtool/main:version',
+      @'//src/buildtool/jstlang:ref',
       @'//src/buildtool/main:cli',
       @'//src/buildtool/storage:config',
       @'//src/buildtool/storage:garbage_collector',

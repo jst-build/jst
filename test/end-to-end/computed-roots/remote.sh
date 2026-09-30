@@ -105,7 +105,7 @@ echo Building base, putting the export target to cache
 echo
 "${JUST}" install ${REMOTE_ARGS} \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --main base -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
+    'base//:' -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
 echo
 
 echo
@@ -114,7 +114,7 @@ echo
 "${JUST}" install ${REMOTE_ARGS} \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/computed.log" \
-    --main derived -o "${OUT}/derived" 2>&1
+    'derived//:' -o "${OUT}/derived" 2>&1
 echo
 [ "$(cat "${OUT}/derived/out" | wc -l)" -eq 55 ]
 
@@ -127,7 +127,7 @@ echo
 "${JUST}" install ${REMOTE_ARGS} \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log" \
-    --main 'other derived' -o "${OUT}/other-derived" 2>&1
+    'other derived//:' -o "${OUT}/other-derived" 2>&1
 echo
 
 [ "$(cat "${OUT}/other-derived/out" | wc -l)" -eq 78 ]
@@ -155,7 +155,7 @@ echo
 "${JUST}" build ${REMOTE_ARGS} \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log2" \
-    --main 'other derived' 2>&1
+    'other derived//:' 2>&1
 echo
 grep '[Rr]oot.*from cache' "${OUT}/log2"
 

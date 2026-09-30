@@ -39,7 +39,7 @@ EOF
 
 ./bin/tool-under-test install -o out --workspace-root src \
 	-L '["env", "PATH='"${PATH}"'"]' \
-	--local-build-root .root . read_trees 2>&1
+	--local-build-root .root //:read_trees 2>&1
 
 grep SUCCESS out/result
 

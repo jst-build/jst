@@ -159,12 +159,12 @@ cat "${CONF}"
 echo
 
 # test that we can successfully compile using just serve
-"${JUST}" build --main local --local-build-root "${LBR}" -B "${CONF}" \
+"${JUST}" build --local-build-root "${LBR}" -B "${CONF}" \
                 -L '["env", "PATH='"${PATH}"'"]' \
                 --remote-serve-address ${SERVE} \
-                -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} main
-"${JUST}" build --main local --local-build-root "${LBR}" -B "${CONF}" \
+                -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} local//:main
+"${JUST}" build --local-build-root "${LBR}" -B "${CONF}" \
                 -L '["env", "PATH='"${PATH}"'"]' \
                 --remote-serve-address ${SERVE} \
-                -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} main
+                -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} local//:main
 )

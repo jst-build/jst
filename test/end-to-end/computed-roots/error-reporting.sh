@@ -101,7 +101,7 @@ echo Building computed
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
-    --log-limit 4 --main derived -o "${OUT}/derived" 2>&1
+    --log-limit 4 'derived//:' -o "${OUT}/derived" 2>&1
 echo
 
 [ "$(cat "${OUT}/derived/out" | wc -l)" -eq 55 ]
@@ -112,7 +112,7 @@ echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/not-export.log" \
-    --log-limit 4 --main 'not export' 2>&1 && exit 1 || :
+    --log-limit 4 'not export//:' 2>&1 && exit 1 || :
 echo
 grep '[Tt]arget.*not.*export' "${OUT}/not-export.log"
 
@@ -122,7 +122,7 @@ echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/not-content-fixed.log" \
-    --log-limit 4 --main 'not content-fixed' 2>&1 && exit 1 || :
+    --log-limit 4 'not content-fixed//:' 2>&1 && exit 1 || :
 echo
 grep 'Repository.*file base.*not.*content.*fixed' "${OUT}/not-content-fixed.log"
 
@@ -132,7 +132,7 @@ echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
     --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/cycle.log" \
-    --log-limit 4 --main 'cycle-A' 2>&1 && exit 1 || :
+    --log-limit 4 'cycle-A//:' 2>&1 && exit 1 || :
 echo
 
 grep cycle-A "${OUT}/cycle.log"

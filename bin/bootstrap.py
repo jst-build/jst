@@ -346,7 +346,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     run([
         bootstrap_jst_backend, "analyse", "-B", CONF_FILE, "-D", CONF_STRING,
         "--dump-graph", GRAPH, "--dump-artifacts-to-build", TO_BUILD,
-        MAIN_MODULE, MAIN_TARGET
+        f'//{MAIN_MODULE}:{MAIN_TARGET}'
     ],
         cwd=ro_srcdir)
     if DEBUG:
@@ -365,7 +365,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     run([
         "./out-boot/%s" %
         (MAIN_STAGE, ), "install", "-B", CONF_FILE, "-D", CONF_STRING, "-o",
-        OUT, BOOTSTRAP_MODULE, BOOTSTRAP_TARGET
+        OUT, f'//{BOOTSTRAP_MODULE}:{BOOTSTRAP_TARGET}'
     ],
         cwd=objdir)
 

@@ -2,6 +2,27 @@
 
 ### Breaking changes
 
+- Targets are named on the command line by a single reference, of the same
+  syntax that target files use: `[<repository>//][<module>][:[<target>]]`. The
+  positional pair `<module> <target>` is gone, so `jst build tests greet`
+  becomes `jst build //tests:greet`. Two shortcuts exist that a target file
+  does not have: a bare name is a target of the current module, so `jst build
+  baz` is `jst build :baz`; and an empty target segment is the default target
+  of that module, which `:`, `./sub:`, `//tests:` and `repo//:` name, and
+  which naming no target at all keeps meaning. Note that `//foo/bar` is still
+  the target `bar` of module `foo/bar`, while `//foo/bar:` is its default
+  target. Naming the default target of a given module is new; previously it
+  was only reachable by changing into its directory.
+- The repository a target is taken from is named by the reference itself, as
+  `repo//module:target`, and the backend's `--main` is therefore gone. `jst`
+  keeps its own `--main`, which the reference takes precedence over. For `jst
+  backend traverse`, which has no target reference, the main repository is now
+  taken from the repository build configuration alone. Note that on the command
+  line the repository segment names a repository of the multi-repository
+  configuration globally, as `--main` does, and not a name bound in some
+  repository's `"bindings"` as the same segment does in a target file; so a
+  reference naming a repository only means the same in both places if the
+  binding and the repository carry the same name.
 - All default paths inherited from upstream *justbuild* have been renamed to
   their `jst` equivalents, with no fallback to the old locations: the local
   build root is now `$HOME/.cache/jst`, the checkout-locations file

@@ -56,6 +56,7 @@
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/file_system/file_root.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
+#include "src/buildtool/jstlang/ref.hpp"
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/log_sink_cmdline.hpp"
@@ -366,80 +367,31 @@ void SetupFileChunker() {
     return ".";
 }
 
-[[nodiscard]] auto ReadConfiguredTarget(
-    std::string const& main_repo,
-    std::optional<std::filesystem::path> const& main_ws_root,
+/// \brief The default target of a module: the lexicographically first target
+/// of its target file. For an absent root, where the target file cannot be
+/// read, it is the empty name, which the serve endpoint resolves.
+[[nodiscard]] auto DefaultTargetName(
     gsl::not_null<const RepositoryConfig*> const& repo_config,
-    AnalysisArguments const& clargs)
-    -> std::pair<Target::ConfiguredTarget, nlohmann::ordered_json> {
-    auto const* target_root = repo_config->TargetRoot(main_repo);
+    std::string const& repo,
+    std::string const& module) -> std::string {
+    auto const* target_root = repo_config->TargetRoot(repo);
     if (target_root == nullptr) {
-        Logger::Log(LogLevel::Error,
-                    "Cannot obtain target root for main repo {}.",
-                    main_repo);
+        Logger::Log(
+            LogLevel::Error, "Cannot obtain target root for repo {}.", repo);
         std::exit(kExitFailure);
-    }
-    auto current_module = std::string{"."};
-    std::string target_file_name = *repo_config->TargetFileName(main_repo);
-    if (main_ws_root) {
-        // module detection only works if main workspace is on the file system
-        current_module = DetermineCurrentModule(
-            *main_ws_root, *target_root, target_file_name);
-    }
-    auto ordered_config = ReadConfiguration(clargs);
-    auto config = Configuration(Expression::FromJson(ordered_config));
-    if (clargs.target) {
-        auto entity = Base::ParseEntityNameFromJson(
-            *clargs.target,
-            Base::EntityName{Base::NamedTarget{main_repo, current_module, ""}},
-            repo_config,
-            [&clargs](std::string const& parse_err) {
-                Logger::Log(LogLevel::Error,
-                            "Parsing target name {} failed with:\n{}",
-                            clargs.target->dump(),
-                            parse_err);
-            });
-        if (not entity) {
-            std::exit(kExitFailure);
-        }
-        return {Target::ConfiguredTarget{.target = std::move(*entity),
-                                         .config = std::move(config)},
-                std::move(ordered_config)};
     }
 #ifndef BOOTSTRAP_BUILD_TOOL
     if (target_root->IsAbsent()) {
-        // since the user has not specified the target to build, we use the most
-        // reasonable default value:
-        //
-        // module -> "." (i.e., current module)
-        // target -> ""  (i.e., firstmost lexicographical target name)
-
-        auto target = nlohmann::json::parse(R"([".",""])");
         Logger::Log(LogLevel::Debug,
-                    "Detected absent target root for repo {} and no target was "
-                    "given. Assuming default target {}",
-                    main_repo,
-                    target.dump());
-        auto entity = Base::ParseEntityNameFromJson(
-            target,
-            Base::EntityName{Base::NamedTarget{main_repo, current_module, ""}},
-            repo_config,
-            [&target](std::string const& parse_err) {
-                Logger::Log(LogLevel::Error,
-                            "Parsing target name {} failed with:\n{}",
-                            target.dump(),
-                            parse_err);
-            });
-        if (not entity) {
-            std::exit(kExitFailure);
-        }
-        return {Target::ConfiguredTarget{.target = std::move(*entity),
-                                         .config = std::move(config)},
-                std::move(ordered_config)};
+                    "Detected absent target root for repo {}; assuming the "
+                    "firstmost lexicographical target name",
+                    repo);
+        return "";
     }
 #endif
+    auto const target_file_name = *repo_config->TargetFileName(repo);
     auto const target_file =
-        (std::filesystem::path{current_module} / target_file_name).string();
+        (std::filesystem::path{module} / target_file_name).string();
     if (not target_root->IsFile(target_file)) {
         Logger::Log(LogLevel::Error, "Expected file at {}.", target_file);
         std::exit(kExitFailure);
@@ -453,7 +405,7 @@ void SetupFileChunker() {
     try {
         json = nlohmann::json::parse(*file_content);
     } catch (std::exception const& e) {
-        auto jstlang_ast = target_root->ReadJstlang(main_repo,
+        auto jstlang_ast = target_root->ReadJstlang(repo,
                                                     target_file,
                                                     std::move(*file_content),
                                                     JustFileType::kTargets);
@@ -478,11 +430,105 @@ void SetupFileChunker() {
                     target_file);
         std::exit(kExitFailure);
     }
-    return {Target::ConfiguredTarget{
-                .target = Base::EntityName{Base::NamedTarget{
-                    main_repo, current_module, json.begin().key()}},
-                .config = std::move(config)},
-            std::move(ordered_config)};
+    return json.begin().key();
+}
+
+/// \brief Decode the target reference given on the command line. Without one,
+/// the default target of the current module is meant, i.e. the same as ':'. A
+/// bare name is a shortcut for a local target, which target files do not have.
+[[nodiscard]] auto DecodeTargetRef(std::optional<std::string> const& target)
+    -> jstlang::RefData {
+    if (not target) {
+        // the default target of the current module, i.e. the same as ':'
+        return jstlang::RefData{.type = jstlang::RefType::Local,
+                                .repo = std::nullopt,
+                                .module = {},
+                                .target = std::nullopt};
+    }
+    // a bare name is the target of that name in the current module, also the
+    // empty name, which is a target like any other
+    auto const& ref_str = *target;
+    if (ref_str.find("//") == std::string::npos and
+        not ref_str.starts_with(":") and not ref_str.starts_with("./")) {
+        return jstlang::RefData{.type = jstlang::RefType::Local,
+                                .repo = std::nullopt,
+                                .module = {},
+                                .target = ref_str};
+    }
+    try {
+        return jstlang::DecodeRefString(ref_str, jstlang::RefContext::CLI);
+    } catch (std::exception const& e) {
+        Logger::Log(LogLevel::Error, "{}", e.what());
+        std::exit(kExitFailure);
+    }
+}
+
+[[nodiscard]] auto ReadConfiguredTarget(
+    std::string const& main_repo,
+    std::optional<std::filesystem::path> const& main_ws_root,
+    gsl::not_null<const RepositoryConfig*> const& repo_config,
+    AnalysisArguments const& clargs)
+    -> std::pair<Target::ConfiguredTarget, nlohmann::ordered_json> {
+    auto const* target_root = repo_config->TargetRoot(main_repo);
+    if (target_root == nullptr) {
+        Logger::Log(LogLevel::Error,
+                    "Cannot obtain target root for main repo {}.",
+                    main_repo);
+        std::exit(kExitFailure);
+    }
+    auto current_module = std::string{"."};
+    if (main_ws_root) {
+        // module detection only works if main workspace is on the file system
+        current_module =
+            DetermineCurrentModule(*main_ws_root,
+                                   *target_root,
+                                   *repo_config->TargetFileName(main_repo));
+    }
+    auto ordered_config = ReadConfiguration(clargs);
+    auto config = Configuration(Expression::FromJson(ordered_config));
+
+    auto const ref = DecodeTargetRef(clargs.target);
+
+    // a reference naming a repository selects it; DetermineRoots has already
+    // made it the main repository, as the removed option --main used to
+    auto const& repo = ref.repo.value_or(main_repo);
+
+    std::string module{};
+    switch (ref.type) {
+        case jstlang::RefType::Local:
+            module = current_module;
+            break;
+        case jstlang::RefType::Rel: {
+            auto const rel =
+                (std::filesystem::path{current_module} / ref.module)
+                    .lexically_normal()
+                    .string();
+            if (rel.compare(0, 3, "../") == 0) {
+                Logger::Log(LogLevel::Error,
+                            "Relative module name {} is outside of workspace.",
+                            ref.module);
+                std::exit(kExitFailure);
+            }
+            module = rel;
+        } break;
+        case jstlang::RefType::Abs:
+        case jstlang::RefType::Ext:
+            module = ref.module;
+            break;
+    }
+    if (module == ".") {
+        module = "";
+    }
+
+    auto target = ref.target.has_value()
+                      ? *ref.target
+                      : DefaultTargetName(repo_config, repo, module);
+
+    return {
+        Target::ConfiguredTarget{
+            .target = Base::EntityName{Base::NamedTarget{repo, module, target}},
+            .config = std::move(config)},
+        std::move(ordered_config)};
 }
 
 [[nodiscard]] auto DetermineWorkspaceRootByLookingForMarkers() noexcept
@@ -539,8 +585,10 @@ auto DetermineRoots(gsl::not_null<StorageConfig const*> const& storage_config,
 
     std::string main_repo;
 
-    if (cargs.main) {
-        main_repo = *cargs.main;
+    // a target reference naming a repository selects it as the main
+    // repository, which is what the removed option --main used to do
+    if (auto const ref = DecodeTargetRef(aargs.target); ref.repo) {
+        main_repo = *ref.repo;
     }
     else if (auto main_it = repo_config.find("main");
              main_it != repo_config.end()) {
