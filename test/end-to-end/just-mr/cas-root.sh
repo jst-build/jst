@@ -129,7 +129,7 @@ cat > targets/TARGETS <<'EOF'
 }
 EOF
 
-"${JUST_MR}" --rc rc.json install -o "${OUT}" 2>&1
+"${JUST_MR}" install --rc rc.json -o "${OUT}" 2>&1
 
 # Sanity check the result we obtained
 echo

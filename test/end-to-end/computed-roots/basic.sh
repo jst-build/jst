@@ -91,7 +91,7 @@ echo
 echo Building base, for reference
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --main base -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
 echo
 cat "${OUT}/base/TARGETS"
@@ -100,7 +100,7 @@ echo
 echo Building computed
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 --main derived -o "${OUT}/derived" 2>&1
 echo
 
@@ -110,7 +110,7 @@ echo
 echo Building a different computed root, without reference build
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log" \
     --main 'other derived' -o "${OUT}/other-derived" 2>&1
 echo
@@ -136,7 +136,7 @@ echo
 echo Building computed root again, expecting target-level cache hit
 echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log2" \
     --main 'other derived' 2>&1
 echo

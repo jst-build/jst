@@ -58,7 +58,7 @@ specified via the command line option `-C`. The following example initiates a
 bundled build:
 
 ```sh
-$ jst -C etc/bundled.json install -o ${DESTDIR}
+$ jst install -C etc/bundled.json -o ${DESTDIR}
 ```
 
 #### Example: Cross-compilation
@@ -69,7 +69,7 @@ specify `arm64` as the target architecture and `gnu` (GCC) as the target
 compiler family:
 
 ```sh
-$ jst -C etc/bundled.json install -o ${DESTDIR} \
+$ jst install -C etc/bundled.json -o ${DESTDIR} \
     -D '{"TARGET_ARCH": "arm64", "TOOLCHAIN_CONFIG": {"FAMILY": "gnu"}}'
 ```
 

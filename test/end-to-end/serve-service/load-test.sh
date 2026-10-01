@@ -51,13 +51,13 @@ EOF
 
 pids="" # use string instead of array for portability as arrays are an extension
 for i in `seq 1 2`
-do "${JUST_MR}" --norc --local-build-root "${LBR}" \
+do "${JUST_MR}" install --norc --local-build-root "${LBR}" \
                 --remote-serve-address ${SERVE} \
                 -f "${OUT}/build${i}.log" \
                 --restrict-stderr-log-limit 1 \
                 -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
                 --backend "${JUST}" \
-                install -o "${OUT}/out${i}" 2>&1 &
+                -o "${OUT}/out${i}" 2>&1 &
 pid="$!"
 pids="${pids} ${pid}"
 done

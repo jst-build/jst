@@ -24,7 +24,7 @@ import time
 import zlib
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple, Union, cast
 
-from argparse import ArgumentParser
+from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
 
 from enum import Enum
@@ -1085,47 +1085,64 @@ def read_jstrc(rcpath: str, no_rc: bool = False) -> Optional[str]:
     return None
 
 
-def main():
-    parser = ArgumentParser()
+def add_jst_arguments(parser: ArgumentParser, suppress: bool) -> None:
+    """Add the options of jst itself. They are accepted before the subcommand
+    as well as after it; in the latter case the defaults are suppressed, so
+    that a value given before the subcommand is not overwritten."""
+
+    def default(value: Any) -> Any:
+        return SUPPRESS if suppress else value
+
     parser.add_argument("-C",
                         dest="repository_config",
+                        default=default(None),
                         help="Repository-description file to use",
                         metavar="FILE")
     parser.add_argument("--checkout-locations",
                         dest="checkout_location",
+                        default=default(None),
                         help="Specification file for checkout locations")
     parser.add_argument("--local-build-root",
                         dest="local_build_root",
+                        default=default(None),
                         help="Root for CAS, repository space, etc",
                         metavar="PATH")
     parser.add_argument("--distdir",
                         dest="distdir",
                         action="append",
-                        default=[],
+                        default=default([]),
                         help="Directory to look for distfiles before fetching",
                         metavar="PATH")
     parser.add_argument("--backend",
                         dest="just",
+                        default=default(None),
                         help="Path to the jst_backend binary",
                         metavar="PATH")
     parser.add_argument("--always-file",
                         dest="always_file",
                         action="store_true",
-                        default=False,
+                        default=default(False),
                         help="Always create file roots")
     parser.add_argument(
         "--main",
         dest="main",
-        default=None,
+        default=default(None),
         help="Main repository to consider from the configuration.")
     parser.add_argument("--rc",
                         dest="rcfile",
+                        default=default(None),
                         help="Use jstrc file from custom path.")
     parser.add_argument("--norc",
                         dest="norc",
                         action="store_true",
-                        default=False,
+                        default=default(False),
                         help="Do not use any jstrc file.")
+
+def main():
+    parser = ArgumentParser()
+    add_jst_arguments(parser, suppress=False)
+    jst_parser = ArgumentParser(add_help=False)
+    add_jst_arguments(jst_parser, suppress=True)
     subcommands = parser.add_subparsers(dest="subcommand",
                                         title="subcommands",
                                         required=True)
@@ -1145,17 +1162,17 @@ def main():
         help="Main repository to consider from the configuration.")
 
     subcommands.add_parser("setup",
-                           parents=[repo_parser],
+                           parents=[jst_parser, repo_parser],
                            help="Setup and generate jst_backend configuration.")
 
     subcommands.add_parser(
         "setup-env",
-        parents=[repo_parser],
+        parents=[jst_parser, repo_parser],
         help="Setup without workspace root for the main repository.")
 
     fetch_parser = subcommands.add_parser(
         "fetch",
-        parents=[repo_parser],
+        parents=[jst_parser, repo_parser],
         help="Fetch and store distribution files.")
     fetch_parser.add_argument("-o",
                               dest="fetch_dir",
@@ -1164,6 +1181,7 @@ def main():
 
     update_parser = subcommands.add_parser(
         "update",
+        parents=[jst_parser],
         help="Advance Git commit IDs and print updated jst configuration.")
     update_parser.add_argument("update_repos",
                                metavar="repo",
@@ -1177,7 +1195,15 @@ def main():
         add_help=False)
 
     for cmd in KNOWN_JUST_SUBCOMMANDS:
+        # Adding the jst arguments to the backend subcommand and parsing only
+        # known arguments is actually wrong; values to backend options that look
+        # like jst arguments would be unconditionally accepted.
+        # The following would accept "-C", although it's a value to option "-B":
+        #     "jst.py build -B -C foo"
+        # This is done deliberately to keep things simple and issues can be
+        # avoided by using the single-arg syntax: "-f<value>" or "--foo=<value>"
         subcommands.add_parser(cmd,
+                               parents=[jst_parser],
                                help=f"Run setup and call 'jst backend {cmd}'",
                                add_help=False)
 

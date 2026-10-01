@@ -65,7 +65,7 @@ cat repos.json
 
 
 # Call just-mr with distdir present
-FIRST_CONFIG=$("${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup)
+FIRST_CONFIG=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}")
 echo "Config on first set (with everything available) ${FIRST_CONFIG}"
 cat "${FIRST_CONFIG}"
 
@@ -81,7 +81,7 @@ rm -rf "${DISTDIR}"
 
 # Call just-mr again, with map-files and git prefilled from first run,
 # but CAS and distdir missing.
-SECOND_CONFIG=$("${JUST_MR}" --norc --local-build-root "${LBR}" setup)
+SECOND_CONFIG=$("${JUST_MR}" setup --norc --local-build-root "${LBR}")
 [ -f "${SECOND_CONFIG}" ]
 [ "${FIRST_CONFIG}" = "${SECOND_CONFIG}" ]
 

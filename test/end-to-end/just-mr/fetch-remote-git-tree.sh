@@ -67,8 +67,8 @@ EOF
 cat repos.json
 
 # Fetch while backing up to remote
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             ${REMOTE_EXECUTION_ARGS} fetch -o "${LOCAL_TMPDIR}" \
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" \
+             ${REMOTE_EXECUTION_ARGS} -o "${LOCAL_TMPDIR}" \
              --backup-to-remote 2>&1
 
 # Check that tree was fetched
@@ -97,8 +97,8 @@ EOF
 cat repos.json
 
 # Fetch using only the remote backup
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             ${REMOTE_EXECUTION_ARGS} fetch -o "${LOCAL_TMPDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" \
+             ${REMOTE_EXECUTION_ARGS} -o "${LOCAL_TMPDIR}" 2>&1
 
 # Check that tree was fetched
 "${JUST}" install-cas --local-build-root "${LBR}" -o "${INSTALL_DIR}" \

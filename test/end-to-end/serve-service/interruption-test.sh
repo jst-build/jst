@@ -61,13 +61,13 @@ echo
 
 for i in `seq 1 4`
 do echo Starting build with parameter $i
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" build --norc --local-build-root "${LBR}" \
              --remote-serve-address ${SERVE} \
              -f "${OUT}/proc$i.log" \
              --restrict-stderr-log-limit 1 \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             build -D '{"RANGE": "`seq 1 '"${i}"'`"}' \
+             -D '{"RANGE": "`seq 1 '"${i}"'`"}' \
              2>&1 &
 pid="$!"
 pids="${pids} ${pid}"
@@ -77,13 +77,13 @@ echo Starting processes expected to be interrupted
 echo
 for i in `seq 20 35`
 do echo Starting build with parameter $i
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" build --norc --local-build-root "${LBR}" \
              --remote-serve-address ${SERVE} \
              -f "${OUT}/proc$i.log" \
              --restrict-stderr-log-limit 1 \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             build -D '{"RANGE": "`seq 1 '"${i}"'`"}' \
+             -D '{"RANGE": "`seq 1 '"${i}"'`"}' \
              2>&1 &
 pid="$!"
 pids="${pids} ${pid}"
@@ -106,19 +106,19 @@ echo
 # Serve should not be affected by clients disappearing and we
 # still should be able to build, both targets already requested
 # as well as new ones.
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" \
              --remote-serve-address ${SERVE} \
              -f "${OUT}/finalout3.log" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install -o "${OUT}/finalout3" -D '{"RANGE": "`seq 1 3`"}' 2>&1
+             -o "${OUT}/finalout3" -D '{"RANGE": "`seq 1 3`"}' 2>&1
 echo
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" \
              --remote-serve-address ${SERVE} \
              -f "${OUT}/finalout7.log" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install -o "${OUT}/finalout7" -D '{"RANGE": "`seq 1 7`"}' 2>&1
+             -o "${OUT}/finalout7" -D '{"RANGE": "`seq 1 7`"}' 2>&1
 echo
 echo Sanity checks
 grep 2 "${OUT}/finalout7/out.txt"

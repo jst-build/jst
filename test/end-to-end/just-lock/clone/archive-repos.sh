@@ -92,9 +92,9 @@ cat repos.in.json
 echo
 
 # Check setup with archived content
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
+CONF=$("${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
                       -C repos.in.json --distdir "${DISTDIR}" \
-                      --local-build-root "${LBR_ARCHIVES}" setup --all) 2>&1
+                      --local-build-root "${LBR_ARCHIVES}" --all) 2>&1
 echo
 
 echo Clone repos:
@@ -124,8 +124,8 @@ grep ignore repos.json
 echo
 
 # Check setup with local clones:
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
-             -C repos.json --local-build-root "${LBR_CLONES}" setup --all 2>&1
+"${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
+             -C repos.json --local-build-root "${LBR_CLONES}" --all 2>&1
 echo
 
 # Check that the clones have the expected content

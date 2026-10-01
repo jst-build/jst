@@ -110,7 +110,7 @@ EOF
 echo
 echo 'First build, gets foo, bar, common into tc'
 echo
-"${JUST_MR}" ${JUST_MR_ARGS} build ${BUILD_ARGS} 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} ${BUILD_ARGS} 2>&1
 
 echo
 echo gc to put all into the old generation
@@ -120,7 +120,7 @@ echo
 echo
 echo 'build again; this gets foo and bar in the young generation'
 echo
-"${JUST_MR}" ${JUST_MR_ARGS} build ${BUILD_ARGS} 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} ${BUILD_ARGS} 2>&1
 
 echo
 echo 'gc again; this would (without invariants) get common out'
@@ -136,13 +136,13 @@ touch bar/bar_root_has_changed
 echo
 echo 'Analyse the relevant targets'
 echo
-"${JUST_MR}" ${JUST_MR_ARGS} --main foo analyse ${BUILD_ARGS} 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} --main bar analyse ${BUILD_ARGS} 2>&1
+"${JUST_MR}" analyse ${JUST_MR_ARGS} --main foo ${BUILD_ARGS} 2>&1
+"${JUST_MR}" analyse ${JUST_MR_ARGS} --main bar ${BUILD_ARGS} 2>&1
 
 echo
 echo 'build again; this checks for staging conflics'
 echo
-"${JUST_MR}" ${JUST_MR_ARGS} build ${BUILD_ARGS} 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} ${BUILD_ARGS} 2>&1
 
 echo
 echo OK

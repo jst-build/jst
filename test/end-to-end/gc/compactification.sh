@@ -105,7 +105,7 @@ print_storage_statistics()
 }
 
 # Build to fill the cache
-"${JUST_MR}" ${JUST_MR_ARGS} build ${JUST_ARGS} ${COMPATIBLE_ARGS} \
+"${JUST_MR}" build ${JUST_MR_ARGS} ${JUST_ARGS} ${COMPATIBLE_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 
@@ -130,7 +130,7 @@ print_storage_statistics
 [ ${COUNT_COMPACTIFIED} -eq 0 ]
 
 # Build one more time to ensure that for fully cached builds nothing except export targets gets reconstructed
-"${JUST_MR}" ${JUST_MR_ARGS} build ${JUST_ARGS} ${COMPATIBLE_ARGS} \
+"${JUST_MR}" build ${JUST_MR_ARGS} ${JUST_ARGS} ${COMPATIBLE_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 
@@ -150,7 +150,7 @@ echo "EXPECTED SIZE IS ${EXPECTED_SIZE}"
 
 # Rotation and building again should not reconstruct anything except export targets.
 "${JUST}" gc ${JUST_ARGS}
-"${JUST_MR}" ${JUST_MR_ARGS} build ${JUST_ARGS} ${COMPATIBLE_ARGS} \
+"${JUST_MR}" build ${JUST_MR_ARGS} ${JUST_ARGS} ${COMPATIBLE_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 

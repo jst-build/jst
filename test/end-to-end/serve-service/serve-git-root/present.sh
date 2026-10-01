@@ -62,11 +62,11 @@ EOF
 ##
 
 # Compute present root by asking the serve endpoint to set it up for us.
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup main)
+                    ${ENDPOINT_ARGS} main)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.main.workspace_root[1]' "${CONF}") = "${TREE_0}"
@@ -75,11 +75,11 @@ test $(jq -r '.repositories.main.workspace_root[1]' "${CONF}") = "${TREE_0}"
 ${JUST} gc --local-build-root ${LBR} 2>&1
 ${JUST} gc --local-build-root ${LBR} 2>&1
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    setup main)
+                    main)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.main.workspace_root[1]' "${CONF}") = "${TREE_0}"
@@ -103,11 +103,11 @@ cat > repos.json <<EOF
 }
 EOF
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    setup main)
+                    main)
 cat "${CONF}"
 echo
 

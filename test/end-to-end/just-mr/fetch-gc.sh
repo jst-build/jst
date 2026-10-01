@@ -68,15 +68,15 @@ EOF
 
 # Call just-mr setup. This will also create a cache entry for the tree
 # corresponding to that archive
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup 2>&1
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" 2>&1
 
 # Remove entry from CAS
 "${JUST}" gc --local-build-root "${LBR}" 2>&1
 "${JUST}" gc --local-build-root "${LBR}" 2>&1
 
 # Fetch should still work, if given access to the original file
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
-             fetch -o "${FETCH_TO_DIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
+             -o "${FETCH_TO_DIR}" 2>&1
 newfoocontent=$(git hash-object "${DISTDIR}/foo-1.2.3.tar")
 echo "Foo archive has now content ${newfoocontent}"
 test "${newfoocontent}" = "${foocontent}"
@@ -88,8 +88,8 @@ rm -rf "${DISTDIR}"
 rm -rf "${FETCH_TO_DIR}"
 
 # Setup for building should still be possible
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
-             install -o "${INSTALL_DIR}" 2>&1
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
+             -o "${INSTALL_DIR}" 2>&1
 test "$(cat "${INSTALL_DIR}/out.txt")" = "${TEST_DATA}"
 
 echo OK

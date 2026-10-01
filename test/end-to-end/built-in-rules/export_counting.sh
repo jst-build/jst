@@ -91,15 +91,15 @@ EOF
 # The export target is analysed in 3 configuration, but only two
 # are different in the relevant part of the configuration; so
 # we should see two uncached export targets.
-"${JUST_MR}" --backend "${JUST}" --local-build-root "${LBR}" --norc \
-             build -f "${LOG}" --log-limit 4 2>&1
+"${JUST_MR}" build --backend "${JUST}" --local-build-root "${LBR}" --norc \
+             -f "${LOG}" --log-limit 4 2>&1
 echo
 grep 'xport.*2 uncached' "${LOG}"
 echo
 
 # After building once, the export targets should be cached.
-"${JUST_MR}" --backend "${JUST}" --local-build-root "${LBR}" --norc \
-             build -f "${LOG}" --log-limit 4 2>&1
+"${JUST_MR}" build --backend "${JUST}" --local-build-root "${LBR}" --norc \
+             -f "${LOG}" --log-limit 4 2>&1
 echo
 grep 'xport.*2 cached' "${LOG}"
 echo

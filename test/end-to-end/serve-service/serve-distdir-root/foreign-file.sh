@@ -72,15 +72,15 @@ echo
 
 mkdir -p "${OUT}"
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" --backend "${JUST}" \
              ${ENDPOINT_ARGS} \
-             install -o "${OUT}" 2>&1
+             -o "${OUT}" 2>&1
 
 grep 'HELLO WORLD' "${OUT}/out.txt"
 
 # also verify that the repo config has the repository absent
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" ${ENDPOINT_ARGS} setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" ${ENDPOINT_ARGS})
 echo
 echo Configuration used was ${CONF}
 echo

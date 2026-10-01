@@ -122,14 +122,14 @@ echo
 echo Analyse base root to demonstrate the setup
 echo
 "${JUST}" analyse --local-build-root "${LBR}" -L '["env", "PATH='"${PATH}"'"]' \
-   -C repo-config.json --main "base" 2>&1
+   -B repo-config.json --main "base" 2>&1
 
 
 echo
 echo Build on the computed root
 echo
 "${JUST}" install --local-build-root "${LBR}" -L '["env", "PATH='"${PATH}"'"]' \
-   -C repo-config.json -o "${OUT}" 2>&1
+   -B repo-config.json -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out"
 echo
@@ -141,7 +141,7 @@ echo
 echo Build on the computed root again, to verify same for a cached root
 echo
 "${JUST}" install --local-build-root "${LBR}" -L '["env", "PATH='"${PATH}"'"]' \
-   -C repo-config.json -o "${OUT2}" 2>&1
+   -B repo-config.json -o "${OUT2}" 2>&1
 echo
 cat "${OUT2}/out"
 echo

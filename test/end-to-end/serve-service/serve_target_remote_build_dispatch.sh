@@ -112,10 +112,10 @@ cat > repos.json <<EOF
 }
 EOF
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBRDIR}" \
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBRDIR}" \
                     --remote-serve-address ${SERVE} \
                     -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-                    setup)
+)
 cat $CONF
 echo
 

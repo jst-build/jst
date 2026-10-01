@@ -337,7 +337,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
     distdirs = " --distdir=".join(g_DISTDIR)
     run([
         "sh", "-c",
-        "cp `./bin/jst.py --always-file -C %s --local-build-root=%s --distdir=%s setup jst` %s"
+        "cp `./bin/jst.py setup --always-file -C %s --local-build-root=%s --distdir=%s jst` %s"
         % (repos_config, LOCAL_ROOT, distdirs, CONF_FILE)
     ],
         cwd=ro_srcdir)

@@ -57,15 +57,15 @@ cat repos.json
 
 
 # Call just-mr with distdir present, to make it aware of the file
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup 2>&1
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" 2>&1
 
 # Remove distdir content
 rm -rf "${DISTDIR}"
 mkdir -p "${DISTDIR}"
 
 # Fetch to empty distdir while backing up to remote
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             ${REMOTE_EXECUTION_ARGS} fetch -o "${DISTDIR}" --backup-to-remote 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" \
+             ${REMOTE_EXECUTION_ARGS} -o "${DISTDIR}" --backup-to-remote 2>&1
 
 # Verify that the correct file is stored in the local tmpdir
 test -f "${DISTDIR}/foo-1.2.3.tar"
@@ -79,8 +79,8 @@ mkdir -p "${DISTDIR}"
 rm -rf "${LBR}"
 
 # Now fetch to empty tmpdir using only the remote backup
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             ${REMOTE_EXECUTION_ARGS} fetch -o "${DISTDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" \
+             ${REMOTE_EXECUTION_ARGS} -o "${DISTDIR}" 2>&1
 
 # Verify that the correct file is stored in the local tmpdir
 test -f "${DISTDIR}/foo-1.2.3.tar"

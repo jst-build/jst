@@ -41,7 +41,7 @@ echo
 ./prune-config.py etc/repos.json ${PRUNED_CONFIG} ${EMPTY}
 cat ${PRUNED_CONFIG}
 echo
-readonly CONF=$(./bin/jst.py -C ${PRUNED_CONFIG} --distdir=distdir --local-build-root="${LBRDIR}" setup jst)
+readonly CONF=$(./bin/jst.py setup -C ${PRUNED_CONFIG} --distdir=distdir --local-build-root="${LBRDIR}" jst)
 : ${BOOTSTRAP_CONF:="{}"}
 ${JUST} install -B ${CONF} -D "${BOOTSTRAP_CONF}" -o "${OUTDIR}"/final-out --local-build-root="${LBRDIR}"
 

@@ -74,11 +74,11 @@ EOF
 # Compute absent root by asking serve to set it up from scratch.
 rm -rf "${LBR}"
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup absent)
+                    ${ENDPOINT_ARGS} absent)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE_0}"
@@ -87,11 +87,11 @@ test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE_0}"
 # build root.
 rm -rf "${LBR}"
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup present)
+                    ${ENDPOINT_ARGS} present)
 cat "${CONF}"
 echo
 

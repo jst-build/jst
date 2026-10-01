@@ -242,7 +242,7 @@ Note that in order to build the `fmt` target alone, its containing
 repository `fmtlib` must be specified via the `--main` option:
 
 ``` sh
-$ jst --main fmtlib build fmt
+$ jst build --main fmtlib fmt
 INFO: Found 4 repositories involved
 INFO: Requested target 'fmtlib//:fmt' with config: {}
 INFO: Export targets found: 0 cached, 0 uncached, 1 not eligible for caching

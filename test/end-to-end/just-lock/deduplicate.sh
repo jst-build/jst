@@ -121,8 +121,8 @@ echo
 echo
 cat repos-keep.json
 echo
-"${JUST_MR}" -C repos-keep.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos-keep.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              --dump-plain-graph actions-keep.json 2>&1
 echo
 
@@ -153,8 +153,8 @@ echo
 echo
 cat repos.json
 echo
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              --dump-plain-graph actions.json 2>&1
 echo
 # Check against existing tooling

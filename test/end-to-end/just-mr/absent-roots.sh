@@ -102,7 +102,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Compute the repository configuration
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" --remote-serve-address localhost:${PORT} setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" --remote-serve-address localhost:${PORT})
 cat "${CONF}"
 echo
 
@@ -133,7 +133,7 @@ echo "Repository configuration:"
 cat repos.json
 
 # Compute the repository configuration
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" --remote-serve-address localhost:${PORT} setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" --remote-serve-address localhost:${PORT})
 cat "${CONF}"
 echo
 

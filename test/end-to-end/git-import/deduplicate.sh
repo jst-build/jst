@@ -99,16 +99,16 @@ EOF
 echo
 cat repos-full.json
 echo
-"${JUST_MR}" -C repos-full.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos-full.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              --dump-plain-graph actions-full.json 2>&1
 echo
 cat repos-full.json | "${DEDUPLICATE}" > repos.json
 cat repos.json
 echo
 
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              --dump-plain-graph actions.json 2>&1
 
 # Verify that we reduced the number of repositories, but did

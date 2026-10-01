@@ -39,9 +39,9 @@ cat > TARGETS <<'EOF'
 }
 EOF
 
-${JUST_MR} --norc -L '["env", "PATH='"${PATH}"'"]' --local-build-root "${LBR}" \
+${JUST_MR} build --norc -L '["env", "PATH='"${PATH}"'"]' --local-build-root "${LBR}" \
            --backend "${JUST}" \
-           -f "${LOG}" build 2>&1
+           -f "${LOG}" 2>&1
 echo
 
 # Sanity check on verbosity of output

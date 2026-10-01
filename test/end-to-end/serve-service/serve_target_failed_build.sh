@@ -72,9 +72,9 @@ cat > repos.json <<EOF
 }
 EOF
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR_1}" \
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR_1}" \
                     --distdir ${DISTDIR} ${COMPAT} \
-                    setup)
+)
 cat $CONF
 echo
 
@@ -140,9 +140,9 @@ cat > repos.json <<EOF
 }
 EOF
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR_3}" \
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR_3}" \
                     --distdir ${DISTDIR} ${COMPAT} \
-                    setup)
+)
 cat $CONF
 echo
 

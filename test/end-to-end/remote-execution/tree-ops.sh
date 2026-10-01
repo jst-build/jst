@@ -84,7 +84,7 @@ EOF
 
 
 # Conflict-free build
-"${JUST_MR}" --rc "${RC}" install -o "${OUT}/overlay" overlay 2>&1
+"${JUST_MR}" install --rc "${RC}" -o "${OUT}/overlay" overlay 2>&1
 grep FOO "${OUT}/overlay/overlay/out/foo/data15.txt"
 grep BAR "${OUT}/overlay/overlay/out/bar/data15.txt"
 grep early "${OUT}/overlay/overlay/out/mixed/data5.txt"
@@ -93,7 +93,7 @@ grep late "${OUT}/overlay/overlay/out/mixed/data25.txt"
 
 
 # Analysis of conflict should work
-"${JUST_MR}" --rc "${RC}" analyse \
+"${JUST_MR}" analyse --rc "${RC}" \
              --dump-graph "${OUT}/graph.json" \
              --dump-artifacts-to-build "${OUT}/artifacts.json" \
              conflict 2>&1
@@ -104,7 +104,7 @@ OVERLAY_ID=$(jq -r '.overlay.data.id' "${OUT}/artifacts.json")
 [ "$(jq '."tree_overlays"."'"${OVERLAY_ID}"'".trees | length' "${OUT}/graph.json")" -eq 2 ]
 
 # Building the tree conflict should fail with a reasonable error message
-"${JUST_MR}" --rc "${RC}" build \
+"${JUST_MR}" build --rc "${RC}" \
              -f "${OUT}/log" conflict 2>&1 && exit 1 || :
 grep 'data1..txt' "${OUT}/log"
 grep 'TheOffendingTarget' "${OUT}/log"

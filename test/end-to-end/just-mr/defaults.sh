@@ -119,16 +119,16 @@ EOF
 ## log limit
 
 #  rc is honored
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test "$(cat "${PARSE_DIR}/log-limit")" = '"4"'
 # command line overrides
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" --log-limit 5 build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" --log-limit 5 "${PARSE_DIR}" 2>&1
 test "$(cat "${PARSE_DIR}/log-limit")" = '"5"'
 # value equal to default is discarded
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" --log-limit 3 build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" --log-limit 3 "${PARSE_DIR}" 2>&1
 test "$(cat "${PARSE_DIR}/log-limit")" = 'null'
 
 
@@ -137,8 +137,8 @@ test "$(cat "${PARSE_DIR}/log-limit")" = 'null'
 # rc are taken
 rm -f "${LOG_DIR}/rc1.log"
 rm -f "${LOG_DIR}/rc2.log"
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test -f "${LOG_DIR}/rc1.log"
 test -f "${LOG_DIR}/rc2.log"
 test $(jq ". == [\"${LOG_DIR}/rc1.log\", \"${LOG_DIR}/rc2.log\"]" "${PARSE_DIR}/log-file") = "true"
@@ -147,8 +147,8 @@ test $(jq ". == [\"${LOG_DIR}/rc1.log\", \"${LOG_DIR}/rc2.log\"]" "${PARSE_DIR}/
 rm -f "${LOG_DIR}/rc1.log"
 rm -f "${LOG_DIR}/rc2.log"
 rm -f "${LOG_DIR}/cli.log"
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" -f "${LOG_DIR}/cli.log" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" -f "${LOG_DIR}/cli.log" "${PARSE_DIR}" 2>&1
 test -f "${LOG_DIR}/rc1.log"
 test -f "${LOG_DIR}/rc2.log"
 test -f "${LOG_DIR}/cli.log"
@@ -157,20 +157,20 @@ test $(jq "sort == [\"${LOG_DIR}/cli.log\", \"${LOG_DIR}/rc1.log\", \"${LOG_DIR}
 ## launcher
 
 # rc is honored
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test $(jq '. == ["env", "SET_IN_RC=true"] ' "${PARSE_DIR}/launcher") = "true"
 
 # command-line takes precedence
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
              --rc "${SAMPLE_RC}" -L '["cmd", "line", "launcher"]' \
-             build "${PARSE_DIR}" 2>&1
+             "${PARSE_DIR}" 2>&1
 test $(jq '. == ["cmd", "line", "launcher"] ' "${PARSE_DIR}/launcher") = "true"
 
 # value equal to defaul is discared
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
              --rc "${SAMPLE_RC}" -L '["env", "--"]' \
-             build "${PARSE_DIR}" 2>&1
+             "${PARSE_DIR}" 2>&1
 test "$(cat "${PARSE_DIR}/launcher")" = 'null'
 
 ## Command-line -D
@@ -181,107 +181,107 @@ test "$(cat "${PARSE_DIR}/launcher")" = 'null'
 test $(jq '. == [] ' "${PARSE_DIR}/defines") = "true"
 
 # not forwarded, if empty
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${PARSE}" \
-             -D '{}' build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --norc --local-build-root "${LBR}" --backend "${PARSE}" \
+             -D '{}' "${PARSE_DIR}" 2>&1
 test $(jq '. == [] ' "${PARSE_DIR}/defines") = "true"
 
 # combined on forwarding
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --norc --local-build-root "${LBR}" --backend "${PARSE}" \
              -D '{"foo": "bar"}' -D '{"baz": "baz"}' -D '{"foo": "override"}' \
-             build "${PARSE_DIR}" 2>&1
+             "${PARSE_DIR}" 2>&1
 test $(jq '. == [ {"foo": "override", "baz": "baz"}] ' "${PARSE_DIR}/defines") = true
 
-# but passed arguments are given separately
+# combined independent of the position relative to the subcommand
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --norc --local-build-root "${LBR}" --backend "${PARSE}" \
              -D '{"foo": "bar"}' -D '{"baz": "baz"}' \
-             build -D '{"foo": "override"}' -D '{"x": "y"}' "${PARSE_DIR}" 2>&1
-test $(jq '. == [ {"foo": "bar", "baz": "baz"}, {"foo": "override"}, {"x": "y"}] ' "${PARSE_DIR}/defines") = true
+             -D '{"foo": "override"}' -D '{"x": "y"}' "${PARSE_DIR}" 2>&1
+test $(jq '. == [ {"foo": "override", "baz": "baz", "x": "y"}] ' "${PARSE_DIR}/defines") = true
 
 ## -c
 
 # honored from rc-file if present
 touch sample-config.json
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/config" ]
 
 # not honored for non-analysing subcommands
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" install-cas "${PARSE_DIR}" 2>&1
+"${JUST_MR}" install-cas --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/config" ] && exit 1 || :
 
 # not considered an error if not present
 rm -f sample-config.json
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/config" ] && exit 1 || :
 
 # not considered, if key not present in rc
 cat > tmprc.json <<'EOF'
 {"jst files": {"unrelated": 123}}
 EOF
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc tmprc.json build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc tmprc.json "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/config" ] && exit 1 || :
 
 ## --endpoint-configuration
 
 # honored from rc-file if present
 touch endpoint.json
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/endpoint" ]
 
 # not honored for non-endpoint-specific subcommands
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" install-cas "${PARSE_DIR}" 2>&1
+"${JUST_MR}" install-cas --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/endpoint" ] && exit 1 || :
 
 # not considered an error if not present
 rm -f endpoint.json
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/endpoint" ] && exit 1 || :
 
 # not considered, if key not present in rc
 cat > tmprc.json <<'EOF'
 {"jst files": {"unrelated": 123}}
 EOF
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc tmprc.json build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc tmprc.json "${PARSE_DIR}" 2>&1
 [ -f "${PARSE_DIR}/endpoint" ] && exit 1 || :
 
 ## remote execution properties
 
 # rc-values are honored
 
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test $(jq '. == "127.0.0.1:1234"' "${PARSE_DIR}/remote_execution_address") = "true"
 test $(jq '. == "set/by/rc"' "${PARSE_DIR}/remote_instance_name") = "true"
 
 # CLI Override
 
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
              -r 127.0.0.1:9999 --remote-instance-name "set/on/cli" \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test $(jq '. == "127.0.0.1:9999"' "${PARSE_DIR}/remote_execution_address") = "true"
 test $(jq '. == "set/on/cli"' "${PARSE_DIR}/remote_instance_name") = "true"
 
 # CLI Override, not setting instance name
 
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
              -r 127.0.0.1:9999 \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test $(jq '. == "127.0.0.1:9999"' "${PARSE_DIR}/remote_execution_address") = "true"
 test $(jq '. == "set/by/rc"' "${PARSE_DIR}/remote_instance_name") = "true"
 
 # CLI Override with empty instance name
 
-"${JUST_MR}" --local-build-root "${LBR}" --backend "${PARSE}" \
+"${JUST_MR}" build --local-build-root "${LBR}" --backend "${PARSE}" \
              -r 127.0.0.1:9900 --remote-instance-name '' \
-             --rc "${SAMPLE_RC}" build "${PARSE_DIR}" 2>&1
+             --rc "${SAMPLE_RC}" "${PARSE_DIR}" 2>&1
 test $(jq '. == "127.0.0.1:9900"' "${PARSE_DIR}/remote_execution_address") = "true"
 test $(jq '. == ""' "${PARSE_DIR}/remote_instance_name") = "true"
 

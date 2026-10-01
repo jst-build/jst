@@ -297,7 +297,7 @@ the `rules-cc` repository, which is not the default repository, we also
 have to specify the repository name.
 
 ``` sh
-$ jst --main rules-cc describe CC defaults
+$ jst describe --main rules-cc CC defaults
 ```
 
 Of course, the `describe` subcommand works generically on all

@@ -37,7 +37,7 @@ EOF
 
 echo
 echo === Default target ===
-${TOOL} build -C $CONF --local-build-root ${BUILDROOT} -Pa.txt | grep top-level
+${TOOL} build -B $CONF --local-build-root ${BUILDROOT} -Pa.txt | grep top-level
 
 
 echo
@@ -48,7 +48,7 @@ cd foo
 cat > TARGETS <<'EOF'
 {"a": {"type": "file_gen", "name": "a.txt", "data": "WRONG"}}
 EOF
-${TOOL} build -C $CONF --local-build-root ${BUILDROOT} -Pa.txt | grep top-level
+${TOOL} build -B $CONF --local-build-root ${BUILDROOT} -Pa.txt | grep top-level
 
 echo === correct root referece ===
 
@@ -58,7 +58,7 @@ cat > TARGETS.local <<'EOF'
 }
 EOF
 
-${TOOL} install -C $CONF --local-build-root ${BUILDROOT} -o ${OUTDIR}/top-ref 2>&1
+${TOOL} install -B $CONF --local-build-root ${BUILDROOT} -o ${OUTDIR}/top-ref 2>&1
 echo
 grep top-level ${OUTDIR}/top-ref/a.txt
 grep local ${OUTDIR}/top-ref/b.txt

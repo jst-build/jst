@@ -56,7 +56,7 @@ EOF
 cat TARGETS
 
 # Build to fill the cache
-"${JUST_MR}" ${JUST_MR_ARGS} build ${JUST_ARGS} ${COMPATIBLE_ARGS} \
+"${JUST_MR}" build ${JUST_MR_ARGS} ${JUST_ARGS} ${COMPATIBLE_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' 2>&1
 
 if [ ! -d ${STORAGE} ]; then
@@ -65,13 +65,13 @@ if [ ! -d ${STORAGE} ]; then
 fi;
 
 # Run regular gc with --no-rotate to ensure compactification gets triggered:
-"${JUST_MR}" ${JUST_MR_ARGS} gc ${JUST_ARGS} --no-rotate --log-limit 4 \
+"${JUST_MR}" gc ${JUST_MR_ARGS} ${JUST_ARGS} --no-rotate --log-limit 4 \
   -f "${OUT}/gc" 2>&1
 
 grep 'Compactification has been started' "${OUT}/gc"
 
 # Run gc with --all to ensure compactification doesn't get triggered:
-"${JUST_MR}" ${JUST_MR_ARGS} gc ${JUST_ARGS} --all --log-limit 4 \
+"${JUST_MR}" gc ${JUST_MR_ARGS} ${JUST_ARGS} --all --log-limit 4 \
   -f "${OUT}/gc2" 2>&1
 
 grep 'Compactification has been started' "${OUT}/gc2" && exit 1

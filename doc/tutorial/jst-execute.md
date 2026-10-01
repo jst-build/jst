@@ -366,7 +366,7 @@ INFO: execution service started: {"interface":"127.0.0.1","pid":48880,"port":808
 For example, let's compile the example listed in the introduction:
 
 ``` sh
-$ jst -C repos.json install -o . -r localhost:8080
+$ jst install -C repos.json -o . -r localhost:8080
 ```
 
 which should report:
@@ -430,7 +430,7 @@ From a different shell, we can build the LaTeX hello world example
 listed in the introduction by running:
 
 ``` sh
-$ jst -C repos.json install -o . -r localhost:8080
+$ jst install -C repos.json -o . -r localhost:8080
 ```
 
 Note that the cache that `jst execute` populates is confined within

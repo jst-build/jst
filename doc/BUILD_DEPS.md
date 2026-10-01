@@ -37,7 +37,7 @@ apt update
 apt install -y g++ wget python3 git patch unzip
 
 # build with jst
-jst -C etc/bundled.json build
+jst build -C etc/bundled.json
 # or bootstrap via
 BUNDLED=YES ./bin/bootstrap.py
 ```
@@ -48,7 +48,7 @@ Additional dependencies for running tests:
 apt install -y jq git libcatch2-dev     # 'catch2' on older distros
 
 # run tests
-jst --main tests build
+jst build --main tests
 ```
 
 Additional dependencies needed for building with man pages:

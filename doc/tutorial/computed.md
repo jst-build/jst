@@ -180,7 +180,7 @@ Now the default target of `"src target tasks description"` shows how to
 build the target files we want.
 
 ```shell
-$ jst --main 'src target tasks description' build -p
+$ jst build --main 'src target tasks description' -p
 INFO: Found 3 repositories involved
 INFO: Repository "src target tasks description" depends on 1 top-level computed roots
 INFO: Requested target 'src target tasks description//:""' with config: {}

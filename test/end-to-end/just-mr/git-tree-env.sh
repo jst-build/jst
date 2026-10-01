@@ -80,18 +80,18 @@ EOF
 
 # Succesfull build
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
              --checkout-locations local.json \
-             install -o "${OUT}" '' sources.txt 2>&1
+             -o "${OUT}" '' sources.txt 2>&1
 grep checked-out "${OUT}/sources.txt"
 
 # Verify the local.json is needed
-"${JUST_MR}" --norc --local-build-root "${LBR2}" setup 2>&1 && exit 1 || :
+"${JUST_MR}" setup --norc --local-build-root "${LBR2}" 2>&1 && exit 1 || :
 
 # Verify the environment is needed
 export CREDENTIAL_PATH=/dev/null
-"${JUST_MR}" --norc --local-build-root "${LBR2}" \
+"${JUST_MR}" setup --norc --local-build-root "${LBR2}" \
              --checkout-locations local.json \
-             setup 2>&1 && exit 1 || :
+             2>&1 && exit 1 || :
 
 echo DONE

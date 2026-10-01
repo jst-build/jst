@@ -1,4 +1,5 @@
 // Copyright 2023 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +17,16 @@
 
 #include <cstdlib>
 #include <exception>
+#include <map>
+#include <string>
 
 #include "CLI/CLI.hpp"
 #include "gsl/gsl"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 #include "src/buildtool/main/exit_codes.hpp"
+
+namespace Buildtool {
 
 namespace {
 
@@ -187,7 +192,32 @@ auto SetupEvalCommandArguments(
 
 }  // namespace
 
-void CreateBackendSubcommands(CLI::App& app) {
+void SetupSubcommandArguments(
+    gsl::not_null<CLI::App*> const& app,
+    std::string const& subcommand,
+    gsl::not_null<CommandLineArguments*> const& clargs) {
+    static std::map<std::string,
+                    void (*)(gsl::not_null<CLI::App*> const&,
+                             gsl::not_null<CommandLineArguments*> const&)> const
+        kSetupFunctions{{"describe", SetupDescribeCommandArguments},
+                        {"analyse", SetupAnalyseCommandArguments},
+                        {"build", SetupBuildCommandArguments},
+                        {"install", SetupInstallCommandArguments},
+                        {"rebuild", SetupRebuildCommandArguments},
+                        {"install-cas", SetupInstallCasCommandArguments},
+                        {"add-to-cas", SetupAddToCasCommandArguments},
+                        {"traverse", SetupTraverseCommandArguments},
+                        {"gc", SetupGcCommandArguments},
+                        {"execute", SetupExecutionServiceCommandArguments},
+                        {"serve", SetupServeServiceCommandArguments},
+                        {"eval", SetupEvalCommandArguments}};
+    auto const setup = kSetupFunctions.find(subcommand);
+    if (setup != kSetupFunctions.end()) {
+        (setup->second)(app, clargs);
+    }
+}
+
+void CreateSubcommands(CLI::App& app) {
     auto* cmd_version = app.add_subcommand(
         "version", "Print version information in JSON format.");
     auto* cmd_describe = app.add_subcommand(
@@ -237,7 +267,7 @@ auto ParseCommandLineArguments(int argc, char const* const* argv)
     CLI::App app("jst_backend, backend for generic build tool jst");
     app.option_defaults()->take_last();
 
-    CreateBackendSubcommands(app);
+    CreateSubcommands(app);
     auto* cmd_version = app.get_subcommand("version");
     auto* cmd_describe = app.get_subcommand("describe");
     auto* cmd_analyse = app.get_subcommand("analyse");
@@ -317,3 +347,5 @@ auto ParseCommandLineArguments(int argc, char const* const* argv)
 
     return clargs;
 }
+
+}  // namespace Buildtool

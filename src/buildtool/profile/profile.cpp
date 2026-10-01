@@ -66,6 +66,7 @@ void Profile::SetConfiguration(nlohmann::json configuration) {
 }
 
 void Profile::SetCLI(CommandLineArguments const& cli) {
+    using Buildtool::SubCommand;
     switch (cli.cmd) {
         case SubCommand::kDescribe:
             profile_["subcommand"] = "describe";

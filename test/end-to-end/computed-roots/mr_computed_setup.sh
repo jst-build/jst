@@ -104,9 +104,9 @@ cat repo-config.json
 echo
 echo Building base, for reference
 echo
-"${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+"${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main base  --backend "${JUST}" \
-            install -D '{"COUNT": "10"}' \
+            -D '{"COUNT": "10"}' \
             -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}/base" 2>&1
 echo
 cat "${OUT}/base/TARGETS"
@@ -114,9 +114,9 @@ cat "${OUT}/base/TARGETS"
 echo
 echo Building computed
 echo
-"${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+"${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main derived --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]'  -o "${OUT}/derived" 2>&1
+            -L '["env", "PATH='"${PATH}"'"]'  -o "${OUT}/derived" 2>&1
 echo
 
 [ "$(cat "${OUT}/derived/out" | wc -l)" -eq 55 ]
@@ -124,9 +124,9 @@ echo
 echo
 echo Building a different computed root, without reference build
 echo
-"${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+"${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main 'other derived' --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]' \
+            -L '["env", "PATH='"${PATH}"'"]' \
             -o "${OUT}/other-derived" 2>&1
 echo
 
@@ -135,9 +135,9 @@ echo
 echo
 echo Building with overlays
 echo
-"${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+"${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main 'with_overlays' --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]' \
+            -L '["env", "PATH='"${PATH}"'"]' \
             -o "${OUT}/with-overlays" 2>&1
 echo
 

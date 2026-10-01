@@ -141,16 +141,16 @@ echo
 grep -q "${SUBTREE_ID}" repos-gen.json
 
 # Check successful build
-"${JUST_MR}" --norc -L '["env", "PATH='"${PATH}"'"]' --backend "${JUST}" \
-             --local-build-root "${LBR3}" install -o "${OUT}" 2>&1
+"${JUST_MR}" install --norc -L '["env", "PATH='"${PATH}"'"]' --backend "${JUST}" \
+             --local-build-root "${LBR3}" -o "${OUT}" 2>&1
 echo
 grep checkout "${OUT}/out.txt"
 echo
 
 # Verify the environment is needed
 export CREDENTIAL_PATH=/dev/null
-"${JUST_MR}" --norc -L '["env", "PATH='"${PATH}"'"]' \
-             --local-build-root "${LBR4}" setup 2>&1 && exit 1 || :
+"${JUST_MR}" setup --norc -L '["env", "PATH='"${PATH}"'"]' \
+             --local-build-root "${LBR4}" 2>&1 && exit 1 || :
 echo
 echo "failed as expected"
 echo

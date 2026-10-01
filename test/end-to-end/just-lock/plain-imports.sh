@@ -90,8 +90,8 @@ echo
 # Check pragmas: "to_git" is kept
 [ $(jq -r '.repositories.foo.repository.pragma.to_git' repos.json) = true ]
 # Check that the subdir is taken as expected
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
-    --local-build-root "${LBR}" install -o "${OUT}" 2>&1
+"${JUST_MR}" install -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
+    --local-build-root "${LBR}" -o "${OUT}" 2>&1
 echo
 cat "${OUT}/out.txt"
 echo
@@ -127,8 +127,8 @@ echo
 [ $(jq -r '.repositories.foo.repository.pragma.special' repos.json) = "resolve-completely" ]
 [ $(jq -r '.repositories.foo.repository.pragma.to_git' repos.json) = true ]
 # Check the symlink gets resolved as expected
-"${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
-    --local-build-root "${LBR_PLAIN}" install -o "${OUT_PLAIN}" 2>&1
+"${JUST_MR}" install -L '["env", "PATH='"${PATH}"'"]' --norc --backend "${JUST}" \
+    --local-build-root "${LBR_PLAIN}" -o "${OUT_PLAIN}" 2>&1
 echo
 cat "${OUT_PLAIN}/out.txt"
 echo

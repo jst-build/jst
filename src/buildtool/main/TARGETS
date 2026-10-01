@@ -158,13 +158,13 @@
     srcs: ['cli.cpp'],
     stage: ['src', 'buildtool', 'main'],
     deps: [
+      @'cli11//:cli11',
+      @'gsl//:gsl',
       @'//src/buildtool/common:cli',
       @'//src/buildtool/common:retry_cli',
     ],
     'private-deps': [
       'common',
-      @'cli11//:cli11',
-      @'gsl//:gsl',
       @'//src/buildtool/logging:log_level',
       @'//src/buildtool/logging:logging',
     ],

@@ -48,10 +48,10 @@ cat > TARGETS <<'EOF'
 }
 EOF
 
-the-multi-repo-tool --norc --backend the-build-tool \
+the-multi-repo-tool install --norc --backend the-build-tool \
     --local-build-root "${BUILDROOT}" \
     --log-limit 1 -f "${LOGDIR}/warning.txt" \
-    install -o "${OUTDIR}" 2>&1
+    -o "${OUTDIR}" 2>&1
 
 # Verify that the build yields the expected result
 

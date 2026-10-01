@@ -91,12 +91,12 @@ EOF
 ##
 
 # Compute present root locally from scratch (via distfile)
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --distdir "${DISTDIR}" \
                     --log-limit 6 \
-                    setup present)
+                    present)
 cat "${CONF}"
 echo
 TREE=$(jq -r '.repositories.present.workspace_root[1]' "${CONF}")
@@ -109,11 +109,11 @@ rm -rf "${DISTDIR}"
 # archive in its Git cache.
 rm -rf "${LBR}"
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup absent)
+                    ${ENDPOINT_ARGS} absent)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE}"
@@ -121,11 +121,11 @@ test $(jq -r '.repositories.absent.workspace_root[1]' "${CONF}") = "${TREE}"
 # Check that serve can provide now this tree as present in a clean build root.
 rm -rf "${LBR}"
 
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup present)
+                    ${ENDPOINT_ARGS} present)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.present.workspace_root[1]' "${CONF}") = "${TREE}"

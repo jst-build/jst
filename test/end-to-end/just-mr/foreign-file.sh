@@ -62,10 +62,10 @@ EOF
 
 mkdir -p "${OUT}"
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" --backend "${JUST}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              --distdir "${DISTDIR}" \
-             install -o "${OUT}" 2>&1
+             -o "${OUT}" 2>&1
 
 grep THIS-IS-THE-CONTENT "${OUT}/out.txt"
 
@@ -74,7 +74,7 @@ rm -rf "${DISTDIR}"
 mkdir -p "${DISTDIR}"
 
 # Ask just-mr to fetch to the empty distdir
-"${JUST_MR}" --norc --local-build-root "${LBR}" fetch -o "${DISTDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" -o "${DISTDIR}" 2>&1
 
 test -f "${DISTDIR}/data.txt"
 NEW_HASH=$(git hash-object "${DISTDIR}/data.txt")
@@ -87,9 +87,9 @@ test "${HASH}" = "${NEW_HASH}"
 "${JUST}" gc --local-build-root "${LBR}" 2>&1
 "${JUST}" gc --local-build-root "${LBR}" 2>&1
 rm -f "${OUT}/out.txt"
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" --backend "${JUST}" \
              -L '["env", "PATH='"${PATH}"'"]' \
-             install -o "${OUT}" 2>&1
+             -o "${OUT}" 2>&1
 
 grep THIS-IS-THE-CONTENT "${OUT}/out.txt"
 

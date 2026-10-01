@@ -1,4 +1,5 @@
 # Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+# Copyright 2026 The jst-build authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +15,17 @@
 
 ########################### jst_backend completion
 
+# The option names of a help text, which lists them at the beginning of a line,
+# possibly several separated by commas. Only those are taken, so that options
+# merely mentioned in a description are not offered.
+_jst_help_options(){
+    $@ --help 2>/dev/null \
+        | sed -nE 's/^[[:space:]]{1,12}(-[^[:space:],]+([[:space:]]*,[[:space:]]*-[^[:space:],]+)*).*/\1/p' \
+        | tr ',' '\n' | tr -d '[:blank:]' | grep '^-' | sort -u
+}
+
 _jst_backend_subcommand_options(){
-    local cmd=$1
-    for w in $(jst_backend $cmd --help)
-    do
-        [[ $w =~ ^-. ]] &&  printf "%s\n" ${w//,/" "}
-    done
+    _jst_help_options jst_backend $1
 }
 
 _jst_backend_targets(){
@@ -125,21 +131,21 @@ complete -F _jst_backend_completion jst_backend
 
 ########################### jst completion
 _jst_options(){
-    local cmd=$1
-    for w in $($cmd --help 2>/dev/null)
-    do
-        [[ $w =~ ^-. ]] &&  printf "%s\n" ${w//,/" "}
-    done
+    _jst_help_options $1
 }
 
 _jst_parse_subcommand() {
-    local readonly FLAGS=("--help\n-h\n--norc\nbackend") # treat 'backend' as flag
-    local readonly OPTIONS=("--distdir\n--backend\n--local-build-root\n--main\n--rc\n-C\n-L")
+    # The options of jst may appear before or after the subcommand, so they are
+    # skipped here. Listed are those taking a value; any other word starting
+    # with a dash is taken for a flag. The subcommand 'backend' is skipped as
+    # well, so that the backend subcommand following it is found.
+    local readonly OPTIONS=("--absent\n--backend\n--checkout-locations\n--defines\n--distdir\n--dump-rc\n--fetch-cacert\n--fetch-jobs\n--git\n--initial-backoff-seconds\n--local-build-root\n--local-launcher\n--log-file\n--log-limit\n--main\n--max-attempts\n--max-backoff-seconds\n--parallel\n--rc\n--remote-execution-address\n--remote-instance-name\n--remote-serve-address\n--repository-config\n--restrict-stderr-log-limit\n--tls-ca-cert\n--tls-client-cert\n--tls-client-key\n-C\n-D\n-J\n-L\n-R\n-f")
     shift
     while [ -n "$1" ]; do
-        if echo -e "$FLAGS" | grep -q -- "^$1$"; then shift; continue; fi
+        if [ "$1" = "--" ]; then shift; break; fi
+        if [ "$1" = "backend" ]; then shift; continue; fi
         if echo -e "$OPTIONS" | grep -q -- "^$1$"; then shift; shift; continue; fi
-        if [ "$1" = "--" ]; then shift; fi
+        case "$1" in -*) shift; continue;; esac
         break
     done
     echo "$1"
@@ -178,18 +184,25 @@ _jst_completion(){
     elif [ "$prev" = "--distdir" ] || [ "$prev" = "--backend" ] || [ "$prev" = "--local-build-root" ] || [ "$prev" = "--rc" ] || [ "$prev" = "-C" ] || [ "$prev" = "-L" ]
     then
         compopt -o bashdefault -o default
-    elif [[ "$cmd" =~ ^(setup|setup-env|fetch|update) ]]
+    elif [[ "$cmd" =~ ^(setup|setup-env|fetch|update|gc-repo) ]]
     then
         # jst subcommand options and repository names
         local _opts=($(_jst_options "jst $cmd"))
         local _repos=($(_jst_repos $prev))
         COMPREPLY=($(compgen -f -W "${_opts[*]} ${_repos[*]}" -- $word ))
-    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|eval|execute|serve) ]]
+    elif [[ "$cmd" =~ ^(version|build|analyse|describe|install-cas|install|rebuild|gc|eval|execute|serve|add-to-cas) ]]
     then
-        # jst_backend subcommand options and modules/targets eventually using the
-        # auto-generated configuration
-        local jstmrconf=$(jst setup --all 2>/dev/null)
-        _jst_backend_completion
+        if [[ $word =~ ^- ]]
+        then
+            # the options of jst for this subcommand, followed by those of
+            # jst_backend, both printed by the help of jst
+            local _opts=($(_jst_options "jst $cmd"))
+            COMPREPLY=($(compgen -W "${_opts[*]}" -- $word))
+        else
+            # modules/targets eventually using the auto-generated configuration
+            local jstmrconf=$(jst setup --all 2>/dev/null)
+            _jst_backend_completion
+        fi
     else
         # jst top-level options
         local _opts=($(_jst_options "jst"))

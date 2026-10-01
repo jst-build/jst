@@ -67,11 +67,11 @@ echo
 cat repos.json
 echo
 mkdir -p "${LOG}"
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
                     -r "${REMOTE_EXECUTION_ADDRESS}" ${COMPAT} \
                     -f "${LOG}/log" \
                     --distdir ../src \
-                    install -o "${OUT}" 2>&1
+                    -o "${OUT}" 2>&1
 echo
 cat "${OUT}/archive_id"
 [ $(cat "${OUT}/archive_id") = "${ARCHIVE_CONTENT}" ]

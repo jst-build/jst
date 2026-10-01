@@ -105,7 +105,8 @@ namespace {
     return true;
 }
 
-void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs) {
+void ReadJustServeConfig(
+    gsl::not_null<Buildtool::CommandLineArguments*> const& clargs) {
     Configuration serve_config{};
     auto serve_path = clargs->serve.config;
     if (not FileSystemManager::ResolveSymlinks(&serve_path)) {

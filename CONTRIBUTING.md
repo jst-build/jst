@@ -10,12 +10,12 @@ be agreed upon and committed to the repository first.
 
 For all changes, remember to also update the documentation and add
 appropriate test coverage. For code to be accepted, all tests must
-pass; the global test suite is run by `jst --main tests build`.
+pass; the global test suite is run by `jst build --main tests`.
 Code is formatted with `clang-format` and linted with `clang-tidy`;
 the corresponding configuration files can be found in the top-level
 directory of this repository. The top-level lint target is called by
-`jst --main lint build`. Formatting issues can be fixed by building
-and applying the patch from `jst --main lint build format.diff`;
+`jst build --main lint`. Formatting issues can be fixed by building
+and applying the patch from `jst build --main lint format.diff`;
 the script `bin/format-code.sh` does precisely this.
 
 *NOTE:* In order for everyone to use the same version of the linting

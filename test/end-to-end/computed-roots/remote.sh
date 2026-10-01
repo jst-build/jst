@@ -104,7 +104,7 @@ echo
 echo Building base, putting the export target to cache
 echo
 "${JUST}" install ${REMOTE_ARGS} \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --main base -D '{"COUNT": "10"}' -o "${OUT}/base" 2>&1
 echo
 
@@ -112,7 +112,7 @@ echo
 echo Building computed
 echo
 "${JUST}" install ${REMOTE_ARGS} \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/computed.log" \
     --main derived -o "${OUT}/derived" 2>&1
 echo
@@ -125,7 +125,7 @@ echo
 echo Building a different computed root, without previous build
 echo
 "${JUST}" install ${REMOTE_ARGS} \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log" \
     --main 'other derived' -o "${OUT}/other-derived" 2>&1
 echo
@@ -153,7 +153,7 @@ echo
 echo Building computed root again, expecting root-level cache hit
 echo
 "${JUST}" build ${REMOTE_ARGS} \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 -f "${OUT}/log2" \
     --main 'other derived' 2>&1
 echo

@@ -118,11 +118,11 @@ EOF
 
 echo
 echo
-CONF=$("${JUST_MR}" --local-build-root "${LBR}" \
+CONF=$("${JUST_MR}" setup --local-build-root "${LBR}" \
                     --rc "${RCFILE}" \
                     --remote-serve-address ${SERVE} \
                     -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-                    --fetch-absent setup)
+                    --fetch-absent)
 cat $CONF
 echo
 "${JUST}" install --local-build-root "${LBR}" -B "${CONF}" \

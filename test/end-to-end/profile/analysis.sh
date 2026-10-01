@@ -90,7 +90,7 @@ cat > rc.json <<'EOF'
 {"invocation log": {"project id": "good-build"}}
 EOF
 
-"${JUST_MR}" --rc "${RC}" build -p \
+"${JUST_MR}" build --rc "${RC}" -p \
   -D '{"FLEX_DIR": "some/dir", "FLEX_FILE": "path/to/file.txt"}' 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/good-build/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
@@ -105,7 +105,7 @@ cat > rc.json <<'EOF'
 {"invocation log": {"project id": "analysis"}}
 EOF
 
-"${JUST_MR}" --rc "${RC}" build -p \
+"${JUST_MR}" build --rc "${RC}" -p \
   -D '{"FLEX_DIR": "path/to/dir", "FLEX_FILE": "path/to/dir/file.txt"}' 2>&1 \
   && exit 1 || :
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/analysis/*)"

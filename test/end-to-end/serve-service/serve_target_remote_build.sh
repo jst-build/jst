@@ -75,10 +75,10 @@ cat > repos.json <<EOF
 }
 EOF
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" \
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" \
                     --remote-serve-address ${SERVE} \
                     -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-                    setup)
+)
 cat $CONF
 
 # Check that we can build correctly

@@ -150,8 +150,8 @@ cat > repos.json <<EOF
 EOF
 
 # Compute the repository configuration
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR_SETUP}" \
-                    --distdir "${DISTDIR}" setup --all)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR_SETUP}" \
+                    --distdir "${DISTDIR}" --all)
 cat "${CONF}"
 echo
 

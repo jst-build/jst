@@ -84,7 +84,7 @@ EOF
 echo "local repos configuration:"
 cat repos.json
 
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${SERVE_LBR}" setup)
+CONF=$("${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${SERVE_LBR}")
 cat "${CONF}"
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' --local-build-root "${SERVE_LBR}" -B "${CONF}" -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} main
 )
@@ -154,7 +154,7 @@ echo
 
 rm "${GENERATOR}"
 
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${LBR}" ${COMPAT} setup --all)
+CONF=$("${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${LBR}" ${COMPAT} --all)
 cat "${CONF}"
 echo
 

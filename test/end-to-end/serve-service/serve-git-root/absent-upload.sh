@@ -79,11 +79,11 @@ EOF
 # Setup an absent root from a local checkout. For a serve endpoint that does
 # not have the commit available, this will upload the locally-known root tree
 # to remote CAS, from where the serve endpoint will pick it up.
-CONF=$("${JUST_MR}" --norc -C repos.json \
+CONF=$("${JUST_MR}" setup --norc -C repos.json \
                     --backend "${JUST}" \
                     --local-build-root "${LBR}" \
                     --log-limit 6 \
-                    ${ENDPOINT_ARGS} setup main)
+                    ${ENDPOINT_ARGS} main)
 cat "${CONF}"
 echo
 test $(jq -r '.repositories.main.workspace_root[1]' "${CONF}") = "${SUBTREE}"

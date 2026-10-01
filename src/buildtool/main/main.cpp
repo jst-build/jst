@@ -757,6 +757,8 @@ void DumpArtifactsToBuild(
 }  // namespace
 
 auto main(int argc, char* argv[]) -> int {
+    using Buildtool::ParseCommandLineArguments;
+    using Buildtool::SubCommand;
     std::unique_ptr<Profile> profile;
     SetupDefaultLogging();
     try {

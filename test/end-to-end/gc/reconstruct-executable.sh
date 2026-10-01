@@ -132,19 +132,19 @@ cat > TARGETS <<'EOF'
 EOF
 
 # First we build all the relevant binaries to have them in test
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "aaa"}' binary 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "bbb"}' binary 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "ccc"}' binary 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "ddd"}' binary 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "eee"}' binary 2>&1
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "fff"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "aaa"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "bbb"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "ccc"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "ddd"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "eee"}' binary 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -D '{"SEED": "fff"}' binary 2>&1
 
 # Now, compactify
-"${JUST_MR}" ${JUST_MR_ARGS} gc --no-rotate
+"${JUST_MR}" gc ${JUST_MR_ARGS} --no-rotate
 
 # Finally, run the default target; this will, in parallel, reconstruct the
 # compactified binaries and use them
-"${JUST_MR}" ${JUST_MR_ARGS} build -L '["env", "PATH='"${PATH}"'"]' -J20 2>&1
+"${JUST_MR}" build ${JUST_MR_ARGS} -L '["env", "PATH='"${PATH}"'"]' -j20 2>&1
 
 echo
 echo OK

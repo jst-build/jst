@@ -167,7 +167,7 @@ As for every rule, the details can be obtained with the `describe`
 subcommand.
 
 ``` sh
-$ jst --main rules-cc describe --rule lint targets
+$ jst describe --main rules-cc --rule lint targets
 INFO: Found 2 repositories involved
  | Run a given linter on the lint information provided by the given targets.
 ...

@@ -72,11 +72,11 @@ EOF
 echo
 cat repos.json
 echo
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" \
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" \
                     -L '["env", "PATH='"${PATH}"'"]' \
                     --remote-serve-address ${SERVE} \
                     -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
-                    --fetch-absent setup)
+                    --fetch-absent)
 cat $CONF
 echo
 "${JUST}" install --local-build-root "${LBR}" -B "${CONF}" \
@@ -87,9 +87,9 @@ grep x "${OUT}/out.txt"
 # As the last call of just-mr had --fetch-absent, all relevent information
 # about the root should now be available locally, so we can build without
 # a serve or remote endpoint with still (logically) fetching absent roots.
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' \
-             --fetch-absent install -o "${OUT2}" 2>&1
+             --fetch-absent -o "${OUT2}" 2>&1
 grep x "${OUT2}/out.txt"
 
 ## Test if symlinks get resolved
@@ -114,12 +114,12 @@ EOF
 echo
 cat repos.json
 echo
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" install --norc --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             --fetch-absent install -o "${OUT3}" 2>&1
+             --fetch-absent -o "${OUT3}" 2>&1
 grep xx "${OUT3}/out.txt"
 
 echo DONE

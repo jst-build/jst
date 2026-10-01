@@ -94,7 +94,7 @@ EOF
 echo "local repos configuration:"
 cat repos.json
 echo
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${SERVE_LBR}" setup)
+CONF=$("${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${SERVE_LBR}")
 
 echo "generated conf":
 cat "${CONF}"
@@ -103,7 +103,7 @@ echo
 "${JUST}" build                         \
     --local-build-root "${SERVE_LBR}"   \
     -L '["env", "PATH='"${PATH}"'"]'    \
-    -C "${CONF}"                        \
+    -B "${CONF}"                        \
     main
 )
 
@@ -173,7 +173,7 @@ echo "absent repos configuration:"
 cat repos.json
 echo
 
-CONF=$("${JUST_MR}" -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${LBR}" setup)
+CONF=$("${JUST_MR}" setup -L '["env", "PATH='"${PATH}"'"]' --norc --local-build-root "${LBR}")
 cat "${CONF}"
 echo
 
@@ -181,7 +181,7 @@ echo
     --local-build-root "${LBR}"                \
     --remote-serve-address 127.0.0.1:${PORT}   \
     -L '["env", "PATH='"${PATH}"'"]'    \
-    -C "${CONF}"                               \
+    -B "${CONF}"                               \
     main
 )
 

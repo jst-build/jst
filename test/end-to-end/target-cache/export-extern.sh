@@ -49,7 +49,7 @@ cat > foo/TARGETS <<'EOF'
 }
 EOF
 
-CONF=$("${JUST_MR}" --local-build-root "${LBRDIR}" setup '')
+CONF=$("${JUST_MR}" setup --local-build-root "${LBRDIR}" '')
 
 "${JUST}" install --local-build-root "${LBRDIR}" -B "${CONF}" -o "${OUT}" local 2>&1
 cat ${OUT}/it

@@ -88,7 +88,7 @@ cat repos.json
 cat TARGETS
 
 # Build to fill the target cache of the serve endpoint
-CONF=$("${JUST_MR}" --norc --local-build-root "${SERVE_LBR}" setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${SERVE_LBR}")
 
 echo "generated conf":
 cat "${CONF}"
@@ -96,7 +96,7 @@ echo
 
 "${JUST}" build                       \
     --local-build-root "${LBR_UNRELATED_A}" \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     --remote-serve-address "${SERVE}" \
     -r "${REMOTE_EXECUTION_ADDRESS}"  \
     ${COMPAT}                         \
@@ -108,7 +108,7 @@ echo
 rm -rf "${TOOLS_DIR}"
 
 # Setup for a build in a new build root
-CONF=$("${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" setup)
+CONF=$("${JUST_MR}" setup --norc --backend "${JUST}" --local-build-root "${LBR}")
 
 echo "generated conf":
 cat "${CONF}"
@@ -117,12 +117,12 @@ echo
 # Demonstrate that we can analyse, but not build locally
 "${JUST}" analyse                     \
     --local-build-root "${LBR}"       \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 
 "${JUST}" build                       \
     --local-build-root "${LBR}"       \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1 && echo "this should fail" && exit 1
 echo "failed as expected"
 
@@ -137,7 +137,7 @@ then
     echo "Building with serve again, to keep tc cache alive"
     "${JUST}" build                             \
         --local-build-root "${LBR_UNRELATED_B}" \
-        -C "${CONF}"                            \
+        -B "${CONF}"                            \
         --remote-serve-address "${SERVE}"       \
         -r "${REMOTE_EXECUTION_ADDRESS}"        \
         ${COMPAT}                               \
@@ -150,7 +150,7 @@ echo
 
 "${JUST}" build                       \
     --local-build-root "${LBR}"       \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     -r "${REMOTE_EXECUTION_ADDRESS}"  \
     ${COMPAT}                         \
     ${REMOTE_PROPERTIES}              \
@@ -161,7 +161,7 @@ echo "failed as expected"
 # Demonstrate that we can build if serve endpoint provides the target cache value
 "${JUST}" build                       \
     --local-build-root "${LBR}"       \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     --remote-serve-address "${SERVE}" \
     -r "${REMOTE_EXECUTION_ADDRESS}"  \
     ${COMPAT}                         \
@@ -173,7 +173,7 @@ echo "failed as expected"
 # Verify that the export target is fully in cache
 "${JUST}" install                     \
     --local-build-root "${LBR}"       \
-    -C "${CONF}"                      \
+    -B "${CONF}"                      \
     --remote-serve-address "${SERVE}" \
     -r "${REMOTE_EXECUTION_ADDRESS}"  \
     ${COMPAT}                         \

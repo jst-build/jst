@@ -203,9 +203,9 @@ cat repos-full.json
 
 # Dump the graph before deduplication:
 echo
-"${JUST_MR}" -C repos-full.json --norc --backend "${JUST}" \
+"${JUST_MR}" analyse -C repos-full.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
-             -L '["env", "PATH='"${PATH}"'"]' analyse \
+             -L '["env", "PATH='"${PATH}"'"]' \
              --dump-plain-graph actions-full.json 2>&1
 
 # Run deduplication:
@@ -215,9 +215,9 @@ cat repos.json
 echo
 
 # Dump the graph after deduplication:
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
+"${JUST_MR}" analyse -C repos.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
-             -L '["env", "PATH='"${PATH}"'"]' analyse \
+             -L '["env", "PATH='"${PATH}"'"]' \
              --dump-plain-graph actions.json 2>&1
 
 # Verify that we reduced the number of repositories, but did
@@ -227,9 +227,9 @@ cmp actions-full.json actions.json
 
 # Check the result can be built after deduplication:
 echo
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
+"${JUST_MR}" install -C repos.json --norc --backend "${JUST}" \
              --local-build-root "${LBR}" --main "result" \
-             -L '["env", "PATH='"${PATH}"'"]' install \
+             -L '["env", "PATH='"${PATH}"'"]' \
              -o "${OUT}/result" 2>&1
 
 echo OK

@@ -664,7 +664,7 @@ and, in a different shell, build *hello_world* in a clean build root using this
 serve endpoint
 
 ``` sh
-$ jst -R localhost:9999 --local-build-root ~/local-build-root build helloworld
+$ jst build -R localhost:9999 --local-build-root ~/local-build-root helloworld
 INFO: Found 5 repositories involved
 INFO: Using '127.0.0.1:9999' as the remote execution endpoint.
 INFO: Requested target 'tutorial//:helloworld' with config: {}
@@ -837,7 +837,7 @@ With all this, we can rebuild, using this _rc-file_ and with the same serve
 endpoint still running, successfully
 
 ``` sh
-$ jst --rc rc-file build helloworld
+$ jst build --rc rc-file helloworld
 INFO: Found 5 repositories involved
 INFO: Using 'localhost:9999' as the remote execution endpoint.
 INFO: Requested target 'tutorial//:helloworld' with config: {}

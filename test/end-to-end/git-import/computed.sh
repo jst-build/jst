@@ -191,8 +191,8 @@ echo
 cat repos-full.json
 grep DoNotImport && exit 1 || :  # we should not bring in unneeded binding
 echo
-"${JUST_MR}" -C repos-full.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos-full.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              --dump-plain-graph actions-full.json 2>&1
 
@@ -201,8 +201,8 @@ cat repos-full.json | "${DEDUPLICATE}" > repos.json
 cat repos.json
 echo
 
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              --dump-plain-graph actions.json 2>&1
 

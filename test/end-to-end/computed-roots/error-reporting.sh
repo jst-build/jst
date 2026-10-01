@@ -100,7 +100,7 @@ echo
 echo Building computed
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --log-limit 4 --main derived -o "${OUT}/derived" 2>&1
 echo
 
@@ -110,7 +110,7 @@ echo
 echo Not an export
 echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/not-export.log" \
     --log-limit 4 --main 'not export' 2>&1 && exit 1 || :
 echo
@@ -120,7 +120,7 @@ echo
 echo Not content fixed
 echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/not-content-fixed.log" \
     --log-limit 4 --main 'not content-fixed' 2>&1 && exit 1 || :
 echo
@@ -130,7 +130,7 @@ echo
 echo cycle
 echo
 "${JUST}" build -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/cycle.log" \
     --log-limit 4 --main 'cycle-A' 2>&1 && exit 1 || :
 echo

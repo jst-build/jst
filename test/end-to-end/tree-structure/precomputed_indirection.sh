@@ -92,15 +92,15 @@ cat repo-config.json
 echo
 
 echo "JustMR setup:"
-readonly CONF=$("${JUST_MR}" --norc --local-build-root "${LBRDIR}" \
-                 -C repo-config.json --main result  setup)
+readonly CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBRDIR}" \
+                 -C repo-config.json --main result)
 cat "${CONF}"
 echo
 
 echo "Build:"
 echo
 "${JUST}" install "${COMPAT}" -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C "${CONF}" -o "${OUT}/result" 2>&1
+    --local-build-root "${LBRDIR}" -B "${CONF}" -o "${OUT}/result" 2>&1
 
 echo
 cat "${OUT}/result/result.txt"

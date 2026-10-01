@@ -250,10 +250,10 @@ EOF
 echo "Test individual repos"
 
 test_alone() {
-  CONFIG_CPP=$("${JUST_MR_CPP}" -C test-repos.json --norc \
+  CONFIG_CPP=$("${JUST_MR_CPP}" setup -C test-repos.json --norc \
                                 --local-build-root "${BUILDROOT}" \
                                 -L '["env", "PATH='"${PATH}"'"]' \
-                                --parallel 32 setup "$1")
+                                --parallel 32 "$1")
   if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
   fi
@@ -278,10 +278,10 @@ test_alone distdir_repo
 
 echo "Set up parallel run"
 test_all() {
-  CONFIG_CPP=$("${JUST_MR_CPP}" -C test-repos.json --norc \
+  CONFIG_CPP=$("${JUST_MR_CPP}" setup -C test-repos.json --norc \
                                 --local-build-root "${BUILDROOT}" \
                                 -L '["env", "PATH='"${PATH}"'"]' \
-                                ${DISTDIR_ARGS} --parallel 32 setup --all)
+                                ${DISTDIR_ARGS} --parallel 32 --all)
   if [ ! -s "${CONFIG_CPP}" ]; then
     exit 1
   fi

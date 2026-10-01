@@ -51,12 +51,12 @@ cat > repos.json <<EOF
 }
 EOF
 
-"${JUST_MR}" --norc --local-build-root "${LBRA}" \
+"${JUST_MR}" install --norc --local-build-root "${LBRA}" \
              --remote-serve-address ${SERVE} \
              -f "${OUT}/build.log" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install --remember -o "${OUT}/result" \
+             --remember -o "${OUT}/result" \
              -D '{"DEPTH": "900"}' \
              --dump-artifacts artifacts.json \
              2>&1
@@ -71,17 +71,17 @@ grep 2 $(find "${OUT}/result" -name data2.txt)
 cat artifacts.json
 echo
 
-"${JUST_MR}" --norc --local-build-root "${LBRB}" \
+"${JUST_MR}" install-cas --norc --local-build-root "${LBRB}" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install-cas --remember -o "${OUT}/first-copy" \
+             --remember -o "${OUT}/first-copy" \
              $(jq -r '."'"${OUT}/result/out"'".id'  artifacts.json)::t \
              2>&1
 
-"${JUST_MR}" --norc --local-build-root "${LBRC}" \
+"${JUST_MR}" install-cas --norc --local-build-root "${LBRC}" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install-cas -o "${OUT}/second-copy" \
+             -o "${OUT}/second-copy" \
              $(jq -r '."'"${OUT}/result/out"'".id'  artifacts.json)::t \
              2>&1
 

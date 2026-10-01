@@ -63,11 +63,11 @@ echo
 
 echo Remotely obtained description
 echo
-"${JUST_MR}" --norc --local-build-root "${LBR2}" \
+"${JUST_MR}" describe --norc --local-build-root "${LBR2}" \
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --log-limit 6 \
-             --backend "${JUST}" describe > "${OUT}/describe"
+             --backend "${JUST}" > "${OUT}/describe"
 cat "${OUT}/describe"
 echo
 

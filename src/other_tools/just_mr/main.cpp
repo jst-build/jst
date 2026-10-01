@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -38,6 +41,7 @@
 #include "src/buildtool/logging/log_sink_cmdline.hpp"
 #include "src/buildtool/logging/log_sink_file.hpp"
 #include "src/buildtool/logging/logger.hpp"
+#include "src/buildtool/main/cli.hpp"
 #include "src/buildtool/main/version.hpp"
 #include "src/buildtool/storage/config.hpp"
 #include "src/buildtool/storage/garbage_collector.hpp"
@@ -56,22 +60,146 @@
 #include "src/other_tools/just_mr/utils.hpp"
 #include "src/utils/cpp/expected.hpp"
 
-#ifndef NO_BACKEND_CLI_DECL
-#define NO_BACKEND_CLI_DECL
-#endif
-#include "src/buildtool/main/cli.hpp"
-
 namespace {
 
-/// \brief Setup arguments for just-mr itself, common to all subcommands.
-void SetupCommonCommandArguments(
-    gsl::not_null<CLI::App*> const& app,
-    gsl::not_null<CommandLineArguments*> const& clargs) {
-    SetupMultiRepoCommonArguments(app, &clargs->common);
-    SetupMultiRepoLogArguments(app, &clargs->log);
-    SetupMultiRepoRemoteAuthArguments(app, &clargs->auth);
-    SetupRetryArguments(app, &clargs->retry);
+namespace Backend = Buildtool;
+
+/// \brief Groups of options of jst itself, selected per subcommand.
+enum class OptionGroup : std::uint8_t {
+    kRc,
+    kLog,
+    kBackend,
+    kConfig,
+    kBuildRoot,
+    kLauncher,
+    kDefines,
+    kRemote,
+    kServe
+};
+
+/// \brief Setup a single group of options of jst itself.
+void SetupOptionGroup(OptionGroup group,
+                      gsl::not_null<CLI::App*> const& app,
+                      gsl::not_null<CommandLineArguments*> const& clargs) {
+    switch (group) {
+        case OptionGroup::kRc:
+            SetupMultiRepoRcArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kLog:
+            SetupMultiRepoLogArguments(app, &clargs->log);
+            break;
+        case OptionGroup::kBackend:
+            SetupMultiRepoBackendArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kConfig:
+            SetupMultiRepoConfigArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kBuildRoot:
+            SetupMultiRepoBuildRootArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kLauncher:
+            SetupMultiRepoLauncherArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kDefines:
+            SetupMultiRepoDefinesArguments(app, &clargs->common);
+            break;
+        case OptionGroup::kRemote:
+            SetupMultiRepoRemoteArguments(app, &clargs->common);
+            SetupMultiRepoRemoteAuthArguments(app, &clargs->auth);
+            SetupRetryArguments(app, &clargs->retry);
+            break;
+        case OptionGroup::kServe:
+            SetupMultiRepoServeArguments(app, &clargs->common);
+            break;
+    }
 }
+
+/// \brief Setup the options of jst itself for a subcommand, steered by flags.
+void SetupJstArguments(gsl::not_null<CLI::App*> const& app,
+                       JustSubCmdFlags const& flags,
+                       gsl::not_null<CommandLineArguments*> const& clargs,
+                       bool launches_backend = false) {
+    SetupOptionGroup(OptionGroup::kRc, app, clargs);
+    SetupOptionGroup(OptionGroup::kLog, app, clargs);
+    // the setup of computed roots launches the backend itself
+    if (flags.config or launches_backend) {
+        SetupOptionGroup(OptionGroup::kBackend, app, clargs);
+    }
+    if (flags.config) {
+        SetupOptionGroup(OptionGroup::kConfig, app, clargs);
+    }
+    if (flags.build_root) {
+        SetupOptionGroup(OptionGroup::kBuildRoot, app, clargs);
+    }
+    // the setup runs actions locally itself, using the same launcher
+    if (flags.config or flags.launch) {
+        SetupOptionGroup(OptionGroup::kLauncher, app, clargs);
+    }
+    if (flags.defines) {
+        SetupOptionGroup(OptionGroup::kDefines, app, clargs);
+    }
+    if (flags.remote) {
+        SetupOptionGroup(OptionGroup::kRemote, app, clargs);
+    }
+    if (flags.serve) {
+        SetupOptionGroup(OptionGroup::kServe, app, clargs);
+    }
+}
+
+/// \brief The canonical name of an option, as used in diagnostics.
+[[nodiscard]] auto OptionName(CLI::Option const& option) -> std::string {
+    if (not option.get_lnames().empty()) {
+        return "--" + option.get_lnames().front();
+    }
+    if (not option.get_snames().empty()) {
+        return "-" + option.get_snames().front();
+    }
+    return option.get_name();
+}
+
+// The flags of jst's own subcommands; those describing what is forwarded to
+// the backend are irrelevant here, as these subcommands do not launch it.
+constexpr JustSubCmdFlags kSetupFlags{.config = true,
+                                      .parallel = true,
+                                      .build_root = true,
+                                      .launch = true,
+                                      .defines = false,
+                                      .remote = true,
+                                      .remote_props = false,
+                                      .serve = true,
+                                      .dispatch = false,
+                                      .does_build = false};
+constexpr JustSubCmdFlags kUpdateFlags{.config = true,
+                                       .parallel = true,
+                                       .build_root = true,
+                                       .launch = true,
+                                       .defines = false,
+                                       .remote = false,
+                                       .remote_props = false,
+                                       .serve = false,
+                                       .dispatch = false,
+                                       .does_build = false};
+constexpr JustSubCmdFlags kGcRepoFlags{.config = false,
+                                       .parallel = false,
+                                       .build_root = true,
+                                       .launch = false,
+                                       .defines = false,
+                                       .remote = false,
+                                       .remote_props = false,
+                                       .serve = false,
+                                       .dispatch = false,
+                                       .does_build = false};
+// All root-level options of jst itself, as accepted before the subcommand
+constexpr JustSubCmdFlags kRootFlags{.config = true,
+                                     .parallel = true,
+                                     .build_root = true,
+                                     .launch = true,
+                                     .defines = true,
+                                     .remote = true,
+                                     .remote_props = true,
+                                     .serve = true,
+                                     .dispatch = true,
+                                     .does_build = true};
 
 /// \brief Setup arguments for subcommand "just-mr fetch".
 void SetupFetchCommandArguments(
@@ -89,7 +217,7 @@ void SetupUpdateCommandArguments(
 }
 
 /// \brief Setup arguments for subcommand "just-mr gc-repo".
-void SetupUpdateGcArguments(
+void SetupGcRepoCommandArguments(
     gsl::not_null<CLI::App*> const& app,
     gsl::not_null<CommandLineArguments*> const& clargs) {
     SetupMultiRepoGcArguments(app, &clargs->gc);
@@ -103,11 +231,118 @@ void SetupSetupCommandArguments(
     SetupMultiRepoSetupArguments(app, &clargs->setup);
 }
 
+/// \brief Print the help text of a subcommand launching the backend, listing
+/// the options of jst itself as well as those the backend accepts for it.
+void PrintSubcommandHelp(std::string const& name,
+                         gsl::not_null<CLI::App const*> const& backend_subcmd) {
+    CLI::App help_app{backend_subcmd->get_description(), "jst " + name};
+    help_app.option_defaults()->take_last();
+    // the backend's options first, as they define the positional arguments
+    Backend::CommandLineArguments backend_clargs{};
+    Backend::SetupSubcommandArguments(&help_app, name, &backend_clargs);
+    // those of jst replace the ones it consumes itself, as it is jst that acts
+    // on them; the remaining ones are added to the end of the list
+    CommandLineArguments clargs{};
+    CLI::App jst_app{};
+    SetupJstArguments(&jst_app, kKnownJustSubcommands.at(name), &clargs, true);
+    for (auto const* option : jst_app.get_options()) {
+        if (option == jst_app.get_help_ptr()) {
+            continue;
+        }
+        if (auto* known = help_app.get_option_no_throw(OptionName(*option))) {
+            help_app.remove_option(known);
+        }
+    }
+    SetupJstArguments(&help_app, kKnownJustSubcommands.at(name), &clargs, true);
+    std::cout << help_app.help() << std::endl;
+}
+
+/// \brief The recorded arguments, segregated by options and positionals.
+struct RecordedArgs {
+    std::vector<std::string> options;
+    std::vector<std::string> positionals;
+};
+
+/// \brief Record the arguments of the options of the backend, to forward them
+/// once it is launched. Options are recorded as "--name=value", so that a value
+/// can never be taken for an option; positional arguments are kept apart, as
+/// they are forwarded behind a "--" for the very same reason.
+void RecordBackendArgs(gsl::not_null<CLI::App*> const& app,
+                       gsl::not_null<RecordedArgs*> const& args) {
+    for (auto* option : app->get_options()) {
+        if (option->get_positional()) {
+            option->each([args](std::string const& value) {
+                args->positionals.emplace_back(value);
+            });
+        }
+        else {
+            option->each(
+                [args, name = OptionName(*option)](std::string const& value) {
+                    auto arg = name;
+                    arg += "=";
+                    arg += value;
+                    args->options.emplace_back(std::move(arg));
+                });
+        }
+        // record in the order given on the command line, not per option
+        option->trigger_on_parse();
+    }
+}
+
+/// \brief Reconstruct the arguments to forward to the backend: its options,
+/// followed by its positional arguments behind a "--", so that none of the
+/// latter can be taken for an option. The extras are the arguments neither of
+/// the two knows; they are forwarded as well, for the backend to report them.
+[[nodiscard]] auto ReconstructBackendArgV(
+    RecordedArgs const& args,
+    std::vector<std::string> const& extras) -> std::vector<std::string> {
+    auto argv = args.options;
+    for (auto const& extra : extras) {
+        if (extra != "--") {  // a "--" given is dropped, one is added below
+            argv.emplace_back(extra);
+        }
+    }
+    if (not args.positionals.empty()) {
+        argv.emplace_back("--");
+        argv.insert(
+            argv.end(), args.positionals.begin(), args.positionals.end());
+    }
+    return argv;
+}
+
+/// \brief Setup the arguments of the backend for a subcommand launching it, so
+/// that the whole command line is understood, and record the ones only the
+/// backend knows, to forward them to it later.
+void SetupBackendOnlySubcommandArguments(
+    gsl::not_null<CLI::App*> const& app,
+    JustSubCmdFlags const& flags,
+    gsl::not_null<Backend::CommandLineArguments*> const& backend_clargs,
+    gsl::not_null<RecordedArgs*> const& backend_args) {
+    // the backend's arguments first, as they define the positional ones
+    Backend::SetupSubcommandArguments(app, app->get_name(), backend_clargs);
+    // for the options both define, the definition of jst is used, as it is jst
+    // that acts on them and forwards them itself; so drop them here
+    CLI::App jst_app{};
+    CommandLineArguments clargs{};
+    SetupJstArguments(&jst_app, flags, &clargs, /*launches_backend=*/true);
+    for (auto const* option : jst_app.get_options()) {
+        if (option == jst_app.get_help_ptr()) {
+            continue;
+        }
+        if (auto* known = app->get_option_no_throw(OptionName(*option))) {
+            app->remove_option(known);
+        }
+    }
+    // what remains are the arguments only the backend knows
+    RecordBackendArgs(app, backend_args);
+}
+
 [[nodiscard]] auto ParseCommandLineArguments(int argc, char const* const* argv)
     -> CommandLineArguments {
     CLI::App app(
         "jst, a multi-repository configuration tool and launcher for the "
-        "build tool");
+        "build tool",
+        "jst");
     app.option_defaults()->take_last();
     auto* cmd_mrversion = app.add_subcommand(
         "version", "Print version information in JSON format of this tool.");
@@ -127,7 +362,7 @@ void SetupSetupCommandArguments(
     cmd_backend->set_help_flag();  // disable help flag
     // define just subcommands
     CLI::App app_backend_subcommands("jst_backend subcommands.");
-    CreateBackendSubcommands(app_backend_subcommands);
+    Backend::CreateSubcommands(app_backend_subcommands);
     std::vector<CLI::App*> cmd_just_subcmds{};
     cmd_just_subcmds.reserve(kKnownJustSubcommands.size());
     for (auto const& known_subcmd : kKnownJustSubcommands) {
@@ -141,14 +376,37 @@ void SetupSetupCommandArguments(
     app.require_subcommand(1);
 
     CommandLineArguments clargs;
-    // first, set the common arguments for just-mr itself
-    SetupCommonCommandArguments(&app, &clargs);
-    // then, set the arguments for each subcommand
+    // allow common jst arguments in two places:
+    // 1. before the subcommand, at the root level
+    SetupJstArguments(&app, kRootFlags, &clargs, /*launches_backend=*/true);
+    // 2. after the subcommand, but only a meaningful subset; "version" takes
+    //    none, as it only prints the version information of jst itself
+    SetupJstArguments(cmd_setup, kSetupFlags, &clargs);
+    SetupJstArguments(cmd_setup_env, kSetupFlags, &clargs);
+    SetupJstArguments(cmd_fetch, kSetupFlags, &clargs);
+    SetupJstArguments(cmd_update, kUpdateFlags, &clargs);
+    SetupJstArguments(cmd_gc_repo, kGcRepoFlags, &clargs);
+
+    // setup the normal jst subcommand arguments
     SetupSetupCommandArguments(cmd_setup, &clargs);
     SetupSetupCommandArguments(cmd_setup_env, &clargs);
     SetupFetchCommandArguments(cmd_fetch, &clargs);
     SetupUpdateCommandArguments(cmd_update, &clargs);
-    SetupUpdateGcArguments(cmd_gc_repo, &clargs);
+    SetupGcRepoCommandArguments(cmd_gc_repo, &clargs);
+
+    // setup the backend subcommands so that all arguments are understood
+    Backend::CommandLineArguments backend_clargs{};
+    RecordedArgs recorded_args{};
+    for (auto* sub_cmd : cmd_just_subcmds) {
+        auto const& flags = kKnownJustSubcommands.at(sub_cmd->get_name());
+        // setup backend-only arguments for subcommand, without those arguments
+        // that are also supported by jst (filtered out to avoid collision);
+        // the ones only the backend knows are recorded while parsing
+        SetupBackendOnlySubcommandArguments(
+            sub_cmd, flags, &backend_clargs, &recorded_args);
+        // setup common jst arguments, only the relevant subset steered by flags
+        SetupJstArguments(sub_cmd, flags, &clargs, /*launches_backend=*/true);
+    }
 
     // for 'just' calls, allow extra arguments
     cmd_backend->allow_extras();
@@ -198,10 +456,24 @@ void SetupSetupCommandArguments(
                 clargs.cmd = SubCommand::kJustSubCmd;
                 clargs.just_cmd.subcmd_name =
                     sub_cmd->get_name();  // get name of subcommand
-                // get remaining args
-                clargs.just_cmd.additional_just_args = sub_cmd->remaining();
+                clargs.just_cmd.additional_just_args =
+                    ReconstructBackendArgV(recorded_args, sub_cmd->remaining());
                 break;  // no need to go further
             }
+        }
+    }
+
+    // for the subcommands launching the backend, describe its options together
+    // with the ones of jst, instead of launching it to print its own help
+    if (clargs.cmd == SubCommand::kJustSubCmd) {
+        auto const& args = clargs.just_cmd.additional_just_args;
+        if (std::any_of(args.begin(), args.end(), [](auto const& arg) {
+                return arg == "-h" or arg == "--help";
+            })) {
+            auto const& name = *clargs.just_cmd.subcmd_name;
+            PrintSubcommandHelp(name,
+                                app_backend_subcommands.get_subcommand(name));
+            std::exit(kExitSuccess);
         }
     }
 

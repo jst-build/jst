@@ -16,4 +16,4 @@
 : ${JST:=jst}
 
 cd $(readlink -f $(dirname $0)/..)
-${JST} --main lint build -p format.diff | (patch -p1)
+${JST} build --main lint -p format.diff | (patch -p1)

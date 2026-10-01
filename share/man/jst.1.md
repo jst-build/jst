@@ -8,13 +8,13 @@ jst - multi-repository configuration tool and launcher for the build tool
 SYNOPSIS
 ========
 
-**`jst`** \[*`OPTION`*\]... **`version`**  
-**`jst`** \[*`OPTION`*\]... {**`setup`**|**`setup-env`**} \[**`--all`**\] \[*`main-repo`*\]  
-**`jst`** \[*`OPTION`*\]... **`fetch`** \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
-**`jst`** \[*`OPTION`*\]... **`update`** \[*`repo`*\]...  
-**`jst`** \[*`OPTION`*\]... **`gc-repo`** \[**`--drop-only`**\]  
+**`jst`** **`version`**  
+**`jst`** {**`setup`**|**`setup-env`**} \[*`OPTION`*\]... \[**`--all`**\] \[*`main-repo`*\]  
+**`jst`** **`fetch`** \[*`OPTION`*\]... \[**`--all`**\] \[**`--backup-to-remote`**] \[**`-o`** *`fetch-dir`*\] \[*`main-repo`*\]  
+**`jst`** **`update`** \[*`OPTION`*\]... \[*`repo`*\]...  
+**`jst`** **`gc-repo`** \[*`OPTION`*\]... \[**`--drop-only`**\]  
 **`jst`** \[*`OPTION`*\]... **`backend`** \[*`JST_BACKEND_ARG`*\]...  
-**`jst`** \[*`OPTION`*\]... {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**|**`serve`**|**`execute`**} \[*`JST_BACKEND_ARG`*\]...  
+**`jst`** {**`version`**|**`describe`**|**`analyse`**|**`build`**|**`install`**|**`install-cas`**|**`add-to-cas`**|**`rebuild`**|**`gc`**|**`eval`**|**`serve`**|**`execute`**} \[*`OPTION`*\]... \[*`JST_BACKEND_ARG`*\]...  
 
 DESCRIPTION
 ===========
@@ -32,91 +32,34 @@ details on the input format.
 OPTIONS
 =======
 
+Options are given after the subcommand, like the options of
+**`jst_backend`**(1). Each subcommand accepts the option groups listed
+below for it; any other option is reported as an error. For the
+subcommands launching **`jst_backend`**, all remaining arguments are passed
+on to it unchanged.
+
 General options
 ---------------
+
+Accepted by every subcommand except **`version`**, which takes no options at
+all.
 
 **`-h`**, **`--help`**  
 Output a usage message and exit.
 
-**`-C`**, **`--repository-config`** *`PATH`*  
-Path to the multi-repository configuration file. See
-**`jst-repo-config`**(5) for more details. If no configuration
-file is specified, **`jst`** will look for one in the following
-order:
+**`--rc`** *`PATH`*  
+Path to the jstrc file to use. See **`jstrc`**(5) for more
+details.  
+Default: file path *`".jstrc"`* in the user's home directory.
 
- - *`$WORKSPACE_ROOT/repos.json`* (workspace of the **`jst`** invocation)
- - *`$WORKSPACE_ROOT/etc/repos.json`* (workspace of the **`jst`**
-   invocation)
- - *`$HOME/.jst-repos.json`*
- - *`/etc/jst-repos.json`*
+**`--norc`**  
+Option to prevent reading any **`jstrc`**(5) file.
 
-The default configuration lookup order can be adjusted in the jstrc
-file. See **`jstrc`**(5) for more details.
-
-**`--absent`** *`PATH`*  
-Path to a file specifying which repositories are to be considered
-absent, overriding the values set by the *`"pragma"`* entries in the
-multi-repository configuration. The file has to contain a JSON array
-of those repository names to be considered absent.
-
-**`-D`**, **`--defines`** *`JSON`*  
-Defines, via an in-line JSON object, an overlay configuration for
-**`jst_backend`**(1); if used as a launcher for a subcommand known to support
-**`--defines`**, this defines value is forwarded, otherwise it is
-ignored. If **`-D`** is given several times, the **`-D`** options
-overlay (in the sense of *`map_union`*) in the order they are given on
-the command line.
-
-**`--local-build-root`** *`PATH`*  
-Root for local CAS, cache, and build directories. The path will be
-created if it does not exist already. This option overwrites any values
-set in the **`jstrc`**(5) file.  
-Default: path *`".cache/jst"`* in user's home directory.
-
-**`--checkout-locations`** *`PATH`*  
-Specification file for checkout locations and additional mirrors.
-This file contains a JSON object with several known keys:
-
- - the key *`"<version control>"`* of key *`"checkouts"`* specifies
-   pairs of repository URLs as keys and absolute paths as values.
-   Currently supported version control is Git, therefore
-   the respective key is *`"git"`*. The paths contained for each repository
-   URL point to existing locations on the filesystem containing the
-   checkout of the respective repository.  
- - the key *`"local mirrors"`*, if given, is a JSON object mapping primary
-   URLs to a list of local (non-public) mirrors. These mirrors are always
-   tried first (in the given order) before any other URL is contacted.
- - the key *`"preferred hostnames"`*, if given, is a list of strings
-   specifying known hostnames. When fetching from a non-local mirror, URLs
-   with hostnames in the given list are preferred (in the order given)
-   over URLs with other hostnames.
- - the key *`"extra inherit env"`*, if given, is a list of strings
-   specifying additional variable names to be inherited from the
-   environment (besides the ones specified in *`"inherit env"`*
-   of the respective repository definition). This can be useful,
-   if the local git mirrors use a different protocol (like `ssh`
-   instead of `https`) and hence require different variables to
-   pass the credentials.
-
-This options overwrites any values set in the **`jstrc`**(5) file.  
-Default: file path *`".jst-local.json"`* in user's home directory.
-
-**`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
-JSON array with the list of strings representing the launcher to prepend
-actions' commands before being executed locally.  
-Default: *`["env", "--"]`*.
-
-**`--distdir`** *`PATH`*  
-Directory to look for distfiles before fetching. If given, this will be
-the first place distfiles are looked for. This option can be given
-multiple times to specify a list of distribution directories that are
-used for lookup in the order they appear on the command line.
-Directories specified via this option will be appended to the ones set
-in the **`jstrc`**(5) file.  
-Default: the single file path *`".distfiles"`* in user's home directory.
-
-**`--main`** *`NAME`*  
-The repository to take the target from.
+**`--dump-rc`** *`PATH`*  
+Dump the effective rc, i.e., the rc after overlaying all applicable auxiliary
+files specified in the `"rc files"` field, to the specified file. In this
+way, an rc can be made self-contained in preparation for committing it to
+a repository.
 
 **`-f`**, **`--log-file`** *`PATH`*  
 Path to local log file. **`jst`** will store the information printed on
@@ -156,62 +99,84 @@ the command line wins.
 **`--log-append`**  
 Append messages to log file instead of overwriting existing.
 
-**`--no-fetch-ssl-verify`**  
-Disable the default peer SSL certificate verification step when fetching
-archives (for which we verify the hash anyway) from remote.
+Backend options
+---------------
 
-**`--fetch-cacert`** *`PATH`*  
-Path to the CA certificate bundle containing one or more certificates to
-be used to peer verify archive fetches from remote.
-
-**`-r`**, **`--remote-execution-address`** *`NAME`*:*`PORT`*  
-Address of a remote execution service. This is used as an intermediary fetch
-location for archives, between local CAS (or distdirs) and the network.
-
-**`--remote-instance-name`** *`NAME`*
-Value to pass as `instance_name` in the remote execution API.  
-
-**`-R`**, **`--remote-serve-address`** *`NAME`*:*`PORT`*  
-Address of a **`jst_backend`** **`serve`** service. This is used as intermediary fetch
-location for Git commits, between local CAS and the network.
-
-**`--max-attempts`** *`NUM`*  
-If a remote procedure call (rpc) returns `grpc::StatusCode::UNAVAILABLE`, that
-rpc is retried at most *`NUM`* times. (Default: 1, i.e., no retry).
-
-**`--initial-backoff-seconds`** *`NUM`*  
-Before retrying the second time, the client will wait the given amount of
-seconds plus a jitter, to better distribute the workload. (Default: 1).
-
-**`--max-backoff-seconds`** *`NUM`*  
-From the third attempt (included) on, the backoff time is doubled at
-each attempt, until it exceeds the `max-backoff-seconds`
-parameter. From that point, the waiting time is computed as
-`max-backoff-seconds` plus a jitter. (Default: 60)
-
-**`--fetch-absent`**  
-Try to make available all repositories, including those marked as absent.
-This option cannot be set together with **`--compatible`**.
-
-**`--compatible`**  
-At increased computational effort, be compatible with the original remote build
-execution protocol. If a remote execution service address is provided, this 
-option can be used to match the artifacts expected by the remote endpoint.
+Accepted by the subcommands using the build tool backend, which are all but
+**`version`** and **`gc-repo`**.
 
 **`--backend`** *`PATH`*  
 Name of the backend binary in *`PATH`* or path to the backend binary.  
 Default: *`"jst_backend"`*.
 
-**`--rc`** *`PATH`*  
-Path to the jstrc file to use. See **`jstrc`**(5) for more
-details.  
-Default: file path *`".jstrc"`* in the user's home directory.
+Configuration options
+---------------------
 
-**`--dump-rc`** *`PATH`*  
-Dump the effective rc, i.e., the rc after overlaying all applicable auxiliary
-files specified in the `"rc files"` field, to the specified file. In this
-way, an rc can be made self-contained in preparation for committing it to
-a repository.
+Accepted by the subcommands reading the multi-repository configuration and
+setting up the repositories described in it, i.e., **`setup`**,
+**`setup-env`**, **`fetch`**, **`update`**, **`describe`**, **`analyse`**,
+**`build`**, **`install`**, and **`rebuild`**.
+
+**`-C`**, **`--repository-config`** *`PATH`*  
+Path to the multi-repository configuration file. See
+**`jst-repo-config`**(5) for more details. If no configuration
+file is specified, **`jst`** will look for one in the following
+order:
+
+ - *`$WORKSPACE_ROOT/repos.json`* (workspace of the **`jst`** invocation)
+ - *`$WORKSPACE_ROOT/etc/repos.json`* (workspace of the **`jst`**
+   invocation)
+ - *`$HOME/.jst-repos.json`*
+ - *`/etc/jst-repos.json`*
+
+The default configuration lookup order can be adjusted in the jstrc
+file. See **`jstrc`**(5) for more details.
+
+**`--absent`** *`PATH`*  
+Path to a file specifying which repositories are to be considered
+absent, overriding the values set by the *`"pragma"`* entries in the
+multi-repository configuration. The file has to contain a JSON array
+of those repository names to be considered absent.
+
+**`--checkout-locations`** *`PATH`*  
+Specification file for checkout locations and additional mirrors.
+This file contains a JSON object with several known keys:
+
+ - the key *`"<version control>"`* of key *`"checkouts"`* specifies
+   pairs of repository URLs as keys and absolute paths as values.
+   Currently supported version control is Git, therefore
+   the respective key is *`"git"`*. The paths contained for each repository
+   URL point to existing locations on the filesystem containing the
+   checkout of the respective repository.  
+ - the key *`"local mirrors"`*, if given, is a JSON object mapping primary
+   URLs to a list of local (non-public) mirrors. These mirrors are always
+   tried first (in the given order) before any other URL is contacted.
+ - the key *`"preferred hostnames"`*, if given, is a list of strings
+   specifying known hostnames. When fetching from a non-local mirror, URLs
+   with hostnames in the given list are preferred (in the order given)
+   over URLs with other hostnames.
+ - the key *`"extra inherit env"`*, if given, is a list of strings
+   specifying additional variable names to be inherited from the
+   environment (besides the ones specified in *`"inherit env"`*
+   of the respective repository definition). This can be useful,
+   if the local git mirrors use a different protocol (like `ssh`
+   instead of `https`) and hence require different variables to
+   pass the credentials.
+
+This options overwrites any values set in the **`jstrc`**(5) file.  
+Default: file path *`".jst-local.json"`* in user's home directory.
+
+**`--distdir`** *`PATH`*  
+Directory to look for distfiles before fetching. If given, this will be
+the first place distfiles are looked for. This option can be given
+multiple times to specify a list of distribution directories that are
+used for lookup in the order they appear on the command line.
+Directories specified via this option will be appended to the ones set
+in the **`jstrc`**(5) file.  
+Default: the single file path *`".distfiles"`* in user's home directory.
+
+**`--main`** *`NAME`*  
+The repository to take the target from.
 
 **`--git`** *`PATH`*  
 Path to the git binary in *`PATH`* or path to the git binary. Used in
@@ -220,8 +185,13 @@ among those instances only if the `libgit2` **`jst`** is built against
 does not support SSH by executing the system's `ssh` binary.  
 Default: *`"git"`*.
 
-**`--norc`**  
-Option to prevent reading any **`jstrc`**(5) file.
+**`--no-fetch-ssl-verify`**  
+Disable the default peer SSL certificate verification step when fetching
+archives (for which we verify the hash anyway) from remote.
+
+**`--fetch-cacert`** *`PATH`*  
+Path to the CA certificate bundle containing one or more certificates to
+be used to peer verify archive fetches from remote.
 
 **`--parallel`** *`NUM`*  
 Number of tasks to run in parallel, e.g., for importing to git. The value
@@ -238,6 +208,91 @@ subcommands whose work consists of fetching, i.e., *`fetch`* and
 *`update`*; during a *`setup`*, the fetches share the parallelism of the
 other work.  
 Default: value of **`--parallel`**.  
+
+**`--fetch-absent`**  
+Try to make available all repositories, including those marked as absent.
+This option cannot be set together with **`--compatible`**.
+
+Build-root options
+------------------
+
+Accepted by every subcommand using the local build root, i.e., by all but
+**`version`**, **`eval`**, and **`serve`**.
+
+**`--local-build-root`** *`PATH`*  
+Root for local CAS, cache, and build directories. The path will be
+created if it does not exist already. This option overwrites any values
+set in the **`jstrc`**(5) file.  
+Default: path *`".cache/jst"`* in user's home directory.
+
+Launcher options
+----------------
+
+Accepted by the subcommands running actions locally, i.e., by the
+*configuration options* subcommands above and by **`execute`**.
+
+**`-L`**, **`--local-launcher`** *`JSON_ARRAY`*  
+JSON array with the list of strings representing the launcher to prepend
+actions' commands before being executed locally.  
+Default: *`["env", "--"]`*.
+
+Overlay options
+---------------
+
+Accepted by the subcommands analysing targets, i.e., **`describe`**,
+**`analyse`**, **`build`**, **`install`**, **`rebuild`**, and **`eval`**.
+
+**`-D`**, **`--defines`** *`JSON`*  
+Defines, via an in-line JSON object, an overlay configuration for
+**`jst_backend`**(1), to which it is forwarded. If **`-D`** is given several
+times, the **`-D`** options overlay (in the sense of *`map_union`*) in the
+order they are given on the command line, and are forwarded as a single
+overlay configuration.
+
+Remote-execution options
+------------------------
+
+Accepted by the subcommands acting as a client of a remote-execution
+service, i.e., the *configuration options* subcommands above except
+**`update`**, as well as **`install-cas`** and **`add-to-cas`**. The
+*authentication options* below belong to this group as well.
+
+**`-r`**, **`--remote-execution-address`** *`NAME`*:*`PORT`*  
+Address of a remote execution service. This is used as an intermediary fetch
+location for archives, between local CAS (or distdirs) and the network.
+
+**`--remote-instance-name`** *`NAME`*
+Value to pass as `instance_name` in the remote execution API.  
+
+**`--compatible`**  
+At increased computational effort, be compatible with the original remote build
+execution protocol. If a remote execution service address is provided, this 
+option can be used to match the artifacts expected by the remote endpoint.
+
+**`--max-attempts`** *`NUM`*  
+If a remote procedure call (rpc) returns `grpc::StatusCode::UNAVAILABLE`, that
+rpc is retried at most *`NUM`* times. (Default: 1, i.e., no retry).
+
+**`--initial-backoff-seconds`** *`NUM`*  
+Before retrying the second time, the client will wait the given amount of
+seconds plus a jitter, to better distribute the workload. (Default: 1).
+
+**`--max-backoff-seconds`** *`NUM`*  
+From the third attempt (included) on, the backoff time is doubled at
+each attempt, until it exceeds the `max-backoff-seconds`
+parameter. From that point, the waiting time is computed as
+`max-backoff-seconds` plus a jitter. (Default: 60)
+
+Serve options
+-------------
+
+Accepted by the subcommands using a remote **`serve`** service, i.e.,
+**`setup`**, **`setup-env`**, **`fetch`**, **`describe`**, **`analyse`**,
+**`build`**, **`install`**, and **`rebuild`**.
+
+**`-R`**, **`--remote-serve-address`** *`NAME`*:*`PORT`*  
+Address of a **`jst_backend`** **`serve`** service. This is used as intermediary fetch
+location for Git commits, between local CAS and the network.
 
 Authentication options
 ----------------------
@@ -364,6 +419,12 @@ the configuration or on the command line. If no main repository is
 provided, the lexicographical first repository from the configuration is
 used.
 
+As every argument after **`backend`** is forwarded unchanged, the options of
+**`jst`** itself, in particular **`--backend`** naming the binary to call, have
+to be given before it. This is also the way to give an option to
+**`jst_backend`** alone, for instance a local build root differing from the one
+used for the setup.
+
 All logging arguments given to **`jst`** are passed to **`jst_backend`** as early
 arguments. If log files are provided, an unconditional
 **`--log-append`** argument is passed as well, which ensures no log
@@ -391,7 +452,10 @@ early arguments for those *known* subcommands that accept them, according to
 
 This subcommand is the explicit way of specifying *known* **`jst_backend`**
 subcommands and calling **`jst_backend`** via **`execvp`**(2). The same description
-as for the **`backend`** subcommand applies.
+as for the **`backend`** subcommand applies, except that the options of
+**`jst`** are given after the subcommand, like the options of
+**`jst_backend`**; only the arguments that are not options of **`jst`** for
+this subcommand are forwarded.
 
 **`gc-repo`**
 -------------

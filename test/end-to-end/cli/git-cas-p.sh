@@ -52,8 +52,8 @@ cat > repos.json <<EOF
 EOF
 cat repos.json
 echo
-"${JUST_MR}" --norc --local-build-root "${BUILDROOT}" \
-             --distdir "${DISTDIR}" setup > CONF
+"${JUST_MR}" setup --norc --local-build-root "${BUILDROOT}" \
+             --distdir "${DISTDIR}" > CONF
 echo
 cat CONF
 echo

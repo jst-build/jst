@@ -172,7 +172,7 @@ cat > repos.json <<EOF
 EOF
 
 # Compute the repository configuration
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}")
 cat "${CONF}"
 echo
 
@@ -263,16 +263,16 @@ test "$(cat "${INSTALL_DIR_SPECIAL_COMPLETE}/${INDIRECT_LINK_PATH}")" = "${TEST_
 
 echo === symlink cycle detection ===
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
-             -f "${LOG_ARCHIVE_REPO}" setup foo_cycle_archive \
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
+             -f "${LOG_ARCHIVE_REPO}" foo_cycle_archive \
              && echo "this should fail" >&2 && exit 1
 echo "failed as expected"
 # check for cycle in log file
 grep "${CYCLE_LINK_2_PATH}" "${LOG_ARCHIVE_REPO}"
 grep "${CYCLE_LINK_1_PATH}" "${LOG_ARCHIVE_REPO}"
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
-             -f "${LOG_FILE_REPO}" setup foo_cycle_file \
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" \
+             -f "${LOG_FILE_REPO}" foo_cycle_file \
              && echo "this should fail" >&2 && exit 1
 echo "failed as expected"
 # check for cycle in log file

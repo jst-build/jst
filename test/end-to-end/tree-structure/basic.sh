@@ -137,7 +137,7 @@ echo
 
 echo "Building tree_structure_1 (expected a new cache entry):"
 ("${JUST}" install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --main tree_structure_1 --log-limit 4 -o "${OUT}/tree_structure_1" 2>&1) > \
     "${OUT}/log"
 echo
@@ -149,7 +149,7 @@ grep 'Export target '\''tree_structure_1//:""'\'' registered for caching' \
 
 echo "Building tree_structure_2 (expected to be taken from cache):"
 ("${JUST}" install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     --main tree_structure_2 --log-limit 4 -o "${OUT}/tree_structure_2" 2>&1) > \
     "${OUT}/log2"
 echo

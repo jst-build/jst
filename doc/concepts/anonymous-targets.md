@@ -178,7 +178,7 @@ intensionally equal. Our action graph will contain 4 actions: one with
 origins `["foo", "bar"]`, one with origins `["baz"]`, one with origins
 `["foo upper", "bar upper"]`, and one with origins `["baz
 upper"]`. The `"install"` target will, of course, not create any
-actions. Building sequentially (`-J 1`), we will get one cache hit. Even
+actions. Building sequentially (`-j 1`), we will get one cache hit. Even
 though the artifacts of `"foo"` and `"bar"` and of `"baz"` are defined
 differently, they are extensionally equal; both define a file with
 contents `"Hello World\n"`.

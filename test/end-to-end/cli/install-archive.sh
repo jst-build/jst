@@ -74,7 +74,7 @@ echo
 cat > TARGETS <<'EOF'
 {"": {"type": "install", "dirs": [[["TREE", null, "."], "."]]}}
 EOF
-CONF="$("${JUST_MR}" --norc --local-build-root "${BUILD_ROOT_B}" setup)"
+CONF="$("${JUST_MR}" setup --norc --local-build-root "${BUILD_ROOT_B}")"
 echo
 echo configuration $CONF
 cat $CONF

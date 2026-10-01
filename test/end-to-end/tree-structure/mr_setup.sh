@@ -134,16 +134,16 @@ echo
 # tree_structure_2 is.
 
 echo "JustMR setup for tree_structure_1:"
-readonly CONF_1=$("${JUST_MR}" --norc --local-build-root "${LBRDIR}" \
-                 -C repo-config.json --main tree_structure_1  setup)
+readonly CONF_1=$("${JUST_MR}" setup --norc --local-build-root "${LBRDIR}" \
+                 -C repo-config.json --main tree_structure_1)
 cat "${CONF_1}"
 echo
 
 echo "Building tree_structure_1 (expected a new cache entry):"
 echo
-("${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+("${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main tree_structure_1  --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
+            -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
             --log-limit 4 -o "${OUT}/tree_structure_1" 2>&1) > "${OUT}/log"
 
 cat "${OUT}/log"
@@ -152,16 +152,16 @@ grep 'Export target '\''tree_structure_1//:""'\'' registered for caching' \
       "${OUT}/log"
 
 echo "JustMR setup for tree_structure_2:"
-readonly CONF_2=$("${JUST_MR}" --norc --local-build-root "${LBRDIR}" \
-                 -C repo-config.json --main tree_structure_2  setup)
+readonly CONF_2=$("${JUST_MR}" setup --norc --local-build-root "${LBRDIR}" \
+                 -C repo-config.json --main tree_structure_2)
 cat "${CONF_2}"
 echo
 
 echo "Building tree_structure_2 (expected to be taken from cache):"
 echo
-("${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+("${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main tree_structure_2  --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
+            -L '["env", "PATH='"${PATH}"'"]' "${COMPAT}" \
             --log-limit 4 -o "${OUT}/tree_structure_2" 2>&1) > "${OUT}/log2"
 
 cat "${OUT}/log2"

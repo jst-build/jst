@@ -73,7 +73,7 @@ echo blablabla > data.txt
 cat > rc.json <<'EOF'
 {"invocation log": {"project id": "first-run"}}
 EOF
-MY_CONTEXT=TeStCoNtExT "${JUST_MR}" --rc "${RC}" build upper 2>&1
+MY_CONTEXT=TeStCoNtExT "${JUST_MR}" build --rc "${RC}" upper 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/first-run/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 
@@ -85,13 +85,13 @@ echo
 [ $(jq '.actions | .[] | .cached' "${PROFILE}") = "false" ]
 
 OUT_ARTIFACT=$(jq -r '.actions | .[] | .artifacts."upper.txt"' "${PROFILE}")
-"${JUST_MR}" --rc "${RC}" install-cas -o "${OUT}/upper.txt" "${OUT_ARTIFACT}" 2>&1
+"${JUST_MR}" install-cas --rc "${RC}" -o "${OUT}/upper.txt" "${OUT_ARTIFACT}" 2>&1
 grep BLABLABLA "${OUT}/upper.txt"
 
 STDOUT=$(jq -r '.actions | .[] | .stdout' "${PROFILE}")
 STDERR=$(jq -r '.actions | .[] | .stderr' "${PROFILE}")
-"${JUST_MR}" --rc "${RC}" install-cas -o "${OUT}/stdout" "${STDOUT}" 2>&1
-"${JUST_MR}" --rc "${RC}" install-cas -o "${OUT}/stderr" "${STDERR}" 2>&1
+"${JUST_MR}" install-cas --rc "${RC}" -o "${OUT}/stdout" "${STDOUT}" 2>&1
+"${JUST_MR}" install-cas --rc "${RC}" -o "${OUT}/stderr" "${STDERR}" 2>&1
 grep StdOuT "${OUT}/stdout"
 grep StdErR "${OUT}/stderr"
 
@@ -134,7 +134,7 @@ echo
 cat > rc.json <<'EOF'
 {"invocation log": {"project id": "second-run"}}
 EOF
-"${JUST_MR}" --rc "${RC}" build upper 2>&1
+"${JUST_MR}" build --rc "${RC}" upper 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/second-run/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 

@@ -58,7 +58,7 @@ while [ ! -f "${WORK_DIR_REMOVED_FILE}" ]
 do
   sleep 1
 done
-${TOOL} install --local-build-root "${ROOT}" -C "${REPOS}" -o "${OUTDIR}" > "${WORKER_LOG}" 2>&1
+${TOOL} install --local-build-root "${ROOT}" -B "${REPOS}" -o "${OUTDIR}" > "${WORKER_LOG}" 2>&1
 touch "${DONE_FILE}"
 EOF
 chmod 755 worker.sh

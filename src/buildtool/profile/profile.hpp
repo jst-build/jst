@@ -30,6 +30,8 @@
 #include "src/buildtool/main/cli.hpp"
 
 class Profile {
+    using CommandLineArguments = Buildtool::CommandLineArguments;
+
   public:
     explicit Profile(std::string output_file, CommandLineArguments const& cli)
         : output_file_{std::move(output_file)} {

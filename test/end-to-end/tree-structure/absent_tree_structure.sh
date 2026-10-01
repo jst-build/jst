@@ -139,11 +139,11 @@ EOF
 
 echo
 echo "Absent tree structure root of an absent root. Expected to be computed on serve:"
-("${JUST_MR}" --rc "${RCFILE}" \
+("${JUST_MR}" install --rc "${RCFILE}" \
     --local-build-root "${LBRDIR}/absent_absent" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_foo -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --backend "${JUST}" install -o "${OUT}/absent_absent" 2>&1) \
+    --backend "${JUST}" -o "${OUT}/absent_absent" 2>&1) \
     > "${OUT}/log_absent_absent"
 
 echo
@@ -164,11 +164,11 @@ EOF
 echo
 echo "Local tree structure root of an absent root."
 echo "Expected to be computed on serve and downloaded:"
-("${JUST_MR}" --rc "${RCFILE}" \
+("${JUST_MR}" install --rc "${RCFILE}" \
     --local-build-root "${LBRDIR}/local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_foo -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --backend "${JUST}" install -o "${OUT}/result_foo" 2>&1) \
+    --backend "${JUST}" -o "${OUT}/result_foo" 2>&1) \
     > "${OUT}/log_result_foo"
 
 echo
@@ -183,11 +183,11 @@ cat "${OUT}/result_foo/result.txt"
 echo
 echo "Local tree structure root of an absent root."
 echo "Expected to be taken from local cache:"
-("${JUST_MR}" --rc "${RCFILE}" \
+("${JUST_MR}" install --rc "${RCFILE}" \
     --local-build-root "${LBRDIR}/local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_bar -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --backend "${JUST}" install -o "${OUT}/result_bar" 2>&1) \
+    --backend "${JUST}" -o "${OUT}/result_bar" 2>&1) \
     > "${OUT}/log_result_bar"
 
 echo
@@ -213,11 +213,11 @@ EOF
 echo
 echo "Absent tree structure root of a local root."
 echo "Expected to be computed locally and uploaded to serve:"
-("${JUST_MR}" --rc "${RCFILE}" \
+("${JUST_MR}" install --rc "${RCFILE}" \
     --local-build-root "${LBRDIR}/absent_local" -C repo-config.json \
     -r "${REMOTE_EXECUTION_ADDRESS}" -R "${SERVE}" ${COMPAT} \
     --main result_local -L '["env", "PATH='"${PATH}"'"]' --log-limit 4 \
-    --backend "${JUST}" install -o "${OUT}/absent_local" 2>&1) \
+    --backend "${JUST}" -o "${OUT}/absent_local" 2>&1) \
     > "${OUT}/log_absent_local"
 
 echo

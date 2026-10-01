@@ -168,11 +168,11 @@ echo
 echo
 echo Check: can build
 echo
-"${JUST_MR}" --norc --backend "${JUST}" \
+"${JUST_MR}" install --norc --backend "${JUST}" \
              -L '["env", "PATH='"${PATH}"'"]' \
              -C repos.json \
              --local-build-root "${LBR}" \
-             install -o "${OUT}" 2>&1
+             -o "${OUT}" 2>&1
 
 grep FOO "${OUT}/normalized/foo"
 

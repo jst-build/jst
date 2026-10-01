@@ -23,6 +23,10 @@ readonly LBR_MR="${TEST_TMPDIR}/local-build-root-mr"
 readonly TOOLS_DIR="${TEST_TMPDIR}/tools"
 readonly OUT="${TEST_TMPDIR}/out"
 readonly JUST_MR_ARGS="--norc --backend ${JUST} --local-build-root ${LBR_MR}"
+# The launcher and the backend use different local build roots here, so that
+# the checks below only see what the backend created. As options of the
+# launcher are honored wherever they are given, the build root of the backend
+# is set through the backend passthrough.
 BUILD_ARGS="--local-build-root ${LBR}"
 if [ -n "${COMPATIBLE:-}" ]; then
   BUILD_ARGS="$BUILD_ARGS --compatible"
@@ -72,7 +76,7 @@ cat repos.json
 cat TARGETS
 
 # Build to fill the cache
-"${JUST_MR}" ${JUST_MR_ARGS} build ${BUILD_ARGS} \
+"${JUST_MR}" ${JUST_MR_ARGS} backend build ${BUILD_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 
@@ -83,18 +87,18 @@ rm -rf "${TOOLS_DIR}"
 rm -rf ${LBR}/protocol-dependent/generation-*/*/ac
 
 # collect garbage
-"${JUST_MR}" ${JUST_MR_ARGS} gc --local-build-root ${LBR} 2>&1
+"${JUST_MR}" ${JUST_MR_ARGS} backend gc --local-build-root ${LBR} 2>&1
 
 # Use the export
-"${JUST_MR}" ${JUST_MR_ARGS} build ${BUILD_ARGS} \
+"${JUST_MR}" ${JUST_MR_ARGS} backend build ${BUILD_ARGS} \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 
 # collect garbage again
-"${JUST_MR}" ${JUST_MR_ARGS} gc --local-build-root ${LBR} 2>&1
+"${JUST_MR}" ${JUST_MR_ARGS} backend gc --local-build-root ${LBR} 2>&1
 
 # Verify that the export target is fully in cache
-"${JUST_MR}" ${JUST_MR_ARGS} install ${BUILD_ARGS} -o "${OUT}" \
+"${JUST_MR}" ${JUST_MR_ARGS} backend install ${BUILD_ARGS} -o "${OUT}" \
           -L '["env", "PATH='"${PATH}"'"]' \
           -D '{"ENV": {"TOOLS": "'${TOOLS_DIR}'"}}' 2>&1
 ls -R "${OUT}"

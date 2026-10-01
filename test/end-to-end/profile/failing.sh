@@ -66,7 +66,7 @@ cat > rc.json <<'EOF'
 {"invocation log": {"project id": "failing"}}
 EOF
 
-"${JUST_MR}" --rc "${RC}" build will-fail 2>&1 && exit 1 || :
+"${JUST_MR}" build --rc "${RC}" will-fail 2>&1 && exit 1 || :
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/failing/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 cat "${PROFILE}"
@@ -79,8 +79,8 @@ cat "${PROFILE}"
 # stdout and stderr of the single action should be reported correctly
 STDOUT=$(jq -r '.actions | .[] | .stdout' "${PROFILE}")
 STDERR=$(jq -r '.actions | .[] | .stderr' "${PROFILE}")
-"${JUST_MR}" --rc "${RC}" install-cas -o "${OUT}/stdout" "${STDOUT}" 2>&1
-"${JUST_MR}" --rc "${RC}" install-cas -o "${OUT}/stderr" "${STDERR}" 2>&1
+"${JUST_MR}" install-cas --rc "${RC}" -o "${OUT}/stdout" "${STDOUT}" 2>&1
+"${JUST_MR}" install-cas --rc "${RC}" -o "${OUT}/stderr" "${STDERR}" 2>&1
 grep StdOuT "${OUT}/stdout"
 grep StdErR "${OUT}/stderr"
 echo

@@ -114,9 +114,9 @@ cat repo-config.json
 echo
 echo Building computed
 echo
-"${JUST_MR}" --norc --local-build-root "${LBRDIR}" -C repo-config.json \
+"${JUST_MR}" install --norc --local-build-root "${LBRDIR}" -C repo-config.json \
             --main computed  --backend "${JUST}" \
-            install -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}/base" 2>&1
+            -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}/base" 2>&1
 echo
 
 echo OK

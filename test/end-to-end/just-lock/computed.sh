@@ -209,8 +209,8 @@ echo
 
 grep DoNotImport && exit 1 || :  # we should not bring in unneeded bindings
 
-"${JUST_MR}" -C repos.json --norc --backend "${JUST}" \
-             --local-build-root "${LBR}" analyse \
+"${JUST_MR}" analyse -C repos.json --norc --backend "${JUST}" \
+             --local-build-root "${LBR}" \
              -L '["env", "PATH='"${PATH}"'"]' 2>&1
 echo
 

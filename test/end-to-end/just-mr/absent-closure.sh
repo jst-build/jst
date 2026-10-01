@@ -82,7 +82,7 @@ cat repos.json
 echo
 echo Run setup of absent main repository
 echo
-"${JUST_MR}" --norc --local-build-root "${LBR}" -f "${OUT}/log.txt" setup main 2>&1
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" -f "${OUT}/log.txt" main 2>&1
 
 echo
 echo Check expected warnings

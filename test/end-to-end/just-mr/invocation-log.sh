@@ -66,7 +66,7 @@ EOF
 echo blablabla > data.txt
 
 # Call analyse via just-mr
-"${JUST_MR}" --rc "${RC}" analyse --dump-graph "${OUT_GRAPH}" upper 2>&1
+"${JUST_MR}" analyse --rc "${RC}" --dump-graph "${OUT_GRAPH}" upper 2>&1
 
 # As this is the first invocation, we can find the invocation-log dir by a glob
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/invocation-log-test/*)"
@@ -83,7 +83,7 @@ echo
 
 # Install the referenced configuration
 
-"${JUST_MR}" --rc "${RC}" install-cas -o "${REPORTED_CONFIG}" \
+"${JUST_MR}" install-cas --rc "${RC}" -o "${REPORTED_CONFIG}" \
   $(jq -r '.configuration' "${METADATA_FILE}") 2>&1
 
 echo

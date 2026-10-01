@@ -318,8 +318,8 @@ An example jstrc file could look like the following:
     }
   },
   "jst args": {
-    "build": ["-J", "64"],
-    "install": ["-J", "64", "--remember"],
+    "build": ["-j", "64"],
+    "install": ["-j", "64", "--remember"],
     "install-cas": ["--remember"]
   },
   "jst files": {

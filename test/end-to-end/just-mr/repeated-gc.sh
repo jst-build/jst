@@ -66,7 +66,7 @@ cat > repos.json <<EOF
 EOF
 cat repos.json
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}")
 cat "${CONF}"
 echo
 GIT_ROOT=$(jq -r '.repositories.""."workspace_root" | .[2]' "${CONF}")
@@ -84,19 +84,19 @@ grep VALUES "${OUT}/out.txt"
 
 # Before rotation the git root should still exist
 [ -e "${GIT_ROOT}" ]
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc-repo 2>&1
+"${JUST_MR}" gc-repo --norc --local-build-root "${LBR}" 2>&1
 # After gc rotation, the original git root should no longer exist
 [ -e "${GIT_ROOT}" ] && exit 1 || :
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
+"${JUST_MR}" gc --norc --local-build-root "${LBR}" --backend "${JUST}" 2>&1
+"${JUST_MR}" gc --norc --local-build-root "${LBR}" --backend "${JUST}" 2>&1
 
 
 # Building should nevertheless succeed, due to the old repo generation
 # =====================================================================
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
-          -L '["env", "PATH='"${PATH}"'"]' install -o "${OUT}" 2>&1
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
+          -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}" 2>&1
 # sanity check
 grep VALUES "${OUT}/out.txt"
 rm -f "${OUT}/out.txt"
@@ -108,18 +108,18 @@ rm -f "${OUT}/out.txt"
 for _ in `seq 1 5`
 do
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" setup)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}")
 GIT_ROOT=$(jq -r '.repositories.""."workspace_root" | .[2]' "${CONF}")
 echo "Git root is ${GIT_ROOT}"
 
 [ -e "${GIT_ROOT}" ]
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc-repo 2>&1
+"${JUST_MR}" gc-repo --norc --local-build-root "${LBR}" 2>&1
 [ -e "${GIT_ROOT}" ] && exit 1 || :
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --local-build-root "${LBR}" --backend "${JUST}" gc 2>&1
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
-          -L '["env", "PATH='"${PATH}"'"]' install -o "${OUT}" 2>&1
+"${JUST_MR}" gc --norc --local-build-root "${LBR}" --backend "${JUST}" 2>&1
+"${JUST_MR}" gc --norc --local-build-root "${LBR}" --backend "${JUST}" 2>&1
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
+          -L '["env", "PATH='"${PATH}"'"]' -o "${OUT}" 2>&1
 grep VALUES "${OUT}/out.txt"
 rm -f "${OUT}/out.txt"
 
@@ -128,12 +128,12 @@ done
 # Finally demonstrate that the root was not taken from anything but the cache
 # ===========================================================================
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc-repo 2>&1
-"${JUST_MR}" --norc --local-build-root "${LBR}" --just "${JUST}" gc-repo 2>&1
+"${JUST_MR}" gc-repo --norc --local-build-root "${LBR}" 2>&1
+"${JUST_MR}" gc-repo --norc --local-build-root "${LBR}" 2>&1
 
 # after full rotation of the repository, the root should be lost
-"${JUST_MR}" --norc --local-build-root "${LBR}" -f "${OUT}/log" \
-             setup 2>&1 && exit 1 || :
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" -f "${OUT}/log" \
+             2>&1 && exit 1 || :
 
 # sanity check: the error message should mention the fetch host
 grep nonexistent.upstream.example.com "${OUT}/log"

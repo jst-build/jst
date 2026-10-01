@@ -71,8 +71,8 @@ echo
 echo testing setup failure
 echo
 
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             -L '["env", "SHOULD_FAIL=YES"]' setup 2>log && exit 1 || :
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" \
+             -L '["env", "SHOULD_FAIL=YES"]' 2>log && exit 1 || :
 cat log
 grep -q -F "${TOOL_MSG_A}" log
 grep -q -F "${TOOL_MSG_B}" log
@@ -86,8 +86,8 @@ echo
 echo testing setup success
 echo
 
-CONF=$("${JUST_MR}" --norc --local-build-root "${LBR}" \
-       -L '["env", "SHOULD_FAIL="]' setup 2>log)
+CONF=$("${JUST_MR}" setup --norc --local-build-root "${LBR}" \
+       -L '["env", "SHOULD_FAIL="]' 2>log)
 cat log
 echo "${CONF}"
 cat "${CONF}"

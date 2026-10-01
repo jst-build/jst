@@ -105,9 +105,9 @@ EOF
 cat repos.json
 echo
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${CLIENT_A}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${CLIENT_A}" \
              -L '["env", "PATH='"${PATH}"'"]' \
-             install -o "${OUT_A}" 2>&1
+             -o "${OUT_A}" 2>&1
 
 echo
 grep World "${OUT_A}/out.txt"
@@ -138,9 +138,9 @@ EOF
 cat repos.json
 echo
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${CLIENT_B}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${CLIENT_B}" \
              ${REMOTE_EXECUTION_ARGS} \
-             install -o "${OUT_B}" 2>&1
+             -o "${OUT_B}" 2>&1
 
 echo
 grep World "${OUT_B}/out.txt"

@@ -1,4 +1,5 @@
 // Copyright 2023 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,13 +17,19 @@
 #define INCLUDED_SRC_BUILDTOOL_MAIN_CLI
 
 #include <cstdint>
+#include <string>
 
+#include "gsl/gsl"
 #include "src/buildtool/common/cli.hpp"
 #include "src/buildtool/common/retry_cli.hpp"
 
-void CreateBackendSubcommands(CLI::App& app);
+/// \brief The command line of the build tool backend. It is described in a
+/// namespace of its own, as the launcher uses the same names for its own
+/// command line arguments.
+namespace Buildtool {
 
-#ifndef NO_BACKEND_CLI_DECL
+/// \brief Create the subcommands of the backend, without their arguments.
+void CreateSubcommands(CLI::App& app);
 
 enum class SubCommand : std::uint8_t {
     kUnknown,
@@ -70,6 +77,13 @@ struct CommandLineArguments {
 auto ParseCommandLineArguments(int argc,
                                char const* const* argv) -> CommandLineArguments;
 
-#endif
+/// \brief Setup the arguments of a single subcommand, for describing them in a
+/// help text. Unknown subcommands are ignored.
+void SetupSubcommandArguments(
+    gsl::not_null<CLI::App*> const& app,
+    std::string const& subcommand,
+    gsl::not_null<CommandLineArguments*> const& clargs);
+
+}  // namespace Buildtool
 
 #endif  // INCLUDED_SRC_BUILDTOOL_MAIN_CLI

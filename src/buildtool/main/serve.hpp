@@ -23,7 +23,8 @@
 /// \brief Parse the "just serve" config file.
 /// While having a separate config file, almost all fields are already used by
 /// "just" itself, so we can populate the respective known command-line fields.
-void ReadJustServeConfig(gsl::not_null<CommandLineArguments*> const& clargs);
+void ReadJustServeConfig(
+    gsl::not_null<Buildtool::CommandLineArguments*> const& clargs);
 
 #endif  // BOOTSTRAP_BUILD_TOOL
 #endif  // INCLUDED_SRC_BUILDTOOL_MAIN_SERVE_HPP

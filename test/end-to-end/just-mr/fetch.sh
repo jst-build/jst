@@ -52,14 +52,14 @@ cat repos.json
 
 
 # Call just-mr with distdir present, to make it aware of the file
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup 2>&1
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" 2>&1
 
 # Remove distdir content
 rm -rf "${DISTDIR}"
 mkdir -p "${DISTDIR}"
 
 # Ask just-mr to fetch to the empty distdir
-"${JUST_MR}" --norc --local-build-root "${LBR}" fetch -o "${DISTDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" -o "${DISTDIR}" 2>&1
 
 # Verify that the correct file is stored in the distdir
 test -f "${DISTDIR}/foo-1.2.3.tar"
@@ -68,7 +68,7 @@ echo "Foo archive has now content ${newfoocontent}"
 test "${newfoocontent}" = "${foocontent}"
 
 # Verify that fetching accepts distfiles already present
-"${JUST_MR}" --norc --local-build-root "${LBR}" fetch -o "${DISTDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" -o "${DISTDIR}" 2>&1
 newfoocontent=$(git hash-object "${DISTDIR}/foo-1.2.3.tar")
 echo "Foo archive has now content ${newfoocontent}"
 test "${newfoocontent}" = "${foocontent}"
@@ -100,14 +100,14 @@ cat repos.json
 rm -rf "${LBR}"
 
 # Call just-mr with distdir present, to make it aware of the file
-"${JUST_MR}" --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" setup 2>&1
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" --distdir "${DISTDIR}" 2>&1
 
 # Remove distdir content
 rm -rf "${DISTDIR}"
 mkdir -p "${DISTDIR}"
 
 # Ask just-mr to fetch to the empty distdir
-"${JUST_MR}" --norc --local-build-root "${LBR}" --fetch-absent fetch -o "${DISTDIR}" 2>&1
+"${JUST_MR}" fetch --norc --local-build-root "${LBR}" --fetch-absent -o "${DISTDIR}" 2>&1
 
 # Verify that the correct file is stored in the distdir
 test -f "${DISTDIR}/foo-1.2.3.tar"

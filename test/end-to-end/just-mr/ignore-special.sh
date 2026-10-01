@@ -83,7 +83,7 @@ cat > repos.json << EOF
 }
 EOF
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" build 2>&1 \
+"${JUST_MR}" build --norc --backend "${JUST}" --local-build-root "${LBR}" 2>&1 \
     && echo "this should fail" && exit 1
 echo
 echo "failed as expected"
@@ -109,7 +109,7 @@ EOF
 echo
 echo Check git root with pragma:ignore succeeds
 echo
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" install -o "${OUT}" 2>&1
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" -o "${OUT}" 2>&1
 
 [ ! -e "${OUT}/a_link" ]     # symlink should not be there
 [ ! -e "${OUT}/foo" ]        # submodule should not be there

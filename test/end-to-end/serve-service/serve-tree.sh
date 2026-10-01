@@ -68,36 +68,36 @@ echo MR configuration
 cat repos.json
 echo
 echo Resulting just repo configuraiton
-cat $("${JUST_MR}" --norc --local-build-root "${LBR_DEBUG}" \
-                   --distdir "${DISTDIR}" setup)
+cat $("${JUST_MR}" setup --norc --local-build-root "${LBR_DEBUG}" \
+                   --distdir "${DISTDIR}")
 echo
 
 echo
 echo Local build
-"${JUST_MR}" --norc --local-build-root "${LBR_A}" --backend "${JUST}" \
-             --distdir "${DISTDIR}" ${COMPAT} build \
+"${JUST_MR}" build --norc --local-build-root "${LBR_A}" --backend "${JUST}" \
+             --distdir "${DISTDIR}" ${COMPAT} \
              --log-limit 4 \
              --dump-artifacts local.json 2>&1
 
 echo
 echo Remote build
-"${JUST_MR}" --norc --local-build-root "${LBR_B}" --backend "${JUST}" \
-             --distdir "${DISTDIR}" ${REMOTE} build \
+"${JUST_MR}" build --norc --local-build-root "${LBR_B}" --backend "${JUST}" \
+             --distdir "${DISTDIR}" ${REMOTE} \
              --log-limit 4 \
              --dump-artifacts remote.json 2>&1
 
 echo
 echo Serve build
-"${JUST_MR}" --norc --local-build-root "${LBR_C}" --backend "${JUST}" \
-             --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} build \
+"${JUST_MR}" build --norc --local-build-root "${LBR_C}" --backend "${JUST}" \
+             --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} \
              --log-limit 4 \
              --dump-artifacts serve.json 2>&1
 
 echo
 echo Absent build
 echo -n '[""]' > abs
-"${JUST_MR}" --norc --local-build-root "${LBR_D}" --backend "${JUST}" \
-             --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} --absent abs build \
+"${JUST_MR}" build --norc --local-build-root "${LBR_D}" --backend "${JUST}" \
+             --distdir "${DISTDIR}" ${REMOTE} -R ${SERVE} --absent abs \
              --log-limit 4 \
              --dump-artifacts absent.json 2>&1
 

@@ -87,9 +87,9 @@ sed -i "s|<RULES_PATH>|${RULES_DIR}|" repos.json
 
 
 # Build greetlib remotely
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
+"${JUST_MR}" build --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
   -L '["env", "PATH='"${PATH}"'"]'  \
-  build ${ARGS} -r localhost:${PORT} --dump-graph graph.json main 2>&1
+  ${ARGS} -r localhost:${PORT} --dump-graph graph.json main 2>&1
 
 # Count actions without tc
 EXPECTED=4
@@ -106,9 +106,9 @@ check_main_blobs
 rm -rf "${REMOTE_CACHE}"
 
 # Build greetlib remotely
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
+"${JUST_MR}" build --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
   -L '["env", "PATH='"${PATH}"'"]'  \
-  build ${ARGS} -r localhost:${PORT} --dump-graph graph-tc.json main 2>&1
+  ${ARGS} -r localhost:${PORT} --dump-graph graph-tc.json main 2>&1
 
 # Count actions with tc
 readonly ACTIONS_TC=$(cat graph-tc.json | jq '.actions | length' )
@@ -124,14 +124,14 @@ cd ../pydicts
 rm -rf "${REMOTE_CACHE}"
 
 # Build pydicts remotely
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
+"${JUST_MR}" build --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
   -L '["env", "PATH='"${PATH}"'"]'  \
-  build ${ARGS} -r localhost:${PORT} json_from_py 2>&1
+  ${ARGS} -r localhost:${PORT} json_from_py 2>&1
 
 # Clear remote cache
 rm -rf "${REMOTE_CACHE}"
 
 # Build pydicts remotely
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
+"${JUST_MR}" build --norc --backend "${JUST}" --local-build-root "${LOCAL_CACHE}" \
   -L '["env", "PATH='"${PATH}"'"]'  \
-  build ${ARGS} -r localhost:${PORT} json_from_py 2>&1
+  ${ARGS} -r localhost:${PORT} json_from_py 2>&1

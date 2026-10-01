@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -152,10 +153,40 @@ struct CommandLineArguments {
     InvocationLogArguments invocation_log;
 };
 
-static inline void SetupMultiRepoCommonArguments(
+/// \brief Arguments of the subcommands using the build tool backend.
+static inline void SetupMultiRepoBackendArguments(
     gsl::not_null<CLI::App*> const& app,
     gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
-    // repository config is mandatory
+    app->add_option(
+           "--backend",
+           clargs->just_path,
+           fmt::format("The build tool backend to be launched (default: {}).",
+                       kDefaultBackendPath))
+        ->type_name("PATH");
+}
+
+/// \brief Arguments of the subcommands reading the jstrc file.
+static inline void SetupMultiRepoRcArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
+    app->add_option_function<std::string>(
+           "--rc",
+           [clargs](auto const& rc_path_raw) {
+               clargs->rc_path = std::filesystem::weakly_canonical(rc_path_raw);
+           },
+           "Use jstrc file from custom path.")
+        ->type_name("RCFILE");
+    app->add_option(
+           "--dump-rc", clargs->dump_rc, "Dump the effective rc value.")
+        ->type_name("PATH");
+    app->add_flag("--norc", clargs->norc, "Do not use any jstrc file.");
+}
+
+/// \brief Arguments of the subcommands setting up a multi-repository
+/// configuration.
+static inline void SetupMultiRepoConfigArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
     app->add_option_function<std::string>(
            "-C, --repository-config",
            [clargs](auto const& repository_config_raw) {
@@ -174,14 +205,6 @@ static inline void SetupMultiRepoCommonArguments(
            "pragma in the config file).")
         ->type_name("FILE");
     app->add_option_function<std::string>(
-           "--local-build-root",
-           [clargs](auto const& local_build_root_raw) {
-               clargs->just_mr_paths->root =
-                   std::filesystem::weakly_canonical(local_build_root_raw);
-           },
-           "Root for CAS, repository space, etc.")
-        ->type_name("PATH");
-    app->add_option_function<std::string>(
            "--checkout-locations",
            [clargs](auto const& checkout_locations_raw) {
                clargs->checkout_locations_file =
@@ -189,16 +212,6 @@ static inline void SetupMultiRepoCommonArguments(
            },
            "Specification file for checkout locations.")
         ->type_name("CHECKOUT_LOCATIONS");
-    app->add_option_function<std::string>(
-           "-L, --local-launcher",
-           [clargs](auto const& launcher_raw) {
-               clargs->local_launcher =
-                   nlohmann::json::parse(launcher_raw)
-                       .template get<std::vector<std::string>>();
-           },
-           "JSON array with the list of strings representing the launcher to "
-           "prepend actions' commands before being executed locally.")
-        ->type_name("JSON");
     app->add_option_function<std::string>(
            "--distdir",
            [clargs](auto const& distdir_raw) {
@@ -222,32 +235,15 @@ static inline void SetupMultiRepoCommonArguments(
            "CA certificate bundle to use for SSL verification when fetching "
            "archives from remote.")
         ->type_name("CA_BUNDLE");
-    app->add_option(
-           "--backend",
-           clargs->just_path,
-           fmt::format("The build tool backend to be launched (default: {}).",
-                       kDefaultBackendPath))
-        ->type_name("PATH");
     app->add_option("--main",
                     clargs->main,
                     "Main repository to consider from the configuration.")
         ->type_name("MAIN");
-    app->add_option_function<std::string>(
-           "--rc",
-           [clargs](auto const& rc_path_raw) {
-               clargs->rc_path = std::filesystem::weakly_canonical(rc_path_raw);
-           },
-           "Use jstrc file from custom path.")
-        ->type_name("RCFILE");
     app->add_option("--git",
                     clargs->git_path,
                     fmt::format("Path to the git binary. (Default: {})",
                                 kDefaultGitPath))
         ->type_name("PATH");
-    app->add_option(
-           "--dump-rc", clargs->dump_rc, "Dump the effective rc value.")
-        ->type_name("PATH");
-    app->add_flag("--norc", clargs->norc, "Do not use any jstrc file.");
     app->add_option("--parallel",
                     clargs->parallel,
                     "Number of tasks to run in parallel, also for the launched "
@@ -259,14 +255,61 @@ static inline void SetupMultiRepoCommonArguments(
                     "archives and git repositories (Default: value of "
                     "--parallel).")
         ->type_name("NUM");
+    app->add_flag("--fetch-absent",
+                  clargs->fetch_absent,
+                  "Do not produce absent roots. For Git repositories, try to "
+                  "fetch served commit trees from the remote execution "
+                  "endpoint before reverting to the network.");
+}
+
+/// \brief Arguments of the subcommands using the local build root.
+static inline void SetupMultiRepoBuildRootArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
+    app->add_option_function<std::string>(
+           "--local-build-root",
+           [clargs](auto const& local_build_root_raw) {
+               clargs->just_mr_paths->root =
+                   std::filesystem::weakly_canonical(local_build_root_raw);
+           },
+           "Root for CAS, repository space, etc.")
+        ->type_name("PATH");
+}
+
+/// \brief Arguments of the subcommands launching actions locally.
+static inline void SetupMultiRepoLauncherArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
+    app->add_option_function<std::string>(
+           "-L, --local-launcher",
+           [clargs](auto const& launcher_raw) {
+               clargs->local_launcher =
+                   nlohmann::json::parse(launcher_raw)
+                       .template get<std::vector<std::string>>();
+           },
+           "JSON array with the list of strings representing the launcher to "
+           "prepend actions' commands before being executed locally.")
+        ->type_name("JSON");
+}
+
+/// \brief Arguments of the subcommands supporting a configuration overlay.
+static inline void SetupMultiRepoDefinesArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
     app->add_option_function<std::string>(
            "-D,--defines",
            [clargs](auto const& d) { clargs->defines.emplace_back(d); },
-           "Define overlay configuration to be forwarded to the invocation of"
-           " just, in case the subcommand supports it; otherwise ignored.")
+           "Define overlay configuration to be forwarded to the invocation of "
+           "the build tool backend.")
         ->type_name("JSON")
         ->trigger_on_parse();  // run callback on all instances while parsing,
                                // not after all parsing is done
+}
+
+/// \brief Arguments of the subcommands using a remote-execution service.
+static inline void SetupMultiRepoRemoteArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
     app->add_option("-r,--remote-execution-address",
                     clargs->remote_execution_address,
                     "Address of a remote-execution service.")
@@ -282,15 +325,16 @@ static inline void SetupMultiRepoCommonArguments(
         "At increased computational effort, be compatible with the original "
         "remote build execution protocol. As the change affects identifiers, "
         "the flag must be used consistently for all related invocations.");
+}
+
+/// \brief Arguments of the subcommands using a remote serve service.
+static inline void SetupMultiRepoServeArguments(
+    gsl::not_null<CLI::App*> const& app,
+    gsl::not_null<MultiRepoCommonArguments*> const& clargs) {
     app->add_option("-R,--remote-serve-address",
                     clargs->remote_serve_address,
                     "Address of a remote 'serve' service.")
         ->type_name("NAME:PORT");
-    app->add_flag("--fetch-absent",
-                  clargs->fetch_absent,
-                  "Do not produce absent roots. For Git repositories, try to "
-                  "fetch served commit trees from the remote execution "
-                  "endpoint before reverting to the network.");
 }
 
 static inline auto SetupMultiRepoLogArguments(

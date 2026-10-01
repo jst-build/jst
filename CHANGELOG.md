@@ -40,6 +40,18 @@
 - The legacy option `--just`, a synonym for `--backend` naming the build tool
   backend to be launched, has been removed from `jst`, `jst-lock` and the
   bootstrap launcher `bin/jst.py`; use `--backend` instead.
+- The options of `jst` are now part of its subcommands and, like the options
+  of `jst_backend`, they are given *after* the subcommand name: each
+  subcommand accepts exactly those options that are meaningful for it and
+  rejects the others, instead of silently ignoring them. `jst <subcommand>
+  --help` describes them together with the ones the backend accepts for that
+  subcommand, as if the two were a single tool. Consequently, `jst` itself acts
+  on them, so `jst build --local-build-root DIR` now also sets the build root
+  used for the setup, not only the one of the launched backend, and several
+  `-D` overlays are combined in the order given. To give an option to the
+  backend alone, use the backend passthrough, e.g. `jst backend build
+  --local-build-root DIR`, whose own options precede it, as everything after it
+  is forwarded unchanged.
 
 ### Other changes
 

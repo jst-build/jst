@@ -60,8 +60,8 @@ cat > repos.json << EOF
 EOF
 
 # Test success with valid symlink in links-subtree
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
-    -L '["env", "PATH='"${PATH}"'"]' install -o ${OUT} 2>&1
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR}" \
+    -L '["env", "PATH='"${PATH}"'"]' -o ${OUT} 2>&1
 echo
 cat "${OUT}/out.txt"
 echo
@@ -69,8 +69,8 @@ echo
 # Test analysis failure if invalid (upwards) symlink is added to links-subtree
 ln -s ../NON_EXISTENT "${SRCDIR}/links-subtree/invalid"
 
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR}" \
-    -L '["env", "PATH='"${PATH}"'"]' analyse 2>&1 \
+"${JUST_MR}" analyse --norc --backend "${JUST}" --local-build-root "${LBR}" \
+    -L '["env", "PATH='"${PATH}"'"]' 2>&1 \
     && echo "this should fail" && exit 1 || :
 echo
 echo "failed as expected"

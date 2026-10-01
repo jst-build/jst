@@ -56,11 +56,11 @@ echo
 
 echo  Remotely failing build
 echo
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" build --norc --local-build-root "${LBR}" \
              --remote-serve-address ${SERVE} \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             build -f  "${OUT}/log" --serve-errors-log "${OUT}/serve.log" 2>&1 \
+             -f  "${OUT}/log" --serve-errors-log "${OUT}/serve.log" 2>&1 \
              && exit 1 || :
 echo
 cat "${OUT}/serve.log"
@@ -72,11 +72,10 @@ echo
 grep ${SERVE_LOG} "${OUT}/log"
 echo
 # Fetch the failure log
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
-             --remote-serve-address ${SERVE} \
+"${JUST_MR}" install-cas --norc --local-build-root "${LBR}" \
              -r ${REMOTE_EXECUTION_ADDRESS} ${COMPAT} \
              --backend "${JUST}" \
-             install-cas -o "${OUT}/failure.log" ${SERVE_LOG} 2>&1
+             -o "${OUT}/failure.log" ${SERVE_LOG} 2>&1
 echo
 cat "${OUT}/failure.log"
 echo

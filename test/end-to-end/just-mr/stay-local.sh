@@ -78,11 +78,11 @@ echo
 cat repos.json
 echo
 mkdir -p "${LOG}"
-"${JUST_MR}" --norc --local-build-root "${LBR}" \
+"${JUST_MR}" setup --norc --local-build-root "${LBR}" \
                     -r "127.0.0.1:${port}" \
                     --log-limit 5 -f "${LOG}/log" \
                     --distdir ../src \
-                    setup  > conf.json
+  > conf.json
 echo
 cat "${LOG}/log"
 echo
@@ -108,10 +108,10 @@ echo
 # remote-execution endpoint should work now, even if the provided
 # distdir is empty
 mkdir -p "${EMPTY}"
-"${JUST_MR}" --norc --backend "${JUST}" --local-build-root "${LBR2}" \
+"${JUST_MR}" install --norc --backend "${JUST}" --local-build-root "${LBR2}" \
              -r "${REMOTE_EXECUTION_ADDRESS}" \
              --distdir ${EMPTY} \
-             install -o "${OUT2}" 2>&1
+             -o "${OUT2}" 2>&1
 cat "${OUT2}/archive_id"
 [ $(cat "${OUT2}/archive_id") = "${ARCHIVE_CONTENT}" ]
 echo

@@ -120,7 +120,7 @@ echo
 echo Building
 echo
 "${JUST}" install -L '["env", "PATH='"${PATH}"'"]' \
-    --local-build-root "${LBRDIR}" -C repo-config.json \
+    --local-build-root "${LBRDIR}" -B repo-config.json \
     -f "${OUT}/log" -o "${OUT}/out" 2>&1
 echo
 

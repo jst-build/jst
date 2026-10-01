@@ -134,10 +134,10 @@ run_scenario() {
   }
 }
 EOF
-  "${JUST_MR}" --norc --backend "${JUST}" \
+  "${JUST_MR}" install --norc --backend "${JUST}" \
                --local-build-root "${TEST_TMPDIR}/lbr-$$-${SCENARIO}" \
                --git "${MOCK_GIT}" --log-limit 5 \
-               install -o "${OUT}" '' sources.txt 2>&1
+               -o "${OUT}" '' sources.txt 2>&1
   grep checked-out "${OUT}/sources.txt"
 
   # The stub ssh must have been used; that is the only way to reach upstream
@@ -208,8 +208,8 @@ cat > repos.json <<EOF
   }
 }
 EOF
-"${JUST_MR}" --norc --local-build-root "${TEST_TMPDIR}/lbr-update" \
-             --git "${MOCK_GIT}" --log-limit 5 update '' > updated.json 2>update.log || {
+"${JUST_MR}" update --norc --local-build-root "${TEST_TMPDIR}/lbr-update" \
+             --git "${MOCK_GIT}" --log-limit 5 '' > updated.json 2>update.log || {
   cat update.log; echo "FAILED: update failed"; exit 1;
 }
 cat update.log

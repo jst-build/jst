@@ -83,7 +83,7 @@ EOF
 cat > rc.json <<'EOF'
 {"invocation log": {"project id": "3s"}}
 EOF
-"${JUST_MR}" --rc "${RC}" -D '{"SLEEP": 3}' build 2>&1
+"${JUST_MR}" build --rc "${RC}" -D '{"SLEEP": 3}' 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/3s/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 cat "${PROFILE}"
@@ -96,7 +96,7 @@ cat "${PROFILE}"
 cat > rc.json <<'EOF'
 {"invocation log": {"project id": "3s-again"}}
 EOF
-"${JUST_MR}" --rc "${RC}" -D '{"SLEEP": 3}' build 2>&1
+"${JUST_MR}" build --rc "${RC}" -D '{"SLEEP": 3}' 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/3s-again/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 cat "${PROFILE}"
@@ -109,7 +109,7 @@ cat "${PROFILE}"
 cat > rc.json <<'EOF'
 {"invocation log": {"project id": "4s"}}
 EOF
-"${JUST_MR}" --rc "${RC}" -D '{"SLEEP": 4}' build 2>&1
+"${JUST_MR}" build --rc "${RC}" -D '{"SLEEP": 4}' 2>&1
 INVOCATION_DIR="$(ls -d "${LOG_DIR}"/4s/*)"
 PROFILE="${INVOCATION_DIR}/profile.json"
 cat "${PROFILE}"
