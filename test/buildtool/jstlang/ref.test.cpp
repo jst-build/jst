@@ -18,6 +18,7 @@
 
 using jstlang::DecodeRefString;
 using jstlang::EncodeRefData;
+using jstlang::RefContext;
 using jstlang::RefData;
 using jstlang::RefType;
 
@@ -25,7 +26,7 @@ TEST_CASE("ref", "[decode local]") {
     {
         auto ref = DecodeRefString(R"(:"")");
         CHECK(ref.type == RefType::Local);
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -52,14 +53,14 @@ TEST_CASE("ref", "[decode absolute]") {
         auto ref = DecodeRefString(R"(//:"")");
         CHECK(ref.type == RefType::Abs);
         CHECK(ref.module.empty());
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
         auto ref = DecodeRefString(R"(//foo:"")");
         CHECK(ref.type == RefType::Abs);
         CHECK(ref.module == "foo");
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -87,7 +88,7 @@ TEST_CASE("ref", "[decode absolute]") {
         auto ref = DecodeRefString(R"(//"foo\n\"bar":"")");
         CHECK(ref.type == RefType::Abs);
         CHECK(ref.module == "foo\n\"bar");
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -102,9 +103,9 @@ TEST_CASE("ref", "[decode external]") {
     {
         auto ref = DecodeRefString(R"(""//:"")");
         CHECK(ref.type == RefType::Ext);
-        CHECK(ref.repo.empty());
+        CHECK(ref.repo == "");
         CHECK(ref.module.empty());
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -112,7 +113,7 @@ TEST_CASE("ref", "[decode external]") {
         CHECK(ref.type == RefType::Ext);
         CHECK(ref.repo == "foo");
         CHECK(ref.module.empty());
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -128,7 +129,7 @@ TEST_CASE("ref", "[decode external]") {
         CHECK(ref.type == RefType::Ext);
         CHECK(ref.repo == "foo//bar:baz");
         CHECK(ref.module.empty());
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -136,7 +137,7 @@ TEST_CASE("ref", "[decode external]") {
         CHECK(ref.type == RefType::Ext);
         CHECK(ref.repo == "foo\nbar\"baz");
         CHECK(ref.module.empty());
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 }
 
@@ -145,7 +146,7 @@ TEST_CASE("ref", "[decode relative]") {
         auto ref = DecodeRefString(R"(./foo:"")");
         CHECK(ref.type == RefType::Rel);
         CHECK(ref.module == "foo");
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -166,7 +167,7 @@ TEST_CASE("ref", "[decode relative]") {
         auto ref = DecodeRefString(R"(./"foo/bar/../baz":"")");
         CHECK(ref.type == RefType::Rel);
         CHECK(ref.module == "foo/baz");
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -180,7 +181,7 @@ TEST_CASE("ref", "[decode relative]") {
         auto ref = DecodeRefString(R"(./"foo\n\"bar":"")");
         CHECK(ref.type == RefType::Rel);
         CHECK(ref.module == "foo\n\"bar");
-        CHECK(ref.target.empty());
+        CHECK(ref.target == "");
     }
 
     {
@@ -189,6 +190,87 @@ TEST_CASE("ref", "[decode relative]") {
         CHECK(ref.module == "foo\n\"bar");
         CHECK(ref.target == "foo\n\"bar");
     }
+}
+
+TEST_CASE("ref", "[decode default target]") {
+    // an empty target segment is only accepted when explicitly allowed
+    for (auto const& ref_str : {R"(:)",
+                                R"(//foo:)",
+                                R"(//:)",
+                                R"(./foo:)",
+                                R"(repo//foo:)",
+                                R"(repo//:)"}) {
+        CHECK_THROWS(DecodeRefString(ref_str));
+        CHECK_NOTHROW(DecodeRefString(ref_str, RefContext::CLI));
+    }
+
+    {
+        auto ref = DecodeRefString(R"(:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Local);
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(//foo/bar:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Abs);
+        CHECK(ref.module == "foo/bar");
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(//:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Abs);
+        CHECK(ref.module.empty());
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(./sub:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Rel);
+        CHECK(ref.module == "sub");
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(repo//tests:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Ext);
+        CHECK(ref.repo == "repo");
+        CHECK(ref.module == "tests");
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(repo//:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Ext);
+        CHECK(ref.repo == "repo");
+        CHECK(ref.module.empty());
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"("weird//repo"//:)", RefContext::CLI);
+        CHECK(ref.type == RefType::Ext);
+        CHECK(ref.repo == "weird//repo");
+        CHECK(ref.module.empty());
+        CHECK_FALSE(ref.target.has_value());
+    }
+
+    // a named target is never the default one, also the same-name shorthand
+    {
+        auto ref = DecodeRefString(R"(//foo/bar)", RefContext::CLI);
+        CHECK(ref.target == "bar");
+        CHECK(ref.target.has_value());
+    }
+
+    {
+        auto ref = DecodeRefString(R"(//foo:"")", RefContext::CLI);
+        CHECK(ref.target == "");
+        CHECK(ref.target.has_value());
+    }
+
+    // '//' and 'repo//' without a target stay errors
+    CHECK_THROWS(DecodeRefString(R"(//)", RefContext::CLI));
+    CHECK_THROWS(DecodeRefString(R"(repo//)", RefContext::CLI));
 }
 
 TEST_CASE("ref", "[encode local]") {

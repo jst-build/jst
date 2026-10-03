@@ -16,6 +16,7 @@
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_REF_HPP
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace jstlang {
@@ -23,25 +24,40 @@ namespace jstlang {
 enum class RefType : std::uint8_t { Ext, Abs, Rel, Local };
 enum class RefSegment : std::uint8_t { Repo, Module, Target };
 
-struct RefData {
-    RefType type;
-    std::string repo;
-    std::string module;
-    std::string target;
+/// \brief Where a reference is given, which decides what it may encode.
+enum class RefContext : std::uint8_t {
+    Target,  ///< A target-reference in a target file.
+    File,    ///< A file-reference, '[<repo>]//<file_path>'.
+    CLI,     ///< A target-reference on the CLI; target segments may be omitted.
 };
 
-/// \brief Decode ref-string (target or file-reference) to RefData.
-/// \param file_ref     Ref-string is a file-reference.
-/// Possible target-reference encodings are:
-///   - Local:  ':<target>'
-///   - Rel:    './<module>[:<target>]'
-///   - Abs:    '//<module>[:<target>]'
-///   - Ext:    '<repo>//<module>[:<target>]'
-/// Possible file-reference encoding is:
-///   - Ext:    '<repo>//<file_path>'   (<file_path> in RefData::module)
-[[nodiscard]] auto DecodeRefString(std::string const& ref_str,
-                                   bool file_ref = false) -> RefData;
+struct RefData {
+    RefType type;
+    std::optional<std::string> repo;    ///< Repo name, if provided.
+    std::string module;                 ///< Module name; may be empty.
+    std::optional<std::string> target;  ///< Target name, if not omitted.
+};
 
+/// \brief Decode ref-string (target, file, or CLI-reference) to RefData.
+/// \param ctx  Where the ref-string is given.
+/// Possible target-reference encodings are:
+///   - Local:      ':<target>'
+///   - Rel:        './<module>[:<target>]'
+///   - Abs|Ext:    '[<repo>]//<module>[:<target>]'
+/// Possible file-reference encoding is:
+///   - Abs|Ext:    '[<repo>]//<file_path>'   (<file_path> in RefData::module)
+/// Possible target-reference encoding on the CLI is:
+///   - Local:      ':[<target>]'
+///   - Rel:        './<module>[:[<target>]]'
+///   - Abs|Ext:    '[<repo>]//<module>[:[<target>]]'
+[[nodiscard]] auto DecodeRefString(std::string const& ref_str,
+                                   RefContext ctx = RefContext::Target)
+    -> RefData;
+
+/// \brief Quote single reference segment (repo, module, target)
+/// \param segment      The segment string to quote.
+/// \param seg_type     The segment type (repo, module, target).
+/// \param allow_empty  Do not quote empty segments (useful for module).
 [[nodiscard]] auto QuoteRefSegment(std::string const& segment,
                                    RefSegment seg_type,
                                    bool allow_empty = false) -> std::string;

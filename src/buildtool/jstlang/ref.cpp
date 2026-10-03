@@ -30,6 +30,8 @@
 
 namespace {
 
+using jstlang::RefContext;
+
 auto const kSepToken = std::string{":"};
 auto const kAbsToken = std::string{"//"};
 auto const kRelToken = std::string{"./"};
@@ -122,26 +124,39 @@ struct ParseResult {
     return (norm == ".") ? std::string{""} : norm;
 }
 
+/// \brief Parse the target segment; std::nullopt is the default target, which
+/// an empty segment denotes if it is allowed.
 [[nodiscard]] auto ParseTarget(std::size_t pos,
-                               std::string const& str) -> std::string {
+                               std::string const& str,
+                               bool allow_missing)
+    -> std::optional<std::string> {
     if (pos < str.length()) {
         return ParseSegment(pos, str).name;
+    }
+    if (allow_missing) {
+        return std::nullopt;
     }
     throw RefDecodeError{str, "Missing target name after ':'."};
 }
 
-[[nodiscard]] auto ParseAbs(std::size_t pos, std::string const& str)
-    -> std::tuple<std::string, std::string> {
+[[nodiscard]] auto ParseAbs(std::size_t pos,
+                            std::string const& str,
+                            bool allow_missing_target)
+    -> std::tuple<std::string, std::optional<std::string>> {
     auto segment = ParseSegment(pos, str, &kSepToken);
     auto module = NormModule(segment.name);
     pos = segment.next_pos;
     if (StartsWith(pos, str, kSepToken)) {
         pos += kSepToken.length();
-        return {std::move(module), ParseTarget(pos, str)};
+        return {std::move(module), ParseTarget(pos, str, allow_missing_target)};
     }
     if (segment.name.empty()) {
-        throw RefDecodeError{str,
-                             "Empty module without target is not allowed."};
+        throw RefDecodeError{
+            str,
+            allow_missing_target
+                ? "Empty module without target is not allowed; use '//:' for "
+                  "the default target of the top-level module."
+                : "Empty module without target is not allowed."};
     }
     if (pos < str.length()) {
         throw RefDecodeError{str, "Missing ':' after module name."};
@@ -151,18 +166,24 @@ struct ParseResult {
 
 [[nodiscard]] auto ParseExt(std::size_t pos,
                             std::string const& str,
-                            bool file_ref)
-    -> std::tuple<std::string, std::string, std::string> {
+                            RefContext ctx)
+    -> std::tuple<std::string, std::string, std::optional<std::string>> {
     auto segment = ParseSegment(pos, str, &kAbsToken);
     if (segment.next_pos < str.length()) {
         pos = segment.next_pos + kAbsToken.length();
         if (pos < str.length()) {
             auto repo = std::move(segment.name);
-            if (file_ref) {
+            if (ctx == RefContext::File) {
                 return {std::move(repo), str.substr(pos), ""};
             }
-            auto [module, target] = ParseAbs(pos, str);
+            auto [module, target] = ParseAbs(pos, str, ctx == RefContext::CLI);
             return {std::move(repo), std::move(module), std::move(target)};
+        }
+        if (ctx == RefContext::CLI) {
+            throw RefDecodeError{
+                str,
+                "Missing module name after '//'; use '<repo>//:' for the "
+                "default target of the top-level module."};
         }
         throw RefDecodeError{str, "Missing module name after '//'."};
     }
@@ -172,31 +193,34 @@ struct ParseResult {
 }  // namespace
 
 auto jstlang::DecodeRefString(std::string const& ref_str,
-                              bool file_ref) -> jstlang::RefData {
+                              RefContext ctx) -> jstlang::RefData {
     RefData data{};
+    auto const allow_missing_target = ctx == RefContext::CLI;
 
     if (StartsWith(0, ref_str, kSepToken)) {
         // ':<target>'
         data.type = RefType::Local;
-        data.target = ParseTarget(kSepToken.length(), ref_str);
+        data.target =
+            ParseTarget(kSepToken.length(), ref_str, allow_missing_target);
     }
     else if (StartsWith(0, ref_str, kAbsToken)) {
         // '//<module>:<target>'
         data.type = RefType::Abs;
         std::tie(data.module, data.target) =
-            ParseAbs(kAbsToken.length(), ref_str);
+            ParseAbs(kAbsToken.length(), ref_str, allow_missing_target);
     }
     else if (StartsWith(0, ref_str, kRelToken)) {
         // './<submodule>:<target>'
         data.type = RefType::Rel;
         std::tie(data.module, data.target) =
-            ParseAbs(kRelToken.length(), ref_str);
+            ParseAbs(kRelToken.length(), ref_str, allow_missing_target);
     }
     else {
         // '<repo>//<submodule>:<target>'
         data.type = RefType::Ext;
-        std::tie(data.repo, data.module, data.target) =
-            ParseExt(0, ref_str, file_ref);
+        auto repo = std::string{};
+        std::tie(repo, data.module, data.target) = ParseExt(0, ref_str, ctx);
+        data.repo = std::move(repo);
     }
 
     return data;
@@ -236,7 +260,7 @@ auto jstlang::EncodeRefData(jstlang::RefData const& data) -> std::string {
     auto str = std::string{};
     switch (data.type) {
         case RefType::Ext:
-            str += QuoteRefSegment(data.repo, RefSegment::Repo);
+            str += QuoteRefSegment(data.repo.value_or(""), RefSegment::Repo);
             [[fallthrough]];
         case RefType::Abs:
         case RefType::Rel:
@@ -245,7 +269,11 @@ auto jstlang::EncodeRefData(jstlang::RefData const& data) -> std::string {
                 data.module, RefSegment::Module, /*allow_empty=*/true);
             [[fallthrough]];
         case RefType::Local:
-            str += kSepToken + QuoteRefSegment(data.target, RefSegment::Target);
+            // an absent target is the default one, i.e. an empty segment
+            str += kSepToken;
+            if (data.target) {
+                str += QuoteRefSegment(*data.target, RefSegment::Target);
+            }
     }
     return str;
 }

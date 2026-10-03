@@ -417,7 +417,7 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
         case TokenType::REF_STRING:
             return std::make_shared<jstlang::RefNode>(
                 CreateLocation(tok, import_chain_.back()),
-                jstlang::DecodeRefString(tok.value, false));
+                jstlang::DecodeRefString(tok.value));
         case TokenType::VAR_STRING:
             return std::make_shared<jstlang::VarNode>(
                 CreateLocation(tok, import_chain_.back()), tok.value);
@@ -654,7 +654,7 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
                 }
                 else if (tok.type == TokenType::REF_STRING) {
                     lhs = std::make_shared<jstlang::RefNode>(
-                        loc, jstlang::DecodeRefString(tok.value, false));
+                        loc, jstlang::DecodeRefString(tok.value));
                     tokens_.Advance();  // skip lhs
                 }
                 else if (tok.type == TokenType::VAR_STRING) {
@@ -806,7 +806,7 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
 #ifdef SUPPORT_IMPORT_VIA_EXT_REF
                     // encoded file-reference: @'<repo>//<file>'
                     auto const& data =
-                        DecodeRefString(tok.value, /*file_ref=*/true);
+                        DecodeRefString(tok.value, jstlang::RefContext::File);
                     if (data.type != jstlang::RefType::Ext) {
                         throw ParserException{
                             "Missing repository for import from external "

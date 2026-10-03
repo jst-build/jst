@@ -216,19 +216,19 @@ auto ASTToJsonVisitor::operator()(FoldLeftNode const* node) const
 auto ASTToJsonVisitor::operator()(RefNode const* node) const -> nlohmann::json {
     auto const& ref_data = node->GetRefData();
     if (ref_data.type == RefType::Local) {
-        return node->GetRefData().target;
+        return node->GetRefData().target.value_or("");
     }
 
     auto root = nlohmann::json::array();
     if (ref_data.type == RefType::Ext) {
         root.push_back("@");
-        root.push_back(ref_data.repo);
+        root.push_back(ref_data.repo.value_or(""));
     }
     else if (ref_data.type == RefType::Rel) {
         root.push_back("./");
     }
     root.push_back(ref_data.module);
-    root.push_back(ref_data.target);
+    root.push_back(ref_data.target.value_or(""));
     return root;
 }
 
