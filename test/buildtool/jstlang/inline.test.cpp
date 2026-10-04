@@ -1203,6 +1203,34 @@ TEST_CASE("ast_inline", "[type deduction]") {
             CHECK_NOTHROW(ParseAndInline(two_vars));
         }
     }
+
+    SECTION("foldl() with runtime range") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "singleton_map"
+            , "key": "foo"
+            , "value":
+              { "type": "basename"
+              , "$1":
+                { "type": "foldl"
+                , "var": "x"
+                , "accum_var": "acc"
+                , "start": null
+                , "range": {"type": "var", "name": "list"}
+                , "body": {"type": "var", "name": "x"}
+                }
+              }
+            })");
+        // the result type is not the type of the init value (null)
+        auto const* code = R"(
+          {
+            foo: jst.basename(
+              jst.foldl(function(x, acc) x, null, jst.env('list')),
+            ),
+          }
+        )";
+        auto output = ParseAndInline(code);
+        CHECK(output == expect);
+    }
 }
 
 TEST_CASE("list_at_inlining", "[index]") {

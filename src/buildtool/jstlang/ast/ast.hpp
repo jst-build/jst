@@ -633,7 +633,7 @@ class FoldLeftNode : public ASTNode {
                           ASTNodePtr init,
                           ASTNodePtr range,
                           ASTNodePtr body) noexcept
-        : ASTNode{std::move(loc), init->EvalType()},
+        : ASTNode{std::move(loc), GetEvalType(init, body)},
           iter_var_{std::move(iter_var)},
           accu_var_{std::move(accu_var)},
           init_{std::move(init)},
@@ -675,6 +675,14 @@ class FoldLeftNode : public ASTNode {
     ASTNodePtr init_;
     ASTNodePtr range_;
     ASTNodePtr body_;
+
+    [[nodiscard]] static auto GetEvalType(ASTNodePtr const& init,
+                                          ASTNodePtr const& body) noexcept
+        -> ValueType {
+        // the result is either the init value or the result of the body
+        auto const type = init->EvalType();
+        return type == body->EvalType() ? type : ValueType::Any;
+    }
 };
 
 class UnaryOperationNode : public ASTNode {
