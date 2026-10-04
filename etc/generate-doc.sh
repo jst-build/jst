@@ -24,7 +24,7 @@ doc2md() {
   local MODULE="$2"
   local RULE="$3"
 
-  local RULE_DOC="$(just-mr --main "$MAIN" describe --rule --json "$MODULE" "$RULE")"
+  local RULE_DOC="$(jst describe --main "$MAIN" --rule --json "//$MODULE:$RULE")"
   local DOC="$(echo "$RULE_DOC" | jq -r '.doc')"
   local FIELD_DOC="$(echo "$RULE_DOC" | jq -r '.field_doc')"
   local CONFIG_DOC="$(echo "$RULE_DOC" | jq -r '.config_doc | delpaths([["AR"], ["CC"], ["CXX"], ["CFLAGS"], ["CXXFLAGS"],["LDFLAGS"], ["ADD_CFLAGS"], ["ADD_CXXFLAGS"], ["ADD_LDFLAGS"], ["ENV"], ["BUILD_POSITION_INDEPENDENT"]])')"
