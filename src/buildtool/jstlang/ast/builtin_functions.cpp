@@ -1231,7 +1231,7 @@ auto BuiltIn::zip_map(Location const& loc,
         loc,
         std::make_shared<MapNode>(loc, std::move(fields)),
         VerbatimType::Flat,
-        ValueType::List);
+        ValueType::Map);
 }
 
 auto BuiltIn::foreach (Location const& loc,

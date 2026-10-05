@@ -661,6 +661,21 @@ TEST_CASE("ast_inline", "[built-in function evaluation]") {
             CHECK(output == expect);
         }
 
+        SECTION("runtime result is a map") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "lookup"
+                , "key": "a"
+                , "map":
+                  { "type": "zip_map"
+                  , "range_key": {"type": "var", "name": "K"}
+                  , "range_val": {"type": "var", "name": "V"}
+                  }
+                })");
+            auto output = ParseAndInline(
+                "jst.get('a', jst.zip_map(jst.env('K'), jst.env('V')))");
+            CHECK(output == expect);
+        }
+
         SECTION("runtime keys are kept in order") {
             auto expect = nlohmann::json::parse(R"(
                 { "type": "map_union"
