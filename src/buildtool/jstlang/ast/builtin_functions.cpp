@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,11 +23,13 @@
 #include <exception>
 #include <filesystem>
 #include <iomanip>
+#include <map>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -100,6 +103,9 @@ template <typename T = jstlang::ASTNode>
 
 [[nodiscard]] auto NodeToNumber(jstlang::ASTNodePtr const& node)
     -> std::optional<double>;
+
+[[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
+    -> std::optional<jstlang::MapNode::fields_t>;
 
 [[nodiscard]] auto ShellQuote(std::string arg) -> std::string;
 
@@ -515,13 +521,15 @@ auto BuiltIn::keys(Location const& loc,
         throw BuiltInError(loc, "keys: Missing mandatory parameter \"map\"");
     }
     if (auto const* map_obj = ASTNode::Cast<MapNode const*>(map_node.get())) {
-        // literal map -> generate list of keys
-        auto keys = ListNode::items_t{};
-        keys.reserve(map_obj->GetFields().size());
-        for (auto const& [key, _] : map_obj->GetFields()) {
-            keys.emplace_back(key);
+        // map with literal keys -> generate sorted list of unique keys
+        if (auto entries = SortedLiteralEntries(*map_obj)) {
+            auto keys = ListNode::items_t{};
+            keys.reserve(entries->size());
+            for (auto const& [key, _] : *entries) {
+                keys.emplace_back(key);
+            }
+            return std::make_shared<ListNode>(loc, std::move(keys));
         }
-        return std::make_shared<ListNode>(loc, std::move(keys));
     }
 
     MapNode::fields_t verbatim_map_fields{
@@ -2296,6 +2304,29 @@ template <typename T>
         return 0.0;  // runtime expr evaluating to unsupported type
     }
     return std::nullopt;
+}
+
+[[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
+    -> std::optional<jstlang::MapNode::fields_t> {
+    using jstlang::ASTNode;
+    // keys are sorted, the latest entry wins for duplicate keys
+    auto sorted =
+        std::map<std::string_view, jstlang::MapNode::entry_t const*>{};
+    for (auto const& entry : map.GetFields()) {
+        auto const* key =
+            ASTNode::Cast<jstlang::StringNode const*>(entry.first.get());
+        if (key == nullptr) {
+            // computed field names can only be evaluated at runtime
+            return std::nullopt;
+        }
+        sorted.insert_or_assign(key->GetValue(), &entry);
+    }
+    auto entries = jstlang::MapNode::fields_t{};
+    entries.reserve(sorted.size());
+    for (auto const& [_, entry] : sorted) {
+        entries.emplace_back(*entry);
+    }
+    return entries;
 }
 
 [[nodiscard]] auto ShellQuote(std::string arg) -> std::string {

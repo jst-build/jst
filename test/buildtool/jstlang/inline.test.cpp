@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -574,6 +575,37 @@ TEST_CASE("ast_inline", "[built-in function evaluation]") {
               }
             )";
             auto output = ParseAndInline(code);
+            CHECK(output == expect);
+        }
+
+        SECTION("keys are sorted") {
+            auto expect = nlohmann::json::parse(R"(["a", "b", "c"])");
+            auto output = ParseAndInline("jst.keys({b: 1, c: 2, a: 3})");
+            CHECK(output == expect);
+        }
+
+        SECTION("keys are unique") {
+            auto expect = nlohmann::json::parse(R"(["a", "b"])");
+            auto output = ParseAndInline(
+                "jst.keys(jst.zip_map(['b', 'a', 'b'], [1, 2, 3]))");
+            CHECK(output == expect);
+        }
+
+        SECTION("computed keys") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "keys"
+                , "$1":
+                  { "type": "map_union"
+                  , "$1":
+                    [ { "type": "singleton_map"
+                      , "key": {"type": "var", "name": "k"}
+                      , "value": 1
+                      }
+                    , {"type": "singleton_map", "key": "a", "value": 2}
+                    ]
+                  }
+                })");
+            auto output = ParseAndInline("jst.keys({[jst.env('k')]: 1, a: 2})");
             CHECK(output == expect);
         }
     }
