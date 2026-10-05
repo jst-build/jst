@@ -219,6 +219,38 @@ class BuiltinNode : public ASTNode {
     std::string name_;
 };
 
+/// \brief Call of a built-in function that cannot be evaluated (yet), e.g.,
+/// because some of its arguments are not known. The arguments are stored by
+/// the built-in's parameter position; unspecified arguments are nullptr.
+class BuiltinCallNode : public ASTNode {
+  public:
+    using args_t = std::vector<ASTNodePtr>;
+
+    explicit BuiltinCallNode(Location loc,
+                             std::string name,
+                             args_t args,
+                             ValueType eval_type) noexcept
+        : ASTNode{std::move(loc), eval_type},
+          name_{std::move(name)},
+          args_{std::move(args)} {}
+
+    [[nodiscard]] auto GetName() const noexcept -> std::string const& {
+        return name_;
+    }
+
+    [[nodiscard]] auto GetArgs() const noexcept -> args_t const& {
+        return args_;
+    }
+
+    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
+        return this;
+    }
+
+  private:
+    std::string name_;
+    args_t args_;
+};
+
 // call to function (or read of variable, if no params)
 class CallNode : public ASTNode {
   public:

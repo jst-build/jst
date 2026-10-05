@@ -232,6 +232,22 @@ auto ASTInlineVisitor::operator()(VerbatimNode const* node) const
                                           node->EvalType());
 }
 
+auto ASTInlineVisitor::operator()(BuiltinCallNode const* node) const
+    -> ASTNodePtr {
+    // Built-in calls are retained for later serialization. They may be inlined
+    // a second time, if they are created during inlining CallNodes to built-in
+    // functions.
+    auto args = BuiltinCallNode::args_t{};
+    args.reserve(node->GetArgs().size());
+    for (auto const& arg : node->GetArgs()) {
+        args.emplace_back(arg ? InlineFunctions(arg) : nullptr);
+    }
+    return std::make_shared<BuiltinCallNode>(node->GetLocation(),
+                                             node->GetName(),
+                                             std::move(args),
+                                             node->EvalType());
+}
+
 auto ASTInlineVisitor::operator()(ListNode const* node) const -> ASTNodePtr {
     auto items = ListNode::items_t{};
     items.reserve(node->GetItems().size());

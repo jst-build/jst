@@ -44,10 +44,6 @@ namespace {
 
 auto const kNullNode = std::make_shared<jstlang::NullNode>(jstlang::Location{});
 
-auto const kEmptyMap =
-    std::make_shared<jstlang::MapNode>(jstlang::Location{},
-                                       jstlang::MapNode::fields_t{});
-
 auto const kEmptyString =
     std::make_shared<jstlang::StringNode>(jstlang::Location{}, std::string{});
 
@@ -215,26 +211,13 @@ auto BuiltIn::get(Location const& loc,
         }
     }
 
-    if (map_node->EvalType() == ValueType::Any) {
-        // robustness: fallback to empty map for types evaluated at runtime
-        map_node = std::make_shared<IfNode>(loc, map_node, map_node, kEmptyMap);
-    }
-
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "lookup")},
-        {std::make_shared<StringNode>(loc, "key"), key_node},
-        {std::make_shared<StringNode>(loc, "map"), map_node}};
-
-    if (default_node != kNullNode) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "default"),
-                            default_node);
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "get",
+        BuiltinCallNode::args_t{
+            key_node,
+            map_node,
+            (default_node == kNullNode ? nullptr : default_node)},
         ValueType::Any);
 }
 
@@ -294,21 +277,10 @@ auto BuiltIn::join(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "join")},
-        {std::make_shared<StringNode>(loc, "$1"), items_node},
-    };
-
-    if (separator) {
-        fields.emplace_back(std::make_pair(
-            std::make_shared<StringNode>(loc, "separator"), separator));
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "join",
+        BuiltinCallNode::args_t{items_node, separator},
         ValueType::String);
 }
 
@@ -362,17 +334,8 @@ auto BuiltIn::flatten(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "++")},
-        {std::make_shared<StringNode>(loc, "$1"), lists_node},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "flatten", BuiltinCallNode::args_t{lists_node}, ValueType::List);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -521,17 +484,11 @@ auto BuiltIn::map_union(Location const& loc,
 
     // static evaluation failed, fallback to creating runtime expressions
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(
-             loc, *disjoint_value ? "disjoint_map_union" : "map_union")},
-        {std::make_shared<StringNode>(loc, "$1"), maps_node},
-    };
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "union",
+        BuiltinCallNode::args_t{
+            maps_node, disjoint_node == kNullNode ? nullptr : disjoint_node},
         ValueType::Map);
 }
 
@@ -565,16 +522,8 @@ auto BuiltIn::keys(Location const& loc,
         }
     }
 
-    MapNode::fields_t verbatim_map_fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "keys")},
-        {std::make_shared<StringNode>(loc, "$1"), map_node},
-    };
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(verbatim_map_fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "keys", BuiltinCallNode::args_t{map_node}, ValueType::List);
 }
 
 auto BuiltIn::fail(Location const& loc,
@@ -596,16 +545,8 @@ auto BuiltIn::fail(Location const& loc,
         throw BuiltInError(loc, "fail: Missing mandatory parameter \"msg\"");
     }
 
-    MapNode::fields_t verbatim_map_fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "fail")},
-        {std::make_shared<StringNode>(loc, "msg"), std::move(msg_node)},
-    };
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(verbatim_map_fields)),
-        VerbatimType::Flat,
-        ValueType::Any);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "fail", BuiltinCallNode::args_t{msg_node}, ValueType::Any);
 }
 
 auto BuiltIn::json_encode(Location const& loc,
@@ -635,16 +576,10 @@ auto BuiltIn::json_encode(Location const& loc,
     }
     // fallback to generating a runtime expression
 
-    MapNode::fields_t verbatim_map_fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "json_encode")},
-        {std::make_shared<StringNode>(loc, "$1"), data_node},
-    };
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(verbatim_map_fields)),
-        VerbatimType::Flat,
-        ValueType::String);
+    return std::make_shared<BuiltinCallNode>(loc,
+                                             "json_encode",
+                                             BuiltinCallNode::args_t{data_node},
+                                             ValueType::String);
 }
 
 auto BuiltIn::file(Location const& loc,
@@ -814,21 +749,13 @@ auto BuiltIn::at(Location const& loc,
         return list_obj->GetItems().at(static_cast<std::size_t>(list_index));
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "[]")},
-        {std::make_shared<StringNode>(loc, "index"), index_node},
-        {std::make_shared<StringNode>(loc, "list"), list_node}};
-
-    if (default_node != kNullNode) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "default"),
-                            default_node);
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "at",
+        BuiltinCallNode::args_t{
+            index_node,
+            list_node,
+            (default_node == kNullNode ? nullptr : default_node)},
         ValueType::Any);
 }
 
@@ -870,17 +797,8 @@ auto BuiltIn::all(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "and")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(args_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Bool);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "all", BuiltinCallNode::args_t{args_node}, ValueType::Bool);
 }
 
 auto BuiltIn::any(Location const& loc,
@@ -921,17 +839,8 @@ auto BuiltIn::any(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "or")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(args_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Bool);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "any", BuiltinCallNode::args_t{args_node}, ValueType::Bool);
 }
 
 auto BuiltIn::sum(Location const& loc,
@@ -982,17 +891,8 @@ auto BuiltIn::sum(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "+")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(numbers_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Number);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "sum", BuiltinCallNode::args_t{numbers_node}, ValueType::Number);
 }
 
 auto BuiltIn::prod(Location const& loc,
@@ -1044,17 +944,8 @@ auto BuiltIn::prod(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "*")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(numbers_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Number);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "prod", BuiltinCallNode::args_t{numbers_node}, ValueType::Number);
 }
 
 auto BuiltIn::eq(Location const& loc,
@@ -1088,17 +979,10 @@ auto BuiltIn::eq(Location const& loc,
         return std::make_shared<BoolNode>(loc, *equal_value);
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "==")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(lhs_node)},
-        {std::make_shared<StringNode>(loc, "$2"), std::move(rhs_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "eq",
+        BuiltinCallNode::args_t{lhs_node, rhs_node},
         ValueType::Bool);
 }
 
@@ -1126,17 +1010,8 @@ auto BuiltIn::negate(Location const& loc,
         return std::make_shared<BoolNode>(loc, not *truth);
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "not")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(expr_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Bool);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "not", BuiltinCallNode::args_t{expr_node}, ValueType::Bool);
 }
 
 auto BuiltIn::zip_with(Location const& loc,
@@ -1253,17 +1128,10 @@ auto BuiltIn::zip_map(Location const& loc,
                                          MapNode::fields_t{});
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "zip_map")},
-        {std::make_shared<StringNode>(loc, "range_key"), range_key_node},
-        {std::make_shared<StringNode>(loc, "range_val"), range_val_node},
-    };
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "zip_map",
+        BuiltinCallNode::args_t{range_key_node, range_val_node},
         ValueType::Map);
 }
 
@@ -1413,17 +1281,8 @@ auto BuiltIn::nub_right(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "nub_right")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(list_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "nub_right", BuiltinCallNode::args_t{list_node}, ValueType::List);
 }
 
 auto BuiltIn::nub_left(Location const& loc,
@@ -1477,17 +1336,8 @@ auto BuiltIn::nub_left(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "nub_left")},
-        {std::make_shared<StringNode>(loc, "$1"), std::move(list_node)},
-    };
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "nub_left", BuiltinCallNode::args_t{list_node}, ValueType::List);
 }
 
 auto BuiltIn::range(Location const& loc,
@@ -1528,16 +1378,8 @@ auto BuiltIn::range(Location const& loc,
         return std::make_shared<ListNode>(loc, std::move(items));
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "range")},
-        {std::make_shared<StringNode>(loc, "$1"), size_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "range", BuiltinCallNode::args_t{size_node}, ValueType::List);
 }
 
 auto BuiltIn::reverse(Location const& loc,
@@ -1570,16 +1412,8 @@ auto BuiltIn::reverse(Location const& loc,
             loc, ListNode::items_t{items.rbegin(), items.rend()});
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "reverse")},
-        {std::make_shared<StringNode>(loc, "$1"), list_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::List);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "reverse", BuiltinCallNode::args_t{list_node}, ValueType::List);
 }
 
 auto BuiltIn::length(Location const& loc,
@@ -1607,16 +1441,8 @@ auto BuiltIn::length(Location const& loc,
             loc, static_cast<double>(list->GetItems().size()));
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "length")},
-        {std::make_shared<StringNode>(loc, "$1"), list_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Number);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "length", BuiltinCallNode::args_t{list_node}, ValueType::Number);
 }
 
 auto BuiltIn::basename(Location const& loc,
@@ -1645,16 +1471,8 @@ auto BuiltIn::basename(Location const& loc,
             loc, std::filesystem::path{str->GetValue()}.filename().string());
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "basename")},
-        {std::make_shared<StringNode>(loc, "$1"), path_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::String);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "basename", BuiltinCallNode::args_t{path_node}, ValueType::String);
 }
 
 auto BuiltIn::join_cmd(Location const& loc,
@@ -1711,16 +1529,8 @@ auto BuiltIn::join_cmd(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "join_cmd")},
-        {std::make_shared<StringNode>(loc, "$1"), args_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::String);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "join_cmd", BuiltinCallNode::args_t{args_node}, ValueType::String);
 }
 
 auto BuiltIn::change_ending(Location const& loc,
@@ -1761,20 +1571,11 @@ auto BuiltIn::change_ending(Location const& loc,
                 ending->GetValue());
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "change_ending")},
-        {std::make_shared<StringNode>(loc, "$1"), path_node}};
-
-    if (ending_node != kEmptyString) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "ending"),
-                            ending_node);
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "change_ending",
+        BuiltinCallNode::args_t{
+            path_node, (ending_node == kEmptyString ? nullptr : ending_node)},
         ValueType::String);
 }
 
@@ -1828,24 +1629,13 @@ auto BuiltIn::escape_chars(Location const& loc,
         return std::make_shared<StringNode>(loc, oss.str());
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "escape_chars")},
-        {std::make_shared<StringNode>(loc, "$1"), str_node}};
-
-    if (chars_node != kEmptyString) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "chars"),
-                            chars_node);
-    }
-    if (prefix_node != kPrefixString) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "escape_prefix"),
-                            prefix_node);
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "escape_chars",
+        BuiltinCallNode::args_t{
+            str_node,
+            (chars_node == kEmptyString ? nullptr : chars_node),
+            (prefix_node == kPrefixString ? nullptr : prefix_node)},
         ValueType::String);
 }
 
@@ -1888,16 +1678,8 @@ auto BuiltIn::enumerate(Location const& loc,
         return std::make_shared<MapNode>(loc, std::move(fields));
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "enumerate")},
-        {std::make_shared<StringNode>(loc, "$1"), items_node}};
-
-    return std::make_shared<VerbatimNode>(
-        loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
-        ValueType::Map);
+    return std::make_shared<BuiltinCallNode>(
+        loc, "enumerate", BuiltinCallNode::args_t{items_node}, ValueType::Map);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -1999,30 +1781,14 @@ auto BuiltIn::to_subdir(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "to_subdir")},
-        {std::make_shared<StringNode>(loc, "$1"), map_node}};
-
-    if (subdir_node != kDotPath) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "subdir"),
-                            std::move(subdir_node));
-    }
-
-    if (flat_node != kFalseBool) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "flat"),
-                            std::move(flat_node));
-    }
-
-    if (msg_node) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "msg"),
-                            std::move(msg_node));
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "to_subdir",
+        BuiltinCallNode::args_t{
+            map_node,
+            (subdir_node == kDotPath ? nullptr : subdir_node),
+            (flat_node == kFalseBool ? nullptr : flat_node),
+            msg_node},
         ValueType::Map);
 }
 
@@ -2108,20 +1874,11 @@ auto BuiltIn::from_subdir(Location const& loc,
         }
     }
 
-    MapNode::fields_t fields{
-        {std::make_shared<StringNode>(loc, "type"),
-         std::make_shared<StringNode>(loc, "from_subdir")},
-        {std::make_shared<StringNode>(loc, "$1"), map_node}};
-
-    if (subdir_node != kDotPath) {
-        fields.emplace_back(std::make_shared<StringNode>(loc, "subdir"),
-                            subdir_node);
-    }
-
-    return std::make_shared<VerbatimNode>(
+    return std::make_shared<BuiltinCallNode>(
         loc,
-        std::make_shared<MapNode>(loc, std::move(fields)),
-        VerbatimType::Flat,
+        "from_subdir",
+        BuiltinCallNode::args_t{
+            map_node, (subdir_node == kDotPath ? nullptr : subdir_node)},
         ValueType::Map);
 }
 

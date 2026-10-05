@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,6 +88,25 @@ auto ASTToStringVisitor::operator()(BuiltinNode const* node) const
     auto const space = IndentString(indent_);
     std::ostringstream oss{};
     oss << space << "BUILTIN(" << node->GetName() << ")\n";
+    return oss.str();
+}
+
+auto ASTToStringVisitor::operator()(BuiltinCallNode const* node) const
+    -> std::string {
+    auto const space = IndentString(indent_);
+    std::ostringstream oss{};
+    oss << space << "BUILTIN_CALL(" << node->GetName() << ")\n";
+    int num{};
+    for (auto const& arg : node->GetArgs()) {
+        oss << space << "- <arg" << num << ">:";
+        if (arg) {
+            oss << "\n" << ASTToStringVisitor{indent_ + 2}.Dump(*arg);
+        }
+        else {
+            oss << " <DEFAULT>\n";
+        }
+        ++num;
+    }
     return oss.str();
 }
 

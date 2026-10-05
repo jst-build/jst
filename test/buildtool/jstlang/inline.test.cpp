@@ -23,14 +23,17 @@
 
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
+#include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
+#include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 
 namespace {
 
-[[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
+[[nodiscard]] auto ParseAndInlineAST(std::string const& code)
+    -> jstlang::ASTNodePtr {
     auto moc_reader = [](auto const& /*import_from*/,
                          auto const& /*file_path*/,
                          auto const* /*repo*/) { return std::nullopt; };
@@ -40,8 +43,11 @@ namespace {
     auto parser = jstlang::Parser::Create(std::move(moc_reader));
     auto just_ast = parser->ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
-    auto inl_ast = jstlang::InlineAST(just_ast);
-    return jstlang::ASTToJsonVisitor{}.ToJson(*inl_ast);
+    return jstlang::InlineAST(just_ast);
+}
+
+[[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
+    return jstlang::ASTToJsonVisitor{}.ToJson(*ParseAndInlineAST(code));
 }
 
 }  // namespace
@@ -1741,6 +1747,120 @@ TEST_CASE("ast_inline", "[function objects]") {
         )";
         auto output = ParseAndInline(code);
         CHECK(output == expect);
+    }
+}
+
+TEST_CASE("ast_inline", "[builtin_call]") {
+    using jstlang::ASTNode;
+    using jstlang::BuiltinCallNode;
+
+    SECTION("unspecified arguments are not serialized") {
+        auto ast = ParseAndInlineAST("jst.join(jst.env('X'))");
+        auto const* call = ASTNode::Cast<BuiltinCallNode const*>(ast.get());
+        REQUIRE(call != nullptr);
+        CHECK(call->GetName() == "join");
+        REQUIRE(call->GetArgs().size() == 2);
+        CHECK(ASTNode::Cast<jstlang::VarNode const*>(
+                  call->GetArgs()[0].get()) != nullptr);
+        CHECK(call->GetArgs()[1] == nullptr);
+        CHECK(call->EvalType() == jstlang::ValueType::String);
+
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "join"
+            , "$1": {"type": "var", "name": "X"}
+            })");
+        CHECK(jstlang::ASTToJsonVisitor{}.ToJson(*ast) == expect);
+    }
+
+    SECTION("specified arguments are serialized") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "join"
+            , "$1": {"type": "var", "name": "X"}
+            , "separator": ","
+            })");
+        CHECK(ParseAndInline("jst.join(jst.env('X'), sep=',')") == expect);
+    }
+
+    SECTION("arguments left at their default are not serialized") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "to_subdir"
+            , "$1": {"type": "var", "name": "M"}
+            , "flat": true
+            })");
+        CHECK(ParseAndInline("jst.to_subdir(jst.env('M'), flat=true)") ==
+              expect);
+    }
+
+    SECTION("non-disjoint union") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "map_union"
+            , "$1": {"type": "var", "name": "L"}
+            })");
+        CHECK(ParseAndInline("jst.union(jst.env('L'))") == expect);
+        CHECK(ParseAndInline("jst.union(jst.env('L'), disjoint=false)") ==
+              expect);
+    }
+
+    SECTION("runtime map of lookup falls back to empty map") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "lookup"
+            , "key": "k"
+            , "map":
+              { "type": "if"
+              , "cond": {"type": "var", "name": "M"}
+              , "then": {"type": "var", "name": "M"}
+              , "else": {"type": "empty_map"}
+              }
+            })");
+        CHECK(ParseAndInline("jst.get('k', jst.env('M'))") == expect);
+    }
+
+    SECTION("disjoint union") {
+        auto ast = ParseAndInlineAST("jst.union(jst.env('L'), disjoint=true)");
+        auto const* call = ASTNode::Cast<BuiltinCallNode const*>(ast.get());
+        REQUIRE(call != nullptr);
+        CHECK(call->GetName() == "union");
+        REQUIRE(call->GetArgs().size() == 2);
+        REQUIRE(call->GetArgs()[1] != nullptr);
+        CHECK(call->GetArgs()[1]->TruthValue() == true);
+
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "disjoint_map_union"
+            , "$1": {"type": "var", "name": "L"}
+            })");
+        CHECK(ParseAndInline("jst.union(jst.env('L'), disjoint=true)") ==
+              expect);
+    }
+
+    SECTION("built-in call in function body is inlined") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "singleton_map"
+            , "key": "foo"
+            , "value":
+              { "type": "join"
+              , "$1": {"type": "var", "name": "X"}
+              , "separator": "-"
+              }
+            })");
+        auto const* code = R"(
+            local f(sep) = jst.join(jst.env('X'), sep=sep);
+            { foo: f('-') }
+            )";
+        CHECK(ParseAndInline(code) == expect);
+    }
+
+    SECTION("built-in call is not plain JSON") {
+        auto ast = ParseAndInlineAST("jst.join(jst.env('X'))");
+        CHECK_THROWS(jstlang::ASTToJsonVisitor{jstlang::VerbatimType::Full,
+                                               /*json_only=*/true}
+                         .ToJson(*ast));
+    }
+
+    SECTION("built-in call can be dumped") {
+        auto ast = ParseAndInlineAST("jst.join(jst.env('X'))");
+        auto dump = jstlang::ASTToStringVisitor{}.Dump(*ast);
+        CHECK(dump.starts_with("BUILTIN_CALL(join)\n- <arg0>:\n"));
+        CHECK(dump.ends_with("- <arg1>: <DEFAULT>\n"));
     }
 }
 

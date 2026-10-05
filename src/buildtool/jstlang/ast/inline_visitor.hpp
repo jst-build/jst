@@ -123,6 +123,8 @@ class ASTInlineVisitor final {
     [[nodiscard]] auto operator()(CallNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(ForeignNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(VerbatimNode const* node) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
+        -> ASTNodePtr;
     [[nodiscard]] auto operator()(ListNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(MapNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(IfNode const* node) const -> ASTNodePtr;

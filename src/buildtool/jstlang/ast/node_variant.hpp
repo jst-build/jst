@@ -21,6 +21,7 @@ namespace jstlang {
 using ASTNodeVariant = std::variant<class LetNode const*,
                                     class FuncNode const*,
                                     class BuiltinNode const*,
+                                    class BuiltinCallNode const*,
                                     class CallNode const*,
                                     class ForeignNode const*,
                                     class VerbatimNode const*,

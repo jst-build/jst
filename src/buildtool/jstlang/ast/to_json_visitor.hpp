@@ -39,6 +39,8 @@ class ASTToJsonVisitor final {
 
     [[nodiscard]] auto operator()(VerbatimNode const* node) const
         -> nlohmann::json;
+    [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
+        -> nlohmann::json;
     [[nodiscard]] auto operator()(ListNode const* node) const -> nlohmann::json;
     [[nodiscard]] auto operator()(MapNode const* node) const -> nlohmann::json;
     [[nodiscard]] auto operator()(BoolNode const* node) const -> nlohmann::json;

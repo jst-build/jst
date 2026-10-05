@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +15,15 @@
 
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 
+#include <cstddef>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
@@ -63,6 +69,85 @@ auto ASTToJsonVisitor::operator()(VerbatimNode const* node) const
         throw std::runtime_error{"not allowed"};
     }
     return ToJson(*node->GetExpr(), node->GetType());
+}
+
+auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
+    -> nlohmann::json {
+    if (json_only_) {
+        throw std::runtime_error{"not allowed"};
+    }
+    struct Expression {
+        std::string type;
+        // keys of the built-in's arguments, by parameter position
+        std::vector<std::string> keys;
+    };
+    static auto const kExpressions =
+        std::unordered_map<std::string, Expression>{
+            {"get", {"lookup", {"key", "map", "default"}}},
+            {"join", {"join", {"$1", "separator"}}},
+            {"flatten", {"++", {"$1"}}},
+            // type depends on the parameter "disjoint", which is not serialized
+            {"union", {"map_union", {"$1"}}},
+            {"keys", {"keys", {"$1"}}},
+            {"fail", {"fail", {"msg"}}},
+            {"json_encode", {"json_encode", {"$1"}}},
+            {"at", {"[]", {"index", "list", "default"}}},
+            {"all", {"and", {"$1"}}},
+            {"any", {"or", {"$1"}}},
+            {"sum", {"+", {"$1"}}},
+            {"prod", {"*", {"$1"}}},
+            {"eq", {"==", {"$1", "$2"}}},
+            {"not", {"not", {"$1"}}},
+            {"zip_map", {"zip_map", {"range_key", "range_val"}}},
+            {"nub_right", {"nub_right", {"$1"}}},
+            {"nub_left", {"nub_left", {"$1"}}},
+            {"range", {"range", {"$1"}}},
+            {"reverse", {"reverse", {"$1"}}},
+            {"length", {"length", {"$1"}}},
+            {"basename", {"basename", {"$1"}}},
+            {"join_cmd", {"join_cmd", {"$1"}}},
+            {"change_ending", {"change_ending", {"$1", "ending"}}},
+            {"escape_chars",
+             {"escape_chars", {"$1", "chars", "escape_prefix"}}},
+            {"enumerate", {"enumerate", {"$1"}}},
+            {"to_subdir", {"to_subdir", {"$1", "subdir", "flat", "msg"}}},
+            {"from_subdir", {"from_subdir", {"$1", "subdir"}}},
+        };
+    static auto const kEmptyMapNode =
+        std::make_shared<MapNode>(Location{}, MapNode::fields_t{});
+
+    auto const& name = node->GetName();
+    auto const expr_it = kExpressions.find(name);
+    if (expr_it == kExpressions.end()) {
+        throw std::runtime_error{"Unknown built-in call " + name};
+    }
+    auto const& [type, keys] = expr_it->second;
+    auto const& args = node->GetArgs();
+
+    auto root = nlohmann::json::object();
+    root["type"] = type;
+    if (name == "union" and args.size() > 1 and args[1] != nullptr and
+        args[1]->TruthValue().value_or(false)) {
+        root["type"] = "disjoint_map_union";
+    }
+    for (std::size_t pos = 0; pos < args.size() and pos < keys.size(); ++pos) {
+        auto const& arg = args[pos];
+        if (arg == nullptr or
+            ASTNode::Cast<FuncNode const*>(arg.get()) != nullptr) {
+            // skip unspecified arguments and func nodes
+            continue;
+        }
+        if (name == "get" and keys[pos] == "map" and
+            arg->EvalType() == ValueType::Any) {
+            // robustness: fallback to empty map for types evaluated at runtime
+            auto const map =
+                IfNode{arg->GetLocation(), arg, arg, kEmptyMapNode};
+            root[keys[pos]] = ToJson(map);
+            continue;
+        }
+        root[keys[pos]] = ToJson(*arg);
+    }
+    return root;
 }
 
 auto ASTToJsonVisitor::operator()(ListNode const* node) const
