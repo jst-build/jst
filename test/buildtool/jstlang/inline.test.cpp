@@ -647,6 +647,23 @@ TEST_CASE("ast_inline", "[built-in function evaluation]") {
         }
     }
 
+    SECTION("range()") {
+        SECTION("number") {
+            auto expect = nlohmann::json::parse(R"(["0", "1", "2"])");
+            CHECK(ParseAndInline("jst.range(2.5)") == expect);
+        }
+
+        SECTION("integer prefix of string") {
+            CHECK(ParseAndInline("jst.range('2.7')") ==
+                  nlohmann::json::parse(R"(["0", "1"])"));
+            CHECK(ParseAndInline("jst.range(' 3x')") ==
+                  nlohmann::json::parse(R"(["0", "1", "2"])"));
+            CHECK(ParseAndInline("jst.range('abc')") ==
+                  nlohmann::json::array());
+            CHECK(ParseAndInline("jst.range('-2')") == nlohmann::json::array());
+        }
+    }
+
     SECTION("zip_map()") {
         SECTION("latest value wins for duplicate keys") {
             auto expect = nlohmann::json::parse(R"(

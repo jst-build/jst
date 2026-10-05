@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <iomanip>
@@ -2286,11 +2287,10 @@ template <typename T>
     }
     if (auto const* str =
             ASTNode::Cast<jstlang::StringNode const*>(node.get())) {
-        try {
-            return std::stod(str->GetValue());
-        } catch (...) {
-            return 0.0;
-        }
+        // integer prefix of the string, like the expression language does
+        static constexpr int kDecimal = 10;
+        return static_cast<double>(
+            std::strtoll(str->GetValue().c_str(), nullptr, kDecimal));
     }
     if (ASTNode::Cast<jstlang::NullNode const*>(node.get()) != nullptr or
         ASTNode::Cast<jstlang::BoolNode const*>(node.get()) != nullptr or
