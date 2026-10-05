@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,14 +21,18 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include "src/buildtool/jstlang/ast/node_variant.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
+#include "src/utils/cpp/gsl.hpp"
 
 namespace jstlang {
 
@@ -342,14 +347,27 @@ class ListNode : public ASTNode {
     items_t items_{};
 };
 
+/// \brief Map with fields in order of definition, the latest field wins.
+/// Field names that are string literals are unique (see MapNode::Unique).
 class MapNode : public ASTNode {
   public:
     using entry_t = std::pair<ASTNodePtr, ASTNodePtr>;
     using fields_t = std::vector<entry_t>;
 
-    explicit MapNode(Location loc, fields_t fields) noexcept
+    /// \brief Whether map is constructed with unique field names (if string).
+    enum class Unique : std::uint8_t {
+        Yes,    ///< Unique names, guaranteed by the creator (not checked).
+        Maybe,  ///< Remove duplicates on construction, the latest field wins.
+    };
+
+    explicit MapNode(Location loc, fields_t fields, Unique unique = Unique::Yes)
         : ASTNode{std::move(loc), ValueType::Map, not fields.empty()},
-          fields_{std::move(fields)} {}
+          fields_{unique == Unique::Maybe
+                      ? RemoveDuplicateFields(std::move(fields))
+                      : std::move(fields)} {
+        // make sure in debug mode that no duplicates slipped in
+        EnsuresAudit(RemoveDuplicateFields(fields_).size() == fields_.size());
+    }
     MapNode(MapNode&&) = delete;
     MapNode(MapNode const&) = default;
     auto operator=(MapNode&&) -> MapNode& = delete;
@@ -366,6 +384,9 @@ class MapNode : public ASTNode {
 
   private:
     fields_t fields_{};
+
+    [[nodiscard]] static auto RemoveDuplicateFields(fields_t fields)
+        -> fields_t;
 };
 
 class BoolNode : public ASTNode {
@@ -853,6 +874,23 @@ class RefNode : public ASTNode {
   private:
     RefData data_;
 };
+
+inline auto MapNode::RemoveDuplicateFields(fields_t fields) -> fields_t {
+    // seen only keeps views to strings from those subnodes that are not erased
+    auto seen = std::unordered_set<std::string_view>{};
+    seen.reserve(fields.size());
+    // the latest field wins, so we have to iterate in reverse order
+    for (auto& field : std::ranges::reverse_view(fields)) {
+        auto const* name = Cast<StringNode const*>(field.first.get());
+        if (name != nullptr and not seen.emplace(name->GetValue()).second) {
+            // keys are never null, use nullptr to mark for removal
+            field.first = nullptr;
+        }
+    }
+    std::erase_if(fields,
+                  [](auto const& val) -> bool { return val.first == nullptr; });
+    return fields;
+}
 
 }  // namespace jstlang
 

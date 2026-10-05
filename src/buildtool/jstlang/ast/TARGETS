@@ -6,7 +6,10 @@
       'ast.hpp',
       'node_variant.hpp',
     ],
-    deps: [@'//src/buildtool/jstlang:ref'],
+    deps: [
+      @'//src/buildtool/jstlang:ref',
+      @'//src/utils/cpp:gsl',
+    ],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 

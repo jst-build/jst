@@ -1208,8 +1208,8 @@ auto BuiltIn::zip_map(Location const& loc,
             }
             out_fields.emplace_back(key_node, val_node);
         }
-        return std::make_shared<MapNode>(jstlang::Location{},
-                                         std::move(out_fields));
+        return std::make_shared<MapNode>(
+            jstlang::Location{}, std::move(out_fields), MapNode::Unique::Maybe);
     }
     if (list_key != nullptr and list_key->GetItems().empty()) {
         return std::make_shared<MapNode>(jstlang::Location{},

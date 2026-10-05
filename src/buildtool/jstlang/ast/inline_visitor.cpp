@@ -245,12 +245,21 @@ auto ASTInlineVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
     auto const& fields = node->GetFields();
     auto inl_fields = MapNode::fields_t{};
     inl_fields.reserve(fields.size());
+    bool has_new_literal_names{};
     for (auto const& field : fields) {
-        inl_fields.emplace_back(InlineFunctions(field.first),
+        auto inl_name = InlineFunctions(field.first);
+        if (ASTNode::Cast<StringNode const*>(field.first.get()) == nullptr and
+            ASTNode::Cast<StringNode const*>(inl_name.get()) != nullptr) {
+            // computed name became a string literal
+            has_new_literal_names = true;
+        }
+        inl_fields.emplace_back(std::move(inl_name),
                                 InlineFunctions(field.second));
     }
-    return std::make_shared<MapNode>(node->GetLocation(),
-                                     std::move(inl_fields));
+    return std::make_shared<MapNode>(
+        node->GetLocation(),
+        std::move(inl_fields),
+        has_new_literal_names ? MapNode::Unique::Maybe : MapNode::Unique::Yes);
 }
 
 auto ASTInlineVisitor::operator()(IfNode const* node) const -> ASTNodePtr {

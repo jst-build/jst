@@ -540,6 +540,43 @@ TEST_CASE("ast_inline", "[index]") {
     }
 }
 
+TEST_CASE("ast_inline", "[computed field names]") {
+    SECTION("latest field wins for duplicate names") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "map_union"
+            , "$1":
+              [ {"type": "singleton_map", "key": "b", "value": 2}
+              , {"type": "singleton_map", "key": "a", "value": 3}
+              ]
+            })");
+        auto const* code = R"(
+          local k = 'a';
+          {a: 1, b: 2, [k]: 3}
+        )";
+        auto output = ParseAndInline(code);
+        CHECK(output == expect);
+    }
+
+    SECTION("runtime names are kept in order") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "map_union"
+            , "$1":
+              [ { "type": "singleton_map"
+                , "key": {"type": "var", "name": "x"}
+                , "value": 2
+                }
+              , {"type": "singleton_map", "key": "a", "value": 3}
+              ]
+            })");
+        auto const* code = R"(
+          local k = 'a';
+          {a: 1, [jst.env('x')]: 2, [k]: 3}
+        )";
+        auto output = ParseAndInline(code);
+        CHECK(output == expect);
+    }
+}
+
 TEST_CASE("ast_inline", "[built-in function evaluation]") {
     SECTION("keys()") {
         SECTION("static data") {
@@ -606,6 +643,37 @@ TEST_CASE("ast_inline", "[built-in function evaluation]") {
                   }
                 })");
             auto output = ParseAndInline("jst.keys({[jst.env('k')]: 1, a: 2})");
+            CHECK(output == expect);
+        }
+    }
+
+    SECTION("zip_map()") {
+        SECTION("latest value wins for duplicate keys") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "map_union"
+                , "$1":
+                  [ {"type": "singleton_map", "key": "b", "value": 2}
+                  , {"type": "singleton_map", "key": "a", "value": 3}
+                  ]
+                })");
+            auto output =
+                ParseAndInline("jst.zip_map(['a', 'b', 'a'], [1, 2, 3])");
+            CHECK(output == expect);
+        }
+
+        SECTION("runtime keys are kept in order") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "map_union"
+                , "$1":
+                  [ { "type": "singleton_map"
+                    , "key": {"type": "var", "name": "k"}
+                    , "value": 2
+                    }
+                  , {"type": "singleton_map", "key": "a", "value": 3}
+                  ]
+                })");
+            auto output = ParseAndInline(
+                "jst.zip_map(['a', jst.env('k'), 'a'], [1, 2, 3])");
             CHECK(output == expect);
         }
     }
