@@ -19,6 +19,27 @@
     stage: ['test', 'buildtool', 'jstlang'],
   },
 
+  builtins: {
+    type: @'rules//CC/test:test',
+    name: ['builtins'],
+    srcs: ['builtins.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'src//src/buildtool/jstlang/ast:builtins',
+      @'src//src/buildtool/jstlang/ast:inline_visitor',
+      @'src//src/buildtool/jstlang/ast:parser',
+      @'src//src/buildtool/jstlang/ast:to_json_visitor',
+      @'src//src/buildtool/jstlang/ast/native:parser',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
   expr_serializer: {
     type: @'rules//CC/test:test',
     name: ['expr_serializer'],
@@ -94,6 +115,7 @@
     type: @'rules//test:suite',
     stage: ['jstlang'],
     deps: [
+      'builtins',
       'expr_serializer',
       'inline',
       'lexer',

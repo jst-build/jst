@@ -85,12 +85,18 @@ template <typename T = jstlang::ASTNode>
 [[nodiscard]] auto NodeToJson(jstlang::ASTNodePtr const& node,
                               bool json_only) -> std::optional<nlohmann::json>;
 
-[[nodiscard]] auto ProduceSameJSON(jstlang::ASTNodePtr const& lhs,
-                                   jstlang::ASTNodePtr const& rhs,
-                                   bool json_only) -> std::optional<bool>;
-
 [[nodiscard]] auto CheckEqual(jstlang::ASTNodePtr const& lhs_node,
                               jstlang::ASTNodePtr const& rhs_node)
+    -> std::optional<bool>;
+
+[[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
+    -> std::optional<jstlang::MapNode::fields_t>;
+
+[[nodiscard]] auto RefEqual(jstlang::RefData const& lhs,
+                            jstlang::RefData const& rhs) -> bool;
+
+[[nodiscard]] auto LiteralEqual(jstlang::ASTNode const& lhs,
+                                jstlang::ASTNode const& rhs)
     -> std::optional<bool>;
 
 [[nodiscard]] auto MakeBuiltinObjEntry(std::string const& name)
@@ -100,9 +106,6 @@ template <typename T = jstlang::ASTNode>
 
 [[nodiscard]] auto RangeSize(jstlang::ASTNodePtr const& node)
     -> std::optional<std::size_t>;
-
-[[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
-    -> std::optional<jstlang::MapNode::fields_t>;
 
 [[nodiscard]] auto ShellQuote(std::string arg) -> std::string;
 
@@ -545,6 +548,9 @@ auto BuiltIn::fail(Location const& loc,
         throw BuiltInError(loc, "fail: Missing mandatory parameter \"msg\"");
     }
 
+    // never evaluated statically, even if the message is a literal: the call
+    // might be located in a branch that is not taken at runtime; the evaluator
+    // reports the error when it has to fully evaluate this call
     return std::make_shared<BuiltinCallNode>(
         loc, "fail", BuiltinCallNode::args_t{msg_node}, ValueType::Any);
 }
@@ -1967,17 +1973,6 @@ template <typename T>
     }
 }
 
-[[nodiscard]] auto ProduceSameJSON(jstlang::ASTNodePtr const& lhs,
-                                   jstlang::ASTNodePtr const& rhs,
-                                   bool json_only) -> std::optional<bool> {
-    auto json_lhs = NodeToJson(lhs, json_only);
-    auto json_rhs = NodeToJson(rhs, json_only);
-    if (json_lhs and json_rhs) {
-        return *json_lhs == *json_rhs;
-    }
-    return std::nullopt;
-}
-
 [[nodiscard]] auto CheckEqual(jstlang::ASTNodePtr const& lhs_node,
                               jstlang::ASTNodePtr const& rhs_node)
     -> std::optional<bool> {
@@ -1985,29 +1980,25 @@ template <typename T>
         // exactly same node
         return true;
     }
-    if (lhs_node->EvalType() != rhs_node->EvalType() and
-        lhs_node->EvalType() != jstlang::ValueType::Any and
-        rhs_node->EvalType() != jstlang::ValueType::Any) {
+    using jstlang::ValueType;
+    auto const lhs_type = lhs_node->EvalType();
+    auto const rhs_type = rhs_node->EvalType();
+    // a reference is evaluated to a string or a list
+    auto const ref_or_value = [](ValueType ref_type, ValueType type) {
+        return ref_type == ValueType::Ref and
+               (type == ValueType::String or type == ValueType::List);
+    };
+    if (lhs_type != rhs_type and lhs_type != ValueType::Any and
+        rhs_type != ValueType::Any and not ref_or_value(lhs_type, rhs_type) and
+        not ref_or_value(rhs_type, lhs_type)) {
         // not same eval type
         return false;
     }
-    auto lhs_var = lhs_node->ToVariant();
-    auto rhs_var = rhs_node->ToVariant();
-    if (lhs_var.index() == rhs_var.index()) {  // same node types
-        // check if they contain same json (nullopt on non-literal nodes)
-        if (auto verdict =
-                ProduceSameJSON(lhs_node, rhs_node, /*json_only=*/true)) {
-            return verdict;
-        }
-        // check if they contain same json AST
-        if (ProduceSameJSON(lhs_node, rhs_node, /*json_only=*/false)
-                .value_or(false)) {
-            // exact same json AST
-            return true;
-        }
-        // not the same AST, but might be same after evaluation
+    if (lhs_node->IsLiteral() and rhs_node->IsLiteral()) {
+        return LiteralEqual(*lhs_node, *rhs_node);
     }
-    // we cannot decide
+    // we cannot decide; even structurally equal expressions are left to the
+    // evaluation, as they might fail instead of being equal
     return std::nullopt;
 }
 
@@ -2110,6 +2101,109 @@ template <typename T>
         entries.emplace_back(*entry);
     }
     return entries;
+}
+
+/// \brief Check if two references are equal. References of different kinds
+/// are never equal, as their values in the expression language differ (a
+/// string for local references, lists of different lengths for the others).
+[[nodiscard]] auto RefEqual(jstlang::RefData const& lhs,
+                            jstlang::RefData const& rhs) -> bool {
+    using jstlang::RefType;
+    if (lhs.type != rhs.type or
+        lhs.target.value_or("") != rhs.target.value_or("")) {
+        return false;
+    }
+    if (lhs.type == RefType::Local) {
+        return true;
+    }
+    return lhs.module == rhs.module and
+           (lhs.type != RefType::Ext or
+            lhs.repo.value_or("") == rhs.repo.value_or(""));
+}
+
+/// \brief Check if two literals are equal. Undecided (nullopt) if a reference
+/// is compared to a string or list, as references are only evaluated to their
+/// value (a string or list) in full evaluation.
+[[nodiscard]] auto LiteralEqual(jstlang::ASTNode const& lhs,
+                                jstlang::ASTNode const& rhs)
+    -> std::optional<bool> {
+    using jstlang::ASTNode;
+    using jstlang::ValueType;
+    if (&lhs == &rhs) {
+        return true;
+    }
+    auto const* lref = ASTNode::Cast<jstlang::RefNode const*>(&lhs);
+    auto const* rref = ASTNode::Cast<jstlang::RefNode const*>(&rhs);
+    if (lref != nullptr and rref != nullptr) {
+        return RefEqual(lref->GetRefData(), rref->GetRefData());
+    }
+    if (lref != nullptr or rref != nullptr) {
+        auto const type = lref != nullptr ? rhs.EvalType() : lhs.EvalType();
+        if (type == ValueType::String or type == ValueType::List) {
+            return std::nullopt;
+        }
+        return false;
+    }
+    if (lhs.EvalType() != rhs.EvalType()) {
+        return false;
+    }
+    if (auto const* lstr = ASTNode::Cast<jstlang::StringNode const*>(&lhs)) {
+        return lstr->GetValue() ==
+               ASTNode::Cast<jstlang::StringNode const*>(&rhs)->GetValue();
+    }
+    if (auto const* lnum = ASTNode::Cast<jstlang::NumberNode const*>(&lhs)) {
+        return lnum->GetValue() ==
+               ASTNode::Cast<jstlang::NumberNode const*>(&rhs)->GetValue();
+    }
+    if (auto const* lbool = ASTNode::Cast<jstlang::BoolNode const*>(&lhs)) {
+        return lbool->GetValue() ==
+               ASTNode::Cast<jstlang::BoolNode const*>(&rhs)->GetValue();
+    }
+    // lists and maps: unequal if any pair of items (or keys) is unequal,
+    // otherwise undecided if any pair is undecided
+    auto result = std::optional<bool>{true};
+    auto const merge = [&result](std::optional<bool> const& equal) {
+        if (equal and not *equal) {
+            return false;
+        }
+        if (not equal) {
+            result = std::nullopt;
+        }
+        return true;
+    };
+    if (auto const* llist = ASTNode::Cast<jstlang::ListNode const*>(&lhs)) {
+        auto const& litems = llist->GetItems();
+        auto const& ritems =
+            ASTNode::Cast<jstlang::ListNode const*>(&rhs)->GetItems();
+        if (litems.size() != ritems.size()) {
+            return false;
+        }
+        for (std::size_t i{}; i < litems.size(); ++i) {
+            if (not merge(LiteralEqual(*litems[i], *ritems[i]))) {
+                return false;
+            }
+        }
+        return result;
+    }
+    if (auto const* lmap = ASTNode::Cast<jstlang::MapNode const*>(&lhs)) {
+        auto lentries = SortedLiteralEntries(*lmap);
+        auto rentries =
+            SortedLiteralEntries(*ASTNode::Cast<jstlang::MapNode const*>(&rhs));
+        if (lentries->size() != rentries->size()) {
+            return false;
+        }
+        for (std::size_t i{}; i < lentries->size(); ++i) {
+            auto const& [lkey, lvalue] = lentries->at(i);
+            auto const& [rkey, rvalue] = rentries->at(i);
+            if (not merge(LiteralEqual(*lkey, *rkey)) or
+                not merge(LiteralEqual(*lvalue, *rvalue))) {
+                return false;
+            }
+        }
+        return result;
+    }
+    // null
+    return true;
 }
 
 [[nodiscard]] auto ShellQuote(std::string arg) -> std::string {

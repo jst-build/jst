@@ -921,16 +921,27 @@ TEST_CASE("preprocessor", "[builtin_functions]") {
                 auto just_ast = Preprocess(code);
                 CHECK(ToJson(just_ast) == expected);
             }
+        }
 
+        SECTION("structurally equal expressions are not evaluated") {
+            // might fail at runtime instead of being equal
             {
                 auto const* code = "jst.eq(jst.env('foo'), jst.env('foo'))";
+                auto expected = nlohmann::json::parse(R"(
+                    { "type": "=="
+                    , "$1": {"type": "var", "name": "foo"}
+                    , "$2": {"type": "var", "name": "foo"}
+                    })");
                 auto just_ast = Preprocess(code);
                 CHECK(ToJson(just_ast) == expected);
             }
             {
-                auto const* code = R"(
-                    jst.eq(if jst.env('foo') then 'bar' else 'baz',
-                           if jst.env('foo') then 'bar' else 'baz'))";
+                auto const* code = "jst.eq(jst.fail('foo'), jst.fail('foo'))";
+                auto expected = nlohmann::json::parse(R"(
+                    { "type": "=="
+                    , "$1": {"type": "fail", "msg": "foo"}
+                    , "$2": {"type": "fail", "msg": "foo"}
+                    })");
                 auto just_ast = Preprocess(code);
                 CHECK(ToJson(just_ast) == expected);
             }
