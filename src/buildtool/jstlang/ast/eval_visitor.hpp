@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +17,13 @@
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_VISITOR_HPP
 
 #include <concepts>
-#include <functional>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/scope.hpp"
 
 namespace jstlang {
 
@@ -33,34 +32,6 @@ class ASTEvalError : public std::runtime_error {
     explicit ASTEvalError(std::string const& error);
     explicit ASTEvalError(std::string const& error,
                           jstlang::Location const& loc);
-};
-
-class ScopeDefs {
-  public:
-    ScopeDefs() = default;
-    explicit ScopeDefs(ScopeDefs const* upper) : upper_{upper} {}
-    ScopeDefs(ScopeDefs const&) = delete;
-    ScopeDefs(ScopeDefs&&) = delete;
-    ~ScopeDefs() = default;
-    auto operator=(ScopeDefs const&) = delete;
-    auto operator=(ScopeDefs&&) = delete;
-
-    void AddDef(std::string name, ASTNodePtr def) {
-        defs_.insert_or_assign(std::move(name), std::move(def));
-    }
-
-    [[nodiscard]] auto GetDef(std::string const& name) const
-        -> ASTNodePtr const* {
-        auto def_it = defs_.find(name);
-        if (def_it != defs_.end()) {
-            return &def_it->second;
-        }
-        return upper_ != nullptr ? upper_->GetDef(name) : nullptr;
-    }
-
-  private:
-    std::unordered_map<std::string, ASTNodePtr> defs_;
-    ScopeDefs const* upper_{nullptr};
 };
 
 template <class T, class... U>
@@ -72,83 +43,102 @@ concept IsLeafNode = IsAnyOf<T,
                              jstlang::BoolNode,
                              jstlang::StringNode,
                              jstlang::NumberNode,
-                             jstlang::VarNode,
                              jstlang::RefNode,
-                             jstlang::BuiltinNode>;
+                             jstlang::BuiltinNode,
+                             jstlang::ClosureNode>;
 
+/// \brief Evaluator for jstlang ASTs, using environments (scopes of lazily
+/// evaluated bindings) instead of substitution. Each node is evaluated to a
+/// value (literal, closure, built-in) or, if it depends on unknown values
+/// (runtime variables), to residual code. Bindings and function arguments are
+/// evaluated at most once and only if used; function bodies are evaluated
+/// when the function is called. Nodes are never copied: leaves and subtrees
+/// that do not change are returned as the very same node.
+/// The residual code is suitable for lowering to the expression language:
+/// iteration variables of loops over unknown ranges are runtime variables.
 class ASTEvalVisitor final {
+  public:
+    explicit ASTEvalVisitor(ScopePtr scope) noexcept
+        : scope_{std::move(scope)} {}
+
+    [[nodiscard]] auto Evaluate(ASTNodePtr const& node) const -> ASTNodePtr;
+
   private:
-    template <class T>
-    [[nodiscard]] static auto ShallowCopy(T const* node) -> std::shared_ptr<T> {
-        return std::make_shared<T>(*node);
+    ScopePtr scope_;
+
+    [[nodiscard]] static auto WithScope(ScopePtr scope) -> ASTEvalVisitor {
+        return ASTEvalVisitor{std::move(scope)};
     }
 
-    [[nodiscard]] auto InlineFuncBody(CallNode const* caller,
-                                      FuncNode const* callee) const
+    /// \brief Force the lazy binding (thunk): evaluate it on first use, store
+    /// and return its value. Throws on cyclic dependencies.
+    [[nodiscard]] static auto Force(Scope const& binding,
+                                    Location const& loc) -> ASTNodePtr;
+
+    /// \brief Call a closure with the arguments of the caller.
+    [[nodiscard]] auto Apply(CallNode const& caller,
+                             ClosureNode const& closure) const -> ASTNodePtr;
+
+    /// \brief Call a built-in with the arguments of the caller.
+    [[nodiscard]] auto ApplyBuiltin(CallNode const& caller,
+                                    BuiltinNode const& builtin) const
         -> ASTNodePtr;
 
-    [[nodiscard]] auto CallBuiltinWithParams(
+    [[nodiscard]] static auto CallBuiltinWithParams(
         std::string const& name,
         Location const& loc,
-        CallNode::params_t const& params) const -> ASTNodePtr;
+        CallNode::params_t const& params) -> ASTNodePtr;
 
     template <std::convertible_to<ASTNodePtr>... TParams>
-    [[nodiscard]] auto CallBuiltin(std::string const& name,
-                                   Location const& loc,
-                                   TParams&&... params) const -> ASTNodePtr {
+    [[nodiscard]] static auto CallBuiltin(std::string const& name,
+                                          Location const& loc,
+                                          TParams&&... params) -> ASTNodePtr {
         auto call_params = CallNode::params_t{
             std::make_pair(std::nullopt, std::forward<TParams>(params))...};
         return CallBuiltinWithParams(name, loc, call_params);
     }
 
-    [[nodiscard]] auto InlineBuiltinCall(CallNode const* caller,
-                                         BuiltinNode const* builtin) const
-        -> ASTNodePtr;
-
   public:
-    explicit ASTEvalVisitor(ScopeDefs const* scope,
-                            bool partial_inline) noexcept
-        : scope_{scope},
-          eval_callback_{[this](ASTNodePtr const& node) -> ASTNodePtr {
-              return this->Evaluate(node);
-          }},
-          partial_inline_{partial_inline} {}
-
-    [[nodiscard]] auto Evaluate(ASTNodePtr const& node) const -> ASTNodePtr;
-
-    // default operator for leaf nodes (no inlining needed)
+    // default operator for leaf nodes (values, evaluate to themselves)
     template <class T>
-    [[nodiscard]] auto operator()(T const* node) const -> ASTNodePtr {
+    [[nodiscard]] auto operator()(T const* /*node*/,
+                                  ASTNodePtr const& self) const -> ASTNodePtr {
         // use static_assert to check concept with meaningful error message
         static_assert(IsLeafNode<T>,
                       "non-leaf nodes require a specialized operator");
-        return ShallowCopy(node);
+        return self;
     }
 
-    [[nodiscard]] auto operator()(LetNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(FuncNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(CallNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(ForeignNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
-        -> ASTNodePtr;
-    [[nodiscard]] auto operator()(ListNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(MapNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(IfNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(ForEachNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(ZipWithNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(FoldLeftNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(UnaryOperationNode const* node) const
-        -> ASTNodePtr;
-    [[nodiscard]] auto operator()(LookupNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(BinaryOperationNode const* node) const
-        -> ASTNodePtr;
-
-  private:
-    using EvalCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
-
-    ScopeDefs const* scope_;
-    EvalCallback eval_callback_;
-    bool partial_inline_;
+    [[nodiscard]] auto operator()(LetNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(FuncNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(CallNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(ForeignNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(BuiltinCallNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(ListNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(MapNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(VarNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(IfNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(ForEachNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(ZipWithNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(FoldLeftNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(UnaryOperationNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(LookupNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(BinaryOperationNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
 };
 
 }  // namespace jstlang

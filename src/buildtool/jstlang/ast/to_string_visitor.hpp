@@ -31,6 +31,7 @@ class ASTToStringVisitor final {
 
     [[nodiscard]] auto operator()(LetNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(FuncNode const* node) const -> std::string;
+    [[nodiscard]] auto operator()(ClosureNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(BuiltinNode const* node) const -> std::string;
     [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
         -> std::string;

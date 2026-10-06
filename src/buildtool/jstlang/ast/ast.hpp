@@ -78,6 +78,10 @@ enum class ValueType : std::uint8_t {
 class ASTNode;
 using ASTNodePtr = std::shared_ptr<ASTNode>;
 
+/// \brief Lexical scope of lazily evaluated bindings, see scope.hpp.
+class Scope;
+using ScopePtr = std::shared_ptr<Scope const>;
+
 /// \brief Kind of an AST node, one per node class (same order as in
 /// ASTNodeVariant).
 enum class NodeKind : std::uint8_t {
@@ -102,6 +106,7 @@ enum class NodeKind : std::uint8_t {
     Lookup,
     BinaryOperation,
     Ref,
+    Closure,
 };
 
 /// \brief Location in a source file (compact, the source file is owned by the
@@ -153,6 +158,11 @@ class ASTNode {
     /// and no functions. Computed on construction.
     [[nodiscard]] auto IsLiteral() const noexcept -> bool {
         return is_literal_;
+    }
+
+    /// \brief Whether node is a function (by syntax or as closure).
+    [[nodiscard]] auto IsFunction() const noexcept -> bool {
+        return kind_ == NodeKind::Func or kind_ == NodeKind::Closure;
     }
 
     [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant;
@@ -959,9 +969,42 @@ inline auto ASTNode::ToVariant() const noexcept -> ASTNodeVariant {
             return Cast<BinaryOperationNode const*>(this);
         case NodeKind::Ref:
             return Cast<RefNode const*>(this);
+        case NodeKind::Closure:
+            return Cast<ClosureNode const*>(this);
     }
     return Cast<RefNode const*>(this);  // unreachable
 }
+
+/// \brief Function value: a function together with the scope it was defined
+/// in. Only created by the evaluator, never by the parser.
+class ClosureNode : public ASTNode {
+  public:
+    static constexpr NodeKind kKind = NodeKind::Closure;
+
+    explicit ClosureNode(Location loc,
+                         std::shared_ptr<FuncNode const> func,
+                         ScopePtr scope) noexcept
+        : ASTNode{kKind, loc, ValueType::Func},
+          func_{std::move(func)},
+          scope_{std::move(scope)} {}
+    ClosureNode(ClosureNode&&) = delete;
+    ClosureNode(ClosureNode const&) = default;
+    auto operator=(ClosureNode&&) -> ClosureNode& = delete;
+    auto operator=(ClosureNode const&) -> ClosureNode& = delete;
+    ~ClosureNode() = default;
+
+    [[nodiscard]] auto GetFunc() const noexcept -> FuncNode const& {
+        return *func_;
+    }
+
+    [[nodiscard]] auto GetScope() const noexcept -> ScopePtr const& {
+        return scope_;
+    }
+
+  private:
+    std::shared_ptr<FuncNode const> func_;
+    ScopePtr scope_;
+};
 
 }  // namespace jstlang
 

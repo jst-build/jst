@@ -49,9 +49,7 @@ namespace {
     auto parser = jstlang::Parser::Create(Context(), std::move(moc_reader));
     auto just_ast = parser->ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
-    auto scope = jstlang::ScopeDefs{};
-    return jstlang::ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(
-        just_ast);
+    return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(just_ast);
 }
 
 [[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
@@ -1869,6 +1867,100 @@ TEST_CASE("ast_inline", "[builtin_call]") {
         auto dump = jstlang::ASTToStringVisitor{}.Dump(*ast);
         CHECK(dump.starts_with("BUILTIN_CALL(join)\n- <arg0>:\n"));
         CHECK(dump.ends_with("- <arg1>: <DEFAULT>\n"));
+    }
+}
+
+TEST_CASE("ast_inline", "[lazy evaluation]") {
+    SECTION("unused bindings are not evaluated") {
+        auto const* code = R"(
+          local unused = jst.union([{a: 1}, {a: 2}], disjoint=true);
+          local f(x, y) = x;
+          f('ok', jst.join(5))
+          )";
+        CHECK(ParseAndInline(code) == nlohmann::json("ok"));
+    }
+
+    SECTION("used bindings report errors") {
+        auto const* code = R"(
+          local used = jst.union([{a: 1}, {a: 2}], disjoint=true);
+          used
+          )";
+        CHECK_THROWS(ParseAndInline(code));
+    }
+
+    SECTION("bindings are evaluated once and shared") {
+        auto ast = ParseAndInlineAST(R"(
+          local x = [jst.env('a'), 'b'];
+          ([x, x])
+          )");
+        auto const* list =
+            jstlang::ASTNode::Cast<jstlang::ListNode const*>(ast.get());
+        REQUIRE(list != nullptr);
+        REQUIRE(list->GetItems().size() == 2);
+        CHECK(list->GetItems()[0] == list->GetItems()[1]);
+    }
+
+    SECTION("literals evaluate to themselves") {
+        auto ast = ParseAndInlineAST("{a: [1, 'b', {c: true}]}");
+        auto const* map =
+            jstlang::ASTNode::Cast<jstlang::MapNode const*>(ast.get());
+        REQUIRE(map != nullptr);
+        // the builtins object is bound, but the literal is not rebuilt
+        auto again = jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(ast);
+        CHECK(again == ast);
+    }
+}
+
+TEST_CASE("ast_inline", "[closures]") {
+    SECTION("functions use the scope of their definition") {
+        auto const* code = R"(
+          local a = 'outer';
+          local f(x) = a + x;
+          local a = 'shadowed';
+          f('!')
+          )";
+        CHECK(ParseAndInline(code) == nlohmann::json("outer!"));
+    }
+
+    SECTION("functions as values") {
+        auto const* code = R"(
+          local apply(g, x) = g(x);
+          local suffix = '?';
+          local h(y) = y + suffix;
+          apply(h, 'a')
+          )";
+        CHECK(ParseAndInline(code) == nlohmann::json("a?"));
+    }
+
+    SECTION("returned functions keep their scope") {
+        auto const* code = R"(
+          local make(p) = { add(x): p + x };
+          local adder = make('p');
+          ([adder.add('1'), make('q').add('2')])
+          )";
+        CHECK(ParseAndInline(code) == nlohmann::json::parse(R"(["p1", "q2"])"));
+    }
+
+    SECTION("higher order functions see captured variables") {
+        auto const* code = R"(
+          local k = 'k';
+          local f(z) = jst.foreach(function(x) x + k + z, ['a', 'b']);
+          local g = jst.foldl(function(x, acc) acc + x + k, '', ['c', 'd']);
+          local h = jst.zip_with(function(x, y) x + y + k, ['e'], ['f']);
+          ([f('z'), g, h])
+          )";
+        CHECK(ParseAndInline(code) ==
+              nlohmann::json::parse(R"([["akz", "bkz"], "ckdk", ["efk"]])"));
+    }
+
+    SECTION("loop variables do not clash with captured variables") {
+        auto const* code = R"(
+          local x = 'outer';
+          local f(y) = y + x;
+          ([f(x) for x in ['a', 'b']])
+          )";
+        CHECK(ParseAndInline(code) ==
+              nlohmann::json::parse(R"(["aouter", "bouter"])"));
     }
 }
 

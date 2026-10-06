@@ -6,6 +6,7 @@
       'ast.hpp',
       'ast_context.hpp',
       'node_variant.hpp',
+      'scope.hpp',
     ],
     deps: [
       @'//src/buildtool/jstlang:file_data',

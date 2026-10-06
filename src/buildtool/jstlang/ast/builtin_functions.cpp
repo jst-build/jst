@@ -39,6 +39,7 @@
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/scope.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 
 namespace {
@@ -53,6 +54,20 @@ auto const kDotPath =
 
 auto const kFalseBool =
     std::make_shared<jstlang::BoolNode>(jstlang::Location{}, false);
+
+// Names of bindings for passing evaluated values to higher order functions
+// (contain a space, so they cannot clash with identifiers)
+auto const kRangeName = std::string{"jst range"};
+auto const kRange1Name = std::string{"jst range1"};
+auto const kRange2Name = std::string{"jst range2"};
+auto const kInitName = std::string{"jst init"};
+
+// Expression reading the value of a binding
+[[nodiscard]] auto VarRead(jstlang::Location const& loc,
+                           std::string name) -> jstlang::ASTNodePtr {
+    return std::make_shared<jstlang::CallNode>(
+        loc, jstlang::CallNode::target_t{std::move(name)});
+}
 
 class BuiltInError final : public std::runtime_error {
   public:
@@ -1037,8 +1052,8 @@ auto BuiltIn::zip_with(Location const& loc,
         throw BuiltInError(loc, std::string("zip_with: ") + e.what());
     }
 
-    auto func_node = RetrieveAs<FuncNode>(named_params, kExpected[0]);
-    if (func_node == nullptr) {
+    auto closure = RetrieveAs<ClosureNode>(named_params, kExpected[0]);
+    if (closure == nullptr) {
         throw BuiltInError(loc,
                            "zip_with: Mandatory parameter \"func\" is missing "
                            "or not a function");
@@ -1056,22 +1071,29 @@ auto BuiltIn::zip_with(Location const& loc,
                            "zip_with: Missing mandatory parameter \"range2\"");
     }
 
-    if (func_node->GetParams().size() != 2) {
+    auto const& func = closure->GetFunc();
+    if (func.GetParams().size() != 2) {
         throw BuiltInError(
             loc,
             "zip_with: Parameter \"func\" must accept exactly two parameters.");
     }
 
-    auto const& iter1_var = func_node->GetParams().at(0).first;
-    auto const& iter2_var = func_node->GetParams().at(1).first;
-    auto const& body = func_node->GetBody();
-    // create ZipWith node and attempt (partial) inline
-    return eval_callback(std::make_shared<ZipWithNode>(loc,
-                                                       iter1_var,
-                                                       iter2_var,
-                                                       std::move(range1_node),
-                                                       std::move(range2_node),
-                                                       body));
+    auto const& iter1_var = func.GetParams().at(0).first;
+    auto const& iter2_var = func.GetParams().at(1).first;
+    auto const& body = func.GetBody();
+    // evaluate in the closure's scope, ranges are already evaluated
+    auto scope = Scope::BindValue(
+        closure->GetScope(), kRange1Name, std::move(range1_node));
+    scope =
+        Scope::BindValue(std::move(scope), kRange2Name, std::move(range2_node));
+    return eval_callback(
+        std::make_shared<ZipWithNode>(loc,
+                                      iter1_var,
+                                      iter2_var,
+                                      VarRead(loc, kRange1Name),
+                                      VarRead(loc, kRange2Name),
+                                      body),
+        scope);
 }
 
 auto BuiltIn::zip_map(Location const& loc,
@@ -1157,8 +1179,8 @@ auto BuiltIn::foreach (Location const& loc,
         throw BuiltInError(loc, std::string("foreach: ") + e.what());
     }
 
-    auto func_node = RetrieveAs<FuncNode>(named_params, kExpected[0]);
-    if (func_node == nullptr) {
+    auto closure = RetrieveAs<ClosureNode>(named_params, kExpected[0]);
+    if (closure == nullptr) {
         throw BuiltInError(loc,
                            "foreach: Mandatory parameter \"func\" is missing "
                            "or not a function");
@@ -1170,17 +1192,21 @@ auto BuiltIn::foreach (Location const& loc,
                            "foreach: Missing mandatory parameter \"range\"");
     }
 
-    if (func_node->GetParams().size() != 1) {
+    auto const& func = closure->GetFunc();
+    if (func.GetParams().size() != 1) {
         throw BuiltInError(
             loc,
             "foreach: Parameter \"func\" must accept exactly one parameter.");
     }
 
-    auto const& iter_var = func_node->GetParams().at(0).first;
-    auto const& body = func_node->GetBody();
-    // create ForEach node and attempt (partial) inline
+    auto const& iter_var = func.GetParams().at(0).first;
+    auto const& body = func.GetBody();
+    // evaluate in the closure's scope, the range is already evaluated
+    auto scope = Scope::BindValue(
+        closure->GetScope(), kRangeName, std::move(range_node));
     return eval_callback(std::make_shared<ForEachNode>(
-        loc, iter_var, std::move(range_node), body));
+                             loc, iter_var, VarRead(loc, kRangeName), body),
+                         scope);
 }
 
 auto BuiltIn::foldl(Location const& loc,
@@ -1199,8 +1225,8 @@ auto BuiltIn::foldl(Location const& loc,
         throw BuiltInError(loc, std::string("foldl: ") + e.what());
     }
 
-    auto func_node = RetrieveAs<FuncNode>(named_params, kExpected[0]);
-    if (func_node == nullptr) {
+    auto closure = RetrieveAs<ClosureNode>(named_params, kExpected[0]);
+    if (closure == nullptr) {
         throw BuiltInError(
             loc,
             "foldl: Mandatory parameter \"func\" is missing or not a function");
@@ -1216,22 +1242,29 @@ auto BuiltIn::foldl(Location const& loc,
         throw BuiltInError(loc, "foldl: Missing mandatory parameter \"range\"");
     }
 
-    if (func_node->GetParams().size() != 2) {
+    auto const& func = closure->GetFunc();
+    if (func.GetParams().size() != 2) {
         throw BuiltInError(
             loc,
             "foldl: Parameter \"func\" must accept exactly two parameters.");
     }
 
-    auto const& iter_var = func_node->GetParams().at(0).first;
-    auto const& accu_var = func_node->GetParams().at(1).first;
-    auto const& body = func_node->GetBody();
-    // create FoldLeft node and attempt (partial) inline
-    return eval_callback(std::make_shared<FoldLeftNode>(loc,
-                                                        iter_var,
-                                                        accu_var,
-                                                        std::move(init_node),
-                                                        std::move(range_node),
-                                                        body));
+    auto const& iter_var = func.GetParams().at(0).first;
+    auto const& accu_var = func.GetParams().at(1).first;
+    auto const& body = func.GetBody();
+    // evaluate in the closure's scope, init and range are already evaluated
+    auto scope =
+        Scope::BindValue(closure->GetScope(), kInitName, std::move(init_node));
+    scope =
+        Scope::BindValue(std::move(scope), kRangeName, std::move(range_node));
+    return eval_callback(
+        std::make_shared<FoldLeftNode>(loc,
+                                       iter_var,
+                                       accu_var,
+                                       VarRead(loc, kInitName),
+                                       VarRead(loc, kRangeName),
+                                       body),
+        scope);
 }
 
 auto BuiltIn::nub_right(Location const& loc,

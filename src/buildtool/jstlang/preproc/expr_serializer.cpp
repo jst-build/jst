@@ -93,7 +93,7 @@ auto const kUnevaluatedTargetFields =
     // (if not evaluated) or as expressions; the latest field wins
     auto json = nlohmann::json::object();
     for (auto const& [key, value] : target.GetFields()) {
-        if (ASTNode::Cast<jstlang::FuncNode const*>(value.get()) != nullptr) {
+        if (value->IsFunction()) {
             continue;  // functions are not serialized
         }
         auto const& name = FieldName(key);

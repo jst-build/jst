@@ -58,8 +58,7 @@ struct Case final {
     auto ast = parser->ParseData(jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});
-    auto scope = jstlang::ScopeDefs{};
-    return jstlang::ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(
+    return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(
         jstlang::ProvideBuiltinsToAST(ast));
 }
 

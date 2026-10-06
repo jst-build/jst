@@ -34,13 +34,12 @@ namespace {
 
 auto const kEmptyMap = nlohmann::json({{"type", "empty_map"}});
 
-// Create singleton_map expression, returns nullopt if field value is a FuncNode
+// Create singleton_map expression, returns nullopt if field value is a function
 [[nodiscard]] auto CreateSingletonMap(jstlang::ASTToJsonVisitor const* visitor,
                                       jstlang::MapNode::entry_t const& field)
     -> std::optional<nlohmann::json> {
     auto const& [key, value] = field;
-    if (jstlang::ASTNode::Cast<jstlang::FuncNode const*>(value.get()) !=
-        nullptr) {
+    if (value->IsFunction()) {
         // skip serialization of func nodes
         return std::nullopt;
     }
@@ -124,8 +123,7 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
     }
     for (std::size_t pos = 0; pos < args.size() and pos < keys.size(); ++pos) {
         auto const& arg = args[pos];
-        if (arg == nullptr or
-            ASTNode::Cast<FuncNode const*>(arg.get()) != nullptr) {
+        if (arg == nullptr or arg->IsFunction()) {
             // skip unspecified arguments and func nodes
             continue;
         }
@@ -189,7 +187,7 @@ auto ASTToJsonVisitor::operator()(MapNode const* node) const -> nlohmann::json {
             throw std::runtime_error{
                 "Field names of literal maps must be strings."};
         }
-        if (ASTNode::Cast<FuncNode const*>(value.get()) != nullptr) {
+        if (value->IsFunction()) {
             // skip serialization of func nodes
             continue;
         }

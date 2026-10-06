@@ -25,8 +25,10 @@ namespace jstlang {
 
 class BuiltIn final {
   public:
-    // inline callback needed for higher order builtin functions
-    using EvalCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
+    // callback for evaluating an expression in a scope, needed for higher
+    // order builtin functions
+    using EvalCallback =
+        std::function<ASTNodePtr(ASTNodePtr const&, ScopePtr const&)>;
     using Function = std::function<ASTNodePtr(Location const&,
                                               EvalCallback const&,
                                               CallNode::params_t const&)>;

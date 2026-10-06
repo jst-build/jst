@@ -71,6 +71,15 @@ auto ASTToStringVisitor::operator()(FuncNode const* node) const -> std::string {
     return oss.str();
 }
 
+auto ASTToStringVisitor::operator()(ClosureNode const* node) const
+    -> std::string {
+    auto const space = IndentString(indent_);
+    std::ostringstream oss{};
+    oss << space << "CLOSURE\n";
+    oss << ASTToStringVisitor{indent_ + 1}(&node->GetFunc());
+    return oss.str();
+}
+
 auto ASTToStringVisitor::operator()(BuiltinNode const* node) const
     -> std::string {
     auto const space = IndentString(indent_);

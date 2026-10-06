@@ -77,9 +77,7 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
 #endif
 
         // inline all functions and variables
-        auto scope = ScopeDefs{};
-        auto inl_ast =
-            ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(jst_ast);
+        auto inl_ast = ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(jst_ast);
 
 #ifndef NDEBUG
         logger_(
