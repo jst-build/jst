@@ -48,11 +48,11 @@
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 
-  inline_visitor: {
+  eval_visitor: {
     type: @'rules//CC:library',
-    name: ['inline_visitor'],
-    hdrs: ['inline_visitor.hpp'],
-    srcs: ['inline_visitor.cpp'],
+    name: ['eval_visitor'],
+    hdrs: ['eval_visitor.hpp'],
+    srcs: ['eval_visitor.cpp'],
     deps: [
       'ast',
       'builtins',

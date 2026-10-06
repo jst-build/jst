@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_INLINE_VISITOR_HPP
-#define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_INLINE_VISITOR_HPP
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_VISITOR_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_VISITOR_HPP
 
 #include <concepts>
 #include <functional>
@@ -28,11 +28,11 @@
 
 namespace jstlang {
 
-class ASTInlineError : public std::runtime_error {
+class ASTEvalError : public std::runtime_error {
   public:
-    explicit ASTInlineError(std::string const& error);
-    explicit ASTInlineError(std::string const& error,
-                            jstlang::Location const& loc);
+    explicit ASTEvalError(std::string const& error);
+    explicit ASTEvalError(std::string const& error,
+                          jstlang::Location const& loc);
 };
 
 class ScopeDefs {
@@ -76,7 +76,7 @@ concept IsLeafNode = IsAnyOf<T,
                              jstlang::RefNode,
                              jstlang::BuiltinNode>;
 
-class ASTInlineVisitor final {
+class ASTEvalVisitor final {
   private:
     template <class T>
     [[nodiscard]] static auto ShallowCopy(T const* node) -> std::shared_ptr<T> {
@@ -106,16 +106,15 @@ class ASTInlineVisitor final {
         -> ASTNodePtr;
 
   public:
-    explicit ASTInlineVisitor(ScopeDefs const* scope,
-                              bool partial_inline) noexcept
+    explicit ASTEvalVisitor(ScopeDefs const* scope,
+                            bool partial_inline) noexcept
         : scope_{scope},
-          inline_callback_{[this](ASTNodePtr const& node) -> ASTNodePtr {
-              return this->InlineFunctions(node);
+          eval_callback_{[this](ASTNodePtr const& node) -> ASTNodePtr {
+              return this->Evaluate(node);
           }},
           partial_inline_{partial_inline} {}
 
-    [[nodiscard]] auto InlineFunctions(ASTNodePtr const& node) const
-        -> ASTNodePtr;
+    [[nodiscard]] auto Evaluate(ASTNodePtr const& node) const -> ASTNodePtr;
 
     // default operator for leaf nodes (no inlining needed)
     template <class T>
@@ -145,13 +144,13 @@ class ASTInlineVisitor final {
         -> ASTNodePtr;
 
   private:
-    using InlineCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
+    using EvalCallback = std::function<ASTNodePtr(ASTNodePtr const&)>;
 
     ScopeDefs const* scope_;
-    InlineCallback inline_callback_;
+    EvalCallback eval_callback_;
     bool partial_inline_;
 };
 
 }  // namespace jstlang
 
-#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_INLINE_VISITOR_HPP
+#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_VISITOR_HPP

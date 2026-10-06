@@ -24,7 +24,7 @@
     'private-deps': [
       @'//src/buildtool/jstlang/ast:analyze',
       @'//src/buildtool/jstlang/ast:builtins',
-      @'//src/buildtool/jstlang/ast:inline_visitor',
+      @'//src/buildtool/jstlang/ast:eval_visitor',
       @'//src/buildtool/jstlang/ast:parser',
       @'//src/buildtool/jstlang/ast:to_string_visitor',
       @'//src/buildtool/jstlang/ast/native:parser',

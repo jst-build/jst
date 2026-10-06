@@ -25,7 +25,7 @@
 #include "src/buildtool/jstlang/ast/analyze.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
+#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #ifndef NDEBUG
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
@@ -79,8 +79,7 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
         // inline all functions and variables
         auto scope = ScopeDefs{};
         auto inl_ast =
-            ASTInlineVisitor{&scope, /*partial_inline=*/false}.InlineFunctions(
-                jst_ast);
+            ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(jst_ast);
 
 #ifndef NDEBUG
         logger_(
@@ -92,7 +91,7 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
 
     } catch (jstlang::ASTParseError const& e) {
         err_msg << e.what() << "\n";
-    } catch (jstlang::ASTInlineError const& e) {
+    } catch (jstlang::ASTEvalError const& e) {
         err_msg << "AST inlining failed with:\n" << e.what() << "\n";
     } catch (std::exception const& e) {
         err_msg << "Internal error:\n" << e.what() << "\n";

@@ -24,7 +24,7 @@
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
+#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
@@ -50,8 +50,8 @@ namespace {
     auto just_ast = parser->ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
     auto scope = jstlang::ScopeDefs{};
-    return jstlang::ASTInlineVisitor{&scope, /*partial_inline=*/false}
-        .InlineFunctions(just_ast);
+    return jstlang::ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(
+        just_ast);
 }
 
 [[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
@@ -380,25 +380,25 @@ TEST_CASE("ast_inline", "[functions]") {
                 local foo(a, b='B') = [a, b];
                 {foo: foo('a', c='c')}
               )"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             // argument specified twice
             CHECK_THROWS_AS(ParseAndInline(R"(
                 local foo(a, b='B') = [a, b];
                 {foo: foo('a', a='a')}
               )"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             // too many arguments
             CHECK_THROWS_AS(ParseAndInline(R"(
                 local foo(a, b='B') = [a, b];
                 {foo: foo('a', 'b', 'c')}
               )"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             // missing mandatory argument
             CHECK_THROWS_AS(ParseAndInline(R"(
                 local foo(a, b='B') = [a, b];
                 {foo: foo(b='b')}
               )"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
         }
     }
 }
@@ -877,7 +877,7 @@ TEST_CASE("ast_inline", "[array comprehension]") {
                 foo: [jst.env('x') for x in jst.env('foo')],
               }
             )";
-            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
         }
     }
 
@@ -1042,7 +1042,7 @@ TEST_CASE("ast_inline", "[object comprehension]") {
                 foo: {[x]:jst.env('x') for x in jst.env('foo')},
               }
             )";
-            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
         }
     }
 
@@ -1084,7 +1084,7 @@ TEST_CASE("ast_inline", "[error handling]") {
           {
             foo: bar,
           })";
-        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
     }
 
     SECTION("undeclared functions") {
@@ -1093,7 +1093,7 @@ TEST_CASE("ast_inline", "[error handling]") {
           {
             foo: bar(),
           })";
-        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
     }
 }
 
@@ -1307,7 +1307,7 @@ TEST_CASE("ast_inline", "[type deduction]") {
                   foo + bar,
               }
             )";
-            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
         }
 
         SECTION("loop variable") {
@@ -1316,7 +1316,7 @@ TEST_CASE("ast_inline", "[type deduction]") {
                 foo: [x + x for x in jst.env('bar')],
               }
             )";
-            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+            CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
         }
     }
 
@@ -1325,13 +1325,13 @@ TEST_CASE("ast_inline", "[type deduction]") {
             CHECK_NOTHROW(ParseAndInline("{ foo: 5 * 5 }"));
 
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 * '5' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 * {} }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: [] * 5 }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: 'foo' * 'bar' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             auto const* two_vars = R"(
               local var1 = jst.env("VAR1");
               local var2 = jst.env("VAR2");
@@ -1346,13 +1346,13 @@ TEST_CASE("ast_inline", "[type deduction]") {
             CHECK_NOTHROW(ParseAndInline("{ foo: -5 }"));
 
             CHECK_THROWS_AS(ParseAndInline("{ foo: -'5' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: -{} }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: -[] }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: -'foo' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
         }
         SECTION("unary minus in function body") {
             auto expect = nlohmann::json::parse(R"(
@@ -1372,13 +1372,13 @@ TEST_CASE("ast_inline", "[type deduction]") {
             CHECK_NOTHROW(ParseAndInline("{ foo: -5 - 3 }"));
 
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 - '5' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 - {} }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 - [] }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             CHECK_THROWS_AS(ParseAndInline("{ foo: 5 - 'foo' }"),
-                            jstlang::ASTInlineError);
+                            jstlang::ASTEvalError);
             auto const* two_vars = R"(
               local var1 = jst.env("VAR1");
               local var2 = jst.env("VAR2");
@@ -1569,7 +1569,7 @@ TEST_CASE("ast_inline", "[read-call-separation]") {
           local bar() = 'bar';
           foo + bar
         )";
-        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
     }
 
     SECTION("call variable and function") {
@@ -1578,7 +1578,7 @@ TEST_CASE("ast_inline", "[read-call-separation]") {
           local bar() = 'bar';
           foo() + bar()
         )";
-        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTInlineError);
+        CHECK_THROWS_AS(ParseAndInline(code), jstlang::ASTEvalError);
     }
 }
 

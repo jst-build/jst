@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
+#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 
 #include <algorithm>
 #include <concepts>
@@ -106,52 +106,50 @@ template <std::same_as<jstlang::ValueType>... TTypes>
 
 namespace jstlang {
 
-ASTInlineError::ASTInlineError(std::string const& error)
-    : runtime_error{error} {}
+ASTEvalError::ASTEvalError(std::string const& error) : runtime_error{error} {}
 
-ASTInlineError::ASTInlineError(std::string const& error,
-                               jstlang::Location const& loc)
+ASTEvalError::ASTEvalError(std::string const& error,
+                           jstlang::Location const& loc)
     : runtime_error{GetLocationString(loc) + ": " + error +
                     GetLocationSnippet(loc)} {}
 
-auto ASTInlineVisitor::CallBuiltinWithParams(
+auto ASTEvalVisitor::CallBuiltinWithParams(
     std::string const& name,
     Location const& loc,
     CallNode::params_t const& params) const -> ASTNodePtr {
     auto bt_it = kBuiltinFunctions.find(name);
     if (bt_it == kBuiltinFunctions.end()) {
-        throw ASTInlineError{"Unknown builtin function \"" + name + "\".", loc};
+        throw ASTEvalError{"Unknown builtin function \"" + name + "\".", loc};
     }
     try {
-        return std::invoke(bt_it->second, loc, inline_callback_, params);
+        return std::invoke(bt_it->second, loc, eval_callback_, params);
     } catch (std::exception const& e) {
-        throw ASTInlineError{e.what()};
+        throw ASTEvalError{e.what()};
     }
 }
 
-auto ASTInlineVisitor::InlineFunctions(ASTNodePtr const& node) const
-    -> ASTNodePtr {
+auto ASTEvalVisitor::Evaluate(ASTNodePtr const& node) const -> ASTNodePtr {
     if (node) {
         return std::visit(*this, node->ToVariant());
     }
     return nullptr;
 }
 
-auto ASTInlineVisitor::operator()(LetNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(LetNode const* node) const -> ASTNodePtr {
     // name of function / variable
     auto const& name = node->GetName();
     auto const& value = node->GetValue();
     auto const& next = node->GetNext();
 
     auto next_scope = ScopeDefs(scope_);
-    next_scope.AddDef(name, InlineFunctions(value));
+    next_scope.AddDef(name, Evaluate(value));
 
     // Always fully inline LetNodes
     // TODO(oreiche): once we support RULES, this wont happen unconditionally
-    return ASTInlineVisitor{&next_scope, partial_inline_}.InlineFunctions(next);
+    return ASTEvalVisitor{&next_scope, partial_inline_}.Evaluate(next);
 }
 
-auto ASTInlineVisitor::operator()(FuncNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(FuncNode const* node) const -> ASTNodePtr {
     // For every function or variable (function without arguments):
     //   - run inlining on the function's body
     //   - add inlined body to scope
@@ -167,28 +165,28 @@ auto ASTInlineVisitor::operator()(FuncNode const* node) const -> ASTNodePtr {
     // - current scope requires it (this is a nested FuncNode)
     // - or the FuncNode has arguments
     auto partial_inline = partial_inline_ or not node->GetParams().empty();
-    auto func_visitor = ASTInlineVisitor{&func_scope, partial_inline};
+    auto func_visitor = ASTEvalVisitor{&func_scope, partial_inline};
     for (auto const& [pname, pexpr] : node->GetParams()) {
         // inline possible var/func uses in argument expression
-        auto inl_pexpr = func_visitor.InlineFunctions(pexpr);
+        auto inl_pexpr = func_visitor.Evaluate(pexpr);
         params.emplace_back(pname, std::move(inl_pexpr));
         // add parameter to scope as nullptr, indicating it is yet unknown
         func_scope.AddDef(pname, nullptr);
     }
 
     // inline possible var/func uses in func body
-    auto inl_func_body = func_visitor.InlineFunctions(node->GetBody());
+    auto inl_func_body = func_visitor.Evaluate(node->GetBody());
 
     return std::make_shared<FuncNode>(
         node->GetLocation(), std::move(params), std::move(inl_func_body));
 }
 
-auto ASTInlineVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
     // Inline function call
     auto const& target = node->GetTarget();
 
     if (std::holds_alternative<CallNode::expr_t>(target)) {
-        auto inl_target = InlineFunctions(std::get<CallNode::expr_t>(target));
+        auto inl_target = Evaluate(std::get<CallNode::expr_t>(target));
         if (auto const* builtin =
                 ASTNode::Cast<BuiltinNode const*>(inl_target.get())) {
             return InlineBuiltinCall(node, builtin);
@@ -202,8 +200,8 @@ auto ASTInlineVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
             return std::make_shared<CallNode>(
                 node->GetLocation(), inl_target, node->GetParams());
         }
-        throw ASTInlineError{"Call target is not a function.",
-                             node->GetLocation()};
+        throw ASTEvalError{"Call target is not a function.",
+                           node->GetLocation()};
     }
 
     if (std::holds_alternative<CallNode::builtin_t>(target)) {
@@ -217,7 +215,7 @@ auto ASTInlineVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
         auto const& name = std::get<CallNode::identifier_t>(target);
         auto const* entry = scope_->GetDef(name);
         if (entry == nullptr) {
-            throw ASTInlineError{
+            throw ASTEvalError{
                 "Cannot find function or variable '" + name + "' in scope.",
                 node->GetLocation()};
         }
@@ -241,8 +239,8 @@ auto ASTInlineVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
                 // retain call node for full inlining later
                 return ShallowCopy(node);
             }
-            throw ASTInlineError{"Found unknown variable during full inlining.",
-                                 node->GetLocation()};
+            throw ASTEvalError{"Found unknown variable during full inlining.",
+                               node->GetLocation()};
         }
 
         if (node->IsVarRead()) {
@@ -255,24 +253,24 @@ auto ASTInlineVisitor::operator()(CallNode const* node) const -> ASTNodePtr {
                 ASTNode::Cast<FuncNode const*>(var_value.get())) {
             return InlineFuncBody(node, func);
         }
-        throw ASTInlineError{
+        throw ASTEvalError{
             "Cannot call a variable that does not contain a function.",
             node->GetLocation()};
     }
 
-    throw ASTInlineError{"Unsupported call target.", node->GetLocation()};
+    throw ASTEvalError{"Unsupported call target.", node->GetLocation()};
 }
 
-auto ASTInlineVisitor::operator()(ForeignNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(ForeignNode const* node) const -> ASTNodePtr {
     // foreign AST is self-contained, set up new inliner with clean scope
     auto clean_scope = ScopeDefs{};
     auto foreign_inliner =
-        ASTInlineVisitor{&clean_scope, /*partial_inline=*/false};
+        ASTEvalVisitor{&clean_scope, /*partial_inline=*/false};
     auto ast = ProvideBuiltinsToAST(node->GetExpr());
-    return foreign_inliner.InlineFunctions(ast);
+    return foreign_inliner.Evaluate(ast);
 }
 
-auto ASTInlineVisitor::operator()(BuiltinCallNode const* node) const
+auto ASTEvalVisitor::operator()(BuiltinCallNode const* node) const
     -> ASTNodePtr {
     // Built-in calls are retained for later serialization. They may be inlined
     // a second time, if they are created during inlining CallNodes to built-in
@@ -280,7 +278,7 @@ auto ASTInlineVisitor::operator()(BuiltinCallNode const* node) const
     auto args = BuiltinCallNode::args_t{};
     args.reserve(node->GetArgs().size());
     for (auto const& arg : node->GetArgs()) {
-        args.emplace_back(arg ? InlineFunctions(arg) : nullptr);
+        args.emplace_back(arg ? Evaluate(arg) : nullptr);
     }
     return std::make_shared<BuiltinCallNode>(node->GetLocation(),
                                              node->GetName(),
@@ -288,26 +286,26 @@ auto ASTInlineVisitor::operator()(BuiltinCallNode const* node) const
                                              node->EvalType());
 }
 
-auto ASTInlineVisitor::operator()(ListNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(ListNode const* node) const -> ASTNodePtr {
     auto items = ListNode::items_t{};
     items.reserve(node->GetItems().size());
     for (auto const& item : node->GetItems()) {
-        items.emplace_back(InlineFunctions(item));
+        items.emplace_back(Evaluate(item));
     }
     return std::make_shared<ListNode>(node->GetLocation(), std::move(items));
 }
 
-auto ASTInlineVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
     auto const& fields = node->GetFields();
     auto inl_fields = MapNode::fields_t{};
     inl_fields.reserve(fields.size());
     bool has_new_literal_names{};
     for (auto const& field : fields) {
-        auto inl_name = InlineFunctions(field.first);
+        auto inl_name = Evaluate(field.first);
         // field names must evaluate to strings or must be runtime variables
         if (inl_name->EvalType() != ValueType::String and
             inl_name->EvalType() != ValueType::Any) {
-            throw ASTInlineError{
+            throw ASTEvalError{
                 "Expected string expression for field name, but got: " +
                     TypeToString(inl_name->EvalType()),
                 field.first->GetLocation()};
@@ -317,8 +315,7 @@ auto ASTInlineVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
             // computed name became a string literal
             has_new_literal_names = true;
         }
-        inl_fields.emplace_back(std::move(inl_name),
-                                InlineFunctions(field.second));
+        inl_fields.emplace_back(std::move(inl_name), Evaluate(field.second));
     }
     return std::make_shared<MapNode>(
         node->GetLocation(),
@@ -326,31 +323,31 @@ auto ASTInlineVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
         has_new_literal_names ? MapNode::Unique::Maybe : MapNode::Unique::Yes);
 }
 
-auto ASTInlineVisitor::operator()(IfNode const* node) const -> ASTNodePtr {
-    auto inl_cond = InlineFunctions(node->GetCondition());
+auto ASTEvalVisitor::operator()(IfNode const* node) const -> ASTNodePtr {
+    auto inl_cond = Evaluate(node->GetCondition());
 
     // attempt partial evaluation
     if (auto cond_value = inl_cond->TruthValue()) {
-        auto inl_branch = *cond_value ? InlineFunctions(node->GetThenBranch())
-                                      : InlineFunctions(node->GetElseBranch());
+        auto inl_branch = *cond_value ? Evaluate(node->GetThenBranch())
+                                      : Evaluate(node->GetElseBranch());
         return inl_branch ? std::move(inl_branch) : kEmptyList;
     }
 
     return std::make_shared<IfNode>(node->GetLocation(),
                                     inl_cond,
-                                    InlineFunctions(node->GetThenBranch()),
-                                    InlineFunctions(node->GetElseBranch()));
+                                    Evaluate(node->GetThenBranch()),
+                                    Evaluate(node->GetElseBranch()));
 }
 
-auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
     auto const& loc = node->GetLocation();
     auto const& var_name = node->GetVariable();
-    auto range = InlineFunctions(node->GetRange());
+    auto range = Evaluate(node->GetRange());
 
     // must be list or runtime variable
     if (range->EvalType() != ValueType::List and
         range->EvalType() != ValueType::Any) {
-        throw ASTInlineError{
+        throw ASTEvalError{
             "Expected list expression for foreach range argument, but got: " +
                 TypeToString(range->EvalType()),
             loc};
@@ -363,9 +360,8 @@ auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
         for (auto const& item : list->GetItems()) {
             auto body_scope = ScopeDefs{scope_};
             body_scope.AddDef(var_name, item);
-            auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
-            inl_items.emplace_back(
-                body_visitor.InlineFunctions(node->GetBody()));
+            auto body_visitor = ASTEvalVisitor{&body_scope, partial_inline_};
+            inl_items.emplace_back(body_visitor.Evaluate(node->GetBody()));
         }
         return std::make_shared<ListNode>(node->GetLocation(),
                                           std::move(inl_items));
@@ -384,19 +380,19 @@ auto ASTInlineVisitor::operator()(ForEachNode const* node) const -> ASTNodePtr {
         auto runtime_read_expr = std::make_shared<VarNode>(loc, var_name);
         body_scope.AddDef(var_name, std::move(runtime_read_expr));
     }
-    auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
+    auto body_visitor = ASTEvalVisitor{&body_scope, partial_inline_};
     return std::make_shared<ForEachNode>(
         loc,
         var_name,
         std::move(range),
-        body_visitor.InlineFunctions(node->GetBody()));
+        body_visitor.Evaluate(node->GetBody()));
 }
 
-auto ASTInlineVisitor::operator()(ZipWithNode const* node) const -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(ZipWithNode const* node) const -> ASTNodePtr {
     auto const& var1_name = node->GetVariable1();
     auto const& var2_name = node->GetVariable2();
-    auto range1 = InlineFunctions(node->GetRange1());
-    auto range2 = InlineFunctions(node->GetRange2());
+    auto range1 = Evaluate(node->GetRange1());
+    auto range2 = Evaluate(node->GetRange2());
 
     auto const* list1 = ASTNode::Cast<ListNode const*>(range1.get());
     auto const* list2 = ASTNode::Cast<ListNode const*>(range2.get());
@@ -412,9 +408,8 @@ auto ASTInlineVisitor::operator()(ZipWithNode const* node) const -> ASTNodePtr {
             auto body_scope = ScopeDefs{scope_};
             body_scope.AddDef(var1_name, item1);
             body_scope.AddDef(var2_name, item2);
-            auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
-            inl_items.emplace_back(
-                body_visitor.InlineFunctions(node->GetBody()));
+            auto body_visitor = ASTEvalVisitor{&body_scope, partial_inline_};
+            inl_items.emplace_back(body_visitor.Evaluate(node->GetBody()));
         }
         return std::make_shared<ListNode>(node->GetLocation(),
                                           std::move(inl_items));
@@ -445,22 +440,21 @@ auto ASTInlineVisitor::operator()(ZipWithNode const* node) const -> ASTNodePtr {
         body_scope.AddDef(var1_name, std::move(runtime_read_expr1));
         body_scope.AddDef(var2_name, std::move(runtime_read_expr2));
     }
-    auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
+    auto body_visitor = ASTEvalVisitor{&body_scope, partial_inline_};
     return std::make_shared<ZipWithNode>(
         loc,
         var1_name,
         var2_name,
         std::move(range1),
         std::move(range2),
-        body_visitor.InlineFunctions(node->GetBody()));
+        body_visitor.Evaluate(node->GetBody()));
 }
 
-auto ASTInlineVisitor::operator()(FoldLeftNode const* node) const
-    -> ASTNodePtr {
+auto ASTEvalVisitor::operator()(FoldLeftNode const* node) const -> ASTNodePtr {
     auto const& iter_var_name = node->GetIterVar();
     auto const& accu_var_name = node->GetAccuVar();
-    auto range = InlineFunctions(node->GetRange());
-    auto init = InlineFunctions(node->GetInit());
+    auto range = Evaluate(node->GetRange());
+    auto init = Evaluate(node->GetInit());
     auto const& body = node->GetBody();
 
     if (auto const* list = ASTNode::Cast<ListNode const*>(range.get())) {
@@ -470,9 +464,7 @@ auto ASTInlineVisitor::operator()(FoldLeftNode const* node) const
         for (auto const& item : list->GetItems()) {
             eval_scope.AddDef(accu_var_name, accu);
             eval_scope.AddDef(iter_var_name, item);
-            accu =
-                ASTInlineVisitor{&eval_scope, partial_inline_}.InlineFunctions(
-                    body);
+            accu = ASTEvalVisitor{&eval_scope, partial_inline_}.Evaluate(body);
         }
         return accu;
     }
@@ -495,18 +487,18 @@ auto ASTInlineVisitor::operator()(FoldLeftNode const* node) const
         body_scope.AddDef(iter_var_name, std::move(iter_read_expr));
         body_scope.AddDef(accu_var_name, std::move(accu_read_expr));
     }
-    auto body_visitor = ASTInlineVisitor{&body_scope, partial_inline_};
+    auto body_visitor = ASTEvalVisitor{&body_scope, partial_inline_};
     return std::make_shared<FoldLeftNode>(loc,
                                           iter_var_name,
                                           accu_var_name,
                                           std::move(init),
                                           std::move(range),
-                                          body_visitor.InlineFunctions(body));
+                                          body_visitor.Evaluate(body));
 }
 
-auto ASTInlineVisitor::operator()(UnaryOperationNode const* node) const
+auto ASTEvalVisitor::operator()(UnaryOperationNode const* node) const
     -> ASTNodePtr {
-    auto inl_expr = InlineFunctions(node->GetExpression());
+    auto inl_expr = Evaluate(node->GetExpression());
 
     if (partial_inline_) {
         // retain UnaryOperationNode
@@ -525,22 +517,21 @@ auto ASTInlineVisitor::operator()(UnaryOperationNode const* node) const
                     loc, ListNode::items_t{std::move(inl_expr), kMinusOne});
                 return CallBuiltin("prod", loc, std::move(args));
             }
-            throw ASTInlineError{
-                "Unsupported type for unary minus operation: " +
-                    TypeToString(inl_expr->EvalType()),
-                loc};
+            throw ASTEvalError{"Unsupported type for unary minus operation: " +
+                                   TypeToString(inl_expr->EvalType()),
+                               loc};
         case UnaryOperationNode::Type::Not:
             return CallBuiltin("not", loc, std::move(inl_expr));
     }
 
     // unreachable
-    throw ASTInlineError{"Resolving unary operation failed.", loc};
+    throw ASTEvalError{"Resolving unary operation failed.", loc};
 }
 
-auto ASTInlineVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
-    auto inl_container = InlineFunctions(node->GetContainer());
-    auto inl_index = InlineFunctions(node->GetIndex());
-    auto inl_default = InlineFunctions(node->GetDefault());
+auto ASTEvalVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
+    auto inl_container = Evaluate(node->GetContainer());
+    auto inl_index = Evaluate(node->GetIndex());
+    auto inl_default = Evaluate(node->GetDefault());
     auto const& loc = node->GetLocation();
 
     if (ASTNode::Cast<MapNode const*>(inl_container.get()) != nullptr) {
@@ -553,8 +544,8 @@ auto ASTInlineVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
                     ASTNode::Cast<StringNode const*>(inl_index.get())) {
                 field_name = " '" + lookup_name->GetValue() + "'";
             }
-            throw ASTInlineError{"Cannot find field name" + field_name + ".",
-                                 loc};
+            throw ASTEvalError{"Cannot find field name" + field_name + ".",
+                               loc};
         }
         return result;
     }
@@ -564,21 +555,21 @@ auto ASTInlineVisitor::operator()(LookupNode const* node) const -> ASTNodePtr {
             CallBuiltin("at", loc, inl_index, inl_container, inl_default);
         // if the result is the default value, it's an error
         if (result == inl_default) {
-            throw ASTInlineError{"Invalid index.", loc};
+            throw ASTEvalError{"Invalid index.", loc};
         }
         return result;
     }
 
-    throw ASTInlineError{
+    throw ASTEvalError{
         "Failed to resolve the type of the container for LookupNode. Please "
         "use built-in functions.",
         loc};
 }
 
-auto ASTInlineVisitor::operator()(BinaryOperationNode const* node) const
+auto ASTEvalVisitor::operator()(BinaryOperationNode const* node) const
     -> ASTNodePtr {
-    auto inl_lhs = InlineFunctions(node->GetLhs());
-    auto inl_rhs = InlineFunctions(node->GetRhs());
+    auto inl_lhs = Evaluate(node->GetLhs());
+    auto inl_rhs = Evaluate(node->GetRhs());
 
     if (partial_inline_) {
         // retain BinaryOperationNode
@@ -598,7 +589,7 @@ auto ASTInlineVisitor::operator()(BinaryOperationNode const* node) const
         case BinaryOperationNode::Type::Plus:
             if (inl_lhs->EvalType() == inl_rhs->EvalType() and
                 inl_lhs->EvalType() == ValueType::Any) {
-                throw ASTInlineError{
+                throw ASTEvalError{
                     "Cannot deduce argument types, please use explicit "
                     "join/sum/flatten/union built-in function.",
                     loc};
@@ -634,18 +625,18 @@ auto ASTInlineVisitor::operator()(BinaryOperationNode const* node) const
             return CallBuiltin("eq", loc, inl_lhs, inl_rhs);
     }
 
-    throw ASTInlineError{"Unsupported types for binary operation. Found " +
-                             TypeToString(inl_lhs->EvalType()) + " and " +
-                             TypeToString(inl_rhs->EvalType()) + ".",
-                         loc};
+    throw ASTEvalError{"Unsupported types for binary operation. Found " +
+                           TypeToString(inl_lhs->EvalType()) + " and " +
+                           TypeToString(inl_rhs->EvalType()) + ".",
+                       loc};
 }
 
-auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
-                                      FuncNode const* callee) const
+auto ASTEvalVisitor::InlineFuncBody(CallNode const* caller,
+                                    FuncNode const* callee) const
     -> ASTNodePtr {
     if (caller->IsVarRead()) {
         // expected function call, but this is a variable read
-        throw ASTInlineError{"Expected function call.", caller->GetLocation()};
+        throw ASTEvalError{"Expected function call.", caller->GetLocation()};
     }
 
     if (callee->GetParams().empty()) {
@@ -655,8 +646,8 @@ auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
 
     auto const& params = caller->GetParams();
     if (not params) {
-        throw ASTInlineError{"Missing parameter list for calling function.",
-                             caller->GetLocation()};
+        throw ASTEvalError{"Missing parameter list for calling function.",
+                           caller->GetLocation()};
     }
 
     // Assign caller arguments to callee parameters: unnamed arguments are
@@ -675,7 +666,7 @@ auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
                 callee_params.end(),
                 [&cname](auto const& param) { return param.first == *cname; });
             if (param_it == callee_params.end()) {
-                throw ASTInlineError{
+                throw ASTEvalError{
                     "Unknown function argument '" + *cname + "'.",
                     caller->GetLocation()};
             }
@@ -683,63 +674,63 @@ auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
                 std::distance(callee_params.begin(), param_it));
         }
         else if (pos++ >= callee_params.size()) {
-            throw ASTInlineError{"Too many arguments for calling function.",
-                                 caller->GetLocation()};
+            throw ASTEvalError{"Too many arguments for calling function.",
+                               caller->GetLocation()};
         }
         if (args[idx] != nullptr) {
-            throw ASTInlineError{"Function argument '" +
-                                     callee_params[idx].first +
-                                     "' specified more than once.",
-                                 caller->GetLocation()};
+            throw ASTEvalError{"Function argument '" +
+                                   callee_params[idx].first +
+                                   "' specified more than once.",
+                               caller->GetLocation()};
         }
         args[idx] = &cexpr;
     }
 
     // Create new scope for inlining function body and param default values
     auto func_scope = ScopeDefs{scope_};
-    auto func_visitor = ASTInlineVisitor{&func_scope, partial_inline_};
+    auto func_visitor = ASTEvalVisitor{&func_scope, partial_inline_};
     try {
         for (std::size_t i{}; i < callee_params.size(); ++i) {
             auto const& [def_name, pdefault] = callee_params[i];
             auto def_expr =
                 args[i] != nullptr
-                    ? InlineFunctions(*args[i])  // value specified by caller
-                    : func_visitor.InlineFunctions(pdefault);  // default value
+                    ? Evaluate(*args[i])  // value specified by caller
+                    : func_visitor.Evaluate(pdefault);  // default value
 
             if (not def_expr) {
-                throw ASTInlineError{
+                throw ASTEvalError{
                     "Missing function argument '" + def_name + "'.",
                     callee->GetLocation()};
             }
 
             func_scope.AddDef(def_name, std::move(def_expr));
         }
-        return func_visitor.InlineFunctions(callee->GetBody());
+        return func_visitor.Evaluate(callee->GetBody());
     } catch (std::exception const& e) {
-        throw ASTInlineError{
+        throw ASTEvalError{
             std::string{"Inlining function call failed with:\n"} + e.what(),
             caller->GetLocation()};
     }
 }
 
-auto ASTInlineVisitor::InlineBuiltinCall(CallNode const* caller,
-                                         BuiltinNode const* builtin) const
+auto ASTEvalVisitor::InlineBuiltinCall(CallNode const* caller,
+                                       BuiltinNode const* builtin) const
     -> ASTNodePtr {
     if (caller->IsVarRead()) {
         // function without arguments, just return body
-        throw ASTInlineError{"Expected function call.", caller->GetLocation()};
+        throw ASTEvalError{"Expected function call.", caller->GetLocation()};
     }
 
     // Inline call parameters
     auto const& caller_params = caller->GetParams();
     if (not caller_params) {
-        throw ASTInlineError{"Missing parameter list for function call.",
-                             caller->GetLocation()};
+        throw ASTEvalError{"Missing parameter list for function call.",
+                           caller->GetLocation()};
     }
     auto params = CallNode::params_t{};
     params.reserve(caller_params->size());
     for (auto const& [pname, pexpr] : *caller_params) {
-        params.emplace_back(pname, InlineFunctions(pexpr));
+        params.emplace_back(pname, Evaluate(pexpr));
     }
 
     auto const& loc = caller->GetLocation();
@@ -758,7 +749,7 @@ auto ASTInlineVisitor::InlineBuiltinCall(CallNode const* caller,
         // Those are typically conflict free, except for rare cases. One such
         // case is the iteration variable of a runtime-evaluated expression
         // (foreach,foldl), which is added to the scope as a runtime variable.
-        // (see ASTInlineVisitor::operator()(ForEachNode const*))
+        // (see ASTEvalVisitor::operator()(ForEachNode const*))
         // Example:
         //     "[ foo + jst.env('foo') for foo in jst.env('range') ]"
         // Due to range not being statically known, the iteration variable foo
@@ -767,16 +758,16 @@ auto ASTInlineVisitor::InlineBuiltinCall(CallNode const* caller,
         // for this scenario and throws an error to avoid unexpected behavior.
         auto const* var = ASTNode::Cast<VarNode const*>(result.get());
         if (var == nullptr) {
-            throw ASTInlineError{
+            throw ASTEvalError{
                 "Expected var node from env() built-in function.", loc};
         }
         auto const& var_name = var->GetName();
         auto const* var_def = scope_->GetDef(var_name);
         if (var_def != nullptr and
             ASTNode::Cast<VarNode const*>(var_def->get()) != nullptr) {
-            throw ASTInlineError{"Config variable '" + var_name +
-                                     "' is shadowed by scope variable.",
-                                 loc};
+            throw ASTEvalError{"Config variable '" + var_name +
+                                   "' is shadowed by scope variable.",
+                               loc};
         }
     }
 

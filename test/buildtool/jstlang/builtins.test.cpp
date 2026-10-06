@@ -29,7 +29,7 @@
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
+#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
@@ -59,8 +59,8 @@ struct Case final {
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});
     auto scope = jstlang::ScopeDefs{};
-    return jstlang::ASTInlineVisitor{&scope, /*partial_inline=*/false}
-        .InlineFunctions(jstlang::ProvideBuiltinsToAST(ast));
+    return jstlang::ASTEvalVisitor{&scope, /*partial_inline=*/false}.Evaluate(
+        jstlang::ProvideBuiltinsToAST(ast));
 }
 
 /// \brief Replace each placeholder by the given text.
