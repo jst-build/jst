@@ -146,7 +146,7 @@ auto BuiltIn::get(Location const& loc,
                   CallNode::params_t const& args) -> ASTNodePtr {
     static const std::array kExpected = {
         ExpectedParameter{"key", {ValueType::Any, ValueType::String}, true},
-        ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
+        ExpectedParameter{"map", {}, true},
         ExpectedParameter{"default", {}, false},
     };
 
@@ -168,6 +168,18 @@ auto BuiltIn::get(Location const& loc,
     ASTNodePtr default_node = RetrieveAs(named_params, kExpected[2]);
     if (not default_node) {
         default_node = kNullNode;
+    }
+
+    // like the expression language for maps of unknown type (e.g., unset
+    // runtime variables), null is treated as empty map
+    if (map_node->EvalType() != ValueType::Any and
+        map_node->EvalType() != ValueType::Map) {
+        if (map_node->EvalType() == ValueType::Null) {
+            return default_node;
+        }
+        throw BuiltInError(loc,
+                           "get: \"map\" does not accept argument type " +
+                               TypeToString(map_node->EvalType()) + ".");
     }
 
     // attempt static evaluation

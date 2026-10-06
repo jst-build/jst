@@ -245,6 +245,12 @@ TEST_CASE("preprocessor", "[builtin_functions]") {
             }
 
             {
+                auto const* code = "jst.get('foo', null, default='bar')";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
                 auto const* code = "jst.get(map={}, 'foo', default='bar')";
                 auto just_ast = Preprocess(code);
                 CHECK(just_ast == nullptr);
