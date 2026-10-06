@@ -77,6 +77,32 @@ enum class ValueType : std::uint8_t {
 class ASTNode;
 using ASTNodePtr = std::shared_ptr<ASTNode>;
 
+/// \brief Kind of an AST node, one per node class (same order as in
+/// ASTNodeVariant).
+enum class NodeKind : std::uint8_t {
+    Let,
+    Func,
+    Builtin,
+    BuiltinCall,
+    Call,
+    Foreign,
+    List,
+    Map,
+    Bool,
+    String,
+    Number,
+    Null,
+    Var,
+    If,
+    ForEach,
+    ZipWith,
+    FoldLeft,
+    UnaryOperation,
+    Lookup,
+    BinaryOperation,
+    Ref,
+};
+
 struct Location {
     std::string file;
     std::size_t line;
@@ -86,26 +112,21 @@ struct Location {
 };
 
 class ASTNode {
-    template <typename... TCallable>
-    class TInPlaceVisitor : public TCallable... {
-      public:
-        explicit TInPlaceVisitor(TCallable&&... args)
-            : TCallable(std::forward<TCallable>(args))... {}
-        using TCallable::operator()...;
-    };
-
   public:
-    explicit ASTNode(Location loc,
+    explicit ASTNode(NodeKind kind,
+                     Location loc,
                      ValueType value_type,
                      std::optional<bool> truth_value = std::nullopt) noexcept
         : loc_{std::move(loc)},
+          kind_{kind},
           value_type_{value_type},
           truth_value_{truth_value} {}
     ASTNode(ASTNode&&) = delete;
     ASTNode(ASTNode const&) = default;
     auto operator=(ASTNode&&) -> ASTNode& = default;
     auto operator=(ASTNode const&) -> ASTNode& = delete;
-    virtual ~ASTNode() = default;
+
+    [[nodiscard]] auto Kind() const noexcept -> NodeKind { return kind_; }
 
     [[nodiscard]] auto EvalType() const noexcept -> ValueType {
         return value_type_;
@@ -127,20 +148,28 @@ class ASTNode {
         return is_literal_;
     }
 
-    [[nodiscard]] virtual auto ToVariant() const noexcept -> ASTNodeVariant = 0;
+    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant;
 
     template <std::convertible_to<ASTNodeVariant> TNode,
               typename TUnderlying = std::remove_pointer_t<TNode>>
         requires(std::is_const_v<TUnderlying>)
-    [[nodiscard]] static auto Cast(ASTNode const* node) -> TNode {
-        if (node == nullptr) {
+    [[nodiscard]] static auto Cast(ASTNode const* node) noexcept -> TNode {
+        if (node == nullptr or node->kind_ != TUnderlying::kKind) {
             return nullptr;
         }
+        // the kind tag ensures the node has the derived type
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+        return static_cast<TNode>(node);
+    }
 
-        TInPlaceVisitor visitor{
-            [](TNode node) -> TNode { return node; },
-            [](auto /*unused*/) -> TNode { return nullptr; }};
-        return std::visit(std::move(visitor), node->ToVariant());
+    /// \brief Cast shared pointer to derived node, nullptr on kind mismatch.
+    template <typename TDerived>
+    [[nodiscard]] static auto CastPtr(ASTNodePtr const& node) noexcept
+        -> std::shared_ptr<TDerived> {
+        if (node == nullptr or node->kind_ != TDerived::kKind) {
+            return nullptr;
+        }
+        return std::static_pointer_cast<TDerived>(node);
     }
 
   protected:
@@ -148,8 +177,11 @@ class ASTNode {
     /// construction of their children).
     void SetLiteral(bool is_literal) noexcept { is_literal_ = is_literal; }
 
+    ~ASTNode() = default;
+
   private:
     Location loc_;
+    NodeKind kind_;
     ValueType value_type_;
     std::optional<bool> truth_value_;
     bool is_literal_{false};
@@ -157,11 +189,13 @@ class ASTNode {
 
 class LetNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Let;
+
     explicit LetNode(Location loc,
                      std::string name,
                      ASTNodePtr value,
                      ASTNodePtr next) noexcept
-        : ASTNode{std::move(loc), next->EvalType()},
+        : ASTNode{kKind, std::move(loc), next->EvalType()},
           name_{std::move(name)},
           value_{std::move(value)},
           next_{std::move(next)} {}
@@ -178,10 +212,6 @@ class LetNode : public ASTNode {
         return next_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     std::string name_;
     ASTNodePtr value_;
@@ -191,11 +221,13 @@ class LetNode : public ASTNode {
 // function definition
 class FuncNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Func;
+
     using param_t = std::pair<std::string, ASTNodePtr>;
     using params_t = std::vector<param_t>;
 
     explicit FuncNode(Location loc, params_t params, ASTNodePtr body) noexcept
-        : ASTNode{std::move(loc), ValueType::Func},
+        : ASTNode{kKind, std::move(loc), ValueType::Func},
           params_{std::move(params)},
           body_{std::move(body)} {}
 
@@ -207,10 +239,6 @@ class FuncNode : public ASTNode {
         return body_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     params_t params_;
     ASTNodePtr body_;
@@ -218,15 +246,13 @@ class FuncNode : public ASTNode {
 
 class BuiltinNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Builtin;
+
     explicit BuiltinNode(std::string name) noexcept
-        : ASTNode{{}, ValueType::Func}, name_{std::move(name)} {}
+        : ASTNode{kKind, {}, ValueType::Func}, name_{std::move(name)} {}
 
     [[nodiscard]] auto GetName() const noexcept -> std::string const& {
         return name_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -238,13 +264,15 @@ class BuiltinNode : public ASTNode {
 /// the built-in's parameter position; unspecified arguments are nullptr.
 class BuiltinCallNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::BuiltinCall;
+
     using args_t = std::vector<ASTNodePtr>;
 
     explicit BuiltinCallNode(Location loc,
                              std::string name,
                              args_t args,
                              ValueType eval_type) noexcept
-        : ASTNode{std::move(loc), eval_type},
+        : ASTNode{kKind, std::move(loc), eval_type},
           name_{std::move(name)},
           args_{std::move(args)} {}
 
@@ -256,10 +284,6 @@ class BuiltinCallNode : public ASTNode {
         return args_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     std::string name_;
     args_t args_;
@@ -268,6 +292,8 @@ class BuiltinCallNode : public ASTNode {
 // call to function (or read of variable, if no params)
 class CallNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Call;
+
     using param_t = std::pair<std::optional<std::string>, ASTNodePtr>;
     using params_t = std::vector<param_t>;
 
@@ -279,7 +305,7 @@ class CallNode : public ASTNode {
     explicit CallNode(Location loc,
                       target_t target,
                       std::optional<params_t> params = std::nullopt) noexcept
-        : ASTNode{std::move(loc), ValueType::Any},
+        : ASTNode{kKind, std::move(loc), ValueType::Any},
           target_{std::move(target)},
           params_{std::move(params)} {}
 
@@ -296,10 +322,6 @@ class CallNode : public ASTNode {
         return not params_.has_value();
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     target_t target_;
     std::optional<params_t> params_;
@@ -308,15 +330,14 @@ class CallNode : public ASTNode {
 // foreign self-contained AST (without access to upper scope)
 class ForeignNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Foreign;
+
     explicit ForeignNode(Location loc, ASTNodePtr expr) noexcept
-        : ASTNode{std::move(loc), expr->EvalType()}, expr_{std::move(expr)} {}
+        : ASTNode{kKind, std::move(loc), expr->EvalType()},
+          expr_{std::move(expr)} {}
 
     [[nodiscard]] auto GetExpr() const noexcept -> ASTNodePtr const& {
         return expr_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -325,10 +346,12 @@ class ForeignNode : public ASTNode {
 
 class ListNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::List;
+
     using items_t = std::vector<ASTNodePtr>;
 
     explicit ListNode(Location loc, items_t items) noexcept
-        : ASTNode{std::move(loc), ValueType::List, not items.empty()},
+        : ASTNode{kKind, std::move(loc), ValueType::List, not items.empty()},
           items_{std::move(items)} {
         SetLiteral(
             std::all_of(items_.begin(), items_.end(), [](auto const& item) {
@@ -339,14 +362,10 @@ class ListNode : public ASTNode {
     ListNode(ListNode const&) = default;
     auto operator=(ListNode&&) -> ListNode& = delete;
     auto operator=(ListNode const&) -> ListNode& = delete;
-    ~ListNode() override = default;
+    ~ListNode() = default;
 
     [[nodiscard]] auto GetItems() const noexcept -> items_t const& {
         return items_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -357,6 +376,8 @@ class ListNode : public ASTNode {
 /// Field names that are string literals are unique (see MapNode::Unique).
 class MapNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Map;
+
     using entry_t = std::pair<ASTNodePtr, ASTNodePtr>;
     using fields_t = std::vector<entry_t>;
 
@@ -367,7 +388,7 @@ class MapNode : public ASTNode {
     };
 
     explicit MapNode(Location loc, fields_t fields, Unique unique = Unique::Yes)
-        : ASTNode{std::move(loc), ValueType::Map, not fields.empty()},
+        : ASTNode{kKind, std::move(loc), ValueType::Map, not fields.empty()},
           fields_{unique == Unique::Maybe
                       ? RemoveDuplicateFields(std::move(fields))
                       : std::move(fields)} {
@@ -384,14 +405,10 @@ class MapNode : public ASTNode {
     MapNode(MapNode const&) = default;
     auto operator=(MapNode&&) -> MapNode& = delete;
     auto operator=(MapNode const&) -> MapNode& = delete;
-    ~MapNode() override = default;
+    ~MapNode() = default;
 
     [[nodiscard]] auto GetFields() const noexcept -> fields_t const& {
         return fields_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -403,21 +420,20 @@ class MapNode : public ASTNode {
 
 class BoolNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Bool;
+
     explicit BoolNode(Location loc, bool value) noexcept
-        : ASTNode{std::move(loc), ValueType::Bool, value}, value_{value} {
+        : ASTNode{kKind, std::move(loc), ValueType::Bool, value},
+          value_{value} {
         SetLiteral(true);
     }
     BoolNode(BoolNode&&) = delete;
     BoolNode(BoolNode const&) = default;
     auto operator=(BoolNode&&) -> BoolNode& = delete;
     auto operator=(BoolNode const&) -> BoolNode& = delete;
-    ~BoolNode() override = default;
+    ~BoolNode() = default;
 
     [[nodiscard]] auto GetValue() const noexcept -> bool { return value_; }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
 
   private:
     bool value_{};
@@ -425,8 +441,10 @@ class BoolNode : public ASTNode {
 
 class StringNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::String;
+
     explicit StringNode(Location loc, std::string value) noexcept
-        : ASTNode{std::move(loc), ValueType::String, not value.empty()},
+        : ASTNode{kKind, std::move(loc), ValueType::String, not value.empty()},
           value_{std::move(value)} {
         SetLiteral(true);
     }
@@ -434,14 +452,10 @@ class StringNode : public ASTNode {
     StringNode(StringNode const&) = default;
     auto operator=(StringNode&&) -> StringNode& = delete;
     auto operator=(StringNode const&) -> StringNode& = delete;
-    ~StringNode() override = default;
+    ~StringNode() = default;
 
     [[nodiscard]] auto GetValue() const noexcept -> std::string const& {
         return value_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -450,8 +464,10 @@ class StringNode : public ASTNode {
 
 class NumberNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Number;
+
     explicit NumberNode(Location loc, double value) noexcept
-        : ASTNode{std::move(loc), ValueType::Number, value != 0.0},
+        : ASTNode{kKind, std::move(loc), ValueType::Number, value != 0.0},
           value_{value} {
         SetLiteral(true);
     }
@@ -460,12 +476,9 @@ class NumberNode : public ASTNode {
     NumberNode(NumberNode const&) = default;
     auto operator=(NumberNode&&) = delete;
     auto operator=(NumberNode const&) = delete;
-    ~NumberNode() override = default;
+    ~NumberNode() = default;
 
     [[nodiscard]] auto GetValue() const noexcept -> double { return value_; }
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
 
   private:
     double value_ = 0.;
@@ -473,44 +486,43 @@ class NumberNode : public ASTNode {
 
 class NullNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Null;
+
     explicit NullNode(Location loc) noexcept
-        : ASTNode{std::move(loc), ValueType::Null, /*truth_value=*/false} {
+        : ASTNode{kKind,
+                  std::move(loc),
+                  ValueType::Null,
+                  /*truth_value=*/false} {
         SetLiteral(true);
     }
     NullNode(NullNode&&) = delete;
     NullNode(NullNode const&) = default;
     auto operator=(NullNode&&) -> NullNode& = delete;
     auto operator=(NullNode const&) -> NullNode& = delete;
-    ~NullNode() override = default;
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
+    ~NullNode() = default;
 };
 
 class VarNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Var;
+
     explicit VarNode(Location loc,
                      std::string name,
                      ASTNodePtr default_expr = nullptr) noexcept
-        : ASTNode{std::move(loc), ValueType::Any},
+        : ASTNode{kKind, std::move(loc), ValueType::Any},
           name_{std::move(name)},
           default_{std::move(default_expr)} {}
     VarNode(VarNode&&) = delete;
     VarNode(VarNode const&) = default;
     auto operator=(VarNode&&) -> VarNode& = delete;
     auto operator=(VarNode const&) -> VarNode& = delete;
-    ~VarNode() override = default;
+    ~VarNode() = default;
 
     [[nodiscard]] auto GetName() const noexcept -> std::string const& {
         return name_;
     }
     [[nodiscard]] auto GetDefault() const noexcept -> ASTNodePtr const& {
         return default_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -520,11 +532,14 @@ class VarNode : public ASTNode {
 
 class IfNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::If;
+
     explicit IfNode(Location loc,
                     ASTNodePtr cond,
                     ASTNodePtr then_expr = nullptr,
                     ASTNodePtr else_expr = nullptr) noexcept
-        : ASTNode{std::move(loc),
+        : ASTNode{kKind,
+                  std::move(loc),
                   GetEvalType(then_expr, else_expr),
                   GetTruthValue(then_expr, else_expr)},
           cond_{std::move(cond)},
@@ -534,7 +549,7 @@ class IfNode : public ASTNode {
     IfNode(IfNode const&) = default;
     auto operator=(IfNode&&) -> IfNode& = delete;
     auto operator=(IfNode const&) -> IfNode& = delete;
-    ~IfNode() override = default;
+    ~IfNode() = default;
 
     [[nodiscard]] auto GetCondition() const noexcept -> ASTNodePtr const& {
         return cond_;
@@ -544,10 +559,6 @@ class IfNode : public ASTNode {
     }
     [[nodiscard]] auto GetElseBranch() const noexcept -> ASTNodePtr const& {
         return else_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -584,11 +595,13 @@ class IfNode : public ASTNode {
 
 class ForEachNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::ForEach;
+
     explicit ForEachNode(Location loc,
                          std::string var,
                          ASTNodePtr range,
                          ASTNodePtr body) noexcept
-        : ASTNode{std::move(loc), ValueType::List},
+        : ASTNode{kKind, std::move(loc), ValueType::List},
           var_{std::move(var)},
           range_{std::move(range)},
           body_{std::move(body)} {}
@@ -596,7 +609,7 @@ class ForEachNode : public ASTNode {
     ForEachNode(ForEachNode const&) = default;
     auto operator=(ForEachNode&&) -> ForEachNode& = delete;
     auto operator=(ForEachNode const&) -> ForEachNode& = delete;
-    ~ForEachNode() override = default;
+    ~ForEachNode() = default;
 
     [[nodiscard]] auto GetVariable() const noexcept -> std::string const& {
         return var_;
@@ -608,10 +621,6 @@ class ForEachNode : public ASTNode {
         return body_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     std::string var_{};
     ASTNodePtr range_{};
@@ -620,13 +629,15 @@ class ForEachNode : public ASTNode {
 
 class ZipWithNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::ZipWith;
+
     explicit ZipWithNode(Location loc,
                          std::string var1,
                          std::string var2,
                          ASTNodePtr range1,
                          ASTNodePtr range2,
                          ASTNodePtr body) noexcept
-        : ASTNode{std::move(loc), ValueType::List},
+        : ASTNode{kKind, std::move(loc), ValueType::List},
           var1_{std::move(var1)},
           var2_{std::move(var2)},
           range1_{std::move(range1)},
@@ -636,7 +647,7 @@ class ZipWithNode : public ASTNode {
     ZipWithNode(ZipWithNode const&) = default;
     auto operator=(ZipWithNode&&) -> ZipWithNode& = delete;
     auto operator=(ZipWithNode const&) -> ZipWithNode& = delete;
-    ~ZipWithNode() override = default;
+    ~ZipWithNode() = default;
 
     [[nodiscard]] auto GetVariable1() const noexcept -> std::string const& {
         return var1_;
@@ -654,10 +665,6 @@ class ZipWithNode : public ASTNode {
         return body_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     std::string var1_{};
     std::string var2_{};
@@ -668,13 +675,15 @@ class ZipWithNode : public ASTNode {
 
 class FoldLeftNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::FoldLeft;
+
     explicit FoldLeftNode(Location loc,
                           std::string iter_var,
                           std::string accu_var,
                           ASTNodePtr init,
                           ASTNodePtr range,
                           ASTNodePtr body) noexcept
-        : ASTNode{std::move(loc), GetEvalType(init, body)},
+        : ASTNode{kKind, std::move(loc), GetEvalType(init, body)},
           iter_var_{std::move(iter_var)},
           accu_var_{std::move(accu_var)},
           init_{std::move(init)},
@@ -684,7 +693,7 @@ class FoldLeftNode : public ASTNode {
     FoldLeftNode(FoldLeftNode const&) = default;
     auto operator=(FoldLeftNode&&) -> FoldLeftNode& = delete;
     auto operator=(FoldLeftNode const&) -> FoldLeftNode& = delete;
-    ~FoldLeftNode() override = default;
+    ~FoldLeftNode() = default;
 
     [[nodiscard]] auto GetIterVar() const noexcept -> std::string const& {
         return iter_var_;
@@ -706,10 +715,6 @@ class FoldLeftNode : public ASTNode {
         return body_;
     }
 
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
   private:
     std::string iter_var_;
     std::string accu_var_;
@@ -728,6 +733,8 @@ class FoldLeftNode : public ASTNode {
 
 class UnaryOperationNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::UnaryOperation;
+
     enum class Type : std::uint8_t {
         Not,
         Minus,
@@ -737,22 +744,18 @@ class UnaryOperationNode : public ASTNode {
         Type type,
         ASTNodePtr expr,
         std::optional<ValueType> eval_type = std::nullopt) noexcept
-        : ASTNode{std::move(loc), eval_type.value_or(ValueType::Any)},
+        : ASTNode{kKind, std::move(loc), eval_type.value_or(ValueType::Any)},
           type_{type},
           expr_{std::move(expr)} {}
     UnaryOperationNode(UnaryOperationNode&&) = delete;
     UnaryOperationNode(UnaryOperationNode const&) = default;
     auto operator=(UnaryOperationNode&&) = delete;
     auto operator=(UnaryOperationNode const&) = delete;
-    ~UnaryOperationNode() override = default;
+    ~UnaryOperationNode() = default;
 
     [[nodiscard]] auto GetType() const noexcept -> Type { return type_; }
     [[nodiscard]] auto GetExpression() const noexcept -> ASTNodePtr const& {
         return expr_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -762,11 +765,13 @@ class UnaryOperationNode : public ASTNode {
 
 class LookupNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Lookup;
+
     explicit LookupNode(Location loc,
                         ASTNodePtr index,
                         ASTNodePtr container,
                         ASTNodePtr default_expr = nullptr) noexcept
-        : ASTNode{std::move(loc), ValueType::Any},
+        : ASTNode{kKind, std::move(loc), ValueType::Any},
           index_{std::move(index)},
           container_{std::move(container)},
           default_{std::move(default_expr)} {}
@@ -774,7 +779,7 @@ class LookupNode : public ASTNode {
     LookupNode(LookupNode const&) = default;
     auto operator=(LookupNode&&) = delete;
     auto operator=(LookupNode const&) = delete;
-    ~LookupNode() override = default;
+    ~LookupNode() = default;
 
     [[nodiscard]] auto GetIndex() const noexcept -> ASTNodePtr const& {
         return index_;
@@ -784,10 +789,6 @@ class LookupNode : public ASTNode {
     }
     [[nodiscard]] auto GetDefault() const noexcept -> ASTNodePtr const& {
         return default_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -800,6 +801,8 @@ class LookupNode : public ASTNode {
 // TODO(oreiche): Map to concrete nodes for serialization
 class BinaryOperationNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::BinaryOperation;
+
     enum class Type : std::uint8_t {
         And,
         Or,
@@ -814,7 +817,7 @@ class BinaryOperationNode : public ASTNode {
         ASTNodePtr lhs,
         ASTNodePtr rhs,
         std::optional<ValueType> eval_type = std::nullopt) noexcept
-        : ASTNode{std::move(loc), eval_type.value_or(ValueType::Any)},
+        : ASTNode{kKind, std::move(loc), eval_type.value_or(ValueType::Any)},
           type_{type},
           lhs_{std::move(lhs)},
           rhs_{std::move(rhs)} {}
@@ -822,7 +825,7 @@ class BinaryOperationNode : public ASTNode {
     BinaryOperationNode(BinaryOperationNode const&) = default;
     auto operator=(BinaryOperationNode&&) = delete;
     auto operator=(BinaryOperationNode const&) = delete;
-    ~BinaryOperationNode() override = default;
+    ~BinaryOperationNode() = default;
 
     [[nodiscard]] auto GetType() const noexcept -> Type { return type_; }
     [[nodiscard]] auto GetLhs() const noexcept -> ASTNodePtr const& {
@@ -830,10 +833,6 @@ class BinaryOperationNode : public ASTNode {
     }
     [[nodiscard]] auto GetRhs() const noexcept -> ASTNodePtr const& {
         return rhs_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
     [[nodiscard]] auto GetTypeName() const noexcept
@@ -875,22 +874,21 @@ class BinaryOperationNode : public ASTNode {
 // syntactic sugar for ["@", <repo>, <module>, <target>]
 class RefNode : public ASTNode {
   public:
+    static constexpr NodeKind kKind = NodeKind::Ref;
+
     explicit RefNode(Location loc, RefData data) noexcept
-        : ASTNode{std::move(loc), ValueType::Ref}, data_{std::move(data)} {
+        : ASTNode{kKind, std::move(loc), ValueType::Ref},
+          data_{std::move(data)} {
         SetLiteral(true);
     }
     RefNode(RefNode&&) = delete;
     RefNode(RefNode const&) = default;
     auto operator=(RefNode&&) -> RefNode& = delete;
     auto operator=(RefNode const&) -> RefNode& = delete;
-    ~RefNode() override = default;
+    ~RefNode() = default;
 
     [[nodiscard]] auto GetRefData() const noexcept -> RefData const& {
         return data_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
     }
 
   private:
@@ -912,6 +910,54 @@ inline auto MapNode::RemoveDuplicateFields(fields_t fields) -> fields_t {
     std::erase_if(fields,
                   [](auto const& val) -> bool { return val.first == nullptr; });
     return fields;
+}
+
+inline auto ASTNode::ToVariant() const noexcept -> ASTNodeVariant {
+    switch (kind_) {
+        case NodeKind::Let:
+            return Cast<LetNode const*>(this);
+        case NodeKind::Func:
+            return Cast<FuncNode const*>(this);
+        case NodeKind::Builtin:
+            return Cast<BuiltinNode const*>(this);
+        case NodeKind::BuiltinCall:
+            return Cast<BuiltinCallNode const*>(this);
+        case NodeKind::Call:
+            return Cast<CallNode const*>(this);
+        case NodeKind::Foreign:
+            return Cast<ForeignNode const*>(this);
+        case NodeKind::List:
+            return Cast<ListNode const*>(this);
+        case NodeKind::Map:
+            return Cast<MapNode const*>(this);
+        case NodeKind::Bool:
+            return Cast<BoolNode const*>(this);
+        case NodeKind::String:
+            return Cast<StringNode const*>(this);
+        case NodeKind::Number:
+            return Cast<NumberNode const*>(this);
+        case NodeKind::Null:
+            return Cast<NullNode const*>(this);
+        case NodeKind::Var:
+            return Cast<VarNode const*>(this);
+        case NodeKind::If:
+            return Cast<IfNode const*>(this);
+        case NodeKind::ForEach:
+            return Cast<ForEachNode const*>(this);
+        case NodeKind::ZipWith:
+            return Cast<ZipWithNode const*>(this);
+        case NodeKind::FoldLeft:
+            return Cast<FoldLeftNode const*>(this);
+        case NodeKind::UnaryOperation:
+            return Cast<UnaryOperationNode const*>(this);
+        case NodeKind::Lookup:
+            return Cast<LookupNode const*>(this);
+        case NodeKind::BinaryOperation:
+            return Cast<BinaryOperationNode const*>(this);
+        case NodeKind::Ref:
+            return Cast<RefNode const*>(this);
+    }
+    return Cast<RefNode const*>(this);  // unreachable
 }
 
 }  // namespace jstlang

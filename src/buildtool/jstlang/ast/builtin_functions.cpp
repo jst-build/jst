@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -1960,7 +1961,12 @@ template <typename T>
     if (param == params.end()) {
         return nullptr;
     }
-    return std::dynamic_pointer_cast<T>(param->second);
+    if constexpr (std::is_same_v<T, jstlang::ASTNode>) {
+        return param->second;
+    }
+    else {
+        return jstlang::ASTNode::CastPtr<T>(param->second);
+    }
 }
 
 [[nodiscard]] auto NodeToJson(jstlang::ASTNodePtr const& node,
