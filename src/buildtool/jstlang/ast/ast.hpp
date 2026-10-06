@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "src/buildtool/jstlang/ast/node_variant.hpp"
+#include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
 #include "src/utils/cpp/gsl.hpp"
 
@@ -103,12 +104,18 @@ enum class NodeKind : std::uint8_t {
     Ref,
 };
 
+/// \brief Location in a source file (compact, the source file is owned by the
+/// ASTContext the node was created with).
 struct Location {
-    std::string file;
-    std::size_t line;
-    std::size_t column;
-    std::size_t column_end;
-    std::shared_ptr<std::string> content{};
+    SourceFile const* source{};  // nullptr if unknown
+    std::uint32_t line{};
+    std::uint32_t column{};
+    std::uint32_t column_end{};
+
+    /// \brief Name of the source file, empty if unknown.
+    [[nodiscard]] auto File() const -> std::string {
+        return source != nullptr ? source->location.ToString() : std::string{};
+    }
 };
 
 class ASTNode {
@@ -117,7 +124,7 @@ class ASTNode {
                      Location loc,
                      ValueType value_type,
                      std::optional<bool> truth_value = std::nullopt) noexcept
-        : loc_{std::move(loc)},
+        : loc_{loc},
           kind_{kind},
           value_type_{value_type},
           truth_value_{truth_value} {}
@@ -195,7 +202,7 @@ class LetNode : public ASTNode {
                      std::string name,
                      ASTNodePtr value,
                      ASTNodePtr next) noexcept
-        : ASTNode{kKind, std::move(loc), next->EvalType()},
+        : ASTNode{kKind, loc, next->EvalType()},
           name_{std::move(name)},
           value_{std::move(value)},
           next_{std::move(next)} {}
@@ -227,7 +234,7 @@ class FuncNode : public ASTNode {
     using params_t = std::vector<param_t>;
 
     explicit FuncNode(Location loc, params_t params, ASTNodePtr body) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Func},
+        : ASTNode{kKind, loc, ValueType::Func},
           params_{std::move(params)},
           body_{std::move(body)} {}
 
@@ -272,7 +279,7 @@ class BuiltinCallNode : public ASTNode {
                              std::string name,
                              args_t args,
                              ValueType eval_type) noexcept
-        : ASTNode{kKind, std::move(loc), eval_type},
+        : ASTNode{kKind, loc, eval_type},
           name_{std::move(name)},
           args_{std::move(args)} {}
 
@@ -305,7 +312,7 @@ class CallNode : public ASTNode {
     explicit CallNode(Location loc,
                       target_t target,
                       std::optional<params_t> params = std::nullopt) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Any},
+        : ASTNode{kKind, loc, ValueType::Any},
           target_{std::move(target)},
           params_{std::move(params)} {}
 
@@ -333,8 +340,7 @@ class ForeignNode : public ASTNode {
     static constexpr NodeKind kKind = NodeKind::Foreign;
 
     explicit ForeignNode(Location loc, ASTNodePtr expr) noexcept
-        : ASTNode{kKind, std::move(loc), expr->EvalType()},
-          expr_{std::move(expr)} {}
+        : ASTNode{kKind, loc, expr->EvalType()}, expr_{std::move(expr)} {}
 
     [[nodiscard]] auto GetExpr() const noexcept -> ASTNodePtr const& {
         return expr_;
@@ -351,7 +357,7 @@ class ListNode : public ASTNode {
     using items_t = std::vector<ASTNodePtr>;
 
     explicit ListNode(Location loc, items_t items) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::List, not items.empty()},
+        : ASTNode{kKind, loc, ValueType::List, not items.empty()},
           items_{std::move(items)} {
         SetLiteral(
             std::all_of(items_.begin(), items_.end(), [](auto const& item) {
@@ -388,7 +394,7 @@ class MapNode : public ASTNode {
     };
 
     explicit MapNode(Location loc, fields_t fields, Unique unique = Unique::Yes)
-        : ASTNode{kKind, std::move(loc), ValueType::Map, not fields.empty()},
+        : ASTNode{kKind, loc, ValueType::Map, not fields.empty()},
           fields_{unique == Unique::Maybe
                       ? RemoveDuplicateFields(std::move(fields))
                       : std::move(fields)} {
@@ -423,8 +429,7 @@ class BoolNode : public ASTNode {
     static constexpr NodeKind kKind = NodeKind::Bool;
 
     explicit BoolNode(Location loc, bool value) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Bool, value},
-          value_{value} {
+        : ASTNode{kKind, loc, ValueType::Bool, value}, value_{value} {
         SetLiteral(true);
     }
     BoolNode(BoolNode&&) = delete;
@@ -444,7 +449,7 @@ class StringNode : public ASTNode {
     static constexpr NodeKind kKind = NodeKind::String;
 
     explicit StringNode(Location loc, std::string value) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::String, not value.empty()},
+        : ASTNode{kKind, loc, ValueType::String, not value.empty()},
           value_{std::move(value)} {
         SetLiteral(true);
     }
@@ -467,8 +472,7 @@ class NumberNode : public ASTNode {
     static constexpr NodeKind kKind = NodeKind::Number;
 
     explicit NumberNode(Location loc, double value) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Number, value != 0.0},
-          value_{value} {
+        : ASTNode{kKind, loc, ValueType::Number, value != 0.0}, value_{value} {
         SetLiteral(true);
     }
 
@@ -490,7 +494,7 @@ class NullNode : public ASTNode {
 
     explicit NullNode(Location loc) noexcept
         : ASTNode{kKind,
-                  std::move(loc),
+                  loc,
                   ValueType::Null,
                   /*truth_value=*/false} {
         SetLiteral(true);
@@ -509,7 +513,7 @@ class VarNode : public ASTNode {
     explicit VarNode(Location loc,
                      std::string name,
                      ASTNodePtr default_expr = nullptr) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Any},
+        : ASTNode{kKind, loc, ValueType::Any},
           name_{std::move(name)},
           default_{std::move(default_expr)} {}
     VarNode(VarNode&&) = delete;
@@ -539,7 +543,7 @@ class IfNode : public ASTNode {
                     ASTNodePtr then_expr = nullptr,
                     ASTNodePtr else_expr = nullptr) noexcept
         : ASTNode{kKind,
-                  std::move(loc),
+                  loc,
                   GetEvalType(then_expr, else_expr),
                   GetTruthValue(then_expr, else_expr)},
           cond_{std::move(cond)},
@@ -601,7 +605,7 @@ class ForEachNode : public ASTNode {
                          std::string var,
                          ASTNodePtr range,
                          ASTNodePtr body) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::List},
+        : ASTNode{kKind, loc, ValueType::List},
           var_{std::move(var)},
           range_{std::move(range)},
           body_{std::move(body)} {}
@@ -637,7 +641,7 @@ class ZipWithNode : public ASTNode {
                          ASTNodePtr range1,
                          ASTNodePtr range2,
                          ASTNodePtr body) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::List},
+        : ASTNode{kKind, loc, ValueType::List},
           var1_{std::move(var1)},
           var2_{std::move(var2)},
           range1_{std::move(range1)},
@@ -683,7 +687,7 @@ class FoldLeftNode : public ASTNode {
                           ASTNodePtr init,
                           ASTNodePtr range,
                           ASTNodePtr body) noexcept
-        : ASTNode{kKind, std::move(loc), GetEvalType(init, body)},
+        : ASTNode{kKind, loc, GetEvalType(init, body)},
           iter_var_{std::move(iter_var)},
           accu_var_{std::move(accu_var)},
           init_{std::move(init)},
@@ -744,7 +748,7 @@ class UnaryOperationNode : public ASTNode {
         Type type,
         ASTNodePtr expr,
         std::optional<ValueType> eval_type = std::nullopt) noexcept
-        : ASTNode{kKind, std::move(loc), eval_type.value_or(ValueType::Any)},
+        : ASTNode{kKind, loc, eval_type.value_or(ValueType::Any)},
           type_{type},
           expr_{std::move(expr)} {}
     UnaryOperationNode(UnaryOperationNode&&) = delete;
@@ -771,7 +775,7 @@ class LookupNode : public ASTNode {
                         ASTNodePtr index,
                         ASTNodePtr container,
                         ASTNodePtr default_expr = nullptr) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Any},
+        : ASTNode{kKind, loc, ValueType::Any},
           index_{std::move(index)},
           container_{std::move(container)},
           default_{std::move(default_expr)} {}
@@ -817,7 +821,7 @@ class BinaryOperationNode : public ASTNode {
         ASTNodePtr lhs,
         ASTNodePtr rhs,
         std::optional<ValueType> eval_type = std::nullopt) noexcept
-        : ASTNode{kKind, std::move(loc), eval_type.value_or(ValueType::Any)},
+        : ASTNode{kKind, loc, eval_type.value_or(ValueType::Any)},
           type_{type},
           lhs_{std::move(lhs)},
           rhs_{std::move(rhs)} {}
@@ -877,8 +881,7 @@ class RefNode : public ASTNode {
     static constexpr NodeKind kKind = NodeKind::Ref;
 
     explicit RefNode(Location loc, RefData data) noexcept
-        : ASTNode{kKind, std::move(loc), ValueType::Ref},
-          data_{std::move(data)} {
+        : ASTNode{kKind, loc, ValueType::Ref}, data_{std::move(data)} {
         SetLiteral(true);
     }
     RefNode(RefNode&&) = delete;

@@ -88,29 +88,28 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
 }
 
 [[nodiscard]] auto CreateLocation(const jstlang::Token& begin,
-                                  const jstlang::FileLocation& origin)
+                                  jstlang::SourceFile const* origin)
     -> jstlang::Location {
-    return {.file = begin.file,
-            .line = begin.line,
-            .column = begin.column,
-            .column_end = begin.column,
-            .content = origin.content};
+    return {.source = origin,
+            .line = static_cast<std::uint32_t>(begin.line),
+            .column = static_cast<std::uint32_t>(begin.column),
+            .column_end = static_cast<std::uint32_t>(begin.column)};
 }
 
 [[nodiscard]] auto CreateLocation(const jstlang::Token& begin,
                                   const jstlang::Token& end,
-                                  const jstlang::FileLocation& origin)
+                                  jstlang::SourceFile const* origin)
     -> jstlang::Location {
-    return {.file = begin.file,
-            .line = begin.line,
-            .column = begin.column,
-            .column_end = begin.column <= end.column ? end.column : 0UL,
-            .content = origin.content};
+    return {.source = origin,
+            .line = static_cast<std::uint32_t>(begin.line),
+            .column = static_cast<std::uint32_t>(begin.column),
+            .column_end = static_cast<std::uint32_t>(
+                begin.column <= end.column ? end.column : 0UL)};
 }
 
 [[nodiscard]] auto CreateLocation(const jstlang::Token& begin,
                                   const jstlang::ASTNodePtr& end,
-                                  const jstlang::FileLocation& origin)
+                                  jstlang::SourceFile const* origin)
     -> jstlang::Location {
 
     if (end == nullptr) {
@@ -118,13 +117,12 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
             "Empty AST node while creating location");
     }
 
-    return {.file = begin.file,
-            .line = begin.line,
-            .column = begin.column,
+    return {.source = origin,
+            .line = static_cast<std::uint32_t>(begin.line),
+            .column = static_cast<std::uint32_t>(begin.column),
             .column_end = begin.column <= end->GetLocation().column_end
                               ? end->GetLocation().column_end
-                              : 0,
-            .content = origin.content};
+                              : 0U};
 }
 
 [[nodiscard]] auto MakeOperationNode(jstlang::Location const& loc,
@@ -233,45 +231,51 @@ auto NativeParser::TokenStream::PopCheck(TokenType token_type,
 
 auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
     try {
-        auto const& filename = file_data.location.ToString();
-        auto const& content = file_data.content;
-        auto lexer = Lexer{filename, content};
-        tokens_ = TokenStream{lexer.Tokenize()};
-        filename_ = filename;
-
-        auto import_loc = file_data.location;
-        auto import_it =
-            std::find(import_chain_.begin(), import_chain_.end(), import_loc);
-        if (import_it != import_chain_.end()) {
-            // compute cycle graph and throw exception
-            auto oss = std::ostringstream{};
-            oss << ",-> " << import_it->ToString() << "\n";
-            while (std::distance(++import_it, import_chain_.end()) > 1) {
-                oss << "|   " << import_it->ToString() << "\n";
-            }
-            if (import_it == import_chain_.end()) {
-                oss << "`---'\n";
-            }
-            else {
-                oss << "`-- " << import_it->ToString() << "\n";
-            }
-            throw ParserException{"Detected cycle in import chain.\n" +
-                                  oss.str()};
-        }
-        import_chain_.emplace_back(std::move(import_loc));
-        // callback for reading imports
-        auto expr = Parse(kMaxPriority);
-        // a file contains exactly one expression
-        if (auto const& next = tokens_.Peek();
-            next.type != TokenType::END_OF_FILE) {
-            throw ParserException{"Expected end of file after the expression.",
-                                  CreateLocation(next, import_chain_.back())};
-        }
-        import_chain_.pop_back();
-        return expr;
+        CheckImportCycle(file_data.location);
+        return ParseSource(
+            context_->AddSource(file_data.location, file_data.content));
     } catch (std::exception const& e) {
         throw ASTParseError{e.what()};
     }
+}
+
+void NativeParser::CheckImportCycle(FileLocation const& location) const {
+    auto import_it = std::find_if(import_chain_.begin(),
+                                  import_chain_.end(),
+                                  [&location](auto const* source) {
+                                      return source->location == location;
+                                  });
+    if (import_it == import_chain_.end()) {
+        return;
+    }
+    // compute cycle graph and throw exception
+    auto oss = std::ostringstream{};
+    oss << ",-> " << (*import_it)->location.ToString() << "\n";
+    while (std::distance(++import_it, import_chain_.end()) > 1) {
+        oss << "|   " << (*import_it)->location.ToString() << "\n";
+    }
+    if (import_it == import_chain_.end()) {
+        oss << "`---'\n";
+    }
+    else {
+        oss << "`-- " << (*import_it)->location.ToString() << "\n";
+    }
+    throw ParserException{"Detected cycle in import chain.\n" + oss.str()};
+}
+
+auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
+    auto lexer = Lexer{source.location.ToString(), source.content};
+    tokens_ = TokenStream{lexer.Tokenize()};
+    import_chain_.emplace_back(&source);
+    auto expr = Parse(kMaxPriority);
+    // a file contains exactly one expression
+    if (auto const& next = tokens_.Peek();
+        next.type != TokenType::END_OF_FILE) {
+        throw ParserException{"Expected end of file after the expression.",
+                              CreateLocation(next, import_chain_.back())};
+    }
+    import_chain_.pop_back();
+    return expr;
 }
 
 [[nodiscard]] auto NativeParser::Parse(unsigned priority) -> ASTNodePtr {
@@ -841,10 +845,11 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
                 } break;
             }
 
-            if (auto data = reader_(
-                    import_chain_.back(), file, repo ? &(*repo) : nullptr)) {
-                auto import_parser =
-                    std::make_unique<NativeParser>(reader_, import_chain_);
+            if (auto data = reader_(import_chain_.back()->location,
+                                    file,
+                                    repo ? &(*repo) : nullptr)) {
+                auto import_parser = std::make_unique<NativeParser>(
+                    context_, reader_, import_chain_);
                 return std::make_shared<jstlang::ForeignNode>(
                     CreateLocation(begin, tokens_.Peek(), import_chain_.back()),
                     import_parser->ParseData(data.value()));
@@ -962,9 +967,10 @@ template <class TParams>
     return ParseArgs<CallNode::params_t>();
 }
 
-auto Parser::Create(FileData::reader_t reader) -> jstlang::ParserPtr {
-    return std::make_unique<NativeParser>(std::move(reader),
-                                          std::vector<FileLocation>{});
+auto Parser::Create(gsl::not_null<ASTContext*> const& context,
+                    FileData::reader_t reader) -> jstlang::ParserPtr {
+    return std::make_unique<NativeParser>(
+        context, std::move(reader), std::vector<SourceFile const*>{});
 }
 
 }  // namespace jstlang

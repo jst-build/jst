@@ -32,7 +32,8 @@
 #endif
 #include "src/buildtool/jstlang/file_data.hpp"
 
-auto jstlang::Preprocessor::Process(std::string const& global_repo,
+auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
+                                    std::string const& global_repo,
                                     std::filesystem::path const& file_path,
                                     jstlang::FileType type) noexcept
     -> jstlang::ASTNodePtr {
@@ -45,14 +46,15 @@ auto jstlang::Preprocessor::Process(std::string const& global_repo,
         return nullptr;
     }
 
-    return Process(*data, type);
+    return Process(context, *data, type);
 }
 
-auto jstlang::Preprocessor::Process(jstlang::FileData const& file_data,
+auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
+                                    jstlang::FileData const& file_data,
                                     jstlang::FileType type) noexcept
     -> jstlang::ASTNodePtr {
     auto err_msg = std::ostringstream{};
-    auto parser = Parser::Create(reader_);
+    auto parser = Parser::Create(context, reader_);
     try {
         auto jst_ast = parser->ParseData(file_data);
 

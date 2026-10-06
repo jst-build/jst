@@ -4,9 +4,11 @@
     name: ['ast'],
     hdrs: [
       'ast.hpp',
+      'ast_context.hpp',
       'node_variant.hpp',
     ],
     deps: [
+      @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang:ref',
       @'//src/utils/cpp:gsl',
     ],
@@ -19,6 +21,7 @@
     hdrs: ['parser.hpp'],
     deps: [
       'ast',
+      @'gsl//:gsl',
       @'//src/buildtool/jstlang:file_data',
     ],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],

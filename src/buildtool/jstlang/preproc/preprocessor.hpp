@@ -22,9 +22,11 @@
 #include <string>
 #include <utility>
 
+#include "gsl/gsl"
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/preproc/expr_serializer.hpp"
 
@@ -38,11 +40,19 @@ class Preprocessor {
     explicit Preprocessor(FileData::reader_t reader, logger_t logger)
         : reader_{std::move(reader)}, logger_{std::move(logger)} {}
 
-    [[nodiscard]] auto Process(std::string const& global_repo,
+    /// \brief Parse and inline file, which is read via the reader.
+    /// \param context The context of the returned AST, which must outlive the
+    ///                AST and its uses, including serialization (see
+    ///                ASTContext).
+    /// \returns nullptr on error (reported via logger).
+    [[nodiscard]] auto Process(gsl::not_null<ASTContext*> const& context,
+                               std::string const& global_repo,
                                std::filesystem::path const& file_path,
                                FileType type) noexcept -> jstlang::ASTNodePtr;
 
-    [[nodiscard]] auto Process(FileData const& file_data,
+    /// \brief Parse and inline given file data, see above.
+    [[nodiscard]] auto Process(gsl::not_null<ASTContext*> const& context,
+                               FileData const& file_data,
                                FileType type) noexcept -> jstlang::ASTNodePtr;
 
     /// \brief Serialize the (processed) AST of a file of the given type to

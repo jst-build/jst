@@ -21,6 +21,7 @@
     srcs: ['parser.cpp'],
     deps: [
       'lexer',
+      @'gsl//:gsl',
       @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang/ast:ast',
       @'//src/buildtool/jstlang/ast:parser',

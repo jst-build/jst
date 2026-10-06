@@ -1895,8 +1895,8 @@ namespace {
 auto BuiltInError::MakeMessage(jstlang::Location const& loc,
                                std::string message) -> std::string {
     std::string result;
-    if (not loc.file.empty()) {
-        result += loc.file + ":";
+    if (auto file = loc.File(); not file.empty()) {
+        result += file + ":";
     }
     result += std::to_string(loc.line) + ":" + std::to_string(loc.column) +
               ": " + std::move(message);

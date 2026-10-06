@@ -38,7 +38,7 @@ class CompilerException : public std::exception {
     CompilerException(std::string phase, std::string message, Location loc)
         : phase_{std::move(phase)},
           msg_{std::move(message)},
-          loc_{std::move(loc)},
+          loc_{loc},
           full_msg_{ToString()} {}
 
     [[nodiscard]] auto what() const noexcept -> char const* override {
@@ -71,8 +71,8 @@ class CompilerException : public std::exception {
     [[nodiscard]] auto ToString() const -> std::string {
         std::ostringstream oss;
         if (loc_) {
-            if (!loc_->file.empty()) {
-                oss << loc_->file;
+            if (auto file = loc_->File(); !file.empty()) {
+                oss << file;
             }
             oss << ":" << loc_->line << ":" << loc_->column;
             if (loc_->column_end != loc_->column) {
@@ -95,7 +95,7 @@ class ParserException : public CompilerException {
   public:
     explicit ParserException(std::string const& message,
                              jstlang::Location loc = {})
-        : CompilerException("Parser", message, std::move(loc)) {}
+        : CompilerException("Parser", message, loc) {}
 };
 
 }  // namespace jstlang

@@ -21,12 +21,19 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "catch2/generators/catch_generators.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 
 namespace {
 
 using file_map_t = std::unordered_map<std::string, std::string>;
+
+/// \brief Context of all ASTs created by the tests, which must outlive them.
+[[nodiscard]] auto Context() -> jstlang::ASTContext* {
+    static auto context = jstlang::ASTContext{};
+    return &context;
+}
 
 [[nodiscard]] auto CreateMocReader(file_map_t const* files)
     -> jstlang::FileData::reader_t {
@@ -36,8 +43,7 @@ using file_map_t = std::unordered_map<std::string, std::string>;
         if (auto found = files->find(file_path); found != files->end()) {
             return jstlang::FileData{
                 .location =
-                    jstlang::FileLocation{
-                        .repo = "", .path = file_path, .content = nullptr},
+                    jstlang::FileLocation{.repo = "", .path = file_path},
                 .content = found->second};
         }
         return std::nullopt;
@@ -50,7 +56,7 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     auto file_data = jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = entry},
         .content = code};
-    auto parser = jstlang::Parser::Create(CreateMocReader(&files));
+    auto parser = jstlang::Parser::Create(Context(), CreateMocReader(&files));
     auto ast = parser->ParseData(file_data);
     return jstlang::ASTToStringVisitor{}.Dump(*ast);
 }

@@ -18,7 +18,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -153,14 +152,15 @@ auto main(int argc, const char** argv) -> int {
                 }
                 data.content = ReadData(in_file);
             }
-            data.location.content = std::make_shared<std::string>(data.content);
             return data;
         }};
 
     auto preproc = jstlang::Preprocessor{
         std::move(file_reader),
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
-    auto output = preproc.Process(kDefaultRepo, filename, file_type);
+    // the context must outlive the AST and its uses (until serialized)
+    auto context = jstlang::ASTContext{};
+    auto output = preproc.Process(&context, kDefaultRepo, filename, file_type);
 
     if (not output) {
         std::cerr << "Parsing failed.\n";

@@ -62,7 +62,7 @@ template <std::same_as<jstlang::ValueType>... TTypes>
 [[nodiscard]] auto GetLocationString(jstlang::Location const& loc)
     -> std::string {
     std::ostringstream oss{};
-    oss << loc.file;
+    oss << loc.File();
     oss << ":" << loc.line;
     oss << ":" << loc.column;
     if (loc.column_end > 0) {
@@ -74,18 +74,19 @@ template <std::same_as<jstlang::ValueType>... TTypes>
 [[nodiscard]] auto GetLocationSnippet(jstlang::Location const& loc)
     -> std::string {
     std::ostringstream oss{};
-    if (loc.content) {
+    if (loc.source != nullptr) {
+        auto const& content = loc.source->content;
         auto line_pos = 0UL;
-        auto line_end = loc.content->find('\n', line_pos);
+        auto line_end = content.find('\n', line_pos);
         for (std::size_t i{1}; i < loc.line and line_end != std::string::npos;
              ++i) {
             line_pos = line_end + 1;
-            line_end = loc.content->find('\n', line_pos);
+            line_end = content.find('\n', line_pos);
         }
         if (line_end != std::string::npos) {
             static auto const kPrefix = " |" + std::string(2, ' ');
             auto line_str = std::to_string(loc.line);
-            auto line_data = loc.content->substr(line_pos, line_end - line_pos);
+            auto line_data = content.substr(line_pos, line_end - line_pos);
             auto const column_end =
                 loc.column_end > 0 ? loc.column_end : line_data.length();
             oss << "\n\n";
@@ -465,7 +466,6 @@ auto ASTInlineVisitor::operator()(FoldLeftNode const* node) const
     if (auto const* list = ASTNode::Cast<ListNode const*>(range.get())) {
         // literal array -> do unroll fold to inline all variable references
         auto eval_scope = ScopeDefs(scope_);
-        auto dummy_loc = Location{};
         auto accu = init;
         for (auto const& item : list->GetItems()) {
             eval_scope.AddDef(accu_var_name, accu);

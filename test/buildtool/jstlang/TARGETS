@@ -103,6 +103,7 @@
     'private-deps': [
       @'catch2//:catch2',
       @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:ast',
       @'src//src/buildtool/jstlang/ast:parser',
       @'src//src/buildtool/jstlang/ast:to_string_visitor',
       @'src//src/buildtool/jstlang/ast/native:parser',

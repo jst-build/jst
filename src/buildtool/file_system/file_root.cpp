@@ -73,10 +73,9 @@ class Processor {
                         .lexically_normal();
 
                 if (auto content = root->ReadContent(full_path)) {
-                    auto location = jstlang::FileLocation{
-                        .repo = imported_from.repo,
-                        .path = std::move(full_path),
-                        .content = std::make_shared<std::string>(*content)};
+                    auto location =
+                        jstlang::FileLocation{.repo = imported_from.repo,
+                                              .path = std::move(full_path)};
                     return jstlang::FileData{.location = std::move(location),
                                              .content = std::move(*content)};
                 }
@@ -100,10 +99,10 @@ class Processor {
             .location =
                 jstlang::FileLocation{.repo = global_repo_name, .path = path},
             .content = std::move(content)};
-        file_data.location.content =
-            std::make_shared<std::string>(file_data.content);
 
-        if (auto ast = lang_proc_->Process(file_data, file_type)) {
+        // the context must outlive the AST and its uses (until serialized)
+        auto context = jstlang::ASTContext{};
+        if (auto ast = lang_proc_->Process(&context, file_data, file_type)) {
             return lang_proc_->Serialize(ast, file_type);
         }
 

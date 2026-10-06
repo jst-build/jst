@@ -26,11 +26,18 @@
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 
 namespace {
 
 using file_map_t = std::unordered_map<std::string, std::string>;
+
+/// \brief Context of all ASTs created by the tests, which must outlive them.
+[[nodiscard]] auto Context() -> jstlang::ASTContext* {
+    static auto context = jstlang::ASTContext{};
+    return &context;
+}
 
 [[nodiscard]] auto Preprocess(std::string const& global_repo,
                               std::filesystem::path const& file_path,
@@ -56,7 +63,8 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     auto preproc = jstlang::Preprocessor{
         std::move(file_map_reader),
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
-    return preproc.Process(global_repo, file_path, jstlang::FileType::Plain);
+    return preproc.Process(
+        Context(), global_repo, file_path, jstlang::FileType::Plain);
 }
 
 [[nodiscard]] auto Preprocess(std::string const& code) {

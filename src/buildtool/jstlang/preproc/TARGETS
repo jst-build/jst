@@ -16,6 +16,7 @@
     srcs: ['preprocessor.cpp'],
     deps: [
       'expr_serializer',
+      @'gsl//:gsl',
       @'json//:json',
       @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang/ast:ast',

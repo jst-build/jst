@@ -22,6 +22,7 @@
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/inline_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
@@ -31,6 +32,12 @@
 
 namespace {
 
+/// \brief Context of all ASTs created by the tests, which must outlive them.
+[[nodiscard]] auto Context() -> jstlang::ASTContext* {
+    static auto context = jstlang::ASTContext{};
+    return &context;
+}
+
 [[nodiscard]] auto ParseAndInlineAST(std::string const& code)
     -> jstlang::ASTNodePtr {
     auto moc_reader = [](auto const& /*import_from*/,
@@ -39,7 +46,7 @@ namespace {
     auto file_data = jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code};
-    auto parser = jstlang::Parser::Create(std::move(moc_reader));
+    auto parser = jstlang::Parser::Create(Context(), std::move(moc_reader));
     auto just_ast = parser->ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
     auto scope = jstlang::ScopeDefs{};

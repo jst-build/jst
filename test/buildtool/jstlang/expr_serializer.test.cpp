@@ -24,10 +24,17 @@
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 namespace {
+
+/// \brief Context of all ASTs created by the tests, which must outlive them.
+[[nodiscard]] auto Context() -> jstlang::ASTContext* {
+    static auto context = jstlang::ASTContext{};
+    return &context;
+}
 
 [[nodiscard]] auto Process(std::string const& code,
                            jstlang::FileType type) -> jstlang::ASTNodePtr {
@@ -40,7 +47,7 @@ namespace {
     auto preproc = jstlang::Preprocessor{
         std::move(reader),
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
-    auto ast = preproc.Process("", "TARGETS", type);
+    auto ast = preproc.Process(Context(), "", "TARGETS", type);
     REQUIRE(ast);
     return ast;
 }

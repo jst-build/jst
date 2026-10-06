@@ -17,7 +17,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <string>
 
@@ -28,7 +27,6 @@ namespace jstlang {
 struct FileLocation {
     std::string repo;            // global repo name
     std::filesystem::path path;  // relative path from repo root
-    std::shared_ptr<std::string> content{};
 
     [[nodiscard]] auto ToString() const noexcept -> std::string {
         auto repo_prefix = std::string{};
@@ -50,6 +48,13 @@ struct FileData {
         std::filesystem::path const&,  // file path
         std::string const*)>;          // optional: local repository name
 
+    FileLocation location;
+    std::string content;
+};
+
+/// \brief Source file, read once and never modified. Owned by an ASTContext
+/// (see ast_context.hpp).
+struct SourceFile {
     FileLocation location;
     std::string content;
 };

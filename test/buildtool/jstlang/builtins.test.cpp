@@ -27,6 +27,7 @@
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/build_engine/expression/function_map.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/inline_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
@@ -42,12 +43,18 @@ struct Case final {
     bool fails = false;
 };
 
+/// \brief Context of all ASTs created by the tests, which must outlive them.
+[[nodiscard]] auto Context() -> jstlang::ASTContext* {
+    static auto context = jstlang::ASTContext{};
+    return &context;
+}
+
 [[nodiscard]] auto ParseAndInline(std::string const& code)
     -> jstlang::ASTNodePtr {
     auto reader = [](auto const& /*import_from*/,
                      auto const& /*file_path*/,
                      auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser::Create(std::move(reader));
+    auto parser = jstlang::Parser::Create(Context(), std::move(reader));
     auto ast = parser->ParseData(jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});

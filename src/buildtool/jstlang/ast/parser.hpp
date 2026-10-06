@@ -18,7 +18,9 @@
 #include <memory>
 #include <stdexcept>
 
+#include "gsl/gsl"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 
 namespace jstlang {
@@ -33,7 +35,12 @@ class ASTParseError : public std::runtime_error {
 
 class Parser {
   public:
-    [[nodiscard]] static auto Create(FileData::reader_t reader) -> ParserPtr;
+    /// \brief Create parser.
+    /// \param context The context of the created AST nodes, which must
+    ///                outlive the nodes and their uses (see ASTContext).
+    /// \param reader  Reads the files to parse (incl. imports).
+    [[nodiscard]] static auto Create(gsl::not_null<ASTContext*> const& context,
+                                     FileData::reader_t reader) -> ParserPtr;
 
     Parser() = default;
     Parser(Parser const&) = delete;

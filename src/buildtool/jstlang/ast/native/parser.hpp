@@ -21,7 +21,9 @@
 #include <utility>
 #include <vector>
 
+#include "gsl/gsl"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/native/lexer.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
@@ -30,9 +32,12 @@ namespace jstlang {
 
 class NativeParser final : public Parser {
   public:
-    NativeParser(FileData::reader_t reader,
-                 std::vector<FileLocation> import_chain)
-        : reader_{std::move(reader)}, import_chain_{std::move(import_chain)} {}
+    NativeParser(gsl::not_null<ASTContext*> const& context,
+                 FileData::reader_t reader,
+                 std::vector<SourceFile const*> import_chain)
+        : context_{context},
+          reader_{std::move(reader)},
+          import_chain_{std::move(import_chain)} {}
     NativeParser(const NativeParser&) = delete;
     NativeParser(NativeParser&&) = delete;
     ~NativeParser() final = default;
@@ -62,11 +67,14 @@ class NativeParser final : public Parser {
         std::size_t pos_{};
     };
 
-    std::string filename_;
+    gsl::not_null<ASTContext*> context_;
     FileData::reader_t reader_;
-    std::vector<jstlang::FileLocation> import_chain_;
+    std::vector<SourceFile const*> import_chain_;
     TokenStream tokens_{};
 
+    /// \brief Throw if file is already in the import chain.
+    void CheckImportCycle(FileLocation const& location) const;
+    [[nodiscard]] auto ParseSource(SourceFile const& source) -> ASTNodePtr;
     [[nodiscard]] auto Parse(unsigned priority) -> ASTNodePtr;
     [[nodiscard]] auto ParseSimple() -> ASTNodePtr;
     [[nodiscard]] auto ParseInfix(ASTNodePtr const& prev_node,
