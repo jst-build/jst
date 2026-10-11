@@ -55,7 +55,7 @@ log message:
 ``` sh
 $ echo "'foo' + 42 + 'bar'" > snippet.jst
 $ jst eval snippet.jst
-ERROR: AST inlining failed with:
+ERROR: Lowering failed with:
        snippet.jst:1:6-11: Unsupported types for binary operation. Found String and Number.
 
        1 |  'foo' + 42 + 'bar'

@@ -1,0 +1,92 @@
+// Copyright 2026 The jst-build authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_EVALUATOR_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_EVALUATOR_HPP
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "nlohmann/json.hpp"
+#include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/eval_error.hpp"
+#include "src/buildtool/jstlang/ast/eval_opts.hpp"
+
+namespace jstlang {
+
+/// \brief Bindings of a file for evaluating its definitions: the built-ins
+/// object `jst`, followed by the file's top-level locals (evaluated lazily).
+/// Immutable; each evaluation binds them in a new scope (scopes are not shared,
+/// their bindings are memoized).
+class Bindings final {
+  public:
+    using Ptr = std::shared_ptr<Bindings const>;
+    using bindings_t = std::vector<std::pair<std::string, ASTNodePtr>>;
+
+    explicit Bindings(bindings_t bindings) noexcept
+        : bindings_{std::move(bindings)} {}
+
+    /// \brief No bindings (only the built-ins object).
+    [[nodiscard]] static auto Empty() -> Ptr;
+
+    /// \brief Bindings of expressions, evaluated lazily in the scope of the
+    /// bindings before them (the first in the scope of the built-ins object
+    /// `jst`).
+    [[nodiscard]] auto Get() const noexcept -> bindings_t const& {
+        return bindings_;
+    }
+
+  private:
+    bindings_t bindings_;
+};
+
+class Evaluator {
+  public:
+    explicit Evaluator(EvalOptions options, Bindings::Ptr bindings = nullptr)
+        : options_{options}, bindings_{std::move(bindings)} {}
+
+    /// \brief Evaluate expression in the scope of bindings (nullptr for no
+    /// bindings, i.e., only the built-ins object `jst`).
+    /// \throws ASTEvalError on evaluation errors (e.g., in static evaluation,
+    /// if the value depends on runtime variables).
+    [[nodiscard]] auto EvaluateAST(ASTNodePtr const& expr) -> ASTNodePtr;
+
+  private:
+    EvalOptions options_;
+    Bindings::Ptr bindings_;
+};
+
+/// \brief Ensure the result of a full evaluation is a plain value (no
+/// residual code), reporting a failure (`fail()`) contained in it.
+/// \throws ASTEvalError if the value contains residual code.
+void RequireValue(ASTNodePtr const& value);
+
+/// \brief Whether node is self-contained: it can be evaluated without the
+/// scope it was obtained in, i.e., it contains no closures (e.g., literals and
+/// the residual code of unfolding).
+[[nodiscard]] auto IsSelfContained(ASTNode const& node) -> bool;
+
+/// \brief JSON of a literal value, as in the expression language (e.g.,
+/// references are strings or lists of strings).
+[[nodiscard]] auto ValueToJson(ASTNode const& value) -> nlohmann::json;
+
+}  // namespace jstlang
+
+#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_EVALUATOR_HPP

@@ -28,6 +28,14 @@
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 
+  traversal: {
+    type: @'rules//CC:library',
+    name: ['traversal'],
+    hdrs: ['traversal.hpp'],
+    deps: ['ast'],
+    stage: ['src', 'buildtool', 'jstlang', 'ast'],
+  },
+
   builtins: {
     type: @'rules//CC:library',
     name: ['builtins'],
@@ -49,6 +57,22 @@
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 
+  eval_opts: {
+    type: @'rules//CC:library',
+    name: ['eval_opts'],
+    hdrs: ['eval_opts.hpp'],
+    deps: ['ast'],
+    stage: ['src', 'buildtool', 'jstlang', 'ast'],
+  },
+
+  eval_error: {
+    type: @'rules//CC:library',
+    name: ['eval_error'],
+    hdrs: ['eval_error.hpp'],
+    deps: ['ast'],
+    stage: ['src', 'buildtool', 'jstlang', 'ast'],
+  },
+
   eval_visitor: {
     type: @'rules//CC:library',
     name: ['eval_visitor'],
@@ -56,7 +80,14 @@
     srcs: ['eval_visitor.cpp'],
     deps: [
       'ast',
+      'eval_opts',
+      @'gsl//:gsl',
+    ],
+    'private-deps': [
       'builtins',
+      'traversal',
+      'eval_error',
+      'to_json_visitor',
     ],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },

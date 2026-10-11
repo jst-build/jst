@@ -17,22 +17,29 @@
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_VISITOR_HPP
 
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
+#include "gsl/gsl"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/eval_opts.hpp"
 #include "src/buildtool/jstlang/ast/scope.hpp"
 
 namespace jstlang {
 
-class ASTEvalError : public std::runtime_error {
-  public:
-    explicit ASTEvalError(std::string const& error);
-    explicit ASTEvalError(std::string const& error,
-                          jstlang::Location const& loc);
-};
+/// \brief Message of a residual call to fail() with a known message.
+[[nodiscard]] auto FailMessage(ASTNode const& node)
+    -> std::optional<std::string>;
+
+/// \brief First node in value that is residual code (not a value), nullptr
+/// if there is none. Functions are values.
+[[nodiscard]] auto FindResidual(ASTNode const& node) -> ASTNode const*;
 
 template <class T, class... U>
 concept IsAnyOf = (std::same_as<T, U> || ...);
@@ -43,7 +50,6 @@ concept IsLeafNode = IsAnyOf<T,
                              jstlang::BoolNode,
                              jstlang::StringNode,
                              jstlang::NumberNode,
-                             jstlang::RefNode,
                              jstlang::BuiltinNode,
                              jstlang::ClosureNode>;
 
@@ -52,47 +58,132 @@ concept IsLeafNode = IsAnyOf<T,
 /// value (literal, closure, built-in) or, if it depends on unknown values
 /// (runtime variables), to residual code. Bindings and function arguments are
 /// evaluated at most once and only if used; function bodies are evaluated
-/// when the function is called. Nodes are never copied: leaves and subtrees
-/// that do not change are returned as the very same node.
-/// The residual code is suitable for lowering to the expression language:
-/// iteration variables of loops over unknown ranges are runtime variables.
+/// when the function is called. Nodes are never copied: leaves (and, see
+/// ReuseUnchanged(), subtrees) that do not change are returned as
+/// the very same node.
+/// See EvalOptions for the modes of evaluation.
 class ASTEvalVisitor final {
   public:
-    explicit ASTEvalVisitor(ScopePtr scope) noexcept
-        : scope_{std::move(scope)} {}
+    /// \param fresh_names  Counter for fresh names of iteration variables in
+    ///                     unfold mode (shared by the evaluation).
+    explicit ASTEvalVisitor(ScopePtr scope,
+                            gsl::not_null<EvalOptions const*> options,
+                            std::size_t* fresh_names = nullptr) noexcept
+        : scope_{std::move(scope)},
+          options_{options},
+          fresh_names_{fresh_names} {}
 
     [[nodiscard]] auto Evaluate(ASTNodePtr const& node) const -> ASTNodePtr;
 
+    /// \brief In unfold mode: replace the closures in an unfolded value by
+    /// self-contained code of their functions (see UnfoldClosure()).
+    [[nodiscard]] auto UnfoldClosures(ASTNodePtr const& node) const
+        -> ASTNodePtr;
+
   private:
     ScopePtr scope_;
+    gsl::not_null<EvalOptions const*> options_;
+    std::size_t* fresh_names_;
 
-    [[nodiscard]] static auto WithScope(ScopePtr scope) -> ASTEvalVisitor {
-        return ASTEvalVisitor{std::move(scope)};
+    [[nodiscard]] auto WithScope(ScopePtr scope) const -> ASTEvalVisitor {
+        return ASTEvalVisitor{std::move(scope), options_, fresh_names_};
     }
+
+    [[nodiscard]] auto IsFull() const noexcept -> bool {
+        return options_->mode == EvalOptions::Mode::Full;
+    }
+
+    [[nodiscard]] auto IsUnfold() const noexcept -> bool {
+        return options_->mode == EvalOptions::Mode::Unfold;
+    }
+
+    /// \brief Bind an iteration variable of a residual comprehension (or a
+    /// parameter of an unfolded closure, see UnfoldClosure()): in
+    /// lowering mode, it becomes a runtime variable (with the same name); in
+    /// unfold mode, it is renamed to a fresh name (which cannot be written in
+    /// jstlang, so it is not captured by other comprehensions) and references
+    /// to it stay references.
+    /// \returns the scope of the body and the name of the variable in the
+    /// residual comprehension.
+    [[nodiscard]] auto BindIterationVar(ScopePtr scope,
+                                        std::string const& name,
+                                        Location const& loc) const
+        -> std::pair<ScopePtr, std::string>;
+
+    /// \brief Whether to unroll a comprehension over a literal range of the
+    /// given size (always in full evaluation).
+    [[nodiscard]] auto Unroll(std::size_t size) const noexcept -> bool {
+        return IsFull() or size <= options_->unroll_limit;
+    }
+
+    /// \brief Whether to return an unchanged composite node itself,
+    /// preserving sharing (e.g., of residual code) when unfolding or lowering.
+    /// Results of full evaluation are rebuilt, as handing out the shared nodes
+    /// of parsed files to many threads makes their reference counts contend.
+    [[nodiscard]] auto ReuseUnchanged() const noexcept -> bool {
+        return not IsFull();
+    }
+
+    /// \brief In full evaluation, ensure that a value needed for deciding
+    /// the evaluation (condition, range) is known.
+    void RequireKnown(ASTNodePtr const& value,
+                      std::string const& what,
+                      Location const& loc) const;
 
     /// \brief Force the lazy binding (thunk): evaluate it on first use, store
     /// and return its value. Throws on cyclic dependencies.
-    [[nodiscard]] static auto Force(Scope const& binding,
-                                    Location const& loc) -> ASTNodePtr;
+    [[nodiscard]] auto Force(Scope const& binding,
+                             Location const& loc) const -> ASTNodePtr;
+
+    /// \brief In unfold mode: self-contained code of a closure, i.e., its
+    /// function with the body (and default values) unfolded in the closure's
+    /// scope, the parameters being unknown. The parameters keep their names
+    /// (for named arguments), but are bound to fresh names at the beginning
+    /// of the body (and default values), which the unfolded code refers to,
+    /// so they cannot be captured by other functions.
+    [[nodiscard]] auto UnfoldClosure(ClosureNode const& closure) const
+        -> ASTNodePtr;
+
+    /// \brief In unfold mode: the residual call of a function that depends on
+    /// unknown values (e.g., selected from a map by a runtime variable).
+    [[nodiscard]] auto UnfoldedCall(CallNode const& caller,
+                                    ASTNodePtr const& target) const
+        -> ASTNodePtr;
 
     /// \brief Call a closure with the arguments of the caller.
     [[nodiscard]] auto Apply(CallNode const& caller,
                              ClosureNode const& closure) const -> ASTNodePtr;
 
     /// \brief Call a built-in with the arguments of the caller.
-    [[nodiscard]] auto ApplyBuiltin(CallNode const& caller,
-                                    BuiltinNode const& builtin) const
-        -> ASTNodePtr;
-
-    [[nodiscard]] static auto CallBuiltinWithParams(
-        std::string const& name,
+    /// \brief In unfold mode: the residual call of a built-in function if
+    /// some of its arguments depend on unknown values (and none is a
+    /// function), nullptr otherwise.
+    [[nodiscard]] static auto UnfoldedBuiltinCall(
+        std::function<ASTNodePtr()> const& builtin_node,
         Location const& loc,
         CallNode::params_t const& params) -> ASTNodePtr;
 
+    /// \brief Short-circuit evaluation of a list (the arguments of all() or
+    /// any()): its items are evaluated in order, up to the first item whose
+    /// truth value is decisive (false for all(), true for any()).
+    [[nodiscard]] auto EvaluateShortCircuit(ListNode const* node,
+                                            ASTNodePtr const& self,
+                                            bool decisive) const -> ASTNodePtr;
+
+    [[nodiscard]] auto ApplyBuiltin(CallNode const& caller,
+                                    BuiltinNode const& builtin,
+                                    ASTNodePtr const& builtin_node) const
+        -> ASTNodePtr;
+
+    [[nodiscard]] auto CallBuiltinWithParams(
+        std::string const& name,
+        Location const& loc,
+        CallNode::params_t const& params) const -> ASTNodePtr;
+
     template <std::convertible_to<ASTNodePtr>... TParams>
-    [[nodiscard]] static auto CallBuiltin(std::string const& name,
-                                          Location const& loc,
-                                          TParams&&... params) -> ASTNodePtr {
+    [[nodiscard]] auto CallBuiltin(std::string const& name,
+                                   Location const& loc,
+                                   TParams&&... params) const -> ASTNodePtr {
         auto call_params = CallNode::params_t{
             std::make_pair(std::nullopt, std::forward<TParams>(params))...};
         return CallBuiltinWithParams(name, loc, call_params);
@@ -124,6 +215,8 @@ class ASTEvalVisitor final {
     [[nodiscard]] auto operator()(MapNode const* node,
                                   ASTNodePtr const& self) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(VarNode const* node,
+                                  ASTNodePtr const& self) const -> ASTNodePtr;
+    [[nodiscard]] auto operator()(RefNode const* node,
                                   ASTNodePtr const& self) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(IfNode const* node,
                                   ASTNodePtr const& self) const -> ASTNodePtr;

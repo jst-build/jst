@@ -28,9 +28,8 @@
 #include "src/buildtool/build_engine/expression/function_map.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
-#include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
+#include "src/buildtool/jstlang/evaluator.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/parser.hpp"
 
@@ -58,8 +57,9 @@ struct Case final {
     auto ast = parser.ParseData(jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});
-    return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(
-        jstlang::ProvideBuiltinsToAST(ast));
+    return jstlang::Evaluator{
+        jstlang::EvalOptions{.mode = jstlang::EvalOptions::Mode::Lowering}}
+        .EvaluateAST(ast);
 }
 
 /// \brief Replace each placeholder by the given text.

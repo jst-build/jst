@@ -43,6 +43,27 @@
     stage: ['src', 'buildtool', 'jstlang'],
   },
 
+  evaluator: {
+    type: @'rules//CC:library',
+    name: ['evaluator'],
+    hdrs: ['evaluator.hpp'],
+    srcs: ['evaluator.cpp'],
+    deps: [
+      @'./ast:ast',
+      @'./ast:eval_opts',
+      @'./ast:eval_error',
+      @'json//:json',
+    ],
+    'private-deps': [
+      @'./ast:builtins',
+      @'./ast:eval_visitor',
+      @'./ast:to_json_visitor',
+      @'./ast:traversal',
+      @'gsl//:gsl',
+    ],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
   json_string: {
     type: @'rules//CC:library',
     name: ['json_string'],

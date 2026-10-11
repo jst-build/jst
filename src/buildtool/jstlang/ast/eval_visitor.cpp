@@ -23,16 +23,22 @@
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <sstream>
+#include <ranges>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
+#include "src/buildtool/jstlang/ast/eval_error.hpp"
 #include "src/buildtool/jstlang/ast/scope.hpp"
+#include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
+#include "src/buildtool/jstlang/ast/traversal.hpp"
 
 namespace {
 
@@ -60,70 +66,31 @@ template <std::same_as<jstlang::ValueType>... TTypes>
     return CheckUnaryType(lhs, types...) and CheckUnaryType(rhs, types...);
 }
 
-[[nodiscard]] auto GetLocationString(jstlang::Location const& loc)
-    -> std::string {
-    std::ostringstream oss{};
-    oss << loc.File();
-    oss << ":" << loc.line;
-    oss << ":" << loc.column;
-    if (loc.column_end > 0) {
-        oss << "-" << loc.column_end;
-    }
-    return oss.str();
-}
-
-[[nodiscard]] auto GetLocationSnippet(jstlang::Location const& loc)
-    -> std::string {
-    std::ostringstream oss{};
-    if (loc.source != nullptr) {
-        auto const& content = loc.source->content;
-        auto line_pos = 0UL;
-        auto line_end = content.find('\n', line_pos);
-        for (std::size_t i{1}; i < loc.line and line_end != std::string::npos;
-             ++i) {
-            line_pos = line_end + 1;
-            line_end = content.find('\n', line_pos);
-        }
-        if (line_end != std::string::npos) {
-            static auto const kPrefix = " |" + std::string(2, ' ');
-            auto line_str = std::to_string(loc.line);
-            auto line_data = content.substr(line_pos, line_end - line_pos);
-            auto const column_end =
-                loc.column_end > 0 ? loc.column_end : line_data.length();
-            oss << "\n\n";
-            oss << line_str + kPrefix;
-            oss << line_data;
-            oss << "\n";
-            oss << std::string(line_str.length(), ' ') + kPrefix;
-            oss << std::string(loc.column - 1, ' ');
-            oss << std::string(column_end - loc.column + 1, '^');
-            oss << "\n";
-        }
-    }
-    return oss.str();
-}
-
 }  // namespace
 
 namespace jstlang {
 
-ASTEvalError::ASTEvalError(std::string const& error) : runtime_error{error} {}
-
-ASTEvalError::ASTEvalError(std::string const& error,
-                           jstlang::Location const& loc)
-    : runtime_error{GetLocationString(loc) + ": " + error +
-                    GetLocationSnippet(loc)} {}
-
-auto ASTEvalVisitor::CallBuiltinWithParams(std::string const& name,
-                                           Location const& loc,
-                                           CallNode::params_t const& params)
-    -> ASTNodePtr {
+auto ASTEvalVisitor::CallBuiltinWithParams(
+    std::string const& name,
+    Location const& loc,
+    CallNode::params_t const& params) const -> ASTNodePtr {
     auto bt_it = kBuiltinFunctions.find(name);
     if (bt_it == kBuiltinFunctions.end()) {
         throw ASTEvalError{"Unknown builtin function \"" + name + "\".", loc};
     }
-    auto eval_callback = [](ASTNodePtr const& node,
-                            ScopePtr const& scope) -> ASTNodePtr {
+    if (options_->mode == EvalOptions::Mode::Unfold) {
+        // e.g., built-in functions implementing operators
+        if (auto residual = UnfoldedBuiltinCall(
+                [&name]() -> ASTNodePtr {
+                    return std::make_shared<BuiltinNode>(name);
+                },
+                loc,
+                params)) {
+            return residual;
+        }
+    }
+    auto eval_callback = [this](ASTNodePtr const& node,
+                                ScopePtr const& scope) -> ASTNodePtr {
         return WithScope(scope).Evaluate(node);
     };
     try {
@@ -131,6 +98,109 @@ auto ASTEvalVisitor::CallBuiltinWithParams(std::string const& name,
     } catch (std::exception const& e) {
         throw ASTEvalError{e.what()};
     }
+}
+
+auto FailMessage(ASTNode const& node) -> std::optional<std::string> {
+    if (auto const* call = ASTNode::Cast<BuiltinCallNode const*>(&node)) {
+        if (call->GetName() == "fail" and not call->GetArgs().empty() and
+            call->GetArgs()[0] != nullptr) {
+            auto const& msg = call->GetArgs()[0];
+            if (auto const* str = ASTNode::Cast<StringNode const*>(msg.get())) {
+                return str->GetValue();
+            }
+            if (msg->IsLiteral()) {
+                return ASTToJsonVisitor{VerbatimType::Full, /*json_only=*/true}
+                    .ToJson(*msg)
+                    .dump();
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+auto FindResidual(ASTNode const& node) -> ASTNode const* {
+    if (node.IsLiteral()) {
+        return nullptr;  // no need to traverse literals
+    }
+    switch (node.Kind()) {
+        case NodeKind::Null:
+        case NodeKind::Bool:
+        case NodeKind::Number:
+        case NodeKind::String:
+        case NodeKind::Ref:
+        case NodeKind::Builtin:
+        case NodeKind::Closure:
+            return nullptr;
+        case NodeKind::List:
+            for (auto const& item :
+                 ASTNode::Cast<ListNode const*>(&node)->GetItems()) {
+                if (auto const* residual = FindResidual(*item)) {
+                    return residual;
+                }
+            }
+            return nullptr;
+        case NodeKind::Map:
+            for (auto const& [key, value] :
+                 ASTNode::Cast<MapNode const*>(&node)->GetFields()) {
+                if (auto const* residual = FindResidual(*key)) {
+                    return residual;
+                }
+                if (auto const* residual = FindResidual(*value)) {
+                    return residual;
+                }
+            }
+            return nullptr;
+        default:
+            return &node;
+    }
+}
+
+auto ASTEvalVisitor::UnfoldedBuiltinCall(
+    std::function<ASTNodePtr()> const& builtin_node,
+    Location const& loc,
+    CallNode::params_t const& params) -> ASTNodePtr {
+    // calls with arguments depending on unknown values stay calls (evaluated
+    // later), unless functions are passed (e.g., to foreach(), which unfolds to
+    // a comprehension of the function's body)
+    bool all_known{true};
+    std::size_t count{};  // without missing trailing arguments
+    for (std::size_t i{}; i < params.size(); ++i) {
+        auto const& value = params[i].second;
+        if (not value) {
+            continue;
+        }
+        if (value->Kind() == NodeKind::Closure or
+            value->Kind() == NodeKind::Builtin) {
+            return nullptr;
+        }
+        if (i != count) {
+            return nullptr;  // missing argument in between
+        }
+        all_known = all_known and FindResidual(*value) == nullptr;
+        count = i + 1;
+    }
+    if (all_known) {
+        return nullptr;
+    }
+    return std::make_shared<CallNode>(
+        loc,
+        CallNode::target_t{builtin_node()},
+        CallNode::params_t{
+            params.begin(),
+            params.begin() + static_cast<std::ptrdiff_t>(count)});
+}
+
+void ASTEvalVisitor::RequireKnown(ASTNodePtr const& value,
+                                  std::string const& what,
+                                  Location const& loc) const {
+    if (not IsFull()) {
+        return;
+    }
+    if (auto msg = FailMessage(*value)) {
+        throw ASTEvalError{*msg, loc};
+    }
+    throw ASTEvalError{
+        "Cannot evaluate " + what + ", it depends on unknown values.", loc};
 }
 
 auto ASTEvalVisitor::Evaluate(ASTNodePtr const& node) const -> ASTNodePtr {
@@ -145,7 +215,7 @@ auto ASTEvalVisitor::Evaluate(ASTNodePtr const& node) const -> ASTNodePtr {
 }
 
 auto ASTEvalVisitor::Force(Scope const& binding,
-                           Location const& loc) -> ASTNodePtr {
+                           Location const& loc) const -> ASTNodePtr {
     if (not binding.IsEvaluated()) {
         if (binding.IsEvaluating()) {
             throw ASTEvalError{
@@ -188,18 +258,22 @@ auto ASTEvalVisitor::operator()(CallNode const* node,
         auto value = Evaluate(std::get<CallNode::expr_t>(target));
         if (auto const* builtin =
                 ASTNode::Cast<BuiltinNode const*>(value.get())) {
-            return ApplyBuiltin(*node, *builtin);
+            return ApplyBuiltin(*node, *builtin, value);
         }
         if (auto const* closure =
                 ASTNode::Cast<ClosureNode const*>(value.get())) {
             return Apply(*node, *closure);
+        }
+        if (IsUnfold() and FindResidual(*value) != nullptr) {
+            return UnfoldedCall(*node, value);
         }
         throw ASTEvalError{"Call target is not a function.",
                            node->GetLocation()};
     }
 
     if (std::holds_alternative<CallNode::builtin_t>(target)) {
-        return ApplyBuiltin(*node, *std::get<CallNode::builtin_t>(target));
+        auto const& builtin = std::get<CallNode::builtin_t>(target);
+        return ApplyBuiltin(*node, *builtin, builtin);
     }
 
     if (std::holds_alternative<CallNode::identifier_t>(target)) {
@@ -224,7 +298,10 @@ auto ASTEvalVisitor::operator()(CallNode const* node,
         }
         if (auto const* builtin =
                 ASTNode::Cast<BuiltinNode const*>(value.get())) {
-            return ApplyBuiltin(*node, *builtin);
+            return ApplyBuiltin(*node, *builtin, value);
+        }
+        if (IsUnfold() and FindResidual(*value) != nullptr) {
+            return UnfoldedCall(*node, value);
         }
         throw ASTEvalError{
             "Cannot call a variable that does not contain a function.",
@@ -239,7 +316,7 @@ auto ASTEvalVisitor::operator()(ForeignNode const* node,
     -> ASTNodePtr {
     // foreign AST is self-contained, evaluate in clean scope
     auto ast = ProvideBuiltinsToAST(node->GetExpr());
-    return WithScope(nullptr).Evaluate(ast);
+    return WithScope(nullptr).Evaluate(ast);  // same options
 }
 
 auto ASTEvalVisitor::operator()(BuiltinCallNode const* node,
@@ -253,7 +330,7 @@ auto ASTEvalVisitor::operator()(BuiltinCallNode const* node,
         args.emplace_back(arg ? Evaluate(arg) : nullptr);
         changed = changed or args.back() != arg;
     }
-    if (not changed) {
+    if (not changed and ReuseUnchanged()) {
         return self;
     }
     return std::make_shared<BuiltinCallNode>(node->GetLocation(),
@@ -271,7 +348,7 @@ auto ASTEvalVisitor::operator()(ListNode const* node,
         items.emplace_back(Evaluate(item));
         changed = changed or items.back() != item;
     }
-    if (not changed) {
+    if (not changed and ReuseUnchanged()) {
         return self;
     }
     return std::make_shared<ListNode>(node->GetLocation(), std::move(items));
@@ -303,7 +380,7 @@ auto ASTEvalVisitor::operator()(MapNode const* node,
         changed = changed or name != field.first or value != field.second;
         values.emplace_back(std::move(name), std::move(value));
     }
-    if (not changed) {
+    if (not changed and ReuseUnchanged()) {
         return self;
     }
     return std::make_shared<MapNode>(
@@ -312,10 +389,49 @@ auto ASTEvalVisitor::operator()(MapNode const* node,
         has_new_literal_names ? MapNode::Unique::Maybe : MapNode::Unique::Yes);
 }
 
-auto ASTEvalVisitor::operator()(VarNode const* /*node*/,
+auto ASTEvalVisitor::operator()(VarNode const* node,
                                 ASTNodePtr const& self) const -> ASTNodePtr {
-    // runtime variable, value unknown
-    return self;
+    if (not IsFull()) {
+        // runtime variable, value unknown
+        return self;
+    }
+    if (options_->config == nullptr) {
+        throw ASTEvalError{"Runtime variable '" + node->GetName() +
+                               "' cannot be read in static evaluation.",
+                           node->GetLocation()};
+    }
+    // like the expression language, a variable set to null is not set
+    if (auto value = (*options_->config)(node->GetName());
+        value != nullptr and value->Kind() != NodeKind::Null) {
+        return value;
+    }
+    if (node->GetDefault()) {
+        return Evaluate(node->GetDefault());
+    }
+    return std::make_shared<NullNode>(node->GetLocation());
+}
+
+auto ASTEvalVisitor::operator()(RefNode const* node,
+                                ASTNodePtr const& self) const -> ASTNodePtr {
+    if (not IsFull()) {
+        return self;
+    }
+    // in full evaluation, a reference is its value in the expression language
+    // (a string or a list of strings), as for values of unknown type, the
+    // expression language does not distinguish references from other values
+    auto json =
+        ASTToJsonVisitor{VerbatimType::Full, /*json_only=*/true}.ToJson(*node);
+    auto const& loc = node->GetLocation();
+    if (json.is_string()) {
+        return std::make_shared<StringNode>(loc, json.get<std::string>());
+    }
+    auto items = ListNode::items_t{};
+    items.reserve(json.size());
+    for (auto const& item : json) {
+        items.emplace_back(
+            std::make_shared<StringNode>(loc, item.get<std::string>()));
+    }
+    return std::make_shared<ListNode>(loc, std::move(items));
 }
 
 auto ASTEvalVisitor::operator()(IfNode const* node, ASTNodePtr const& /*self*/)
@@ -328,6 +444,7 @@ auto ASTEvalVisitor::operator()(IfNode const* node, ASTNodePtr const& /*self*/)
                                   : Evaluate(node->GetElseBranch());
         return branch ? std::move(branch) : kEmptyList;
     }
+    RequireKnown(cond, "condition", node->GetLocation());
 
     return std::make_shared<IfNode>(node->GetLocation(),
                                     std::move(cond),
@@ -351,7 +468,8 @@ auto ASTEvalVisitor::operator()(ForEachNode const* node,
             loc};
     }
 
-    if (auto const* list = ASTNode::Cast<ListNode const*>(range.get())) {
+    auto const* list = ASTNode::Cast<ListNode const*>(range.get());
+    if (list != nullptr and Unroll(list->GetItems().size())) {
         // literal array -> do unrolling
         auto items = ListNode::items_t{};
         items.reserve(list->GetItems().size());
@@ -363,13 +481,14 @@ auto ASTEvalVisitor::operator()(ForEachNode const* node,
         return std::make_shared<ListNode>(loc, std::move(items));
     }
 
-    // Evaluate the body with the iteration variable as runtime variable (with
-    // the same name), evaluated during runtime.
-    auto body_scope = Scope::BindValue(
-        scope_, var_name, std::make_shared<VarNode>(loc, var_name));
+    RequireKnown(range, "range", loc);
+
+    // Evaluate the body with the iteration variable unknown, evaluated during
+    // runtime.
+    auto [body_scope, residual_var] = BindIterationVar(scope_, var_name, loc);
     return std::make_shared<ForEachNode>(
         loc,
-        var_name,
+        std::move(residual_var),
         std::move(range),
         WithScope(std::move(body_scope)).Evaluate(node->GetBody()));
 }
@@ -384,7 +503,8 @@ auto ASTEvalVisitor::operator()(ZipWithNode const* node,
 
     auto const* list1 = ASTNode::Cast<ListNode const*>(range1.get());
     auto const* list2 = ASTNode::Cast<ListNode const*>(range2.get());
-    if (list1 != nullptr and list2 != nullptr) {
+    if (list1 != nullptr and list2 != nullptr and
+        Unroll(std::min(list1->GetItems().size(), list2->GetItems().size()))) {
         // literal arrays -> do unrolling
         auto const count =
             std::min(list1->GetItems().size(), list2->GetItems().size());
@@ -410,18 +530,17 @@ auto ASTEvalVisitor::operator()(ZipWithNode const* node,
                                           ListNode::items_t{});
     }
 
-    // Evaluate the body with the iteration variables as runtime variables
-    // (with the same name), evaluated during runtime.
+    // Evaluate the body with the iteration variables unknown, evaluated during
+    // runtime.
     auto const& loc = node->GetLocation();
-    auto body_scope = Scope::BindValue(
-        scope_, var1_name, std::make_shared<VarNode>(loc, var1_name));
-    body_scope = Scope::BindValue(std::move(body_scope),
-                                  var2_name,
-                                  std::make_shared<VarNode>(loc, var2_name));
+    RequireKnown(list1 == nullptr ? range1 : range2, "range", loc);
+    auto [scope1, residual_var1] = BindIterationVar(scope_, var1_name, loc);
+    auto [body_scope, residual_var2] =
+        BindIterationVar(std::move(scope1), var2_name, loc);
     return std::make_shared<ZipWithNode>(
         loc,
-        var1_name,
-        var2_name,
+        std::move(residual_var1),
+        std::move(residual_var2),
         std::move(range1),
         std::move(range2),
         WithScope(std::move(body_scope)).Evaluate(node->GetBody()));
@@ -436,7 +555,8 @@ auto ASTEvalVisitor::operator()(FoldLeftNode const* node,
     auto init = Evaluate(node->GetInit());
     auto const& body = node->GetBody();
 
-    if (auto const* list = ASTNode::Cast<ListNode const*>(range.get())) {
+    if (auto const* list = ASTNode::Cast<ListNode const*>(range.get());
+        list != nullptr and Unroll(list->GetItems().size())) {
         // literal array -> do unroll fold
         auto accu = init;
         for (auto const& item : list->GetItems()) {
@@ -448,19 +568,18 @@ auto ASTEvalVisitor::operator()(FoldLeftNode const* node,
         return accu;
     }
 
-    // Evaluate the body with the iteration and accumulation variables as
-    // runtime variables (with the same name), evaluated during runtime.
+    // Evaluate the body with the iteration and accumulation variables
+    // unknown, evaluated during runtime.
     auto const& loc = node->GetLocation();
-    auto body_scope = Scope::BindValue(
-        scope_, iter_var_name, std::make_shared<VarNode>(loc, iter_var_name));
-    body_scope =
-        Scope::BindValue(std::move(body_scope),
-                         accu_var_name,
-                         std::make_shared<VarNode>(loc, accu_var_name));
+    RequireKnown(range, "range", loc);
+    auto [iter_scope, residual_iter_var] =
+        BindIterationVar(scope_, iter_var_name, loc);
+    auto [body_scope, residual_accu_var] =
+        BindIterationVar(std::move(iter_scope), accu_var_name, loc);
     return std::make_shared<FoldLeftNode>(
         loc,
-        iter_var_name,
-        accu_var_name,
+        std::move(residual_iter_var),
+        std::move(residual_accu_var),
         std::move(init),
         std::move(range),
         WithScope(std::move(body_scope)).Evaluate(body));
@@ -473,6 +592,11 @@ auto ASTEvalVisitor::operator()(UnaryOperationNode const* node,
 
     // resolve UnaryOperationNode
     auto loc = node->GetLocation();
+    if (IsUnfold() and FindResidual(*expr) != nullptr) {
+        // stays an operation (its type is known when evaluated)
+        return std::make_shared<UnaryOperationNode>(
+            loc, node->GetType(), std::move(expr));
+    }
     switch (node->GetType()) {
         case UnaryOperationNode::Type::Minus:
             if (CheckUnaryType(expr, ValueType::Any, ValueType::Number)) {
@@ -498,6 +622,14 @@ auto ASTEvalVisitor::operator()(LookupNode const* node,
     auto index = Evaluate(node->GetIndex());
     auto default_value = Evaluate(node->GetDefault());
     auto const& loc = node->GetLocation();
+    if (IsUnfold() and (FindResidual(*container) != nullptr or
+                        FindResidual(*index) != nullptr)) {
+        // stays a lookup (the type of the container is known when evaluated)
+        return std::make_shared<LookupNode>(loc,
+                                            std::move(index),
+                                            std::move(container),
+                                            std::move(default_value));
+    }
 
     if (ASTNode::Cast<MapNode const*>(container.get()) != nullptr) {
         auto result = CallBuiltin("get", loc, index, container, default_value);
@@ -532,11 +664,28 @@ auto ASTEvalVisitor::operator()(LookupNode const* node,
 auto ASTEvalVisitor::operator()(BinaryOperationNode const* node,
                                 ASTNodePtr const& /*self*/) const
     -> ASTNodePtr {
+    auto const& loc = node->GetLocation();
     auto lhs = Evaluate(node->GetLhs());
+
+    // short-circuit evaluation: the right operand is not evaluated if the
+    // left one already decides the result of && and ||
+    if (node->GetType() == BinaryOperationNode::Type::And or
+        node->GetType() == BinaryOperationNode::Type::Or) {
+        bool const decisive = node->GetType() == BinaryOperationNode::Type::Or;
+        if (auto truth = lhs->TruthValue(); truth and *truth == decisive) {
+            return std::make_shared<BoolNode>(loc, decisive);
+        }
+    }
     auto rhs = Evaluate(node->GetRhs());
 
     // resolve BinaryOperationNode
-    auto const& loc = node->GetLocation();
+    if (IsUnfold() and
+        (FindResidual(*lhs) != nullptr or FindResidual(*rhs) != nullptr)) {
+        // stays an operation (the types of its operands are known when
+        // evaluated)
+        return std::make_shared<BinaryOperationNode>(
+            loc, node->GetType(), std::move(lhs), std::move(rhs));
+    }
     ASTNodePtr args = node->GetType() == BinaryOperationNode::Type::Equal
                           ? nullptr
                           : std::make_shared<ListNode>(
@@ -580,6 +729,71 @@ auto ASTEvalVisitor::operator()(BinaryOperationNode const* node,
                            TypeToString(lhs->EvalType()) + " and " +
                            TypeToString(rhs->EvalType()) + ".",
                        loc};
+}
+
+auto ASTEvalVisitor::UnfoldClosures(ASTNodePtr const& node) const
+    -> ASTNodePtr {
+    if (node->IsLiteral()) {
+        return node;
+    }
+    if (auto const* closure = ASTNode::Cast<ClosureNode const*>(node.get())) {
+        return UnfoldClosure(*closure);
+    }
+    return MapChildren(node, [this](ASTNodePtr const& child) {
+        return UnfoldClosures(child);
+    });
+}
+
+auto ASTEvalVisitor::UnfoldClosure(ClosureNode const& closure) const
+    -> ASTNodePtr {
+    auto const& func = closure.GetFunc();
+    auto const& loc = func.GetLocation();
+    auto scope = closure.GetScope();
+    // fresh names of the preceding parameters and their original names
+    auto renamed = std::vector<std::pair<std::string, std::string>>{};
+    auto bind_renamed = [&renamed, &loc](ASTNodePtr expr) {
+        for (auto const& [fresh, name] : std::views::reverse(renamed)) {
+            expr = std::make_shared<LetNode>(
+                loc,
+                fresh,
+                std::make_shared<CallNode>(loc, CallNode::target_t{name}),
+                std::move(expr));
+        }
+        return expr;
+    };
+    auto params = FuncNode::params_t{};
+    params.reserve(func.GetParams().size());
+    for (auto const& [name, default_expr] : func.GetParams()) {
+        auto unfolded_default = ASTNodePtr{};
+        if (default_expr) {
+            unfolded_default = bind_renamed(
+                UnfoldClosures(WithScope(scope).Evaluate(default_expr)));
+        }
+        params.emplace_back(name, std::move(unfolded_default));
+        auto [param_scope, fresh] =
+            BindIterationVar(std::move(scope), name, loc);
+        scope = std::move(param_scope);
+        renamed.emplace_back(std::move(fresh), name);
+    }
+    auto body = bind_renamed(
+        UnfoldClosures(WithScope(std::move(scope)).Evaluate(func.GetBody())));
+    return std::make_shared<FuncNode>(loc, std::move(params), std::move(body));
+}
+
+auto ASTEvalVisitor::UnfoldedCall(CallNode const& caller,
+                                  ASTNodePtr const& target) const
+    -> ASTNodePtr {
+    // the function is only known when evaluated, so the call stays a call
+    // (with the arguments unfolded)
+    auto params = CallNode::params_t{};
+    if (auto const& caller_params = caller.GetParams()) {
+        params.reserve(caller_params->size());
+        for (auto const& [name, expr] : *caller_params) {
+            params.emplace_back(name, Evaluate(expr));
+        }
+    }
+    return std::make_shared<CallNode>(
+        caller.GetLocation(), CallNode::target_t{target}, std::move(params));
 }
 
 auto ASTEvalVisitor::Apply(CallNode const& caller,
@@ -658,14 +872,52 @@ auto ASTEvalVisitor::Apply(CallNode const& caller,
         }
         return WithScope(std::move(func_scope)).Evaluate(callee.GetBody());
     } catch (std::exception const& e) {
-        throw ASTEvalError{
-            std::string{"Inlining function call failed with:\n"} + e.what(),
-            caller.GetLocation()};
+        throw ASTEvalError{"Evaluating function call failed with:",
+                           caller.GetLocation(),
+                           e.what()};
     }
 }
 
+auto ASTEvalVisitor::BindIterationVar(ScopePtr scope,
+                                      std::string const& name,
+                                      Location const& loc) const
+    -> std::pair<ScopePtr, std::string> {
+    if (IsUnfold() and fresh_names_ != nullptr) {
+        auto fresh = name + "#" + std::to_string((*fresh_names_)++);
+        auto reference =
+            std::make_shared<CallNode>(loc, CallNode::target_t{fresh});
+        return {Scope::BindValue(std::move(scope), name, std::move(reference)),
+                std::move(fresh)};
+    }
+    return {Scope::BindValue(
+                std::move(scope), name, std::make_shared<VarNode>(loc, name)),
+            name};
+}
+
+auto ASTEvalVisitor::EvaluateShortCircuit(ListNode const* node,
+                                          ASTNodePtr const& self,
+                                          bool decisive) const -> ASTNodePtr {
+    bool changed{};
+    auto items = ListNode::items_t{};
+    items.reserve(node->GetItems().size());
+    for (auto const& item : node->GetItems()) {
+        items.emplace_back(Evaluate(item));
+        changed = changed or items.back() != item;
+        if (auto truth = items.back()->TruthValue();
+            truth and *truth == decisive) {
+            break;
+        }
+    }
+    if (not changed and items.size() == node->GetItems().size() and
+        ReuseUnchanged()) {
+        return self;
+    }
+    return std::make_shared<ListNode>(node->GetLocation(), std::move(items));
+}
+
 auto ASTEvalVisitor::ApplyBuiltin(CallNode const& caller,
-                                  BuiltinNode const& builtin) const
+                                  BuiltinNode const& builtin,
+                                  ASTNodePtr const& builtin_node) const
     -> ASTNodePtr {
     if (caller.IsVarRead()) {
         // function without arguments, just return body
@@ -678,18 +930,40 @@ auto ASTEvalVisitor::ApplyBuiltin(CallNode const& caller,
         throw ASTEvalError{"Missing parameter list for function call.",
                            caller.GetLocation()};
     }
+    auto const& bt_name = builtin.GetName();
+    // literal list argument of all() and any() is evaluated with short-circuit
+    bool const is_short_circuit = bt_name == "all" or bt_name == "any";
     auto params = CallNode::params_t{};
     params.reserve(caller_params->size());
     for (auto const& [pname, pexpr] : *caller_params) {
-        params.emplace_back(pname, Evaluate(pexpr));
+        auto const* list = ASTNode::Cast<ListNode const*>(pexpr.get());
+        if (is_short_circuit and list != nullptr) {
+            params.emplace_back(
+                pname,
+                EvaluateShortCircuit(
+                    list, pexpr, /*decisive=*/bt_name == "any"));
+        }
+        else {
+            params.emplace_back(pname, Evaluate(pexpr));
+        }
+    }
+
+    auto const& loc = caller.GetLocation();
+    if (IsUnfold()) {
+        if (auto residual = UnfoldedBuiltinCall(
+                [&builtin_node]() { return builtin_node; }, loc, params)) {
+            return residual;
+        }
     }
 
     // return builtin function result
-    auto const& loc = caller.GetLocation();
-    auto const& bt_name = builtin.GetName();
     auto result = CallBuiltinWithParams(bt_name, loc, params);
 
-    if (bt_name == "env") {
+    if (bt_name == "env" and IsFull()) {
+        // read the runtime variable from the configuration
+        return Evaluate(result);
+    }
+    if (bt_name == "env" and options_->mode == EvalOptions::Mode::Lowering) {
         // Built-in function env() emits a runtime variable reference (VarNode).
         // Those are typically conflict free, except for rare cases. One such
         // case is the iteration variable of a runtime-evaluated expression

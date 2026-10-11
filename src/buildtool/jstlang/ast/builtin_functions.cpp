@@ -1915,10 +1915,16 @@ auto BuiltIn::from_subdir(Location const& loc,
         ValueType::Map);
 }
 
+auto BuiltinsObject() -> ASTNodePtr const& {
+    // per thread, as all evaluations share its nodes (whose reference counts
+    // would otherwise contend between threads)
+    thread_local auto const kBuiltinObj = MakeBuiltinObj();
+    return kBuiltinObj;
+}
+
 auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr {
-    static auto const kBuiltinObj = MakeBuiltinObj();
     // prepend object with built-ins as namespace 'jst' to passed ast
-    return std::make_shared<LetNode>(Location{}, "jst", kBuiltinObj, ast);
+    return std::make_shared<LetNode>(Location{}, "jst", BuiltinsObject(), ast);
 }
 
 }  // namespace jstlang

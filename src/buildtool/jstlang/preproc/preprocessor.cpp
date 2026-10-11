@@ -24,8 +24,7 @@
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/analyze.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
-#include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
+#include "src/buildtool/jstlang/evaluator.hpp"
 #include "src/buildtool/jstlang/parser.hpp"
 #ifndef NDEBUG
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
@@ -67,17 +66,11 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
             jstlang::StaticAnalysis(jst_ast);
         }
 
-        // inject built-ins using namespace 'jst'
-        jst_ast = ProvideBuiltinsToAST(jst_ast);
-
-#ifndef NDEBUG
-        logger_(LogType::Debug,
-                "---- Jstlang AST with builtins\n" +
-                    ASTToStringVisitor{}.Dump(*jst_ast));
-#endif
-
-        // inline all functions and variables
-        auto inl_ast = ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(jst_ast);
+        // Lower AST to code of the expression language (lowering mode of the
+        // evaluator: all functions are unfolded).
+        auto inl_ast =
+            Evaluator{EvalOptions{.mode = EvalOptions::Mode::Lowering}}
+                .EvaluateAST(jst_ast);
 
 #ifndef NDEBUG
         logger_(
@@ -90,7 +83,7 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
     } catch (jstlang::ASTParseError const& e) {
         err_msg << e.what() << "\n";
     } catch (jstlang::ASTEvalError const& e) {
-        err_msg << "AST inlining failed with:\n" << e.what() << "\n";
+        err_msg << "Lowering failed with:\n" << e.what() << "\n";
     } catch (std::exception const& e) {
         err_msg << "Internal error:\n" << e.what() << "\n";
     }

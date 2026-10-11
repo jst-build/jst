@@ -184,6 +184,10 @@ class BuiltIn final {
 
 [[nodiscard]] auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr;
 
+/// \brief The object with the built-in functions (the value of `jst`), one
+/// per thread.
+[[nodiscard]] auto BuiltinsObject() -> ASTNodePtr const&;
+
 auto const kBuiltinFunctions = std::unordered_map<std::string,
                                                   BuiltIn::Function>{
     {"env", BuiltIn::env},          // env(name=<string>,default=<any>)

@@ -23,10 +23,9 @@
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
-#include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/eval_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
+#include "src/buildtool/jstlang/evaluator.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/parser.hpp"
 
@@ -48,8 +47,9 @@ namespace {
         .content = code};
     auto parser = jstlang::Parser{Context(), std::move(moc_reader)};
     auto just_ast = parser.ParseData(file_data);
-    just_ast = ProvideBuiltinsToAST(just_ast);
-    return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(just_ast);
+    return jstlang::Evaluator{
+        jstlang::EvalOptions{.mode = jstlang::EvalOptions::Mode::Lowering}}
+        .EvaluateAST(just_ast);
 }
 
 [[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
@@ -1906,7 +1906,11 @@ TEST_CASE("ast_inline", "[lazy evaluation]") {
             jstlang::ASTNode::Cast<jstlang::MapNode const*>(ast.get());
         REQUIRE(map != nullptr);
         // the builtins object is bound, but the literal is not rebuilt
-        auto again = jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(ast);
+        auto again =
+            jstlang::Evaluator{
+                jstlang::EvalOptions{.mode =
+                                         jstlang::EvalOptions::Mode::Lowering}}
+                .EvaluateAST(ast);
         CHECK(again == ast);
     }
 }
