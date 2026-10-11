@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,32 +19,31 @@
 #include <atomic>
 #include <functional>
 #include <memory>
-
-#include "src/utils/cpp/atomic.hpp"
+#include <tuple>
 
 // Value that can be set and get atomically. Reset is not thread-safe.
 // Assignment operators will not overwrite existing values.
+// Once set, the value is published via an atomic raw pointer, so reading it
+// does neither take a lock nor touch a reference count (the value is owned by
+// a shared pointer that is written before publication and never afterwards).
 template <class T>
 class AtomicValue {
   public:
     AtomicValue() noexcept = default;
-    AtomicValue(AtomicValue const& other) noexcept
-        : data_{other.data_.load()} {}
-    AtomicValue(AtomicValue&& other) noexcept : data_{other.data_.load()} {}
+    AtomicValue(AtomicValue const& other) noexcept { CopyFrom(other); }
+    AtomicValue(AtomicValue&& other) noexcept { CopyFrom(other); }
     ~AtomicValue() noexcept = default;
 
     auto operator=(AtomicValue const& other) noexcept -> AtomicValue& {
-        auto data = other.data_.load();
-        if (data) {
-            this->SetOnceAndGet([&data]() { return data; });
+        if (other.ptr_.load() != nullptr) {
+            auto owner = other.owner_;
+            std::ignore = SetOnceAndGet(std::function<std::shared_ptr<T>()>{
+                [&owner]() { return owner; }});
         }
         return *this;
     }
     auto operator=(AtomicValue&& other) noexcept -> AtomicValue& {
-        auto data = other.data_.load();
-        if (data) {
-            this->SetOnceAndGet([&data]() { return data; });
-        }
+        *this = static_cast<AtomicValue const&>(other);
         return *this;
     }
 
@@ -52,30 +52,34 @@ class AtomicValue {
     // any case, this method blocks until the value is ready.
     [[nodiscard]] auto SetOnceAndGet(
         std::function<T()> const& setter) const& noexcept -> T const& {
-        if (data_.load() == nullptr) {
+        auto const* value = ptr_.load();
+        if (value == nullptr) {
             if (not load_.exchange(true)) {
-                data_.store(std::make_shared<T>(setter()));
-                data_.notify_all();
+                owner_ = std::make_shared<T>(setter());
+                ptr_.store(owner_.get());
+                ptr_.notify_all();
+                return *owner_;
             }
-            else {
-                data_.wait(nullptr);
-            }
+            ptr_.wait(nullptr);
+            return *ptr_.load();
         }
-        return *data_.load();
+        return *value;
     }
 
     [[nodiscard]] auto SetOnceAndGet(std::function<std::shared_ptr<T>()> const&
                                          setter) const& noexcept -> T const& {
-        if (data_.load() == nullptr) {
+        auto const* value = ptr_.load();
+        if (value == nullptr) {
             if (not load_.exchange(true)) {
-                data_.store(setter());
-                data_.notify_all();
+                owner_ = setter();
+                ptr_.store(owner_.get());
+                ptr_.notify_all();
+                return *owner_;
             }
-            else {
-                data_.wait(nullptr);
-            }
+            ptr_.wait(nullptr);
+            return *ptr_.load();
         }
-        return *data_.load();
+        return *value;
     }
 
     [[nodiscard]] auto SetOnceAndGet(std::function<T()> const& setter) && =
@@ -84,12 +88,22 @@ class AtomicValue {
     // Reset, not thread-safe!
     void Reset() noexcept {
         load_ = false;
-        data_ = nullptr;
+        ptr_ = nullptr;
+        owner_.reset();
     }
 
   private:
     mutable std::atomic<bool> load_{false};
-    mutable atomic_shared_ptr<T> data_{nullptr};
+    mutable std::atomic<T const*> ptr_{nullptr};
+    mutable std::shared_ptr<T> owner_{};
+
+    void CopyFrom(AtomicValue const& other) noexcept {
+        if (other.ptr_.load() != nullptr) {
+            owner_ = other.owner_;  // published, not written anymore
+            load_ = true;
+            ptr_.store(owner_.get());
+        }
+    }
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_MULTITHREADING_ATOMIC_VALUE_HPP
