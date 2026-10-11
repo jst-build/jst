@@ -575,6 +575,47 @@ TEST_CASE("ast_inline", "[computed field names]") {
         auto output = ParseAndInline(code);
         CHECK(output == expect);
     }
+
+    SECTION("field name types") {
+        SECTION("must be strings") {
+            CHECK_THROWS(ParseAndInline("{@':a': 1}"));
+            CHECK_THROWS(ParseAndInline("{[1]: 2}"));
+            CHECK_THROWS(ParseAndInline("local k = ['a']; {[k]: 2}"));
+        }
+
+        SECTION("runtime names are not compared statically") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "=="
+                , "$1":
+                  { "type": "singleton_map"
+                  , "key": {"type": "var", "name": "k"}
+                  , "value": 1
+                  }
+                , "$2":
+                  { "type": "singleton_map"
+                  , "key": {"type": "var", "name": "j"}
+                  , "value": 1
+                  }
+                })");
+            auto output = ParseAndInline(
+                "jst.eq({[jst.env('k')]: 1}, {[jst.env('j')]: 1})");
+            CHECK(output == expect);
+        }
+
+        SECTION("runtime names are not encoded statically") {
+            auto expect = nlohmann::json::parse(R"(
+                { "type": "json_encode"
+                , "$1":
+                  { "type": "singleton_map"
+                  , "key": {"type": "var", "name": "k"}
+                  , "value": 1
+                  }
+                })");
+            auto output =
+                ParseAndInline("jst.json_encode({[jst.env('k')]: 1})");
+            CHECK(output == expect);
+        }
+    }
 }
 
 TEST_CASE("ast_inline", "[built-in function evaluation]") {

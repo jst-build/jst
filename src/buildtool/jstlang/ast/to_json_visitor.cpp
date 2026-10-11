@@ -109,8 +109,8 @@ auto ASTToJsonVisitor::operator()(MapNode const* node) const -> nlohmann::json {
     for (auto const& [key, value] : node->GetFields()) {
         auto const* field_name = ASTNode::Cast<StringNode const*>(key.get());
         if (field_name == nullptr) {
-            // error
-            return {};
+            throw std::runtime_error{
+                "Field names of literal maps must be strings."};
         }
         if (ASTNode::Cast<FuncNode const*>(value.get()) != nullptr) {
             // skip serialization of func nodes

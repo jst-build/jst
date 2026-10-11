@@ -248,6 +248,14 @@ auto ASTInlineVisitor::operator()(MapNode const* node) const -> ASTNodePtr {
     bool has_new_literal_names{};
     for (auto const& field : fields) {
         auto inl_name = InlineFunctions(field.first);
+        // field names must evaluate to strings or must be runtime variables
+        if (inl_name->EvalType() != ValueType::String and
+            inl_name->EvalType() != ValueType::Any) {
+            throw ASTInlineError{
+                "Expected string expression for field name, but got: " +
+                    TypeToString(inl_name->EvalType()),
+                field.first->GetLocation()};
+        }
         if (ASTNode::Cast<StringNode const*>(field.first.get()) == nullptr and
             ASTNode::Cast<StringNode const*>(inl_name.get()) != nullptr) {
             // computed name became a string literal
