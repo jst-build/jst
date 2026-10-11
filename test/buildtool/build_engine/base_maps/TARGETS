@@ -140,6 +140,25 @@
     stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
   },
 
+  jstlang_entities_file: {
+    type: @'rules//CC/test:test',
+    name: ['jstlang_entities_file'],
+    srcs: ['jstlang_entities_file.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:jstlang_entities_file',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/build_engine/expression:expression_ptr_interface',
+      @'src//src/buildtool/build_engine/expression:jstlang_evaluator',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang:parser',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
   rule_map: {
     type: @'rules//CC/test:test',
     name: ['rule_map'],
@@ -225,6 +244,7 @@
       'entity_name',
       'expression_map',
       'json_file_map',
+      'jstlang_entities_file',
       'jstlang_file_map',
       'rule_map',
       'source_map',
