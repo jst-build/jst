@@ -431,12 +431,32 @@ auto BuiltIn::map_union(Location const& loc,
         }
 
         if (not contains_non_static_maps) {
+            // union of at most one non-empty map is that map
+            ASTNodePtr non_empty{};
+            std::size_t num_non_empty{};
+            for (auto const& item_node : items_list->GetItems()) {
+                if (not ASTNode::Cast<MapNode const*>(item_node.get())
+                            ->GetFields()
+                            .empty()) {
+                    non_empty = item_node;
+                    ++num_non_empty;
+                }
+            }
+            if (num_non_empty == 1) {
+                return non_empty;
+            }
+        }
+
+        if (not contains_non_static_maps) {
             // Do worst case allocation
             auto output_fields = MapNode::fields_t{};
             output_fields.reserve(max_num_fields);
 
-            // Auxiliary map for tracking field positions in vector
-            auto field_pos = std::unordered_map<std::string, std::size_t>{};
+            // Auxiliary map for tracking field positions in vector (names
+            // are owned by the field nodes)
+            auto field_pos =
+                std::unordered_map<std::string_view, std::size_t>{};
+            field_pos.reserve(max_num_fields);
 
             // Compute unified output_fields
             // TODO(oreiche): speed up via binary tree merge
@@ -451,8 +471,8 @@ auto BuiltIn::map_union(Location const& loc,
                         if (found_it == field_pos.end()) {
                             // add new field to vector
                             output_fields.emplace_back(name_node, value_node);
-                            field_pos[name->GetValue()] =
-                                output_fields.size() - 1;
+                            field_pos.emplace(name->GetValue(),
+                                              output_fields.size() - 1);
                         }
                         else {
                             auto& existing_field =
