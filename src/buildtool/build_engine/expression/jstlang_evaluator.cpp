@@ -110,7 +110,9 @@ class ExpressionValue final : public OpaqueValue {
         for (auto const& item : value->List()) {
             items.emplace_back(FromExpression(item));
         }
-        return std::make_shared<ListNode>(loc, std::move(items));
+        auto list = std::make_shared<ListNode>(loc, std::move(items));
+        list->SetOrigin(std::make_shared<ExpressionValue const>(value));
+        return list;
     }
     if (value->IsMap()) {
         auto fields = MapNode::fields_t{};
@@ -119,7 +121,9 @@ class ExpressionValue final : public OpaqueValue {
             fields.emplace_back(std::make_shared<StringNode>(loc, key),
                                 FromExpression(item));
         }
-        return std::make_shared<MapNode>(loc, std::move(fields));
+        auto map = std::make_shared<MapNode>(loc, std::move(fields));
+        map->SetOrigin(std::make_shared<ExpressionValue const>(value));
+        return map;
     }
     auto opaque = std::make_shared<ExpressionValue const>(value);
     if (value->IsArtifact()) {
@@ -160,19 +164,36 @@ class ExpressionValue final : public OpaqueValue {
         case NodeKind::Ref:
             return Expression::FromJson(ValueToJson(*value));
         case NodeKind::List: {
-            auto const& items =
-                ASTNode::Cast<ListNode const*>(value.get())->GetItems();
+            auto const* node = ASTNode::Cast<ListNode const*>(value.get());
+            if (auto const* origin = node->GetOrigin()) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+                return static_cast<ExpressionValue const&>(*origin).Value();
+            }
+            auto const& items = node->GetItems();
+            if (items.empty()) {
+                // per thread, so its hash is computed once
+                thread_local ExpressionPtr const kEmptyList{
+                    Expression::list_t{}};
+                return kEmptyList;
+            }
             auto list = Expression::list_t{};
             list.reserve(items.size());
             for (auto const& item : items) {
                 list.emplace_back(ToExpression(item));
             }
-            return ExpressionPtr{std::move(list)};
+            auto result = ExpressionPtr{std::move(list)};
+            // converting the node again returns the same value (and hash)
+            node->SetOrigin(std::make_shared<ExpressionValue const>(result));
+            return result;
         }
         case NodeKind::Map: {
+            auto const* node = ASTNode::Cast<MapNode const*>(value.get());
+            if (auto const* origin = node->GetOrigin()) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+                return static_cast<ExpressionValue const&>(*origin).Value();
+            }
             auto map = Expression::map_t::underlying_map_t{};
-            for (auto const& [key, item] :
-                 ASTNode::Cast<MapNode const*>(value.get())->GetFields()) {
+            for (auto const& [key, item] : node->GetFields()) {
                 if (IsFunction(*item)) {
                     continue;  // functions are not values of fields
                 }
@@ -183,7 +204,16 @@ class ExpressionValue final : public OpaqueValue {
                 // latest field wins
                 map.insert_or_assign(name->GetValue(), ToExpression(item));
             }
-            return ExpressionPtr{Expression::map_t{map}};
+            if (map.empty()) {
+                // per thread, so its hash is computed once
+                thread_local ExpressionPtr const kEmptyMap{
+                    Expression::map_t{Expression::map_t::underlying_map_t{}}};
+                return kEmptyMap;
+            }
+            auto result = ExpressionPtr{Expression::map_t{std::move(map)}};
+            // converting the node again returns the same value (and hash)
+            node->SetOrigin(std::make_shared<ExpressionValue const>(result));
+            return result;
         }
         case NodeKind::Artifact:
         case NodeKind::Result:

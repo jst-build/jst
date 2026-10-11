@@ -85,6 +85,11 @@ class AtomicValue {
     [[nodiscard]] auto SetOnceAndGet(std::function<T()> const& setter) && =
         delete;
 
+    // The value if set, nullptr otherwise.
+    [[nodiscard]] auto TryGet() const noexcept -> T const* {
+        return ptr_.load();
+    }
+
     // Reset, not thread-safe!
     void Reset() noexcept {
         load_ = false;

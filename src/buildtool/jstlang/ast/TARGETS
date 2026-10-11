@@ -12,6 +12,7 @@
       @'json//:json',
       @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang:ref',
+      @'//src/buildtool/multithreading:atomic_value',
       @'//src/utils/cpp:gsl',
     ],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],

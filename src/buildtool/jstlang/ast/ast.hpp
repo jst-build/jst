@@ -21,11 +21,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -36,6 +38,7 @@
 #include "src/buildtool/jstlang/ast/node_variant.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
+#include "src/buildtool/multithreading/atomic_value.hpp"
 #include "src/utils/cpp/gsl.hpp"
 
 namespace jstlang {
@@ -95,6 +98,7 @@ using ASTNodePtr = std::shared_ptr<ASTNode>;
 /// \brief Lexical scope of lazily evaluated bindings, see scope.hpp.
 class Scope;
 using ScopePtr = std::shared_ptr<Scope const>;
+class OpaqueValue;
 
 /// \brief Kind of an AST node, one per node class (same order as in
 /// ASTNodeVariant).
@@ -409,7 +413,7 @@ class ListNode : public ASTNode {
             }));
     }
     ListNode(ListNode&&) = delete;
-    ListNode(ListNode const&) = default;
+    ListNode(ListNode const& other) : ASTNode{other}, items_{other.items_} {}
     auto operator=(ListNode&&) -> ListNode& = delete;
     auto operator=(ListNode const&) -> ListNode& = delete;
     ~ListNode() = default;
@@ -418,8 +422,22 @@ class ListNode : public ASTNode {
         return items_;
     }
 
+    /// \brief Value (of a client) this literal was converted from, if any.
+    [[nodiscard]] auto GetOrigin() const noexcept -> OpaqueValue const* {
+        auto const* origin = origin_.TryGet();
+        return origin != nullptr ? origin->get() : nullptr;
+    }
+    /// \brief Set the value (of a client) the literal was converted from or
+    /// to (once, thread-safe), so converting it again returns that value.
+    void SetOrigin(std::shared_ptr<OpaqueValue const> origin) const noexcept {
+        std::ignore = origin_.SetOnceAndGet(
+            std::function<std::shared_ptr<OpaqueValue const>()>{
+                [&origin]() { return origin; }});
+    }
+
   private:
     items_t items_{};
+    AtomicValue<std::shared_ptr<OpaqueValue const>> origin_{};
 };
 
 /// \brief Map with fields in order of definition, the latest field wins.
@@ -452,7 +470,7 @@ class MapNode : public ASTNode {
             }));
     }
     MapNode(MapNode&&) = delete;
-    MapNode(MapNode const&) = default;
+    MapNode(MapNode const& other) : ASTNode{other}, fields_{other.fields_} {}
     auto operator=(MapNode&&) -> MapNode& = delete;
     auto operator=(MapNode const&) -> MapNode& = delete;
     ~MapNode() = default;
@@ -461,8 +479,22 @@ class MapNode : public ASTNode {
         return fields_;
     }
 
+    /// \brief Value (of a client) this literal was converted from, if any.
+    [[nodiscard]] auto GetOrigin() const noexcept -> OpaqueValue const* {
+        auto const* origin = origin_.TryGet();
+        return origin != nullptr ? origin->get() : nullptr;
+    }
+    /// \brief Set the value (of a client) the literal was converted from or
+    /// to (once, thread-safe), so converting it again returns that value.
+    void SetOrigin(std::shared_ptr<OpaqueValue const> origin) const noexcept {
+        std::ignore = origin_.SetOnceAndGet(
+            std::function<std::shared_ptr<OpaqueValue const>()>{
+                [&origin]() { return origin; }});
+    }
+
   private:
     fields_t fields_{};
+    AtomicValue<std::shared_ptr<OpaqueValue const>> origin_{};
 
     [[nodiscard]] static auto RemoveDuplicateFields(fields_t fields)
         -> fields_t;
