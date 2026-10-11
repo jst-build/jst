@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 
 #include "gsl/gsl"
 #include "openssl/evp.h"
+#include "openssl/opensslv.h"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
 
@@ -44,13 +46,49 @@ struct Hasher::ShaContext final {
 namespace {
 inline constexpr int kOpenSslTrue = 1;
 
+#if not defined(OPENSSL_IS_BORINGSSL) and OPENSSL_VERSION_NUMBER >= 0x30000000L
+#define JST_HAVE_OPENSSL3
+// With OpenSSL 3, initializing a digest from EVP_sha256() and alike fetches
+// the implementation implicitly, which takes a global lock and references the
+// shared digest object; threads hashing concurrently contend for both. So
+// fetch each digest once per thread instead.
+struct MdFetcher final {
+    EVP_MD* data;
+    explicit MdFetcher(char const* name) noexcept
+        : data{EVP_MD_fetch(/*ctx=*/nullptr, name, /*properties=*/nullptr)} {}
+    MdFetcher(MdFetcher const&) = delete;
+    MdFetcher(MdFetcher&&) = delete;
+    auto operator=(MdFetcher const&) -> MdFetcher& = delete;
+    auto operator=(MdFetcher&&) -> MdFetcher& = delete;
+    ~MdFetcher() noexcept { EVP_MD_free(data); }
+};
+#endif
+
 [[nodiscard]] auto ToEvpMd(Hasher::HashType type) noexcept -> EVP_MD const* {
     switch (type) {
         case Hasher::HashType::SHA1:
+#ifdef JST_HAVE_OPENSSL3
+            thread_local auto const kMdSha1 = MdFetcher{"SHA1"};
+            if (kMdSha1.data != nullptr) {
+                return kMdSha1.data;
+            }
+#endif
             return EVP_sha1();
         case Hasher::HashType::SHA256:
+#ifdef JST_HAVE_OPENSSL3
+            thread_local auto const kMdSha256 = MdFetcher{"SHA256"};
+            if (kMdSha256.data != nullptr) {
+                return kMdSha256.data;
+            }
+#endif
             return EVP_sha256();
         case Hasher::HashType::SHA512:
+#ifdef JST_HAVE_OPENSSL3
+            thread_local auto const kMdSha512 = MdFetcher{"SHA512"};
+            if (kMdSha512.data != nullptr) {
+                return kMdSha512.data;
+            }
+#endif
             return EVP_sha512();
     }
     return nullptr;  // make gcc happy
