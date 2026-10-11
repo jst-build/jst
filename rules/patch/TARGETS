@@ -1,6 +1,7 @@
-{ "defaults":
-  { "type": ["patch", "defaults"]
-  , "PATCH": ["patch"]
-  , "PATH": ["/bin", "/usr/bin"]
-  }
+{
+  defaults: {
+    type: '//patch:defaults',
+    PATCH: 'patch',
+    PATH: ['/bin', '/usr/bin'],
+  },
 }

@@ -1,0 +1,243 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+
+// Query the protobuf compiler from the PROTOC provider of the proto-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_protoc(defaults_transition={}) = common.field_list_provider(
+  fieldname='proto-defaults',
+  provider='PROTOC',
+  transition=defaults_transition,
+);
+
+// Query the protobuf compiler flags from the PROTOCFLAGS provider of the
+// proto-defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_protocflags(defaults_transition={}) = common.field_list_provider(
+  fieldname='proto-defaults',
+  provider='PROTOCFLAGS',
+  transition=defaults_transition,
+);
+
+// Query the linker flags from the LDFLAGS provider of the proto-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_ldflags(defaults_transition={}) = common.field_list_provider(
+  fieldname='proto-defaults',
+  provider='LDFLAGS',
+  transition=defaults_transition,
+);
+
+// Query the gRPC plugin from the GRPC_PLUGIN provider of the proto-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_grpc_plugin(defaults_transition={}) = common.field_list_provider(
+  fieldname='proto-defaults',
+  provider='GRPC_PLUGIN',
+  transition=defaults_transition,
+);
+
+// Query the environment map from the ENV provider of the proto-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_env(defaults_transition={}) = common.field_map_provider(
+  fieldname='proto-defaults',
+  provider='ENV',
+  transition=defaults_transition,
+);
+
+// Query the list of PATH entries from the PATH provider of the
+// proto-defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_path(defaults_transition={}) = common.field_list_provider(
+  fieldname='proto-defaults',
+  provider='PATH',
+  transition=defaults_transition,
+);
+
+// Query the toolchain tree from the TOOLCHAIN provider of the proto-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_toolchain(defaults_transition={}) = common.field_map_provider(
+  fieldname='proto-defaults',
+  provider='TOOLCHAIN',
+  transition=defaults_transition,
+);
+
+// Query and merge the NON_SYSTEM_TOOLS maps of the proto-defaults targets,
+// i.e., the tools taken from the toolchain instead of the system.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_non_system_tools(defaults_transition={}) = jst.union(
+  [
+    jst.dep_provides(
+      x,
+      'NON_SYSTEM_TOOLS',
+      transition=defaults_transition,
+      default={},
+    )
+    for x in jst.field('proto-defaults')
+  ],
+);
+
+// Collect the proto sources of the dependencies (protoc-deps provider).
+local protoc_deps() = common.field_map_provider(
+  fieldname='deps',
+  provider='protoc-deps',
+);
+
+// Generate C++ sources from the proto sources and build them as library.
+// - `name`               The name of the library.
+// - `stage`              The stage of the library.
+// - `public_fieldnames`  The fields of public dependencies.
+// - `private_fieldnames` The fields of private dependencies.
+// - `service_support`    Also generate gRPC service code.
+local protoc_compile(name, stage, public_fieldnames, private_fieldnames, service_support=false) =
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain();
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools();
+  local protoc = jst.join(
+    (if jst.get('PROTOC', non_system_tools) then ['./', toolchain_dir, '/'])
+    + default_protoc(),
+  );
+  local grpc_plugin = jst.join(
+    (if jst.get('GRPC_PLUGIN', non_system_tools) then
+      ['./', toolchain_dir, '/'])
+    + default_grpc_plugin(),
+  );
+  local env = default_env() + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local protoc_env =
+    env
+    + {
+      PATH: jst.join(default_path() + (if env_path then [env_path]), sep=':'),
+    };
+  local protoc_deps_ = protoc_deps();
+  local proto_srcs = jst.union(
+    common.field_artifacts_list(fieldname='srcs'),
+    disjoint=true,
+    msg='Sources may not conflict',
+  );
+  local all_proto_srcs = jst.union(
+    [protoc_deps_, proto_srcs],
+    disjoint=true,
+    msg='Conflict with proto files of dependencies',
+  );
+  local staged_srcs = jst.to_subdir(proto_srcs, subdir='work');
+  local staged_all_proto_srcs = jst.to_subdir(all_proto_srcs, subdir='work');
+  local outs = jst.flatten(
+    [
+      [
+        jst.change_ending(f, ending='.pb.h'),
+        jst.change_ending(f, ending='.pb.cc'),
+      ]
+      + (if service_support then
+        [
+          jst.change_ending(f, ending='.grpc.pb.h'),
+          jst.change_ending(f, ending='.grpc.pb.cc'),
+        ]
+      else
+        [])
+      for f in jst.keys(staged_srcs)
+    ],
+  );
+  local cmd = jst.flatten(
+    [
+      [protoc],
+      default_protocflags(),
+      ['--proto_path=work', '--cpp_out=work'],
+      if service_support then
+        [
+          '--grpc_out=work',
+          '--plugin=protoc-gen-grpc=' + grpc_plugin,
+        ]
+      else
+        [],
+      jst.keys(staged_srcs),
+    ],
+  );
+  local generated = jst.action(
+    inputs=staged_all_proto_srcs + toolchain,
+    cmd=cmd,
+    outs=outs,
+    env=protoc_env,
+    label='Generating protos ' + name,
+  );
+  local srcs = jst.union(
+    [
+      {
+        [jst.change_ending(name, ending='.pb.cc')]: jst.get(
+          'work/' + jst.change_ending(name, ending='.pb.cc'),
+          generated,
+        ),
+      }
+      + (if service_support then
+        {
+          [jst.change_ending(name, ending='.grpc.pb.cc')]: jst.get(
+            'work/' + jst.change_ending(name, ending='.grpc.pb.cc'),
+            generated,
+          ),
+        }
+      else
+        {})
+      for name in jst.keys(proto_srcs)
+    ],
+  );
+  local hdrs = jst.union(
+    [
+      {
+        [jst.change_ending(name, ending='.pb.h')]: jst.get(
+          'work/' + jst.change_ending(name, ending='.pb.h'),
+          generated,
+        ),
+      }
+      + (if service_support then
+        {
+          [jst.change_ending(name, ending='.grpc.pb.h')]: jst.get(
+            'work/' + jst.change_ending(name, ending='.grpc.pb.h'),
+            generated,
+          ),
+        }
+      else
+        {})
+      for name in jst.keys(proto_srcs)
+    ],
+  );
+  local extra_provides = {'protoc-deps': all_proto_srcs};
+  local private_ldflags = default_ldflags();
+  cc.lib_result(
+    env=env,
+    name=name,
+    pure_c=false,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs={},
+    cflags=[],
+    private_cflags=['-w'],
+    private_ldflags=private_ldflags,
+    stage=stage,
+    extra_provides=extra_provides,
+    public_fieldnames=public_fieldnames,
+    private_fieldnames=private_fieldnames,
+  );
+
+{
+  default_protoc: default_protoc,
+  default_protocflags: default_protocflags,
+  default_ldflags: default_ldflags,
+  default_grpc_plugin: default_grpc_plugin,
+  default_env: default_env,
+  default_path: default_path,
+  default_toolchain: default_toolchain,
+  default_non_system_tools: default_non_system_tools,
+  protoc_deps: protoc_deps,
+  protoc_compile: protoc_compile,
+}

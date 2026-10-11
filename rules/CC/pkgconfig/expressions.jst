@@ -1,0 +1,151 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+local shell = import '//shell/expressions.jst';
+
+// Query pkg-config for the compile and link arguments of a system
+// library and return the result of the rule.
+// - `name`  The name of the pkg-config package.
+// - `stage` The stage of the flag files.
+// - `args`  Additional arguments for pkg-config.
+local pkgconfig_result(name, stage, args=[]) =
+  local env = cc.default_env() + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local env_pkg_config_path = jst.get('PKG_CONFIG_PATH', env);
+  local sh_path = shell.path(fieldname='shell defaults');
+  local pkgconfig_path = common.field_list_provider(
+    fieldname='pkgconfig defaults',
+    provider='PATH',
+  );
+  local pkg_config_path = common.field_list_provider(
+    fieldname='pkgconfig defaults',
+    provider='PKG_CONFIG_PATH',
+  );
+  local final_path = jst.join(
+    jst.flatten(
+      [
+        pkgconfig_path,
+        cc.default_path(),
+        sh_path,
+        if env_path then [env_path],
+      ],
+    ),
+    sep=':',
+  );
+  local final_pkg_config_path = jst.join(
+    pkg_config_path + (if env_pkg_config_path then [env_pkg_config_path]),
+    sep=':',
+  );
+  local env = jst.union(
+    [
+      env,
+      if final_path then {PATH: final_path} else {},
+      if final_pkg_config_path then
+        {PKG_CONFIG_PATH: final_pkg_config_path}
+      else
+        {},
+    ],
+  );
+  local toolchain_dir = 'toolchain';
+  local shell_toolchain = jst.to_subdir(
+    common.field_map_provider(
+      fieldname='shell defaults',
+      provider='TOOLCHAIN',
+    ),
+    subdir=toolchain_dir,
+  );
+  local sh = shell.sh(toolchain_dir=toolchain_dir, fieldname='shell defaults');
+  local pkg_config = jst.join(
+    common.field_list_provider(
+      fieldname='pkgconfig defaults',
+      provider='pkg-config',
+    ),
+  );
+  local pkg_config = if pkg_config then pkg_config else 'pkg-config';
+  local cflags_filename = name + '.cflags';
+  local cflags_files = jst.to_subdir(
+    jst.action(
+      inputs=shell_toolchain,
+      cmd=[
+        sh,
+        '-c',
+        jst.join(
+          [pkg_config] + [jst.join_cmd(args + ['--cflags', name])]
+          + ['>']
+          + [jst.join_cmd([cflags_filename])],
+          sep=' ',
+        ),
+      ],
+      outs=[cflags_filename],
+      env=env,
+      label='Reading cflags ' + name,
+    ),
+    subdir=stage,
+  );
+  local compile_args = jst.zip_with(
+    function(flag_file, v) '@' + flag_file,
+    jst.keys(cflags_files),
+    jst.values(cflags_files),
+  );
+  local ldflags_filename = name + '.ldflags';
+  local ldflags_files = jst.action(
+    inputs=shell_toolchain,
+    cmd=[
+      sh,
+      '-c',
+      jst.join(
+        [pkg_config] + [jst.join_cmd(args + ['--libs', name])]
+        + ['>', 'ldflags.raw'],
+        sep=' ',
+      ),
+    ],
+    outs=['ldflags.raw'],
+    env=env,
+    label='Reading ldflags ' + name,
+  );
+  local add_rpath = common.stage_singleton_field(
+    fieldname='add_rpath',
+    location='add_rpath',
+  );
+  local ldflags_files = jst.to_subdir(
+    jst.action(
+      inputs=jst.union([add_rpath, ldflags_files, shell_toolchain]),
+      cmd=[
+        sh,
+        '-c',
+        jst.join(
+          [
+            './add_rpath $(cat ldflags.raw)',
+            '>',
+            jst.join_cmd([ldflags_filename]),
+          ],
+          sep=' ',
+        ),
+      ],
+      outs=[ldflags_filename],
+      env=env,
+      label='Reading ldflags ' + name,
+    ),
+    subdir=stage,
+  );
+  local link_args = jst.zip_with(
+    function(flag_file, v) '@' + flag_file,
+    jst.keys(ldflags_files),
+    jst.values(ldflags_files),
+  );
+  local package = {
+    'cflags-files': cflags_files,
+    'ldflags-files': ldflags_files,
+  };
+  local compile_deps = {};
+  local link_deps = {};
+  jst.result(
+    provides={
+      'compile-deps': compile_deps,
+      'compile-args': compile_args,
+      'link-deps': link_deps,
+      'link-args': link_args,
+      package: package,
+    },
+  );
+
+{pkgconfig_result: pkgconfig_result}

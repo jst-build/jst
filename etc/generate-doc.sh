@@ -19,35 +19,36 @@ readonly ROOT=$(readlink -f $(dirname $0)/..)
 
 : ${OUTFILE:=README.md}
 
+# remove single linebreaks from multiline strings
+fixlinebreaks() {
+  printf '%s' "$(cat)" | sed 's/\\n/BREAK/g' | sed 's/BREAKBREAK/\\n\\n/g' | sed 's/BREAK"/"/g' | sed 's/BREAK/\ /g'
+}
+
 doc2md() {
   local MAIN="$1"
   local MODULE="$2"
   local RULE="$3"
 
-  local RULE_DOC="$(jst describe --main "$MAIN" --rule --json "//$MODULE:$RULE")"
-  local DOC="$(echo "$RULE_DOC" | jq -r '.doc')"
-  local FIELD_DOC="$(echo "$RULE_DOC" | jq -r '.field_doc')"
-  local CONFIG_DOC="$(echo "$RULE_DOC" | jq -r '.config_doc | delpaths([["AR"], ["CC"], ["CXX"], ["CFLAGS"], ["CXXFLAGS"],["LDFLAGS"], ["ADD_CFLAGS"], ["ADD_CXXFLAGS"], ["ADD_LDFLAGS"], ["ENV"], ["BUILD_POSITION_INDEPENDENT"]])')"
+  local RULE_DOC="$(jst describe --main "$MAIN" --rule --json "//$MODULE:$RULE" | fixlinebreaks)"
+  local DOC="$(printf '%s' "$RULE_DOC" | jq -r '.doc')"
+  local FIELD_DOC="$(printf '%s' "$RULE_DOC" | jq -r '.field_doc')"
+  local CONFIG_DOC="$(printf '%s' "$RULE_DOC" | jq -r '.config_doc | delpaths([["AR"], ["CC"], ["CXX"], ["CFLAGS"], ["CXXFLAGS"],["LDFLAGS"], ["ADD_CFLAGS"], ["ADD_CXXFLAGS"], ["ADD_LDFLAGS"], ["ENV"], ["BUILD_POSITION_INDEPENDENT"]])')"
 
-  echo "### Rule \`[\"$MODULE\", \"$RULE\"]\`"
+  echo "### Rule \`//$MODULE:$RULE\`"
   echo
-  echo "$DOC" \
-    | jq -r '[.[] as $v | if ($v == "") then "\n\n" else $v end] | join(" ")' \
-    | sed 's/\("[^"]*"\|\[[^]]*\]\|{[^}]*}\)/`\1`/g'
+  printf '%s\n' "$DOC"
   echo
   echo "| Field | Description |"
   echo "| ----- | ----------- |"
-  echo "$FIELD_DOC" \
-    | jq -r 'keys_unsorted[] as $k | "| \"\($k)\" | \(.[$k] | join(" ")) |"' \
-    | sed 's/\("[^"]*"\|\[[^]]*\]\|{[^}]*}\)/`\1`/g'
+  printf '%s' "$FIELD_DOC" \
+    | jq -r 'keys_unsorted[] as $k | "| `\($k)` | \(.[$k]) |"'
   echo
-  if [ "$(echo "$CONFIG_DOC" | jq -r 'length')" -gt 0 ]
+  if [ "$(printf '%s' "$CONFIG_DOC" | jq -r 'length')" -gt 0 ]
   then
       echo "| Config variable | Description |"
       echo "| --------------- | ----------- |"
-      echo "$CONFIG_DOC" \
-        | jq -r 'keys_unsorted[] as $k | "| \"\($k)\" | \(.[$k] | join(" ")) |"' \
-        | sed 's/\("[^"]*"\|\[[^]]*\]\|{[^}]*}\)/`\1`/g'
+      printf '%s' "$CONFIG_DOC" \
+        | jq -r 'keys_unsorted[] as $k | "| `\($k)` | \(.[$k]) |"'
       echo
   fi
 }

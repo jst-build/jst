@@ -39,7 +39,7 @@ For more details regarding this feature, see
 ## Rule Documentation
 
 In this documentation, the standard configuration variables
-`"AR"`, `"CC"`, `"CXX"`, `"CFLAGS"`, `"CXXFLAGS"`,`"LDFLAGS"`,
-`"ADD_CFLAGS"`, `"ADD_CXXFLAGS"`, `"ADD_LDFLAGS"`, `"ENV"`,
-`"BUILD_POSITION_INDEPENDENT"` are omitted.
+`AR`, `CC`, `CXX`, `CFLAGS`, `CXXFLAGS`,`LDFLAGS`,
+`ADD_CFLAGS`, `ADD_CXXFLAGS`, `ADD_LDFLAGS`, `ENV`,
+`BUILD_POSITION_INDEPENDENT` are omitted.
 

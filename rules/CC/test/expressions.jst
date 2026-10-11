@@ -1,0 +1,186 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+local transitions = import '//transitions/expressions.jst';
+
+// Build and run a CC test binary using the provided runner.
+//
+// Note that if variable RUNS_PER_TEST contains a non-false value, a
+// summarizer must be provided.
+local run_test(name, pure_c, stage, srcs, private_hdrs, deps_transition, deps_fieldnames, runner, test_data, private_defines=[], private_cflags=[], private_ldflags=[], defaults_transition={}, runner_data={}, test_args=[], summarizer=null, summary_artifacts=null) =
+  local test_env = jst.env('TEST_ENV', default={});
+  local timeout_scale = jst.env('TIMEOUT_SCALE', default=1);
+  local cflags_files = cc.cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local compile_deps = cc.compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local compile_args = jst.flatten(
+    [
+      ['-D' + def for def in private_defines],
+      private_cflags,
+      cc.compile_args_deps(
+        deps_fieldnames=deps_fieldnames,
+        deps_transition=deps_transition,
+      ),
+    ],
+  );
+  local ldflags_files = cc.ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local link_deps = cc.link_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local link_args =
+    cc.link_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+    )
+    + private_ldflags;
+  local run_libs = cc.run_libs_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local run_libs_args = cc.run_libs_args_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local binary = cc.bin_artifact(
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    private_hdrs=private_hdrs,
+    stage=stage,
+    compile_deps_=compile_deps,
+    compile_args=compile_args,
+    link_deps_=link_deps,
+    link_args=link_args,
+    run_libs=run_libs,
+    run_libs_args=run_libs_args,
+    cflags_files=cflags_files,
+    ldflags_files=ldflags_files,
+    defaults_transition=defaults_transition,
+  );
+  local lint =
+    if $LINT then
+      cc.lint_information(
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs={},
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=['private-hdrs', 'srcs', 'private-deps'],
+        deps_transition=deps_transition,
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+        defaults_transition=defaults_transition,
+      );
+  local staged_test_binary = jst.union(
+    jst.zip_with(
+      function(it, binary) {test: binary},
+      jst.keys(binary),
+      jst.values(binary),
+    ),
+  );
+  local test_args = {
+    'test-args.json': jst.make_blob(jst.json_encode(test_args)),
+  };
+  local test_launcher = {
+    'test-launcher.json':
+      jst.make_blob(jst.json_encode(jst.env('CC_TEST_LAUNCHER', default=[]))),
+  };
+  local test_name = jst.join([stage, name], sep='/');
+  local test_input = jst.union(
+    [
+      jst.to_subdir(test_data, subdir='work'),
+      runner,
+      runner_data,
+      test_args,
+      test_launcher,
+      staged_test_binary,
+      run_libs,
+    ],
+  );
+  local target_properties = transitions.target_properties();
+  local action_label = 'Running test ' + name;
+  if $RUNS_PER_TEST then
+    local attempts_plain = {
+      [attempt]: jst.action(
+        inputs={ATTEMPT: jst.make_blob(attempt)} + test_input,
+        cmd=['./runner'],
+        outs=['result', 'stdout', 'stderr', 'time-start', 'time-stop'],
+        env=test_env,
+        label=action_label,
+        may_fail=['test'],
+        fail_message=jst.join(
+          ['CC test ', test_name, ' failed (Run', attempt, ')'],
+        ),
+        no_cache=['test'],
+        timeout_scaling=timeout_scale,
+        execution_properties=target_properties,
+      )
+      for attempt in jst.range($RUNS_PER_TEST)
+    };
+    local attempts_for_summary = jst.union(
+      jst.zip_with(
+        function(it, v)
+          {
+            [it]: jst.make_tree(
+              {[it_]: jst.get(it_, v) for it_ in summary_artifacts},
+            ),
+          },
+        jst.keys(attempts_plain),
+        jst.values(attempts_plain),
+      ),
+    );
+    local summary_path = jst.join(
+      common.field_list_provider(fieldname='shell-defaults', provider='PATH'),
+      sep=':',
+    );
+    local summary = jst.action(
+      inputs=attempts_for_summary + summarizer,
+      cmd=['./summarizer'],
+      outs=['stdout', 'stderr', 'result', 'time-start', 'time-stop'],
+      env=if summary_path then {PATH: summary_path} else {},
+      label='Summarize test reports',
+      execution_properties=
+        jst.env('TEST_SUMMARY_EXECUTION_PROPERTIES', default={}),
+    );
+    local attempts = jst.union(
+      jst.zip_with(
+        function(it, v) {[it]: jst.make_tree(v)},
+        jst.keys(attempts_plain),
+        jst.values(attempts_plain),
+      ),
+    );
+    local artifacts = {
+      pwd: jst.make_blob('/summary'),
+      work: jst.make_tree(attempts),
+    };
+    local runfiles = {[name]: jst.make_tree(artifacts)};
+    jst.result(artifacts=artifacts, runfiles=runfiles, provides={lint: lint})
+  else
+    local test_results = jst.action(
+      inputs=test_input,
+      cmd=['./runner'],
+      outs=['result', 'stdout', 'stderr', 'time-start', 'time-stop', 'pwd'],
+      env=test_env,
+      label=action_label,
+      may_fail=['test'],
+      fail_message=jst.join(['CC test ', test_name, ' failed']),
+      timeout_scaling=timeout_scale,
+      execution_properties=target_properties,
+    );
+    local runfiles = {[name]: jst.make_tree(test_results)};
+    jst.result(
+      artifacts=test_results,
+      runfiles=runfiles,
+      provides={lint: lint},
+    );
+
+{run_test: run_test}

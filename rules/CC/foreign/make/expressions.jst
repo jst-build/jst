@@ -1,0 +1,232 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+local cc_foreign = import '//CC/foreign/expressions.jst';
+local shell = import '//shell/expressions.jst';
+
+// Configure (optionally), build, and install a Make project; return the
+// action's output directory "install".
+// - `source_dir`        The staged project sources.
+// - `configure`         Run the configure script before building.
+// - `make_targets`      The targets to build.
+// - `make_prefix`       The installation prefix.
+// - `make_options`      Additional options for make.
+// - `make_jobs`         Number of parallel jobs.
+// - `pre_cmds`          Commands to run before the build.
+// - `post_cmds`         Commands to run after the build.
+// - `expand_exec`       The tool expanding variables in command lines.
+// - `resolve_symlinks`  Resolve symlinks in the installed artifacts.
+// - `subdir`            The subdirectory of the project to build.
+// - `localbase_dir`     Staged dependencies (LOCALBASE).
+// - `configure_options` Options for the configure script.
+local make_build(source_dir, configure, make_targets, make_prefix, make_options, make_jobs, pre_cmds, post_cmds, expand_exec, resolve_symlinks, subdir=[], localbase_dir={}, configure_options=[], defaults_transition={}) =
+  local toolchain_dir = 'toolchain';
+  local shell_toolchain = common.field_map_provider(
+    fieldname='shell defaults',
+    provider='TOOLCHAIN',
+  );
+  local sh = shell.sh(
+    defaults_transition=defaults_transition,
+    toolchain_dir=toolchain_dir,
+    fieldname='shell defaults',
+  );
+  local toolchain = jst.union(
+    [
+      cc_foreign.default_toolchain(defaults_transition=defaults_transition),
+      cc.default_toolchain(defaults_transition=defaults_transition),
+      shell_toolchain,
+    ],
+    disjoint=true,
+    msg='Toolchain trees may not overlap',
+  );
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools =
+    cc_foreign.default_non_system_tools(
+      defaults_transition=defaults_transition,
+    )
+    + cc.default_non_system_tools(defaults_transition=defaults_transition);
+  local make_tool = jst.join(
+    (if jst.get('MAKE', non_system_tools) then ['./', toolchain_dir, '/'])
+    + cc_foreign.default_make(defaults_transition=defaults_transition),
+  );
+  local cc_tool = cc.compiler_cc(
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local cxx_tool = cc.compiler_cxx(
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local cflags = jst.join(
+    cc.flags_cc(
+      build_position_independent=$BUILD_POSITION_INDEPENDENT,
+      defaults_transition=defaults_transition,
+    ),
+    sep=' ',
+  );
+  local cxxflags = jst.join(
+    cc.flags_cxx(
+      build_position_independent=$BUILD_POSITION_INDEPENDENT,
+      defaults_transition=defaults_transition,
+    ),
+    sep=' ',
+  );
+  local ldflags = jst.join(
+    jst.flatten(
+      [
+        ['-Wl,-rpath,$ORIGIN', '-Wl,-rpath,$ORIGIN/../lib'],
+        jst.env(
+          'LDFLAGS',
+          default=cc.default_ldflags(defaults_transition=defaults_transition),
+        ),
+        [],
+      ],
+    ),
+    sep=' ',
+  );
+  local ar_tool =
+    jst.env(
+      'AR',
+      default=jst.join(
+        (if jst.get('AR', non_system_tools) then ['./', toolchain_dir, '/'])
+        + cc.default_ar(defaults_transition=defaults_transition),
+      ),
+    );
+  local prefix =
+    if make_prefix then
+      jst.join([''] + make_prefix, sep='/')
+    else
+      jst.env('PREFIX', default='/');
+  local sh_path = jst.join(
+    shell.path(
+      fieldname='shell defaults',
+      defaults_transition=defaults_transition,
+    ),
+    sep=':',
+  );
+  local sh_env = if sh_path then {PATH: sh_path} else {};
+  local path = jst.join(
+    jst.nub_left(
+      cc_foreign.default_path(defaults_transition=defaults_transition)
+      + cc.default_path(defaults_transition=defaults_transition),
+    ),
+    sep=':',
+  );
+  local env = jst.union(
+    [
+      {
+        CC: cc_tool,
+        CXX: cxx_tool,
+        CFLAGS: cflags,
+        CXXFLAGS: cxxflags,
+        LDFLAGS: ldflags,
+        AR: ar_tool,
+        MAKE: make_tool,
+        PREFIX: prefix,
+      },
+      sh_env,
+      cc.default_env(defaults_transition=defaults_transition),
+      cc_foreign.default_env(defaults_transition=defaults_transition),
+      jst.env('ENV', default={}),
+    ],
+  );
+  local subdir = jst.join(subdir, sep='/');
+  local configure_args =
+    if configure then
+      configure_options + ['--prefix=' + prefix];
+  local make_targets = if make_targets then make_targets else ['install'];
+  local script = {
+    'run_make.sh': jst.make_blob(
+      jst.join(
+        jst.flatten(
+          [
+            [
+              'set -eu',
+              'mkdir -p scratch install',
+              'readonly ROOT="$(pwd)"',
+              'export TMPDIR="$(pwd)/scratch"',
+              'export DESTDIR="$(pwd)/install"',
+              'export TOOLCHAIN="$(pwd)/toolchain"',
+              'export LOCALBASE="$(pwd)/localbase"',
+              if jst.get('CC', non_system_tools) then
+                'export CC=$(pwd)/${CC}'
+              else
+                '',
+              if jst.get('CXX', non_system_tools) then
+                'export CXX=$(pwd)/${CXX}'
+              else
+                '',
+              if jst.get('AR', non_system_tools) then
+                'export AR=$(pwd)/${AR}'
+              else
+                '',
+              if jst.get('MAKE', non_system_tools) then
+                'export MAKE=$(pwd)/${MAKE}'
+              else
+                '',
+              jst.join(
+                ['export PATH=', jst.join_cmd([path]), '${PATH:+:}"${PATH}"'],
+              ),
+            ],
+            if pre_cmds then
+              jst.flatten([['(', 'set --', 'cd ./source'], pre_cmds, [')']]),
+            ['readonly SUBDIR="$1"', 'shift'],
+            if configure_args then
+              [
+                '( cd "source/${SUBDIR}"',
+                jst.join(
+                  [
+                    '${ROOT}/expand_exec TMPDIR DESTDIR LOCALBASE CC CXX CFLAGS CXXFLAGS LDFLAGS AR PREFIX -- ./configure ',
+                    jst.join_cmd(configure_args),
+                    ' >"${ROOT}/configure.log" 2>&1 || (cat "${ROOT}/configure.log" && exit 1)',
+                  ],
+                ),
+                ')',
+              ],
+            [
+              jst.join(
+                [
+                  '${ROOT}/expand_exec TMPDIR DESTDIR LOCALBASE CC CXX CFLAGS CXXFLAGS LDFLAGS AR PREFIX',
+                  '--',
+                  '${MAKE} -C "source/${SUBDIR}" DESTDIR=${DESTDIR} "$@"',
+                  jst.join_cmd([target]),
+                  '>>build.log 2>&1 || (cat build.log && exit 1)',
+                ],
+                sep=' ',
+              )
+              for target in make_targets
+            ],
+            if resolve_symlinks then
+              [
+                'mv install install_with_symlinks',
+                'cp -rL install_with_symlinks install >copy.log 2>&1 || (echo \'ERROR: symlink resolve failed with:\' && cat copy.log && exit 1)',
+              ],
+            if post_cmds then
+              jst.flatten([['(', 'set --', 'cd ./install'], post_cmds, [')']]),
+          ],
+        ),
+        sep='\n',
+      ),
+    ),
+  };
+  jst.action(
+    inputs=jst.union(
+      [toolchain, source_dir, expand_exec, localbase_dir, script],
+    ),
+    cmd=jst.flatten(
+      [
+        [sh, 'run_make.sh'],
+        [subdir],
+        make_options,
+        if make_jobs then [jst.join(['-j'] + make_jobs)],
+      ],
+    ),
+    out_dirs=['install'],
+    env=env,
+    label='Building Make ' + jst.join_cmd(make_targets),
+    timeout_scaling=jst.env('TIMEOUT_SCALE', default=10),
+    execution_properties=null,
+  );
+
+{make_build: make_build}
