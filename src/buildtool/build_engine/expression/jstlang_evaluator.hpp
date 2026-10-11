@@ -1,0 +1,122 @@
+// Copyright 2026 The jst-build authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef INCLUDED_SRC_BUILDTOOL_BUILD_ENGINE_EXPRESSION_JSTLANG_EVALUATOR_HPP
+#define INCLUDED_SRC_BUILDTOOL_BUILD_ENGINE_EXPRESSION_JSTLANG_EVALUATOR_HPP
+
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "src/buildtool/build_engine/expression/configuration.hpp"
+#include "src/buildtool/build_engine/expression/expression_ptr.hpp"
+#include "src/buildtool/jstlang/evaluator.hpp"
+
+/// \brief Evaluation of jstlang ASTs for the build engine, based on the
+/// evaluator of jstlang (full evaluation). Values are converted to and from
+/// values of the expression language at the boundary (configuration, result).
+class JstlangEvaluator final {
+  public:
+    using Logger = std::function<void(std::string const&)>;
+
+    /// \brief Lazily evaluated field of a map (e.g., of a target definition):
+    /// a path of entries in the value of an expression.
+    class Field final {
+      public:
+        Field(jstlang::ASTNodePtr expr,
+              jstlang::Bindings::Ptr bindings,
+              std::vector<std::string> path,
+              jstlang::ASTNodePtr static_value) noexcept
+            : expr_{std::move(expr)},
+              bindings_{std::move(bindings)},
+              path_{std::move(path)},
+              static_value_{std::move(static_value)} {}
+
+        /// \brief Expression containing the field.
+        [[nodiscard]] auto Expr() const noexcept -> jstlang::ASTNodePtr const& {
+            return expr_;
+        }
+
+        [[nodiscard]] auto GetBindings() const noexcept
+            -> jstlang::Bindings::Ptr const& {
+            return bindings_;
+        }
+
+        /// \brief Path of entries selecting the field in the expression's
+        /// value (empty: the field is the value of the expression).
+        [[nodiscard]] auto Path() const noexcept
+            -> std::vector<std::string> const& {
+            return path_;
+        }
+
+        /// \brief Value without configuration: a literal, or the
+        /// self-contained residual code of unfolding (evaluated in a
+        /// configuration directly); nullptr if not known.
+        [[nodiscard]] auto StaticValue() const noexcept
+            -> jstlang::ASTNodePtr const& {
+            return static_value_;
+        }
+
+      private:
+        jstlang::ASTNodePtr expr_;
+        jstlang::Bindings::Ptr bindings_;
+        std::vector<std::string> path_;
+        jstlang::ASTNodePtr static_value_;
+    };
+    using FieldPtr = std::shared_ptr<Field const>;
+    using Fields = std::map<std::string, FieldPtr>;
+
+    /// \brief Evaluate expression to a value of the expression language.
+    /// \param expr       The expression to evaluate.
+    /// \param bindings   The bindings to evaluate the expression in.
+    /// \param env        The configuration for reading runtime variables. If
+    ///                   nullptr, reading runtime variables is an error
+    ///                   (static evaluation).
+    /// \returns the value or nullptr on error (reported via logger).
+    [[nodiscard]] static auto Evaluate(jstlang::ASTNodePtr const& expr,
+                                       jstlang::Bindings::Ptr const& bindings,
+                                       Configuration const* env,
+                                       Logger const& logger) noexcept
+        -> ExpressionPtr;
+
+    /// \brief Evaluate value of field, see Evaluate() for parameters.
+    [[nodiscard]] static auto Evaluate(FieldPtr const& field,
+                                       Configuration const* env,
+                                       Logger const& logger) noexcept
+        -> ExpressionPtr;
+
+    /// \brief Statically evaluate expression to a map, without evaluating
+    /// the values of its fields (their values may depend on the
+    /// configuration, the structure of the map must not). The fields of a
+    /// literal map are evaluated separately. Other expressions are unfolded
+    /// to obtain the map's structure; fields whose unfolded values are
+    /// self-contained are evaluated from those.
+    /// \returns the map's fields or nullopt on error (reported via logger).
+    [[nodiscard]] static auto EvaluateFields(
+        jstlang::ASTNodePtr const& expr,
+        jstlang::Bindings::Ptr const& bindings,
+        Logger const& logger) noexcept -> std::optional<Fields>;
+
+    /// \brief Statically evaluate value of field to a map, without evaluating
+    /// the values of its fields.
+    /// \returns the map's fields or nullopt on error (reported via logger).
+    [[nodiscard]] static auto EvaluateFields(FieldPtr const& field,
+                                             Logger const& logger) noexcept
+        -> std::optional<Fields>;
+};
+
+#endif  // INCLUDED_SRC_BUILDTOOL_BUILD_ENGINE_EXPRESSION_JSTLANG_EVALUATOR_HPP

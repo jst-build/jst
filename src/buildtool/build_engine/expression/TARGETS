@@ -69,4 +69,17 @@
       @'//src/utils/cpp:path',
     ],
   },
+
+  jstlang_evaluator: {
+    type: @'rules//CC:library',
+    name: ['jstlang_evaluator'],
+    hdrs: ['jstlang_evaluator.hpp'],
+    srcs: ['jstlang_evaluator.cpp'],
+    deps: [
+      'expression',
+      'expression_ptr_interface',
+      @'//src/buildtool/jstlang:evaluator',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'expression'],
+  },
 }
