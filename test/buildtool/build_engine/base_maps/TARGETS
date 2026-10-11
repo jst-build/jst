@@ -69,6 +69,23 @@
     stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
   },
 
+  jstlang_file_map: {
+    type: @'rules//CC/test:test',
+    name: ['jstlang_file_map'],
+    srcs: ['jstlang_file_map.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/build_engine/base_maps:jstlang_file_map',
+      @'src//src/buildtool/common:config',
+      @'src//src/buildtool/file_system:file_root',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'src//src/buildtool/multithreading:task_system',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
   source_map: {
     type: @'rules//CC/test:test',
     name: ['source_map'],
@@ -208,6 +225,7 @@
       'entity_name',
       'expression_map',
       'json_file_map',
+      'jstlang_file_map',
       'rule_map',
       'source_map',
     ],

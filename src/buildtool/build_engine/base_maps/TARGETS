@@ -39,6 +39,25 @@
     stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
   },
 
+  jstlang_file_map: {
+    type: @'rules//CC:library',
+    name: ['jstlang_file_map'],
+    hdrs: ['jstlang_file_map.hpp'],
+    srcs: ['jstlang_file_map.cpp'],
+    deps: [
+      @'gsl//:gsl',
+      @'//src/buildtool/common:config',
+      @'//src/buildtool/jstlang:file_data',
+      @'//src/buildtool/jstlang/ast:ast',
+      @'//src/buildtool/multithreading:async_map_consumer',
+    ],
+    'private-deps': [
+      @'//src/buildtool/file_system:file_root',
+      @'//src/buildtool/jstlang:parser',
+    ],
+    stage: ['src', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
   targets_file_map: {
     type: @'rules//CC:library',
     name: ['targets_file_map'],
