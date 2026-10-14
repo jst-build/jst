@@ -576,8 +576,11 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
                     }
                 }
 
+                // a variable read (call without arguments) becomes a call of
+                // the variable; the result of a call is called as expression
                 if (auto derived =
-                        std::dynamic_pointer_cast<jstlang::CallNode>(lhs)) {
+                        std::dynamic_pointer_cast<jstlang::CallNode>(lhs);
+                    derived and derived->IsVarRead()) {
                     lhs = std::make_shared<jstlang::CallNode>(
                         CreateLocation(
                             begin, tokens_.Peek(), import_chain_.back()),

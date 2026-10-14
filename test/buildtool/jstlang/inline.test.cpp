@@ -1485,3 +1485,17 @@ TEST_CASE("ast_inline", "[function objects]") {
         CHECK(output == expect);
     }
 }
+
+TEST_CASE("ast_inline", "[calls of call results]") {
+    // the result of a call is called, its arguments are kept
+    CHECK(ParseAndInline("local f(x) = function(y) x + y; f('a')('b')") ==
+          "ab");
+    CHECK(ParseAndInline("local m = {f(x): function(y) [x, y]}; "
+                         "m.f('a')('b')") ==
+          nlohmann::json::parse(R"(["a", "b"])"));
+    CHECK(ParseAndInline("local m = {f: function(x) function(y) [x, y]}; "
+                         "m.f('a')('b')") ==
+          nlohmann::json::parse(R"(["a", "b"])"));
+    CHECK(ParseAndInline("local f(x) = function(y) function(z) x + y + z; "
+                         "(f('a'))('b')('c')") == "abc");
+}
