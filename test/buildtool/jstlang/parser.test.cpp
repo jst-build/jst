@@ -20,6 +20,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "catch2/generators/catch_generators.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 
@@ -2823,6 +2824,37 @@ TEST_CASE("ast_parser", "[imports]") {
           bar
         )";
         CHECK_THROWS(nativeParser(files["foo.jst"], "foo.jst", files));
+    }
+}
+
+TEST_CASE("ast_parser", "[end of file]") {
+    SECTION("valid EOF locations") {
+        // expressions ending at the end of the file parse as if terminated
+        auto files = file_map_t{{"bar.jst", "'bar'"}};
+        auto const* code = GENERATE("[1, 2]",
+                                    "[x for x in [1, 2]]",
+                                    "{a: 1}",
+                                    "{[k]: 1 for k in ['a']}",
+                                    "[1, 2][0]",
+                                    "local f(x) = x; f(1)",
+                                    "local f(x) = x; [f(1), 2]",
+                                    "import 'bar.jst'",
+                                    "local b = import 'bar.jst'; [b]");
+
+        DYNAMIC_SECTION("EOF after '" << code << "'") {
+            auto const terminated = "(" + std::string{code} + ")\n";
+            CHECK(nativeParser(code, "foo.jst", files) ==
+                  nativeParser(terminated, "foo.jst", files));
+        }
+    }
+
+    SECTION("invalid EOF locations") {
+        // premature end of file is an error
+        auto const* fail_code =
+            GENERATE("", "[1, ", "{a: ", "local x = 1;", "1 +");
+        DYNAMIC_SECTION("EOF after '" << fail_code << "'") {
+            CHECK_THROWS(nativeParser(fail_code));
+        }
     }
 }
 

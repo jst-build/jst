@@ -27,7 +27,7 @@ void testBasic(const char* name,
                const jstlang::Tokens& tokens,
                const std::string& error) {
     jstlang::Tokens expected_tokens(tokens);
-    // expected_tokens.emplace_back(jstlang::TokenType::END_OF_FILE, "");
+    expected_tokens.emplace_back(jstlang::TokenType::END_OF_FILE, "");
     jstlang::Lexer lexer(name, std::string_view(input));
 
     try {

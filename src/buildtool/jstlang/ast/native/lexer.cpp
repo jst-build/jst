@@ -647,6 +647,14 @@ auto Lexer::Tokenize() -> Tokens {
         }
     }
 
+    // terminate with an end-of-file token, so that the token following
+    // the last one (e.g., for the end of a location) can always be peeked
+    tokens.emplace_back(filename_,
+                        TokenType::END_OF_FILE,
+                        "",
+                        LineNumber{line_},
+                        ColumnNumber{column_});
+
     return tokens;
 }
 

@@ -295,6 +295,7 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
         case TokenType::PAREN_R:
         case TokenType::SEMICOLON:
         case TokenType::THEN:
+        case TokenType::END_OF_FILE:
             throw Unexpected(tok, "parsing terminal");
 
         // parse unary operator
