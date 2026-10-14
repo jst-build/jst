@@ -329,6 +329,63 @@ TEST_CASE("ast_inline", "[functions]") {
         auto output = ParseAndInline(code);
         CHECK(output == expect);
     }
+
+    SECTION("functions with named arguments") {
+        auto expect = nlohmann::json::parse(R"(
+            { "type": "singleton_map"
+            , "key": "foo"
+            , "value": ["a", "B", "c", "D"]
+            })");
+
+        SECTION("omitted arguments in between") {
+            auto const* code = R"(
+              local foo(a, b='B', c='C', d='D') = [a, b, c, d];
+              {
+                foo: foo(c='c', a='a'),
+              }
+            )";
+            auto output = ParseAndInline(code);
+            CHECK(output == expect);
+        }
+
+        SECTION("positional followed by named arguments") {
+            auto const* code = R"(
+              local foo(a, b='B', c='C', d='D') = [a, b, c, d];
+              {
+                foo: foo('a', c='c'),
+              }
+            )";
+            auto output = ParseAndInline(code);
+            CHECK(output == expect);
+        }
+
+        SECTION("errors") {
+            // unknown argument
+            CHECK_THROWS_AS(ParseAndInline(R"(
+                local foo(a, b='B') = [a, b];
+                {foo: foo('a', c='c')}
+              )"),
+                            jstlang::ASTInlineError);
+            // argument specified twice
+            CHECK_THROWS_AS(ParseAndInline(R"(
+                local foo(a, b='B') = [a, b];
+                {foo: foo('a', a='a')}
+              )"),
+                            jstlang::ASTInlineError);
+            // too many arguments
+            CHECK_THROWS_AS(ParseAndInline(R"(
+                local foo(a, b='B') = [a, b];
+                {foo: foo('a', 'b', 'c')}
+              )"),
+                            jstlang::ASTInlineError);
+            // missing mandatory argument
+            CHECK_THROWS_AS(ParseAndInline(R"(
+                local foo(a, b='B') = [a, b];
+                {foo: foo(b='b')}
+              )"),
+                            jstlang::ASTInlineError);
+        }
+    }
 }
 
 TEST_CASE("ast_inline", "[retain var nodes]") {

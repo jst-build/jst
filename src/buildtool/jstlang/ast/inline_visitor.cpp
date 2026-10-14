@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +20,13 @@
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
@@ -578,43 +581,58 @@ auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
         return callee->GetBody();
     }
 
-    std::size_t num_mandatory{};
-    for (auto const& [_, default_arg] : callee->GetParams()) {
-        num_mandatory += default_arg ? 0UL : 1UL;
-    }
-
     auto const& params = caller->GetParams();
     if (not params) {
         throw ASTInlineError{"Missing parameter list for calling function.",
                              caller->GetLocation()};
     }
-    if (params->size() < num_mandatory) {
-        throw ASTInlineError{
-            "Missing mandatory arguments for calling function.",
-            caller->GetLocation()};
+
+    // Assign caller arguments to callee parameters: unnamed arguments are
+    // assigned by position, named arguments are assigned by name.
+    auto const& callee_params = callee->GetParams();
+    auto args = std::vector<ASTNodePtr const*>(callee_params.size(), nullptr);
+    std::size_t pos{};
+    for (auto const& [cname, cexpr] : *params) {
+        auto idx = pos;
+        if (cname) {
+            // potentially quadratic complexity here; only matters for many
+            // named arguments, but in reality the list is small and therefore
+            // the linear search is faster than building an index map.
+            auto param_it = std::find_if(
+                callee_params.begin(),
+                callee_params.end(),
+                [&cname](auto const& param) { return param.first == *cname; });
+            if (param_it == callee_params.end()) {
+                throw ASTInlineError{
+                    "Unknown function argument '" + *cname + "'.",
+                    caller->GetLocation()};
+            }
+            idx = static_cast<std::size_t>(
+                std::distance(callee_params.begin(), param_it));
+        }
+        else if (pos++ >= callee_params.size()) {
+            throw ASTInlineError{"Too many arguments for calling function.",
+                                 caller->GetLocation()};
+        }
+        if (args[idx] != nullptr) {
+            throw ASTInlineError{"Function argument '" +
+                                     callee_params[idx].first +
+                                     "' specified more than once.",
+                                 caller->GetLocation()};
+        }
+        args[idx] = &cexpr;
     }
 
     // Create new scope for inlining function body and param default values
     auto func_scope = ScopeDefs{scope_};
     auto func_visitor = ASTInlineVisitor{&func_scope, partial_inline_};
     try {
-        for (std::size_t i{}; i < callee->GetParams().size(); ++i) {
-            auto const& [pname, pdefault] = callee->GetParams()[i];
-            auto def_name = pname;
-            auto def_expr = pdefault;
-
-            if (i < params->size()) {
-                // assign value specified by caller
-                auto const& [cname, cexpr] = params->at(i);
-                if (cname) {
-                    def_name = *cname;
-                }
-                def_expr = InlineFunctions(cexpr);
-            }
-            else {
-                // assign default value
-                def_expr = func_visitor.InlineFunctions(pdefault);
-            }
+        for (std::size_t i{}; i < callee_params.size(); ++i) {
+            auto const& [def_name, pdefault] = callee_params[i];
+            auto def_expr =
+                args[i] != nullptr
+                    ? InlineFunctions(*args[i])  // value specified by caller
+                    : func_visitor.InlineFunctions(pdefault);  // default value
 
             if (not def_expr) {
                 throw ASTInlineError{
@@ -622,7 +640,6 @@ auto ASTInlineVisitor::InlineFuncBody(CallNode const* caller,
                     callee->GetLocation()};
             }
 
-            auto loc = def_expr->GetLocation();
             func_scope.AddDef(def_name, std::move(def_expr));
         }
         return func_visitor.InlineFunctions(callee->GetBody());
