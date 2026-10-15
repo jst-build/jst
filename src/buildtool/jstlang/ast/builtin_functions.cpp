@@ -98,8 +98,8 @@ template <typename T = jstlang::ASTNode>
 
 [[nodiscard]] auto MakeBuiltinObj() -> jstlang::ASTNodePtr;
 
-[[nodiscard]] auto NodeToNumber(jstlang::ASTNodePtr const& node)
-    -> std::optional<double>;
+[[nodiscard]] auto RangeSize(jstlang::ASTNodePtr const& node)
+    -> std::optional<std::size_t>;
 
 [[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
     -> std::optional<jstlang::MapNode::fields_t>;
@@ -1360,18 +1360,11 @@ auto BuiltIn::range(Location const& loc,
     }
 
     // attempt partial evaluation
-    if (auto size_number = NodeToNumber(size_node)) {
-        // round to the nearest integer:
-        auto list_range = static_cast<int>(std::round(*size_number));
-        // negative numbers are ignored
-        if (list_range < 0) {
-            list_range = 0;
-        }
-
+    if (auto list_range = RangeSize(size_node)) {
         auto items = ListNode::items_t{};
-        items.reserve(static_cast<std::size_t>(list_range));
+        items.reserve(*list_range);
 
-        for (int i{}; i < list_range; ++i) {
+        for (std::size_t i{}; i < *list_range; ++i) {
             items.emplace_back(
                 std::make_shared<StringNode>(loc, std::to_string(i)));
         }
@@ -2066,31 +2059,35 @@ template <typename T>
     return std::make_shared<jstlang::MapNode>(jstlang::Location{}, entries);
 }
 
-[[nodiscard]] auto NodeToNumber(jstlang::ASTNodePtr const& node)
-    -> std::optional<double> {
+[[nodiscard]] auto RangeSize(jstlang::ASTNodePtr const& node)
+    -> std::optional<std::size_t> {
     using jstlang::ASTNode;
     using jstlang::ValueType;
     if (auto const* num =
             ASTNode::Cast<jstlang::NumberNode const*>(node.get())) {
-        return num->GetValue();
+        // round to the nearest integer, non-positive numbers are ignored
+        return num->GetValue() > 0.0
+                   ? static_cast<std::size_t>(std::lround(num->GetValue()))
+                   : std::size_t{};
     }
     if (auto const* str =
             ASTNode::Cast<jstlang::StringNode const*>(node.get())) {
-        // integer prefix of the string, like the expression language does
+        // integer prefix of the string, negative numbers are ignored
         static constexpr int kDecimal = 10;
-        return static_cast<double>(
-            std::strtoll(str->GetValue().c_str(), nullptr, kDecimal));
+        auto const value =
+            std::strtoll(str->GetValue().c_str(), nullptr, kDecimal);
+        return value > 0 ? static_cast<std::size_t>(value) : std::size_t{};
     }
     if (ASTNode::Cast<jstlang::NullNode const*>(node.get()) != nullptr or
         ASTNode::Cast<jstlang::BoolNode const*>(node.get()) != nullptr or
         ASTNode::Cast<jstlang::ListNode const*>(node.get()) != nullptr or
         ASTNode::Cast<jstlang::MapNode const*>(node.get()) != nullptr) {
-        return 0.0;  // JSON literals
+        return std::size_t{};  // other literals
     }
     if (node->EvalType() != ValueType::Any and
         node->EvalType() != ValueType::Number and
         node->EvalType() != ValueType::String) {
-        return 0.0;  // runtime expr evaluating to unsupported type
+        return std::size_t{};  // runtime expr evaluating to unsupported type
     }
     return std::nullopt;
 }
