@@ -16,6 +16,7 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_AST_HPP
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_AST_HPP
 
+#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -119,6 +120,13 @@ class ASTNode {
         return truth_value_;
     }
 
+    /// \brief Whether node is a literal value (null, bool, number, string,
+    /// reference, or a list or map of those), i.e., contains no residual code
+    /// and no functions. Computed on construction.
+    [[nodiscard]] auto IsLiteral() const noexcept -> bool {
+        return is_literal_;
+    }
+
     [[nodiscard]] virtual auto ToVariant() const noexcept -> ASTNodeVariant = 0;
 
     template <std::convertible_to<ASTNodeVariant> TNode,
@@ -135,10 +143,16 @@ class ASTNode {
         return std::visit(std::move(visitor), node->ToVariant());
     }
 
+  protected:
+    /// \brief Set by literals on construction (by lists and maps after
+    /// construction of their children).
+    void SetLiteral(bool is_literal) noexcept { is_literal_ = is_literal; }
+
   private:
     Location loc_;
     ValueType value_type_;
     std::optional<bool> truth_value_;
+    bool is_literal_{false};
 };
 
 class LetNode : public ASTNode {
@@ -315,7 +329,12 @@ class ListNode : public ASTNode {
 
     explicit ListNode(Location loc, items_t items) noexcept
         : ASTNode{std::move(loc), ValueType::List, not items.empty()},
-          items_{std::move(items)} {}
+          items_{std::move(items)} {
+        SetLiteral(
+            std::all_of(items_.begin(), items_.end(), [](auto const& item) {
+                return item->IsLiteral();
+            }));
+    }
     ListNode(ListNode&&) = delete;
     ListNode(ListNode const&) = default;
     auto operator=(ListNode&&) -> ListNode& = delete;
@@ -354,6 +373,12 @@ class MapNode : public ASTNode {
                       : std::move(fields)} {
         // make sure in debug mode that no duplicates slipped in
         EnsuresAudit(RemoveDuplicateFields(fields_).size() == fields_.size());
+        SetLiteral(
+            std::all_of(fields_.begin(), fields_.end(), [](auto const& field) {
+                return Cast<class StringNode const*>(field.first.get()) !=
+                           nullptr and
+                       field.second->IsLiteral();
+            }));
     }
     MapNode(MapNode&&) = delete;
     MapNode(MapNode const&) = default;
@@ -379,7 +404,9 @@ class MapNode : public ASTNode {
 class BoolNode : public ASTNode {
   public:
     explicit BoolNode(Location loc, bool value) noexcept
-        : ASTNode{std::move(loc), ValueType::Bool, value}, value_{value} {}
+        : ASTNode{std::move(loc), ValueType::Bool, value}, value_{value} {
+        SetLiteral(true);
+    }
     BoolNode(BoolNode&&) = delete;
     BoolNode(BoolNode const&) = default;
     auto operator=(BoolNode&&) -> BoolNode& = delete;
@@ -400,7 +427,9 @@ class StringNode : public ASTNode {
   public:
     explicit StringNode(Location loc, std::string value) noexcept
         : ASTNode{std::move(loc), ValueType::String, not value.empty()},
-          value_{std::move(value)} {}
+          value_{std::move(value)} {
+        SetLiteral(true);
+    }
     StringNode(StringNode&&) = delete;
     StringNode(StringNode const&) = default;
     auto operator=(StringNode&&) -> StringNode& = delete;
@@ -423,7 +452,9 @@ class NumberNode : public ASTNode {
   public:
     explicit NumberNode(Location loc, double value) noexcept
         : ASTNode{std::move(loc), ValueType::Number, value != 0.0},
-          value_{value} {}
+          value_{value} {
+        SetLiteral(true);
+    }
 
     NumberNode(NumberNode&&) = delete;
     NumberNode(NumberNode const&) = default;
@@ -443,7 +474,9 @@ class NumberNode : public ASTNode {
 class NullNode : public ASTNode {
   public:
     explicit NullNode(Location loc) noexcept
-        : ASTNode{std::move(loc), ValueType::Null, /*truth_value=*/false} {}
+        : ASTNode{std::move(loc), ValueType::Null, /*truth_value=*/false} {
+        SetLiteral(true);
+    }
     NullNode(NullNode&&) = delete;
     NullNode(NullNode const&) = default;
     auto operator=(NullNode&&) -> NullNode& = delete;
@@ -843,7 +876,9 @@ class BinaryOperationNode : public ASTNode {
 class RefNode : public ASTNode {
   public:
     explicit RefNode(Location loc, RefData data) noexcept
-        : ASTNode{std::move(loc), ValueType::Ref}, data_{std::move(data)} {}
+        : ASTNode{std::move(loc), ValueType::Ref}, data_{std::move(data)} {
+        SetLiteral(true);
+    }
     RefNode(RefNode&&) = delete;
     RefNode(RefNode const&) = default;
     auto operator=(RefNode&&) -> RefNode& = delete;

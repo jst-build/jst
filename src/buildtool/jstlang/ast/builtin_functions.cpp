@@ -2078,10 +2078,7 @@ template <typename T>
             std::strtoll(str->GetValue().c_str(), nullptr, kDecimal);
         return value > 0 ? static_cast<std::size_t>(value) : std::size_t{};
     }
-    if (ASTNode::Cast<jstlang::NullNode const*>(node.get()) != nullptr or
-        ASTNode::Cast<jstlang::BoolNode const*>(node.get()) != nullptr or
-        ASTNode::Cast<jstlang::ListNode const*>(node.get()) != nullptr or
-        ASTNode::Cast<jstlang::MapNode const*>(node.get()) != nullptr) {
+    if (node->IsLiteral()) {
         return std::size_t{};  // other literals
     }
     if (node->EvalType() != ValueType::Any and
