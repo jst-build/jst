@@ -19,6 +19,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -26,6 +27,13 @@
 #include "src/buildtool/jstlang/ast/ast.hpp"
 
 namespace jstlang {
+
+class ASTInlineError : public std::runtime_error {
+  public:
+    explicit ASTInlineError(std::string const& error);
+    explicit ASTInlineError(std::string const& error,
+                            jstlang::Location const& loc);
+};
 
 class ScopeDefs {
   public:
@@ -122,7 +130,6 @@ class ASTInlineVisitor final {
     [[nodiscard]] auto operator()(FuncNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(CallNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(ForeignNode const* node) const -> ASTNodePtr;
-    [[nodiscard]] auto operator()(VerbatimNode const* node) const -> ASTNodePtr;
     [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
         -> ASTNodePtr;
     [[nodiscard]] auto operator()(ListNode const* node) const -> ASTNodePtr;

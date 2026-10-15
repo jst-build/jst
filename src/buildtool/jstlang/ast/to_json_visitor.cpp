@@ -63,14 +63,6 @@ auto ASTToJsonVisitor::ToJson(ASTNode const& node,
     return ASTToJsonVisitor{next_vtype, json_only_}.ToJson(node, next_vtype);
 }
 
-auto ASTToJsonVisitor::operator()(VerbatimNode const* node) const
-    -> nlohmann::json {
-    if (json_only_) {
-        throw std::runtime_error{"not allowed"};
-    }
-    return ToJson(*node->GetExpr(), node->GetType());
-}
-
 auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
     -> nlohmann::json {
     if (json_only_) {

@@ -22,7 +22,7 @@
 #include "fmt/core.h"
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
-#include "src/buildtool/jstlang/preprocessor.hpp"
+#include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 namespace Frontend {
 
@@ -104,7 +104,7 @@ class Processor {
             std::make_shared<std::string>(file_data.content);
 
         if (auto ast = lang_proc_->Process(file_data, file_type)) {
-            return lang_proc_->Serialize(ast);
+            return lang_proc_->Serialize(ast, file_type);
         }
 
         return std::nullopt;

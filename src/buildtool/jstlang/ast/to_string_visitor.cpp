@@ -37,18 +37,6 @@ auto const kEmptyList =
     return str;
 }
 
-[[nodiscard]] auto ToString(jstlang::VerbatimType type) -> std::string {
-    switch (type) {
-        case jstlang::VerbatimType::None:
-            return "None";
-        case jstlang::VerbatimType::Flat:
-            return "Flat";
-        case jstlang::VerbatimType::Full:
-            return "Full";
-    }
-    return {};
-}
-
 }  // namespace
 
 namespace jstlang {
@@ -157,15 +145,6 @@ auto ASTToStringVisitor::operator()(ForeignNode const* const node) const
     std::ostringstream oss{};
     oss << space << "FOREIGN\n";
     oss << ASTToStringVisitor{indent_ + 1}.Dump(*node->GetExpr());
-    return oss.str();
-}
-
-auto ASTToStringVisitor::operator()(VerbatimNode const* node) const
-    -> std::string {
-    auto const space = IndentString(indent_);
-    std::ostringstream oss{};
-    oss << space << "VERBATIM(" << ToString(node->GetType()) << ")\n";
-    oss << ASTToStringVisitor(indent_ + 1).Dump(*node->GetExpr());
     return oss.str();
 }
 

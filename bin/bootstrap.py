@@ -308,7 +308,7 @@ def bootstrap(repos_config : str, is_system_build: bool) -> None:
             if f.endswith(".cpp"):
                 # the jstlangc binary has its own main(), which must not end up
                 # in the bootstrap backend
-                if os.path.join(base, f) == 'src/buildtool/jstlang/main.cpp':
+                if os.path.join(base, f) == 'src/buildtool/jstlang/preproc/main.cpp':
                     continue
                 cpp_files.append(os.path.join(base, f))
     object_files: List[str] = []

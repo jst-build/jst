@@ -309,51 +309,6 @@ class ForeignNode : public ASTNode {
     ASTNodePtr expr_;
 };
 
-// Verbatim means that the AST is not allowed to contain calls to builtin
-// functions, it must expand to a piece of literal JSON. This is important
-// for certain parts of a TARGETS/RULE/EXPRESSIONS file that are not
-// evaluated. Examples are:
-//  - for all targets, fields "type" and "arguments_config"
-//  - for export targets, fields "fixed_config", "doc", and "config_doc"
-enum class VerbatimType : std::uint8_t {
-    None,  ///< Do not do any verbatim treatment.
-    Flat,  ///< Treat the wrapped AST node as verbatim, but not its children.
-    Full   ///< Treat the wrapped AST node and all its children as verbatim.
-};
-
-class VerbatimNode : public ASTNode {
-  public:
-    explicit VerbatimNode(
-        Location loc,
-        ASTNodePtr expr,
-        VerbatimType type,
-        std::optional<ValueType> eval_type = std::nullopt) noexcept
-        : ASTNode{std::move(loc), eval_type.value_or(expr->EvalType())},
-          expr_{std::move(expr)},
-          type_{type} {}
-    VerbatimNode(VerbatimNode&&) = delete;
-    VerbatimNode(VerbatimNode const&) = default;
-    auto operator=(VerbatimNode&&) -> VerbatimNode& = delete;
-    auto operator=(VerbatimNode const&) -> VerbatimNode& = delete;
-    ~VerbatimNode() override = default;
-
-    [[nodiscard]] auto GetExpr() const noexcept -> ASTNodePtr const& {
-        return expr_;
-    }
-
-    [[nodiscard]] auto GetType() const noexcept -> VerbatimType {
-        return type_;
-    }
-
-    [[nodiscard]] auto ToVariant() const noexcept -> ASTNodeVariant final {
-        return this;
-    }
-
-  private:
-    ASTNodePtr expr_;
-    VerbatimType type_;
-};
-
 class ListNode : public ASTNode {
   public:
     using items_t = std::vector<ASTNodePtr>;

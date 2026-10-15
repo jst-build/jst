@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/preprocessor.hpp"
+#include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -24,11 +24,9 @@
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/analyze.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
-#include "src/buildtool/jstlang/ast/augment.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/inline.hpp"
+#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
-#include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #ifndef NDEBUG
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #endif
@@ -76,25 +74,16 @@ auto jstlang::Preprocessor::Process(jstlang::FileData const& file_data,
                     ASTToStringVisitor{}.Dump(*jst_ast));
 #endif
 
-        auto inl_ast = jstlang::InlineAST(jst_ast);
-
-        switch (type) {
-            case jstlang::FileType::Plain:
-                // nothing to do, no augmentation needed
-                break;
-            case jstlang::FileType::Targets:
-                inl_ast = jstlang::AugmentAST(inl_ast);
-                break;
-            case jstlang::FileType::Rules:
-            case jstlang::FileType::Expressions:
-                logger_(LogType::Error, "not yet implemented file type");
-                return nullptr;
-        }
+        // inline all functions and variables
+        auto scope = ScopeDefs{};
+        auto inl_ast =
+            ASTInlineVisitor{&scope, /*partial_inline=*/false}.InlineFunctions(
+                jst_ast);
 
 #ifndef NDEBUG
-        logger_(LogType::Debug,
-                "---- Inlined and augmented Jstlang AST\n" +
-                    ASTToStringVisitor{}.Dump(*inl_ast));
+        logger_(
+            LogType::Debug,
+            "---- Inlined Jstlang AST\n" + ASTToStringVisitor{}.Dump(*inl_ast));
 #endif
 
         return inl_ast;
@@ -103,8 +92,6 @@ auto jstlang::Preprocessor::Process(jstlang::FileData const& file_data,
         err_msg << e.what() << "\n";
     } catch (jstlang::ASTInlineError const& e) {
         err_msg << "AST inlining failed with:\n" << e.what() << "\n";
-    } catch (jstlang::ASTAugmentError const& e) {
-        err_msg << "AST augmentation failed with:\n" << e.what() << "\n";
     } catch (std::exception const& e) {
         err_msg << "Internal error:\n" << e.what() << "\n";
     }
@@ -114,12 +101,16 @@ auto jstlang::Preprocessor::Process(jstlang::FileData const& file_data,
     return nullptr;
 }
 
-auto jstlang::Preprocessor::Serialize(jstlang::ASTNodePtr const& ast) noexcept
+auto jstlang::Preprocessor::Serialize(jstlang::ASTNodePtr const& ast,
+                                      jstlang::FileType type) noexcept
     -> std::optional<nlohmann::json> {
     try {
         if (ast) {
-            return jstlang::ASTToJsonVisitor{}.ToJson(*ast);
+            return jstlang::ExprSerializer{type}.Serialize(*ast);
         }
+    } catch (jstlang::ExprSerializerError const& e) {
+        logger_(LogType::Error,
+                std::string{"AST structure error:\n"} + e.what());
     } catch (const std::exception& e) {
         logger_(LogType::Error,
                 std::string{"AST serialization error:\n"} + e.what());

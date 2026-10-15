@@ -45,28 +45,15 @@
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 
-  inline: {
+  inline_visitor: {
     type: @'rules//CC:library',
-    name: ['inline'],
-    hdrs: ['inline.hpp'],
-    srcs: [
-      'inline.cpp',
-      'inline_visitor.cpp',
-    ],
-    'private-hdrs': ['inline_visitor.hpp'],
+    name: ['inline_visitor'],
+    hdrs: ['inline_visitor.hpp'],
+    srcs: ['inline_visitor.cpp'],
     deps: [
       'ast',
       'builtins',
     ],
-    stage: ['src', 'buildtool', 'jstlang', 'ast'],
-  },
-
-  augment: {
-    type: @'rules//CC:library',
-    name: ['augment'],
-    hdrs: ['augment.hpp'],
-    srcs: ['augment.cpp'],
-    deps: ['ast'],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 

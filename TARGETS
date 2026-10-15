@@ -167,7 +167,7 @@ local default_options =
   jstlangc_configured: {
     type: 'configure',
     arguments_config: ['OS', 'ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
-    target: @'//src/buildtool/jstlang:jstlangc',
+    target: @'//src/buildtool/jstlang/preproc:jstlangc',
     config: default_options,
   },
 

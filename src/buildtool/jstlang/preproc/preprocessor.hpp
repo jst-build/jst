@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_PREPROCESSOR_HPP
-#define INCLUDED_SRC_BUILDTOOL_JSTLANG_PREPROCESSOR_HPP
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_PREPROC_PREPROCESSOR_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_PREPROC_PREPROCESSOR_HPP
 
 #include <cstdint>
 #include <filesystem>
@@ -26,10 +26,9 @@
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
+#include "src/buildtool/jstlang/preproc/expr_serializer.hpp"
 
 namespace jstlang {
-
-enum class FileType : std::uint8_t { Plain, Targets, Rules, Expressions };
 
 class Preprocessor {
   public:
@@ -46,7 +45,10 @@ class Preprocessor {
     [[nodiscard]] auto Process(FileData const& file_data,
                                FileType type) noexcept -> jstlang::ASTNodePtr;
 
-    [[nodiscard]] auto Serialize(jstlang::ASTNodePtr const& ast) noexcept
+    /// \brief Serialize the (processed) AST of a file of the given type to
+    /// code of the expression language (see ExprSerializer).
+    [[nodiscard]] auto Serialize(jstlang::ASTNodePtr const& ast,
+                                 FileType type) noexcept
         -> std::optional<nlohmann::json>;
 
   private:

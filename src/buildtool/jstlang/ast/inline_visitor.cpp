@@ -23,6 +23,8 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
@@ -30,7 +32,6 @@
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
-#include "src/buildtool/jstlang/ast/inline.hpp"
 
 namespace {
 
@@ -58,9 +59,59 @@ template <std::same_as<jstlang::ValueType>... TTypes>
     return CheckUnaryType(lhs, types...) and CheckUnaryType(rhs, types...);
 }
 
+[[nodiscard]] auto GetLocationString(jstlang::Location const& loc)
+    -> std::string {
+    std::ostringstream oss{};
+    oss << loc.file;
+    oss << ":" << loc.line;
+    oss << ":" << loc.column;
+    if (loc.column_end > 0) {
+        oss << "-" << loc.column_end;
+    }
+    return oss.str();
+}
+
+[[nodiscard]] auto GetLocationSnippet(jstlang::Location const& loc)
+    -> std::string {
+    std::ostringstream oss{};
+    if (loc.content) {
+        auto line_pos = 0UL;
+        auto line_end = loc.content->find('\n', line_pos);
+        for (std::size_t i{1}; i < loc.line and line_end != std::string::npos;
+             ++i) {
+            line_pos = line_end + 1;
+            line_end = loc.content->find('\n', line_pos);
+        }
+        if (line_end != std::string::npos) {
+            static auto const kPrefix = " |" + std::string(2, ' ');
+            auto line_str = std::to_string(loc.line);
+            auto line_data = loc.content->substr(line_pos, line_end - line_pos);
+            auto const column_end =
+                loc.column_end > 0 ? loc.column_end : line_data.length();
+            oss << "\n\n";
+            oss << line_str + kPrefix;
+            oss << line_data;
+            oss << "\n";
+            oss << std::string(line_str.length(), ' ') + kPrefix;
+            oss << std::string(loc.column - 1, ' ');
+            oss << std::string(column_end - loc.column + 1, '^');
+            oss << "\n";
+        }
+    }
+    return oss.str();
+}
+
 }  // namespace
 
 namespace jstlang {
+
+ASTInlineError::ASTInlineError(std::string const& error)
+    : runtime_error{error} {}
+
+ASTInlineError::ASTInlineError(std::string const& error,
+                               jstlang::Location const& loc)
+    : runtime_error{GetLocationString(loc) + ": " + error +
+                    GetLocationSnippet(loc)} {}
 
 auto ASTInlineVisitor::CallBuiltinWithParams(
     std::string const& name,
@@ -218,18 +269,6 @@ auto ASTInlineVisitor::operator()(ForeignNode const* node) const -> ASTNodePtr {
         ASTInlineVisitor{&clean_scope, /*partial_inline=*/false};
     auto ast = ProvideBuiltinsToAST(node->GetExpr());
     return foreign_inliner.InlineFunctions(ast);
-}
-
-auto ASTInlineVisitor::operator()(VerbatimNode const* node) const
-    -> ASTNodePtr {
-    // Verbatim nodes are retained for later serialization.
-    // In case you wonder: inlining verbatim nodes may happen, if they are
-    // created during inlining CallNodes to built-in functions, which may need
-    // to be inlined a second time.
-    return std::make_shared<VerbatimNode>(node->GetLocation(),
-                                          InlineFunctions(node->GetExpr()),
-                                          node->GetType(),
-                                          node->EvalType());
 }
 
 auto ASTInlineVisitor::operator()(BuiltinCallNode const* node) const

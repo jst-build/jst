@@ -1,0 +1,46 @@
+{
+  jstlangc: {
+    type: @'rules//CC:binary',
+    name: ['jstlangc'],
+    srcs: ['main.cpp'],
+    'private-deps': [
+      'preprocessor',
+      @'//src/buildtool/jstlang:file_data',
+    ],
+  },
+
+  preprocessor: {
+    type: @'rules//CC:library',
+    name: ['preprocessor'],
+    hdrs: ['preprocessor.hpp'],
+    srcs: ['preprocessor.cpp'],
+    deps: [
+      'expr_serializer',
+      @'json//:json',
+      @'//src/buildtool/jstlang:file_data',
+      @'//src/buildtool/jstlang/ast:ast',
+    ],
+    'private-deps': [
+      @'//src/buildtool/jstlang/ast:analyze',
+      @'//src/buildtool/jstlang/ast:builtins',
+      @'//src/buildtool/jstlang/ast:inline_visitor',
+      @'//src/buildtool/jstlang/ast:parser',
+      @'//src/buildtool/jstlang/ast:to_string_visitor',
+      @'//src/buildtool/jstlang/ast/native:parser',
+    ],
+    stage: ['src', 'buildtool', 'jstlang', 'preproc'],
+  },
+
+  expr_serializer: {
+    type: @'rules//CC:library',
+    name: ['expr_serializer'],
+    hdrs: ['expr_serializer.hpp'],
+    srcs: ['expr_serializer.cpp'],
+    deps: [
+      @'json//:json',
+      @'//src/buildtool/jstlang/ast:ast',
+    ],
+    'private-deps': [@'//src/buildtool/jstlang/ast:to_json_visitor'],
+    stage: ['src', 'buildtool', 'jstlang', 'preproc'],
+  },
+}

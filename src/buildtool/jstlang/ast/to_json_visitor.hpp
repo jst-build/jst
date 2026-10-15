@@ -15,11 +15,25 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_JSON_VISITOR_HPP
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_JSON_VISITOR_HPP
 
+#include <cstdint>
+
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 
 namespace jstlang {
+
+/// \brief Mode of serialization. Verbatim means that the AST is serialized as
+/// literal JSON instead of as an expression, and is not allowed to contain
+/// calls to built-in functions. This is important for certain parts of a
+/// TARGETS/RULE/EXPRESSIONS file that are not evaluated. Examples are:
+///  - for all targets, fields "type" and "arguments_config"
+///  - for export targets, fields "fixed_config", "doc", and "config_doc"
+enum class VerbatimType : std::uint8_t {
+    None,  ///< Do not do any verbatim treatment.
+    Flat,  ///< Treat the AST node as verbatim, but not its children.
+    Full   ///< Treat the AST node and all its children as verbatim.
+};
 
 class ASTToJsonVisitor final {
   public:
@@ -37,8 +51,6 @@ class ASTToJsonVisitor final {
         throw std::runtime_error{"Node type cannot be serialized."};
     }
 
-    [[nodiscard]] auto operator()(VerbatimNode const* node) const
-        -> nlohmann::json;
     [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
         -> nlohmann::json;
     [[nodiscard]] auto operator()(ListNode const* node) const -> nlohmann::json;

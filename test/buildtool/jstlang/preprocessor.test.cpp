@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/preprocessor.hpp"
+#include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -72,7 +72,7 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     auto preproc = jstlang::Preprocessor{
         std::move(moc_reader),
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
-    return preproc.Serialize(ast);
+    return preproc.Serialize(ast, jstlang::FileType::Plain);
 }
 
 }  // namespace

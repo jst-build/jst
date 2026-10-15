@@ -25,7 +25,7 @@
 #include <utility>
 
 #include "src/buildtool/jstlang/file_data.hpp"
-#include "src/buildtool/jstlang/preprocessor.hpp"
+#include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 namespace {
 
@@ -167,7 +167,7 @@ auto main(int argc, const char** argv) -> int {
         return EXIT_FAILURE;
     }
 
-    if (auto json = preproc.Serialize(output)) {
+    if (auto json = preproc.Serialize(output, file_type)) {
 #ifndef NDEBUG
         std::cerr << "---- JSON AST\n";
 #endif

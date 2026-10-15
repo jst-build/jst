@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/ast/inline.hpp"
-
 #include <optional>
 #include <string>
 #include <utility>
@@ -25,6 +23,7 @@
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
+#include "src/buildtool/jstlang/ast/inline_visitor.hpp"
 #include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
@@ -43,7 +42,9 @@ namespace {
     auto parser = jstlang::Parser::Create(std::move(moc_reader));
     auto just_ast = parser->ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
-    return jstlang::InlineAST(just_ast);
+    auto scope = jstlang::ScopeDefs{};
+    return jstlang::ASTInlineVisitor{&scope, /*partial_inline=*/false}
+        .InlineFunctions(just_ast);
 }
 
 [[nodiscard]] auto ParseAndInline(std::string const& code) -> nlohmann::json {
