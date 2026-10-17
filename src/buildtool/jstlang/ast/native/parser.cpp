@@ -267,7 +267,7 @@ void NativeParser::CheckImportCycle(FileLocation const& location) const {
 }
 
 auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
-    auto lexer = Lexer{source.location.ToString(), source.content};
+    auto lexer = Lexer{&source};
     tokens_ = TokenStream{lexer.Tokenize()};
     import_chain_.emplace_back(&source);
     auto expr = Parse(kMaxPriority);

@@ -8,6 +8,7 @@
     ],
     srcs: ['lexer.cpp'],
     deps: [
+      @'gsl//:gsl',
       @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang/ast:ast',
     ],

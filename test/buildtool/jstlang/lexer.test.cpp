@@ -17,9 +17,10 @@
 #include <exception>
 #include <iostream>
 #include <string>
-#include <string_view>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "src/buildtool/jstlang/file_data.hpp"
 namespace {
 
 void testBasic(const char* name,
@@ -28,7 +29,10 @@ void testBasic(const char* name,
                const std::string& error) {
     jstlang::Tokens expected_tokens(tokens);
     expected_tokens.emplace_back(jstlang::TokenType::END_OF_FILE, "");
-    jstlang::Lexer lexer(name, std::string_view(input));
+    auto const file = jstlang::SourceFile{
+        .location = jstlang::FileLocation{.repo = "", .path = name},
+        .content = input};
+    jstlang::Lexer lexer(&file);
 
     try {
         jstlang::Tokens lexed_tokens = lexer.Tokenize();
@@ -39,7 +43,10 @@ void testBasic(const char* name,
 }
 
 void testComplex(const char* name, const char* input) {
-    jstlang::Lexer lexer(name, std::string_view(input));
+    auto const file = jstlang::SourceFile{
+        .location = jstlang::FileLocation{.repo = "", .path = name},
+        .content = input};
+    jstlang::Lexer lexer(&file);
     try {
         jstlang::Tokens const lexed_tokens = lexer.Tokenize();
         std::cout << jstlang::Lexer::UnTokenize(lexed_tokens) << '\n';

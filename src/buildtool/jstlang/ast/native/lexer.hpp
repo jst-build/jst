@@ -24,6 +24,9 @@
 #include <utility>
 #include <vector>
 
+#include "gsl/gsl"
+#include "src/buildtool/jstlang/file_data.hpp"
+
 namespace jstlang {
 
 enum class TokenType : std::uint8_t {
@@ -119,10 +122,9 @@ using Tokens = std::vector<Token>;
 
 class Lexer {
   public:
-    /// \brief Create lexer for source, the file name is only used for error
-    /// messages of the lexer.
-    explicit Lexer(std::string filename = "", std::string_view source = "")
-        : source_{source}, filename_{std::move(filename)} {}
+    /// \brief Create lexer for source file, which must outlive the lexer.
+    explicit Lexer(gsl::not_null<SourceFile const*> const& file)
+        : file_{file}, source_{file->content} {}
 
     Lexer(Lexer const&) = delete;
     Lexer(Lexer&&) = default;
@@ -135,8 +137,8 @@ class Lexer {
     [[nodiscard]] static auto UnTokenize(Tokens const& tokens) -> std::string;
 
   private:
+    gsl::not_null<SourceFile const*> file_;
     std::string_view source_;
-    std::string filename_;
     std::size_t current_{};
     std::size_t line_{1};
     std::size_t column_{1};

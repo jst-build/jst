@@ -219,8 +219,9 @@ auto Lexer::MatchSimpleToken(char token_string) -> std::optional<TokenType> {
 }
 
 void Lexer::ReportError(const std::string& message) const {
-    throw LexerException(filename_ + ":" + std::to_string(line_) + ":" +
-                         std::to_string(column_) + " Error: " + message);
+    throw LexerException(file_->location.ToString() + ":" +
+                         std::to_string(line_) + ":" + std::to_string(column_) +
+                         " Error: " + message);
 }
 
 // Handle numbers that not included inside "" or ''
