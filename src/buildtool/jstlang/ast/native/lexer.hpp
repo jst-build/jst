@@ -96,22 +96,10 @@ struct ColumnNumber {
 };
 
 struct Token {
-    std::string file;
     TokenType type;
     std::string value;
     LineNumber line;
     ColumnNumber column;
-
-    Token(std::string filename,
-          TokenType token_type,
-          std::string token_value,
-          LineNumber line = {},
-          ColumnNumber column = {})
-        : file(std::move(filename)),
-          type(token_type),
-          value(std::move(token_value)),
-          line(line),
-          column(column) {}
 
     Token(TokenType token_type,
           std::string token_value,
@@ -131,6 +119,8 @@ using Tokens = std::vector<Token>;
 
 class Lexer {
   public:
+    /// \brief Create lexer for source, the file name is only used for error
+    /// messages of the lexer.
     explicit Lexer(std::string filename = "", std::string_view source = "")
         : source_{source}, filename_{std::move(filename)} {}
 

@@ -245,8 +245,7 @@ auto Lexer::ScanNumber() -> Token {
     }
 
     auto number_str = std::string{source_.substr(start, current_ - start)};
-    return {filename_,
-            is_float ? TokenType::FLOAT : TokenType::INTEGER,
+    return {is_float ? TokenType::FLOAT : TokenType::INTEGER,
             std::move(number_str),
             LineNumber{line_},
             ColumnNumber{column_}};
@@ -303,8 +302,7 @@ auto Lexer::ScanLiterals() -> std::optional<Token> {
                     TokenType const token_type = (quote_char == '"')
                                                      ? TokenType::STRING_DOUBLE
                                                      : TokenType::STRING_SINGLE;
-                    return Token{filename_,
-                                 token_type,
+                    return Token{token_type,
                                  value,
                                  LineNumber{line_},
                                  ColumnNumber{column_}};
@@ -362,8 +360,7 @@ auto Lexer::ScanSpecialString() -> Token {
         ReportError("Unterminated special string");
     }
 
-    return {filename_,
-            is_var_str ? TokenType::VAR_STRING : TokenType::REF_STRING,
+    return {is_var_str ? TokenType::VAR_STRING : TokenType::REF_STRING,
             content,
             LineNumber{line_},
             ColumnNumber{column_}};
@@ -391,12 +388,10 @@ auto Lexer::ScanKeywords() -> Token {
 
     if (in_keyword && !keyword.empty()) {
         TokenType const type = kKeywords.at(keyword);
-        return {
-            filename_, type, keyword, LineNumber{line_}, ColumnNumber{column_}};
+        return {type, keyword, LineNumber{line_}, ColumnNumber{column_}};
     }
 
-    return {filename_,
-            TokenType::IDENTIFIER,
+    return {TokenType::IDENTIFIER,
             keyword,
             LineNumber{line_},
             ColumnNumber{column_}};
@@ -497,8 +492,7 @@ auto Lexer::HandleTextBlock() -> Token {
         ReportError("Unterminated text block");
     }
 
-    return {filename_,
-            TokenType::TEXT_BLOCK,
+    return {TokenType::TEXT_BLOCK,
             content,
             LineNumber{line_},
             ColumnNumber{column_}};
@@ -560,15 +554,13 @@ auto Lexer::HandleOperators() -> Token {
                   kValidBinaryOperators.end(),
                   op_str) != kValidBinaryOperators.end()) {
         // Valid dual operators
-        return {filename_,
-                TokenType::OPERATOR,
+        return {TokenType::OPERATOR,
                 op_str,
                 LineNumber{line_},
                 ColumnNumber{column_}};
     }
     if (op_str.size() == 1) {
-        return {filename_,
-                TokenType::OPERATOR,
+        return {TokenType::OPERATOR,
                 op_str,
                 LineNumber{line_},
                 ColumnNumber{column_}};
@@ -586,11 +578,7 @@ auto Lexer::ScanToken() -> std::optional<Token> {
         std::string content;
         content += token_char;
         Advance();
-        return Token{filename_,
-                     *type,
-                     content,
-                     LineNumber{line_},
-                     ColumnNumber{column_}};
+        return Token{*type, content, LineNumber{line_}, ColumnNumber{column_}};
     }
 
     // Handle literals (strings)
@@ -649,11 +637,8 @@ auto Lexer::Tokenize() -> Tokens {
 
     // terminate with an end-of-file token, so that the token following
     // the last one (e.g., for the end of a location) can always be peeked
-    tokens.emplace_back(filename_,
-                        TokenType::END_OF_FILE,
-                        "",
-                        LineNumber{line_},
-                        ColumnNumber{column_});
+    tokens.emplace_back(
+        TokenType::END_OF_FILE, "", LineNumber{line_}, ColumnNumber{column_});
 
     return tokens;
 }

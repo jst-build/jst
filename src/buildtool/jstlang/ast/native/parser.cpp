@@ -167,10 +167,13 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
     return node;
 }
 
-[[nodiscard]] auto Unexpected(const jstlang::Token& tok, const std::string& msg)
+[[nodiscard]] auto Unexpected(const jstlang::Token& tok,
+                              const std::string& msg,
+                              jstlang::SourceFile const* origin)
     -> jstlang::ParserException {
     std::ostringstream strs;
-    strs << tok.file << "(" << tok.line << ":" << tok.column << ")"
+    strs << origin->location.ToString() << "(" << tok.line << ":" << tok.column
+         << ")"
          << " unexpected " << "(" << tok.type << ":" << tok.value << ")"
          << " while " << msg;
     return jstlang::ParserException{strs.str()};
@@ -306,7 +309,7 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
         case TokenType::SEMICOLON:
         case TokenType::THEN:
         case TokenType::END_OF_FILE:
-            throw Unexpected(tok, "parsing terminal");
+            throw Unexpected(tok, "parsing terminal", import_chain_.back());
 
         // parse unary operator
         case TokenType::OPERATOR: {
@@ -706,7 +709,8 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
             } break;
 
             default:
-                throw Unexpected(tok, "parsing field definition");
+                throw Unexpected(
+                    tok, "parsing field definition", import_chain_.back());
         }
     };
 
