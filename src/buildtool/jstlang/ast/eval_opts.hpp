@@ -16,10 +16,14 @@
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_EVAL_OPTS_HPP
 
 #include <cstdint>
+#include <functional>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
 
 namespace jstlang {
+
+/// \brief Resolve an imported file to its AST.
+using ImportResolver = std::function<ASTNodePtr(FileLocation const&)>;
 
 /// \brief Options of an evaluation.
 struct EvalOptions {
@@ -62,6 +66,10 @@ struct EvalOptions {
     /// stay residual comprehensions (full evaluation always unrolls). The
     /// default is a safety net against pathological inputs.
     std::size_t unroll_limit{kDefaultUnrollLimit};
+    /// \brief Resolver for imports that are not resolved in the AST (imports
+    /// parsed as deferred), nullptr if not available (then evaluating such an
+    /// import is an error).
+    ImportResolver const* imports{nullptr};
 };
 
 }  // namespace jstlang

@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/traversal.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/lexer.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
@@ -192,10 +193,12 @@ class NativeParser {
   public:
     NativeParser(gsl::not_null<ASTContext*> const& context,
                  FileData::reader_t reader,
-                 std::vector<SourceFile const*> import_chain)
+                 std::vector<SourceFile const*> import_chain,
+                 bool defer_imports = false)
         : context_{context},
           reader_{std::move(reader)},
-          import_chain_{std::move(import_chain)} {}
+          import_chain_{std::move(import_chain)},
+          defer_imports_{defer_imports} {}
     NativeParser(const NativeParser&) = delete;
     NativeParser(NativeParser&&) = delete;
     ~NativeParser() = default;
@@ -228,6 +231,7 @@ class NativeParser {
     gsl::not_null<ASTContext*> context_;
     FileData::reader_t reader_;
     std::vector<SourceFile const*> import_chain_;
+    bool defer_imports_{};
     TokenStream tokens_{};
 
     /// \brief Throw if file is already in the import chain.
@@ -914,6 +918,23 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
                 } break;
             }
 
+            if (defer_imports_) {
+                // unresolved, resolved during evaluation by the location of
+                // the imported file (relative to the importing file)
+                if (file.empty()) {
+                    throw ParserException{"Cannot import empty file name."};
+                }
+                if (repo) {
+                    throw ParserException{
+                        "Importing from repository bindings is not "
+                        "supported."};
+                }
+                return std::make_shared<jstlang::ForeignNode>(
+                    CreateLocation(begin, tokens_.Peek(), import_chain_.back()),
+                    std::make_shared<FileLocation const>(
+                        import_chain_.back()->location.Resolve(file)));
+            }
+
             if (auto data = reader_(import_chain_.back()->location,
                                     file,
                                     repo ? &(*repo) : nullptr)) {
@@ -1042,15 +1063,40 @@ class ParserImpl : public NativeParser {
 };
 
 Parser::Parser(gsl::not_null<ASTContext*> const& context,
-               FileData::reader_t reader)
+               FileData::reader_t reader,
+               bool defer_imports)
     : impl_{std::make_unique<ParserImpl>(context,
                                          std::move(reader),
-                                         std::vector<SourceFile const*>{})} {}
+                                         std::vector<SourceFile const*>{},
+                                         defer_imports)} {}
 
 Parser::~Parser() = default;
 
 [[nodiscard]] auto Parser::ParseData(FileData const& file_data) -> ASTNodePtr {
     return impl_->ParseData(file_data);
+}
+
+namespace {
+
+void CollectImports(ASTNodePtr const& node,
+                    std::vector<FileLocation>* imports) {
+    if (auto const* foreign = ASTNode::Cast<ForeignNode const*>(node.get())) {
+        if (foreign->GetImport()) {
+            imports->emplace_back(*foreign->GetImport());
+        }
+        return;  // resolved imports are processed already
+    }
+    ForEachChild(*node, [imports](ASTNodePtr const& child) {
+        CollectImports(child, imports);
+    });
+}
+
+}  // namespace
+
+auto CollectImports(ASTNodePtr const& ast) -> std::vector<FileLocation> {
+    auto imports = std::vector<FileLocation>{};
+    CollectImports(ast, &imports);
+    return imports;
 }
 
 }  // namespace jstlang

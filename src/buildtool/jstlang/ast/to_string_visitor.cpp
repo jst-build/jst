@@ -153,7 +153,13 @@ auto ASTToStringVisitor::operator()(ForeignNode const* const node) const
     auto const space = IndentString(indent_);
     std::ostringstream oss{};
     oss << space << "FOREIGN\n";
-    oss << ASTToStringVisitor{indent_ + 1}.Dump(*node->GetExpr());
+    if (node->GetExpr()) {
+        oss << ASTToStringVisitor{indent_ + 1}.Dump(*node->GetExpr());
+    }
+    else {
+        oss << IndentString(indent_ + 1) << "IMPORT("
+            << node->GetImport()->ToString() << ")\n";
+    }
     return oss.str();
 }
 

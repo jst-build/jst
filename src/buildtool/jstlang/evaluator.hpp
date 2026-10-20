@@ -32,16 +32,17 @@
 namespace jstlang {
 
 /// \brief Bindings of a file for evaluating its definitions: the built-ins
-/// object `jst`, followed by the file's top-level locals (evaluated lazily).
-/// Immutable; each evaluation binds them in a new scope (scopes are not shared,
-/// their bindings are memoized).
+/// object `jst`, followed by the file's top-level locals (evaluated lazily),
+/// and the resolver of its deferred imports. Immutable; each evaluation binds
+/// them in a new scope (scopes are not shared, their bindings are memoized).
 class Bindings final {
   public:
     using Ptr = std::shared_ptr<Bindings const>;
     using bindings_t = std::vector<std::pair<std::string, ASTNodePtr>>;
 
-    explicit Bindings(bindings_t bindings) noexcept
-        : bindings_{std::move(bindings)} {}
+    explicit Bindings(bindings_t bindings,
+                      ImportResolver imports = nullptr) noexcept
+        : bindings_{std::move(bindings)}, imports_{std::move(imports)} {}
 
     /// \brief No bindings (only the built-ins object).
     [[nodiscard]] static auto Empty() -> Ptr;
@@ -53,8 +54,15 @@ class Bindings final {
         return bindings_;
     }
 
+    /// \brief Resolver of deferred imports, empty if imports are resolved in
+    /// the ASTs.
+    [[nodiscard]] auto GetImports() const noexcept -> ImportResolver const& {
+        return imports_;
+    }
+
   private:
     bindings_t bindings_;
+    ImportResolver imports_;
 };
 
 class Evaluator {
@@ -63,7 +71,8 @@ class Evaluator {
         : options_{options}, bindings_{std::move(bindings)} {}
 
     /// \brief Evaluate expression in the scope of bindings (nullptr for no
-    /// bindings, i.e., only the built-ins object `jst`).
+    /// bindings, i.e., only the built-ins object `jst`), resolving deferred
+    /// imports via the bindings' resolver, unless the options provide one.
     /// \throws ASTEvalError on evaluation errors (e.g., in static evaluation,
     /// if the value depends on runtime variables).
     [[nodiscard]] auto EvaluateAST(ASTNodePtr const& expr) -> ASTNodePtr;

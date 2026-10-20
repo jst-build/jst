@@ -20,6 +20,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -109,8 +110,9 @@ enum class NodeKind : std::uint8_t {
     Closure,
 };
 
-/// \brief Location in a source file (compact, the source file is owned by the
-/// ASTContext the node was created with).
+/// \brief Position in a source file (compact, the source file is owned by the
+/// ASTContext the node was created with). Not to be confused with
+/// FileLocation, the location of a file among the repositories.
 struct Location {
     SourceFile const* source{};  // nullptr if unknown
     std::uint32_t line{};
@@ -345,6 +347,8 @@ class CallNode : public ASTNode {
 };
 
 // foreign self-contained AST (without access to upper scope)
+/// \brief Imported file: either resolved (the AST of the file) or an
+/// unresolved reference (parsing with deferred imports).
 class ForeignNode : public ASTNode {
   public:
     static constexpr NodeKind kKind = NodeKind::Foreign;
@@ -352,12 +356,24 @@ class ForeignNode : public ASTNode {
     explicit ForeignNode(Location loc, ASTNodePtr expr) noexcept
         : ASTNode{kKind, loc, expr->EvalType()}, expr_{std::move(expr)} {}
 
+    explicit ForeignNode(Location loc,
+                         std::shared_ptr<FileLocation const> import) noexcept
+        : ASTNode{kKind, loc, ValueType::Any}, import_{std::move(import)} {}
+
+    /// \brief AST of the imported file, nullptr if unresolved.
     [[nodiscard]] auto GetExpr() const noexcept -> ASTNodePtr const& {
         return expr_;
     }
 
+    /// \brief Location of the imported file, nullptr if resolved.
+    [[nodiscard]] auto GetImport() const noexcept
+        -> std::shared_ptr<FileLocation const> const& {
+        return import_;
+    }
+
   private:
     ASTNodePtr expr_;
+    std::shared_ptr<FileLocation const> import_;
 };
 
 class ListNode : public ASTNode {

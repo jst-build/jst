@@ -314,9 +314,20 @@ auto ASTEvalVisitor::operator()(CallNode const* node,
 auto ASTEvalVisitor::operator()(ForeignNode const* node,
                                 ASTNodePtr const& /*self*/) const
     -> ASTNodePtr {
-    // foreign AST is self-contained, evaluate in clean scope
-    auto ast = ProvideBuiltinsToAST(node->GetExpr());
-    return WithScope(nullptr).Evaluate(ast);  // same options
+    auto expr = node->GetExpr();
+    if (not expr and options_->imports != nullptr) {
+        expr = (*options_->imports)(*node->GetImport());
+    }
+    if (not expr) {
+        throw ASTEvalError{
+            "Unresolved import of file " + node->GetImport()->ToString() + ".",
+            node->GetLocation()};
+    }
+    // foreign AST is self-contained, evaluate in a clean scope binding only
+    // the built-ins object (as value, per thread), with the same options
+    thread_local auto const kBuiltinsScope =
+        Scope::BindValue(nullptr, "jst", BuiltinsObject());
+    return WithScope(kBuiltinsScope).Evaluate(expr);
 }
 
 auto ASTEvalVisitor::operator()(BuiltinCallNode const* node,

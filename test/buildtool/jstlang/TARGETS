@@ -127,6 +127,38 @@
     stage: ['test', 'buildtool', 'jstlang'],
   },
 
+  imports: {
+    type: @'rules//CC/test:test',
+    name: ['imports'],
+    srcs: ['imports.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'src//src/buildtool/jstlang:evaluator',
+      @'src//src/buildtool/jstlang:parser',
+      @'src//src/buildtool/jstlang/ast:to_json_visitor',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
+  traversal: {
+    type: @'rules//CC/test:test',
+    name: ['traversal'],
+    srcs: ['traversal.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang:parser',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'src//src/buildtool/jstlang/ast:traversal',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'jstlang'],
+  },
+
   TESTS: {
     type: @'rules//test:suite',
     stage: ['jstlang'],
@@ -134,11 +166,13 @@
       'builtins',
       'evaluator',
       'expr_serializer',
+      'imports',
       'inline',
       'lexer',
       'parser',
       'preprocessor',
       'ref',
+      'traversal',
     ],
   },
 }

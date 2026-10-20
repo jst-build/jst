@@ -37,11 +37,15 @@ class ASTParseError : public std::runtime_error {
 class Parser {
   public:
     /// \brief Create parser.
-    /// \param context The context of the created AST nodes, which must
-    ///                outlive the nodes and their uses (see ASTContext).
-    /// \param reader  Reads the files to parse (incl. imports).
+    /// Imports are parsed recursively (via reader), unless they are deferred:
+    /// then imports are unresolved references (ForeignNode).
+    /// \param context       The context of the created AST nodes, which must
+    ///                      outlive the nodes and their uses (see ASTContext).
+    /// \param reader        Reads the files to parse (incl. imports).
+    /// \param defer_imports Defer resolving import nodes (keeps ForeignNode).
     Parser(gsl::not_null<ASTContext*> const& context,
-           FileData::reader_t reader);
+           FileData::reader_t reader,
+           bool defer_imports = false);
     Parser(Parser const&) = delete;
     Parser(Parser&&) = delete;
     ~Parser();
@@ -54,6 +58,11 @@ class Parser {
   private:
     std::unique_ptr<ParserImpl> impl_;
 };
+
+/// \brief Files of the unresolved imports of an AST (parsed with deferred
+/// imports), in order of appearance.
+[[nodiscard]] auto CollectImports(ASTNodePtr const& ast)
+    -> std::vector<FileLocation>;
 
 }  // namespace jstlang
 

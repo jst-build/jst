@@ -39,6 +39,7 @@
       'lexer',
       'ref',
       'static_error',
+      @'./ast:traversal',
     ],
     stage: ['src', 'buildtool', 'jstlang'],
   },
@@ -75,7 +76,11 @@
   file_data: {
     type: @'rules//CC:library',
     hdrs: ['file_data.hpp'],
-    deps: ['ref'],
+    deps: [
+      'ref',
+      @'//src/utils/cpp:hash_combine',
+      @'//src/utils/cpp:path_hash',
+    ],
     stage: ['src', 'buildtool', 'jstlang'],
   },
 

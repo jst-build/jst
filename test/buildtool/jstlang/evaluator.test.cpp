@@ -43,11 +43,13 @@ namespace {
     return &context;
 }
 
-[[nodiscard]] auto Parse(std::string const& code) -> jstlang::ASTNodePtr {
+/// \brief Parse code, optionally with deferred imports.
+[[nodiscard]] auto Parse(std::string const& code,
+                         bool defer_imports = false) -> jstlang::ASTNodePtr {
     auto reader = [](auto const& /*import_from*/,
                      auto const& /*file_path*/,
                      auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser{Context(), std::move(reader)};
+    auto parser = jstlang::Parser{Context(), std::move(reader), defer_imports};
     return parser.ParseData(jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});
@@ -416,9 +418,11 @@ TEST_CASE("evaluate", "[bindings]") {
     auto const full =
         jstlang::EvalOptions{.mode = jstlang::EvalOptions::Mode::Full};
     auto eval = [&full](std::string const& code,
-                        jstlang::Bindings::Ptr const& bindings) {
+                        jstlang::Bindings::Ptr const& bindings,
+                        bool defer_imports = false) {
         return jstlang::ValueToJson(
-            *jstlang::Evaluator{full, bindings}.EvaluateAST(Parse(code)));
+            *jstlang::Evaluator{full, bindings}.EvaluateAST(
+                Parse(code, defer_imports)));
     };
 
     // only the built-ins object
@@ -436,6 +440,19 @@ TEST_CASE("evaluate", "[bindings]") {
     // values are converted as in the expression language
     CHECK(eval("@'//m:t'", jstlang::Bindings::Empty()) ==
           nlohmann::json::parse(R"(["m", "t"])"));
+
+    // deferred imports are resolved via the resolver of the bindings
+    auto const imported = Parse("'imported'");
+    auto const with_imports = std::make_shared<jstlang::Bindings const>(
+        jstlang::Bindings::bindings_t{},
+        [&imported](jstlang::FileLocation const& file) {
+            return file.path == "x.jst" ? imported : nullptr;
+        });
+    CHECK(eval("import 'x.jst'", with_imports, /*defer_imports=*/true) ==
+          "imported");
+    CHECK_THROWS_AS(
+        eval("import 'y.jst'", with_imports, /*defer_imports=*/true),
+        jstlang::ASTEvalError);
 }
 
 TEST_CASE("evaluate", "[reuse unchanged nodes]") {

@@ -52,6 +52,9 @@ auto Bindings::Empty() -> Ptr {
 }
 
 auto Evaluator::EvaluateAST(ASTNodePtr const& expr) -> ASTNodePtr {
+    if (options_.imports == nullptr and bindings_ and bindings_->GetImports()) {
+        options_.imports = &bindings_->GetImports();
+    }
     auto fresh_names = std::size_t{};
     auto const visitor =
         ASTEvalVisitor{MakeScope(bindings_), &options_, &fresh_names};
