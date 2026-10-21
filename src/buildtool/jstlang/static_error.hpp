@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_STATIC_ERROR_HPP
-#define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_STATIC_ERROR_HPP
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_STATIC_ERROR_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_STATIC_ERROR_HPP
 
 #include <exception>
 #include <optional>
@@ -85,19 +85,6 @@ class CompilerException : public std::exception {
     }
 };
 
-class LexerException : public CompilerException {
-  public:
-    explicit LexerException(std::string const& message)
-        : CompilerException("Lexer", message) {}
-};
-
-class ParserException : public CompilerException {
-  public:
-    explicit ParserException(std::string const& message,
-                             jstlang::Location loc = {})
-        : CompilerException("Parser", message, loc) {}
-};
-
 }  // namespace jstlang
 
-#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_STATIC_ERROR_HPP
+#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_STATIC_ERROR_HPP

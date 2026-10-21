@@ -30,9 +30,9 @@
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/eval_visitor.hpp"
-#include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 
 namespace {
 
@@ -54,8 +54,8 @@ struct Case final {
     auto reader = [](auto const& /*import_from*/,
                      auto const& /*file_path*/,
                      auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser::Create(Context(), std::move(reader));
-    auto ast = parser->ParseData(jstlang::FileData{
+    auto parser = jstlang::Parser{Context(), std::move(reader)};
+    auto ast = parser.ParseData(jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code});
     return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(

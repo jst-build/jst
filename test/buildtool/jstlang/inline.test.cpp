@@ -25,10 +25,10 @@
 #include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/eval_visitor.hpp"
-#include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 
 namespace {
 
@@ -46,8 +46,8 @@ namespace {
     auto file_data = jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
         .content = code};
-    auto parser = jstlang::Parser::Create(Context(), std::move(moc_reader));
-    auto just_ast = parser->ParseData(file_data);
+    auto parser = jstlang::Parser{Context(), std::move(moc_reader)};
+    auto just_ast = parser.ParseData(file_data);
     just_ast = ProvideBuiltinsToAST(just_ast);
     return jstlang::ASTEvalVisitor{/*scope=*/nullptr}.Evaluate(just_ast);
 }

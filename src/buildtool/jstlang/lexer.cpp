@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/ast/native/lexer.hpp"
+#include "src/buildtool/jstlang/lexer.hpp"
 
 #include <algorithm>
 #include <array>
@@ -29,9 +29,15 @@
 #include <unordered_set>
 #include <utility>
 
-#include "src/buildtool/jstlang/ast/native/static_error.hpp"
+#include "src/buildtool/jstlang/static_error.hpp"
 
 namespace {
+
+class LexerException : public jstlang::CompilerException {
+  public:
+    explicit LexerException(std::string const& message)
+        : jstlang::CompilerException("Lexer", message) {}
+};
 
 using jstlang::TokenType;
 

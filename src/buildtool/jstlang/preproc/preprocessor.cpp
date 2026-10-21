@@ -26,7 +26,7 @@
 #include "src/buildtool/jstlang/ast/ast.hpp"
 #include "src/buildtool/jstlang/ast/builtin_functions.hpp"
 #include "src/buildtool/jstlang/ast/eval_visitor.hpp"
-#include "src/buildtool/jstlang/ast/parser.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 #ifndef NDEBUG
 #include "src/buildtool/jstlang/ast/to_string_visitor.hpp"
 #endif
@@ -54,9 +54,9 @@ auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
                                     jstlang::FileType type) noexcept
     -> jstlang::ASTNodePtr {
     auto err_msg = std::ostringstream{};
-    auto parser = Parser::Create(context, reader_);
+    auto parser = Parser{context, reader_};
     try {
-        auto jst_ast = parser->ParseData(file_data);
+        auto jst_ast = parser.ParseData(file_data);
 
 #ifndef NDEBUG
         logger_(LogType::Debug,

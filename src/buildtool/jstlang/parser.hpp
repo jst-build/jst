@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_PARSER_HPP
-#define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_PARSER_HPP
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_PARSER_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_PARSER_HPP
 
 #include <memory>
 #include <stdexcept>
@@ -26,6 +26,7 @@
 namespace jstlang {
 
 class Parser;
+class ParserImpl;
 
 using ParserPtr = std::unique_ptr<Parser>;
 
@@ -39,19 +40,19 @@ class Parser {
     /// \param context The context of the created AST nodes, which must
     ///                outlive the nodes and their uses (see ASTContext).
     /// \param reader  Reads the files to parse (incl. imports).
-    [[nodiscard]] static auto Create(gsl::not_null<ASTContext*> const& context,
-                                     FileData::reader_t reader) -> ParserPtr;
-
-    Parser() = default;
+    Parser(gsl::not_null<ASTContext*> const& context,
+           FileData::reader_t reader);
     Parser(Parser const&) = delete;
     Parser(Parser&&) = delete;
-    virtual ~Parser() = default;
+    ~Parser();
 
     auto operator=(Parser const&) = delete;
     auto operator=(Parser&&) = delete;
 
-    [[nodiscard]] virtual auto ParseData(FileData const& file_data)
-        -> ASTNodePtr = 0;
+    [[nodiscard]] auto ParseData(FileData const& file_data) -> ASTNodePtr;
+
+  private:
+    std::unique_ptr<ParserImpl> impl_;
 };
 
 }  // namespace jstlang

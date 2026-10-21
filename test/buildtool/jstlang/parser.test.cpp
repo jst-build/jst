@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/ast/parser.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 
 #include <optional>
 #include <string>
@@ -56,8 +56,8 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     auto file_data = jstlang::FileData{
         .location = jstlang::FileLocation{.repo = "", .path = entry},
         .content = code};
-    auto parser = jstlang::Parser::Create(Context(), CreateMocReader(&files));
-    auto ast = parser->ParseData(file_data);
+    auto parser = jstlang::Parser{Context(), CreateMocReader(&files)};
+    auto ast = parser.ParseData(file_data);
     return jstlang::ASTToStringVisitor{}.Dump(*ast);
 }
 

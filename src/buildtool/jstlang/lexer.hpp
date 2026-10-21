@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_LEXER_HPP
-#define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_LEXER_HPP
+#ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_LEXER_HPP
+#define INCLUDED_SRC_BUILDTOOL_JSTLANG_LEXER_HPP
 
 #include <cstdint>
 #include <cstdlib>
@@ -167,4 +167,4 @@ class Lexer {
 
 }  // namespace jstlang
 
-#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NATIVE_LEXER_HPP
+#endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_LEXER_HPP

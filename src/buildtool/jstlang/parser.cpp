@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "src/buildtool/jstlang/ast/native/parser.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 
 #include <algorithm>
 #include <concepts>
@@ -33,13 +33,19 @@
 #include <vector>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
-#include "src/buildtool/jstlang/ast/native/lexer.hpp"
-#include "src/buildtool/jstlang/ast/native/static_error.hpp"
-#include "src/buildtool/jstlang/ast/parser.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
+#include "src/buildtool/jstlang/lexer.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
+#include "src/buildtool/jstlang/static_error.hpp"
 
 namespace {
+
+class ParserException : public jstlang::CompilerException {
+  public:
+    explicit ParserException(std::string const& message,
+                             jstlang::Location loc = {})
+        : jstlang::CompilerException("Parser", message, loc) {}
+};
 
 using BinaryOp = jstlang::BinaryOperationNode::Type;
 using UnaryOp = jstlang::UnaryOperationNode::Type;
@@ -113,8 +119,7 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
     -> jstlang::Location {
 
     if (end == nullptr) {
-        throw jstlang::ParserException(
-            "Empty AST node while creating location");
+        throw ParserException("Empty AST node while creating location");
     }
 
     return {.source = origin,
@@ -153,7 +158,7 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
             }
             break;
         default:
-            throw jstlang::ParserException("Unsupported binary operator", loc);
+            throw ParserException("Unsupported binary operator", loc);
     }
 
     jstlang::ASTNodePtr node = std::make_shared<jstlang::BinaryOperationNode>(
@@ -170,18 +175,78 @@ std::unordered_map<BinaryOp, unsigned> const kPrecedenceMap = {
 [[nodiscard]] auto Unexpected(const jstlang::Token& tok,
                               const std::string& msg,
                               jstlang::SourceFile const* origin)
-    -> jstlang::ParserException {
+    -> ParserException {
     std::ostringstream strs;
     strs << origin->location.ToString() << "(" << tok.line << ":" << tok.column
          << ")"
          << " unexpected " << "(" << tok.type << ":" << tok.value << ")"
          << " while " << msg;
-    return jstlang::ParserException{strs.str()};
+    return ParserException{strs.str()};
 }
 
 }  // namespace
 
 namespace jstlang {
+
+class NativeParser {
+  public:
+    NativeParser(gsl::not_null<ASTContext*> const& context,
+                 FileData::reader_t reader,
+                 std::vector<SourceFile const*> import_chain)
+        : context_{context},
+          reader_{std::move(reader)},
+          import_chain_{std::move(import_chain)} {}
+    NativeParser(const NativeParser&) = delete;
+    NativeParser(NativeParser&&) = delete;
+    ~NativeParser() = default;
+
+    auto operator=(const NativeParser&) = delete;
+    auto operator=(NativeParser&&) = delete;
+
+    [[nodiscard]] auto ParseData(const FileData& file_data)
+        -> jstlang::ASTNodePtr;
+
+  private:
+    class TokenStream {
+      public:
+        TokenStream() = default;
+        explicit TokenStream(Tokens tokens) : tokens_{std::move(tokens)} {}
+
+        void Advance();
+        [[nodiscard]] auto Size() const -> std::size_t;
+        [[nodiscard]] auto Peek() const -> Token const&;
+        [[nodiscard]] auto PeekNext() const -> Token const&;
+        [[nodiscard]] auto Pop() -> Token const&;
+        auto PopCheck(TokenType token_type,
+                      char const* data = nullptr) -> Token const&;
+
+      private:
+        Tokens tokens_{};
+        std::size_t pos_{};
+    };
+
+    gsl::not_null<ASTContext*> context_;
+    FileData::reader_t reader_;
+    std::vector<SourceFile const*> import_chain_;
+    TokenStream tokens_{};
+
+    /// \brief Throw if file is already in the import chain.
+    void CheckImportCycle(FileLocation const& location) const;
+    [[nodiscard]] auto ParseSource(SourceFile const& source) -> ASTNodePtr;
+    [[nodiscard]] auto Parse(unsigned priority) -> ASTNodePtr;
+    [[nodiscard]] auto ParseSimple() -> ASTNodePtr;
+    [[nodiscard]] auto ParseInfix(ASTNodePtr const& prev_node,
+                                  Token const& curr_token,
+                                  unsigned priority) -> ASTNodePtr;
+    [[nodiscard]] auto ParseContent(Token const& begin) -> ASTNodePtr;
+    [[nodiscard]] auto ParseLocalImport() -> ASTNodePtr;
+    template <class TParams>
+        requires(std::same_as<TParams, FuncNode::params_t> ||
+                 std::same_as<TParams, CallNode::params_t>)
+    [[nodiscard]] auto ParseArgs() -> TParams;
+    [[nodiscard]] auto ParseFuncArgs() -> FuncNode::params_t;
+    [[nodiscard]] auto ParseCallArgs() -> CallNode::params_t;
+};
 
 void NativeParser::TokenStream::Advance() {
     ++pos_;
@@ -971,10 +1036,21 @@ template <class TParams>
     return ParseArgs<CallNode::params_t>();
 }
 
-auto Parser::Create(gsl::not_null<ASTContext*> const& context,
-                    FileData::reader_t reader) -> jstlang::ParserPtr {
-    return std::make_unique<NativeParser>(
-        context, std::move(reader), std::vector<SourceFile const*>{});
+// use NativeParser as ParserImpl
+class ParserImpl : public NativeParser {
+    using NativeParser::NativeParser;
+};
+
+Parser::Parser(gsl::not_null<ASTContext*> const& context,
+               FileData::reader_t reader)
+    : impl_{std::make_unique<ParserImpl>(context,
+                                         std::move(reader),
+                                         std::vector<SourceFile const*>{})} {}
+
+Parser::~Parser() = default;
+
+[[nodiscard]] auto Parser::ParseData(FileData const& file_data) -> ASTNodePtr {
+    return impl_->ParseData(file_data);
 }
 
 }  // namespace jstlang

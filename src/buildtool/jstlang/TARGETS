@@ -11,6 +11,38 @@
     stage: ['src', 'buildtool', 'jstlang'],
   },
 
+  lexer: {
+    type: @'rules//CC:library',
+    name: ['lexer'],
+    hdrs: ['lexer.hpp'],
+    srcs: ['lexer.cpp'],
+    deps: [
+      'file_data',
+      @'./ast:ast',
+      @'gsl//:gsl',
+    ],
+    'private-deps': ['static_error'],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
+  parser: {
+    type: @'rules//CC:library',
+    name: ['parser'],
+    hdrs: ['parser.hpp'],
+    srcs: ['parser.cpp'],
+    deps: [
+      'file_data',
+      @'./ast:ast',
+      @'gsl//:gsl',
+    ],
+    'private-deps': [
+      'lexer',
+      'ref',
+      'static_error',
+    ],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
   json_string: {
     type: @'rules//CC:library',
     name: ['json_string'],
@@ -23,6 +55,14 @@
     type: @'rules//CC:library',
     hdrs: ['file_data.hpp'],
     deps: ['ref'],
+    stage: ['src', 'buildtool', 'jstlang'],
+  },
+
+  static_error: {
+    type: @'rules//CC:library',
+    name: ['static_error'],
+    hdrs: ['static_error.hpp'],
+    deps: [@'./ast:ast'],
     stage: ['src', 'buildtool', 'jstlang'],
   },
 }
