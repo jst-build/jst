@@ -24,6 +24,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
@@ -104,12 +105,15 @@ using file_map_t = std::unordered_map<std::string, std::string>;
                                Configuration const* config,
                                std::string* error = nullptr)
     -> std::optional<nlohmann::json> {
-    auto result = JstlangEvaluator::Evaluate(
-        ast, jstlang::Bindings::Empty(), config, [error](auto const& msg) {
-            if (error != nullptr) {
-                *error = msg;
-            }
-        });
+    auto result = JstlangEvaluator::Evaluate(ast,
+                                             jstlang::Bindings::Empty(),
+                                             config,
+                                             FunctionMap::Ptr{nullptr},
+                                             [error](auto const& msg) {
+                                                 if (error != nullptr) {
+                                                     *error = msg;
+                                                 }
+                                             });
     if (result) {
         return result->ToJson();
     }
@@ -313,6 +317,7 @@ TEST_CASE("runtime evaluator", "[deferred imports]") {
         auto result = JstlangEvaluator::Evaluate(parse("TARGETS", code),
                                                  bindings,
                                                  &config,
+                                                 FunctionMap::Ptr{nullptr},
                                                  [error](auto const& msg) {
                                                      if (error != nullptr) {
                                                          *error = msg;
@@ -334,6 +339,7 @@ TEST_CASE("runtime evaluator", "[deferred imports]") {
         JstlangEvaluator::Evaluate(parse("TARGETS", "import 'lib.jst'"),
                                    jstlang::Bindings::Empty(),
                                    nullptr,
+                                   FunctionMap::Ptr{nullptr},
                                    [](auto const&) {});
     CHECK_FALSE(result);
 }
@@ -399,4 +405,69 @@ TEST_CASE("runtime evaluator", "[errors]") {
     CHECK(not EvalRuntime(Parse("jst.env('x')"), nullptr, &error));
     CHECK(error.find("cannot be read") != std::string::npos);
     CHECK(EvalRuntime(Parse("local x = jst.env('x'); 'ok'"), nullptr) == "ok");
+}
+
+TEST_CASE("runtime evaluator", "[rule functions]") {
+    // fake rule functions: FIELD returns a target name for "deps" and
+    // ["field:<name>"] otherwise, DEP_PROVIDES returns a list for provider
+    // "list" of a target name, the default otherwise
+    auto functions = FunctionMap::MakePtr(
+        {{"FIELD",
+          [](auto&& eval, auto const& expr, auto const& env) {
+              auto name = eval(expr["name"], env);
+              if (name->String() == "deps") {
+                  return ExpressionPtr{Expression::list_t{
+                      ExpressionPtr{BuildMaps::Base::EntityName{"", "", "d"}}}};
+              }
+              return ExpressionPtr{
+                  Expression::list_t{ExpressionPtr{"field:" + name->String()}}};
+          }},
+         {"DEP_PROVIDES", [](auto&& eval, auto const& expr, auto const& env) {
+              auto dep = eval(expr["dep"], env);
+              auto provider = eval(expr["provider"], env);
+              if (not dep->IsName()) {
+                  return ExpressionPtr{nullptr};
+              }
+              if (provider->String() == "list") {
+                  return ExpressionPtr{
+                      Expression::list_t{ExpressionPtr{std::string{"x"}},
+                                         ExpressionPtr{Expression::kEmptyMap}}};
+              }
+              return eval(expr->Get("default", Expression::none_t{}), env);
+          }}});
+    auto eval =
+        [&functions](std::string const& code) -> std::optional<nlohmann::json> {
+        auto config = ToConfig(nlohmann::json::object());
+        auto error = std::string{};
+        auto result = JstlangEvaluator::Evaluate(
+            Parse(code),
+            jstlang::Bindings::Empty(),
+            &config,
+            functions,
+            [&error](auto const& msg) { error = msg; });
+        UNSCOPED_INFO("error: " << error);
+        if (result) {
+            return result->ToJson();
+        }
+        return std::nullopt;
+    };
+
+    CHECK(eval("jst.field('srcs') + ['x']") ==
+          nlohmann::json::parse(R"(["field:srcs", "x"])"));
+    CHECK(eval("local name = 'hdrs'; jst.field(name=name)") ==
+          nlohmann::json::parse(R"(["field:hdrs"])"));
+    // values of the build engine (e.g., target names) are passed through
+    CHECK(eval("jst.length(jst.field('deps'))") == nlohmann::json(1));
+    // default is only selected if provider is missing
+    CHECK(eval("jst.dep_provides(jst.field('deps')[0], 'p', default=['d'])") ==
+          nlohmann::json::parse(R"(["d"])"));
+    CHECK(eval("jst.length(jst.dep_provides(jst.field('deps')[0], 'list', "
+               "default=jst.fail('unused')))") == nlohmann::json(2));
+    // without rule functions, rule-only functions cannot be evaluated
+    auto config = ToConfig(nlohmann::json::object());
+    CHECK_FALSE(JstlangEvaluator::Evaluate(Parse("jst.field('x')"),
+                                           jstlang::Bindings::Empty(),
+                                           &config,
+                                           FunctionMap::Ptr{nullptr},
+                                           [](auto const&) {}));
 }

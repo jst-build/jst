@@ -83,8 +83,8 @@ TEST_CASE("jstlang entities file", "[entities]") {
                           std::optional<nlohmann::json> const& config)
         -> std::optional<nlohmann::json> {
         auto conf = config ? std::optional{ToConfig(*config)} : std::nullopt;
-        auto result =
-            JstlangEvaluator::Evaluate(field, conf ? &*conf : nullptr, logger);
+        auto result = JstlangEvaluator::Evaluate(
+            field, conf ? &*conf : nullptr, FunctionMap::Ptr{nullptr}, logger);
         if (result) {
             return result->ToJson();
         }

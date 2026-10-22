@@ -2125,8 +2125,7 @@ auto BuiltIn::make_blob(Location const& loc,
     static const std::array kExpected = {
         ExpectedParameter{"data", {ValueType::Any, ValueType::String}, false},
     };
-    return MakeRuleCall(
-        loc, args, "make_blob", kExpected, ValueType::Artifact);
+    return MakeRuleCall(loc, args, "make_blob", kExpected, ValueType::Artifact);
 }
 
 auto BuiltIn::make_symlink(Location const& loc,

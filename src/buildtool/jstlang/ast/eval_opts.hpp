@@ -57,6 +57,13 @@ struct EvalOptions {
     /// \brief Value of a runtime variable, nullptr if not set.
     using ConfigLookup = std::function<ASTNodePtr(std::string const&)>;
 
+    /// \brief Implementation of rule-only built-in functions (see
+    /// kRuleOnlyBuiltins), called with the call of the built-in function
+    /// (with evaluated arguments, by parameter position). Errors are reported
+    /// as ASTEvalError at the location of the call; other exceptions are
+    /// wrapped with that location.
+    using ExternalBuiltin = std::function<ASTNodePtr(BuiltinCallNode const&)>;
+
     Mode mode{Mode::Full};
     /// \brief Configuration for full evaluation, nullptr for static
     /// evaluation.
@@ -66,6 +73,9 @@ struct EvalOptions {
     /// stay residual comprehensions (full evaluation always unrolls). The
     /// default is a safety net against pathological inputs.
     std::size_t unroll_limit{kDefaultUnrollLimit};
+    /// \brief Rule-only built-in functions for full evaluation, nullptr if
+    /// not available (then calls of them are residual code).
+    ExternalBuiltin const* external{nullptr};
     /// \brief Resolver for imports that are not resolved in the AST (imports
     /// parsed as deferred), nullptr if not available (then evaluating such an
     /// import is an error).

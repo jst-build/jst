@@ -974,6 +974,20 @@ auto ASTEvalVisitor::ApplyBuiltin(CallNode const& caller,
     // return builtin function result
     auto result = CallBuiltinWithParams(bt_name, loc, params);
 
+    if (IsFull() and options_->external != nullptr and
+        kRuleOnlyBuiltins.contains(bt_name)) {
+        if (auto const* call =
+                ASTNode::Cast<BuiltinCallNode const*>(result.get())) {
+            try {
+                return (*options_->external)(*call);
+            } catch (ASTEvalError const&) {
+                throw;  // already located
+            } catch (std::exception const& e) {
+                throw ASTEvalError{e.what(), loc};
+            }
+        }
+    }
+
     if (bt_name == "env" and IsFull()) {
         // read the runtime variable from the configuration
         return Evaluate(result);

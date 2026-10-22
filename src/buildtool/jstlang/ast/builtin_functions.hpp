@@ -18,6 +18,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "src/buildtool/jstlang/ast/ast.hpp"
 
@@ -258,6 +259,21 @@ class BuiltIn final {
 /// \brief The object with the built-in functions (the value of `jst`), one
 /// per thread.
 [[nodiscard]] auto BuiltinsObject() -> ASTNodePtr const&;
+
+/// \brief Names of the rule-only built-in functions, which are evaluated by
+/// the rule analysis (see EvalOptions::external).
+auto const kRuleOnlyBuiltins = std::unordered_set<std::string>{"field",
+                                                               "dep_artifacts",
+                                                               "dep_runfiles",
+                                                               "dep_provides",
+                                                               "make_blob",
+                                                               "make_symlink",
+                                                               "make_tree",
+                                                               "tree_overlay",
+                                                               "action",
+                                                               "result",
+                                                               "value_node",
+                                                               "abstract_node"};
 
 auto const kBuiltinFunctions = std::unordered_map<std::string,
                                                   BuiltIn::Function>{

@@ -49,6 +49,7 @@
     'private-deps': [
       @'catch2//:catch2',
       @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
       @'src//src/buildtool/build_engine/expression:expression',
       @'src//src/buildtool/build_engine/expression:expression_ptr_interface',
       @'src//src/buildtool/build_engine/expression:jstlang_evaluator',

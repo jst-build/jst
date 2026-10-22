@@ -97,4 +97,8 @@ auto ValueToJson(ASTNode const& value) -> nlohmann::json {
         value);
 }
 
+auto BuiltinCallToJson(BuiltinCallNode const& call) -> nlohmann::json {
+    return ASTToJsonVisitor{}.ToJson(call);
+}
+
 }  // namespace jstlang

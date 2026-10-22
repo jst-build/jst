@@ -24,6 +24,7 @@
 
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
+#include "src/buildtool/build_engine/expression/function_map.hpp"
 #include "src/buildtool/jstlang/evaluator.hpp"
 
 /// \brief Evaluation of jstlang ASTs for the build engine, based on the
@@ -32,6 +33,8 @@
 class JstlangEvaluator final {
   public:
     using Logger = std::function<void(std::string const&)>;
+    using Annotator = std::function<std::string(ExpressionPtr)>;
+    using NoteUserContext = std::function<void(void)>;
 
     /// \brief Lazily evaluated field of a map (e.g., of a target definition):
     /// a path of entries in the value of an expression.
@@ -86,18 +89,31 @@ class JstlangEvaluator final {
     /// \param env        The configuration for reading runtime variables. If
     ///                   nullptr, reading runtime variables is an error
     ///                   (static evaluation).
+    /// \param functions  The functions of the rule analysis (e.g., FIELD or
+    ///                   ACTION) for evaluating rule-only built-in functions.
+    ///                   If nullptr, those cannot be evaluated.
     /// \returns the value or nullptr on error (reported via logger).
-    [[nodiscard]] static auto Evaluate(jstlang::ASTNodePtr const& expr,
-                                       jstlang::Bindings::Ptr const& bindings,
-                                       Configuration const* env,
-                                       Logger const& logger) noexcept
-        -> ExpressionPtr;
+    [[nodiscard]] static auto Evaluate(
+        jstlang::ASTNodePtr const& expr,
+        jstlang::Bindings::Ptr const& bindings,
+        Configuration const* env,
+        FunctionMapPtr const& functions,
+        Logger const& logger,
+        Annotator const& annotate_object =
+            [](auto const& /*unused*/) { return std::string{}; },
+        NoteUserContext const& note_user_context =
+            []() {}) noexcept -> ExpressionPtr;
 
     /// \brief Evaluate value of field, see Evaluate() for parameters.
-    [[nodiscard]] static auto Evaluate(FieldPtr const& field,
-                                       Configuration const* env,
-                                       Logger const& logger) noexcept
-        -> ExpressionPtr;
+    [[nodiscard]] static auto Evaluate(
+        FieldPtr const& field,
+        Configuration const* env,
+        FunctionMapPtr const& functions,
+        Logger const& logger,
+        Annotator const& annotate_object =
+            [](auto const& /*unused*/) { return std::string{}; },
+        NoteUserContext const& note_user_context =
+            []() {}) noexcept -> ExpressionPtr;
 
     /// \brief Statically evaluate expression to a map, without evaluating
     /// the values of its fields (their values may depend on the

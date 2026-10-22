@@ -14,34 +14,77 @@
 
 #include "src/buildtool/build_engine/expression/jstlang_evaluator.hpp"
 
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <unordered_map>
 
+#include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
+#include "src/buildtool/jstlang/ast/eval_error.hpp"
 
+using jstlang::AnonTargetNode;
+using jstlang::ArtifactNode;
+using jstlang::ASTEvalError;
 using jstlang::ASTNode;
 using jstlang::ASTNodePtr;
 using jstlang::Bindings;
 using jstlang::BoolNode;
+using jstlang::BuiltinCallNode;
+using jstlang::BuiltinCallToJson;
+using jstlang::EntityNameNode;
 using jstlang::EvalOptions;
-using jstlang::Evaluator;
 using jstlang::ListNode;
 using jstlang::Location;
 using jstlang::MapNode;
 using jstlang::NodeKind;
 using jstlang::NullNode;
 using jstlang::NumberNode;
+using jstlang::OpaqueValue;
 using jstlang::RequireValue;
+using jstlang::ResultNode;
 using jstlang::StringNode;
 using jstlang::ValueToJson;
+using jstlang::VarNode;
 
 namespace {
 
 class EvalError final : public std::runtime_error {
   public:
     explicit EvalError(std::string const& msg) : runtime_error{msg} {}
+};
+
+/// \brief Value of the expression language that is opaque to jstlang (e.g.,
+/// artifacts, results, target names).
+class ExpressionValue final : public OpaqueValue {
+  public:
+    explicit ExpressionValue(ExpressionPtr value) noexcept
+        : value_{std::move(value)} {}
+
+    [[nodiscard]] auto Value() const noexcept -> ExpressionPtr const& {
+        return value_;
+    }
+
+    [[nodiscard]] auto ToJson() const -> nlohmann::json final {
+        return value_->ToJson(Expression::JsonMode::NullForNonJson);
+    }
+
+    [[nodiscard]] auto Identity() const -> std::string final {
+        // hex, as identities are used in JSON (raw hashes are not UTF-8)
+        return value_->ToIdentifier();
+    }
+
+    [[nodiscard]] auto IsComparable() const -> bool final {
+        return value_->IsCacheable();
+    }
+
+    [[nodiscard]] auto ToString() const -> std::string final {
+        return value_->ToAbbrevString(Evaluator::GetExpressionLogLimit());
+    }
+
+  private:
+    ExpressionPtr value_;
 };
 
 /// \brief Convert value of the expression language to a literal AST.
@@ -75,6 +118,19 @@ class EvalError final : public std::runtime_error {
                                 FromExpression(item));
         }
         return std::make_shared<MapNode>(loc, std::move(fields));
+    }
+    auto opaque = std::make_shared<ExpressionValue const>(value);
+    if (value->IsArtifact()) {
+        return std::make_shared<ArtifactNode>(loc, std::move(opaque));
+    }
+    if (value->IsResult()) {
+        return std::make_shared<ResultNode>(loc, std::move(opaque));
+    }
+    if (value->IsNode()) {
+        return std::make_shared<AnonTargetNode>(loc, std::move(opaque));
+    }
+    if (value->IsName()) {
+        return std::make_shared<EntityNameNode>(loc, std::move(opaque));
     }
     throw EvalError{"Unsupported value " + value->ToString() + "."};
 }
@@ -127,6 +183,16 @@ class EvalError final : public std::runtime_error {
             }
             return ExpressionPtr{Expression::map_t{map}};
         }
+        case NodeKind::Artifact:
+        case NodeKind::Result:
+        case NodeKind::AnonTarget:
+        case NodeKind::EntityName: {
+            // only values of the expression language exist
+            auto const& opaque =
+                jstlang::ExternalValueNode::From(value.get())->GetValue();
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+            return static_cast<ExpressionValue const&>(*opaque).Value();
+        }
         default:
             break;
     }
@@ -154,11 +220,129 @@ class EvalError final : public std::runtime_error {
     return nullptr;
 }
 
+/// \brief Rule-only built-in functions, evaluated by the expression evaluator
+/// with the functions of the rule analysis: the expression lowering would
+/// generate for a call (cached per shape of the call) is evaluated with the
+/// evaluated arguments being runtime variables.
+class RuleFunctions final {
+  public:
+    RuleFunctions(FunctionMapPtr functions,
+                  JstlangEvaluator::Annotator const& annotate_object,
+                  JstlangEvaluator::NoteUserContext const& note_user_context)
+        : functions_{std::move(functions)},
+          annotate_object_{annotate_object},
+          note_user_context_{note_user_context} {}
+
+    [[nodiscard]] auto Call(BuiltinCallNode const& call) const -> ASTNodePtr {
+        auto const& name = call.GetName();
+        auto const& loc = call.GetLocation();
+        auto key = name;
+        auto args = BuiltinCallNode::args_t{};
+        auto env = Expression::map_t::underlying_map_t{};
+        ASTNodePtr default_value{};
+        args.reserve(call.GetArgs().size());
+        for (std::size_t pos{}; pos < call.GetArgs().size(); ++pos) {
+            auto const& value = call.GetArgs()[pos];
+            if (value == nullptr) {
+                key += "|-";
+                args.emplace_back(nullptr);
+                continue;
+            }
+            if (IsLiteralArgument(name, pos)) {
+                // not evaluated by the expression evaluator
+                key += "|=" + ValueToJson(*value).dump();
+                args.emplace_back(value);
+                continue;
+            }
+            key += "|#";
+            auto var = "#" + std::to_string(pos);
+            args.emplace_back(std::make_shared<VarNode>(loc, var));
+            if (IsDefaultArgument(name, pos)) {
+                // only selected if provider is missing
+                default_value = value;
+                env.emplace(std::move(var), DefaultSentinel());
+            }
+            else {
+                env.emplace(std::move(var), ToExpression(value));
+            }
+        }
+
+        auto expr = CachedExpression(
+            key, BuiltinCallNode{loc, name, std::move(args), call.EvalType()});
+        auto error = std::string{};
+        auto result = ::Evaluator::EvaluateExpression(
+            expr,
+            Configuration{Expression::map_t{std::move(env)}},
+            functions_,
+            [&error](std::string const& msg) { error += msg; },
+            annotate_object_,
+            note_user_context_);
+        if (not result) {
+            throw ASTEvalError{
+                "Evaluating " + name + "() failed with:", loc, error};
+        }
+        if (default_value and result == DefaultSentinel()) {
+            return default_value;
+        }
+        return FromExpression(result);
+    }
+
+  private:
+    FunctionMapPtr functions_;
+    JstlangEvaluator::Annotator const& annotate_object_;
+    JstlangEvaluator::NoteUserContext const& note_user_context_;
+
+    [[nodiscard]] static auto DefaultSentinel() -> ExpressionPtr const& {
+        static auto const kSentinel =
+            ExpressionPtr{std::string{"\0jstlang:default", 16}};
+        return kSentinel;
+    }
+
+    /// \brief Whether the argument at a parameter position is the default
+    /// value of dep_provides().
+    [[nodiscard]] static auto IsDefaultArgument(std::string const& name,
+                                                std::size_t pos) -> bool {
+        static constexpr std::size_t kDefaultPos = 3;
+        return name == "dep_provides" and pos == kDefaultPos;
+    }
+
+    /// \brief Whether the argument at a parameter position is not evaluated
+    /// by the expression evaluator (disjoint of tree_overlay(), may_fail and
+    /// no_cache of action()).
+    [[nodiscard]] static auto IsLiteralArgument(std::string const& name,
+                                                std::size_t pos) -> bool {
+        static constexpr std::size_t kMayFailPos = 7;
+        static constexpr std::size_t kNoCachePos = 9;
+        return (name == "tree_overlay" and pos == 1) or
+               (name == "action" and
+                (pos == kMayFailPos or pos == kNoCachePos));
+    }
+
+    [[nodiscard]] static auto CachedExpression(std::string const& key,
+                                               BuiltinCallNode const& call)
+        -> ExpressionPtr {
+        static std::mutex mutex{};
+        static std::unordered_map<std::string, ExpressionPtr> cache{};
+        {
+            std::unique_lock lock{mutex};
+            if (auto it = cache.find(key); it != cache.end()) {
+                return it->second;
+            }
+        }
+        auto expr = Expression::FromJson(BuiltinCallToJson(call));
+        std::unique_lock lock{mutex};
+        cache.emplace(key, expr);
+        return expr;
+    }
+};
+
 /// \brief Full evaluation of an expression in a configuration (or static, if
 /// env is nullptr), resulting in a value that may contain residual fail().
-[[nodiscard]] auto EvaluateValue(ASTNodePtr const& expr,
-                                 Bindings::Ptr const& bindings,
-                                 Configuration const* env) -> ASTNodePtr {
+[[nodiscard]] auto EvaluateValue(
+    ASTNodePtr const& expr,
+    Bindings::Ptr const& bindings,
+    Configuration const* env,
+    EvalOptions::ExternalBuiltin const* external = nullptr) -> ASTNodePtr {
     auto cache = std::unordered_map<std::string, ASTNodePtr>{};
     auto lookup = EvalOptions::ConfigLookup{
         [env, &cache](std::string const& name) -> ASTNodePtr {
@@ -169,8 +353,9 @@ class EvalError final : public std::runtime_error {
             return it->second;
         }};
     auto options = EvalOptions{.mode = EvalOptions::Mode::Full,
-                               .config = env != nullptr ? &lookup : nullptr};
-    return Evaluator{options, bindings}.EvaluateAST(expr);
+                               .config = env != nullptr ? &lookup : nullptr,
+                               .external = external};
+    return jstlang::Evaluator{options, bindings}.EvaluateAST(expr);
 }
 
 /// \brief Value of the structure of an expression: unknown values stay
@@ -178,7 +363,8 @@ class EvalError final : public std::runtime_error {
 [[nodiscard]] auto EvaluateStructure(ASTNodePtr const& expr,
                                      Bindings::Ptr const& bindings)
     -> ASTNodePtr {
-    return Evaluator{EvalOptions{.mode = EvalOptions::Mode::Unfold}, bindings}
+    return jstlang::Evaluator{EvalOptions{.mode = EvalOptions::Mode::Unfold},
+                              bindings}
         .EvaluateAST(expr);
 }
 
@@ -238,13 +424,23 @@ class EvalError final : public std::runtime_error {
 
 }  // namespace
 
-auto JstlangEvaluator::Evaluate(ASTNodePtr const& expr,
-                                Bindings::Ptr const& bindings,
-                                Configuration const* env,
-                                Logger const& logger) noexcept
-    -> ExpressionPtr {
+auto JstlangEvaluator::Evaluate(
+    ASTNodePtr const& expr,
+    Bindings::Ptr const& bindings,
+    Configuration const* env,
+    FunctionMapPtr const& functions,
+    Logger const& logger,
+    Annotator const& annotate_object,
+    NoteUserContext const& note_user_context) noexcept -> ExpressionPtr {
     try {
-        auto value = EvaluateValue(expr, bindings, env);
+        auto const rule_functions =
+            RuleFunctions{functions, annotate_object, note_user_context};
+        auto const external = EvalOptions::ExternalBuiltin{
+            [&rule_functions](BuiltinCallNode const& call) {
+                return rule_functions.Call(call);
+            }};
+        auto value =
+            EvaluateValue(expr, bindings, env, functions ? &external : nullptr);
         RequireValue(value);
         return ToExpression(value);
     } catch (std::exception const& e) {
@@ -253,10 +449,13 @@ auto JstlangEvaluator::Evaluate(ASTNodePtr const& expr,
     return ExpressionPtr{nullptr};
 }
 
-auto JstlangEvaluator::Evaluate(FieldPtr const& field,
-                                Configuration const* env,
-                                Logger const& logger) noexcept
-    -> ExpressionPtr {
+auto JstlangEvaluator::Evaluate(
+    FieldPtr const& field,
+    Configuration const* env,
+    FunctionMapPtr const& functions,
+    Logger const& logger,
+    Annotator const& annotate_object,
+    NoteUserContext const& note_user_context) noexcept -> ExpressionPtr {
     try {
         auto const& static_value = field->StaticValue();
         if (static_value and static_value->IsLiteral()) {
@@ -264,12 +463,33 @@ auto JstlangEvaluator::Evaluate(FieldPtr const& field,
         }
         if (static_value) {
             // self-contained residual code of unfolding
-            return Evaluate(static_value, Bindings::Empty(), env, logger);
+            return Evaluate(static_value,
+                            Bindings::Empty(),
+                            env,
+                            functions,
+                            logger,
+                            annotate_object,
+                            note_user_context);
         }
         if (field->Path().empty()) {
-            return Evaluate(field->Expr(), field->GetBindings(), env, logger);
+            return Evaluate(field->Expr(),
+                            field->GetBindings(),
+                            env,
+                            functions,
+                            logger,
+                            annotate_object,
+                            note_user_context);
         }
-        auto value = EvaluateValue(field->Expr(), field->GetBindings(), env);
+        auto const rule_functions =
+            RuleFunctions{functions, annotate_object, note_user_context};
+        auto const external = EvalOptions::ExternalBuiltin{
+            [&rule_functions](BuiltinCallNode const& call) {
+                return rule_functions.Call(call);
+            }};
+        auto value = EvaluateValue(field->Expr(),
+                                   field->GetBindings(),
+                                   env,
+                                   functions ? &external : nullptr);
         for (auto const& name : field->Path()) {
             value = SelectEntry(value, name);
             if (not value) {

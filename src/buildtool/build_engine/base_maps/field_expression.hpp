@@ -65,7 +65,12 @@ class FieldExpression final {
         std::function<void(void)> const& note_user_context =
             []() noexcept -> void {}) const noexcept -> ExpressionPtr {
         if (field_) {
-            return JstlangEvaluator::Evaluate(field_, &env, logger);
+            return JstlangEvaluator::Evaluate(field_,
+                                              &env,
+                                              functions,
+                                              logger,
+                                              annotate_object,
+                                              note_user_context);
         }
         return expr_.Evaluate(
             env, functions, logger, annotate_object, note_user_context);

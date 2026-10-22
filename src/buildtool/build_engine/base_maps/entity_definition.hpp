@@ -92,6 +92,7 @@ class EntityDefinition final {
         auto value = JstlangEvaluator::Evaluate(
             it->second,
             /*env=*/nullptr,
+            FunctionMap::Ptr{nullptr},
             [&logger, &name](std::string const& msg) {
                 logger("While statically evaluating field " + name + ":\n" +
                        msg);
