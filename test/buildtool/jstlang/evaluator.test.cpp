@@ -546,6 +546,12 @@ TEST_CASE("evaluate", "[external values]") {
 
     // typed: operations of other types are rejected
     CHECK_THROWS(eval("o1 + 'x'"));
+    CHECK_THROWS(eval("jst.values(o1)"));
+    CHECK_THROWS(eval("jst.assert_non_empty(o1)"));
+    CHECK(ToJson(eval("[jst.length(jst.values({a: o1, b: r1})), "
+                      "jst.assert_non_empty([o1]) == [o1_copy], "
+                      "jst.context(o1, msg='ctx') == o1]")) ==
+          nlohmann::json::parse("[2, true, true]"));
 
     // passed through, keeping their type
     auto value = eval("jst.get('k', {k: o2})");

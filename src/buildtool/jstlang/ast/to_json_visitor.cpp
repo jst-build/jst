@@ -78,7 +78,9 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
             {"join", {"join", {"$1", "separator"}}},
             {"flatten", {"++", {"$1"}}},
             // type depends on the parameter "disjoint", which is not serialized
-            {"union", {"map_union", {"$1"}}},
+            // type and msg depend on the parameter "disjoint", which is
+            // not serialized
+            {"union", {"map_union", {"$1", "", "msg"}}},
             {"keys", {"keys", {"$1"}}},
             {"fail", {"fail", {"msg"}}},
             {"json_encode", {"json_encode", {"$1"}}},
@@ -103,6 +105,9 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
             {"enumerate", {"enumerate", {"$1"}}},
             {"to_subdir", {"to_subdir", {"$1", "subdir", "flat", "msg"}}},
             {"from_subdir", {"from_subdir", {"$1", "subdir"}}},
+            {"values", {"values", {"$1"}}},
+            {"assert_non_empty", {"assert_non_empty", {"$1", "msg"}}},
+            {"context", {"context", {"$1", "msg"}}},
         };
     static auto const kEmptyMapNode =
         std::make_shared<MapNode>(Location{}, MapNode::fields_t{});
@@ -117,15 +122,20 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
 
     auto root = nlohmann::json::object();
     root["type"] = type;
-    if (name == "union" and args.size() > 1 and args[1] != nullptr and
-        args[1]->TruthValue().value_or(false)) {
+    bool const disjoint = name == "union" and args.size() > 1 and
+                          args[1] != nullptr and
+                          args[1]->TruthValue().value_or(false);
+    if (disjoint) {
         root["type"] = "disjoint_map_union";
     }
     for (std::size_t pos = 0; pos < args.size() and pos < keys.size(); ++pos) {
         auto const& arg = args[pos];
-        if (arg == nullptr or arg->IsFunction()) {
-            // skip unspecified arguments and func nodes
+        if (arg == nullptr or arg->IsFunction() or keys[pos].empty()) {
+            // skip unspecified arguments, func nodes, unserialized arguments
             continue;
+        }
+        if (name == "union" and keys[pos] == "msg" and not disjoint) {
+            continue;  // only a disjoint union has a message
         }
         if (name == "get" and keys[pos] == "map" and
             arg->EvalType() == ValueType::Any) {

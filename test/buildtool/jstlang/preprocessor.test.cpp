@@ -3396,6 +3396,325 @@ TEST_CASE("preprocessor", "[builtin_functions]") {
             }
         }
     }
+
+    SECTION("union() with message") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  {"type": "singleton_map", "key": "foo", "value": "foo"}
+                )");
+                auto const* code = R"(
+                  jst.union([{foo:'foo'},{foo:'foo'}], true, 'conflict')
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto const* code = R"(
+                  jst.union([{foo:'foo'},{foo:'fox'}], true, msg='conflict')
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "disjoint_map_union"
+                  , "$1": [{"type": "var", "name": "map"}]
+                  , "msg": ["conflict", {"type": "var", "name": "msg"}]
+                  })");
+                auto const* code = R"(
+                  jst.union(
+                    [jst.env('map')],
+                    disjoint=true,
+                    msg=['conflict', jst.env('msg')],
+                  )
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                // message is dropped for non-disjoint union
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "map_union"
+                  , "$1": [{"type": "var", "name": "map"}]
+                  })");
+                auto const* code = R"(
+                  jst.union([jst.env('map')], msg='conflict')
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+    }
+
+    SECTION("to_subdir() with runtime message") {
+        auto expected = nlohmann::json::parse(R"(
+          { "type": "to_subdir"
+          , "msg": ["error", {"type": "var", "name": "msg"}]
+          , "$1": {"type": "var", "name": "map"}
+          }
+        )");
+        auto const* code = R"(
+          jst.to_subdir(jst.env('map'), msg=['error', jst.env('msg')])
+        )";
+        auto just_ast = Preprocess(code);
+        CHECK(ToJson(just_ast) == expected);
+    }
+
+    SECTION("keys() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"([])");
+                auto const* code = R"(jst.keys({}))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                // sorted and deduplicated
+                auto expected = nlohmann::json::parse(R"(["bar", "foo"])");
+                auto const* code = R"(
+                  jst.keys({foo: 'foo', bar: 'bar', ['foo']: 'baz'})
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "keys"
+                  , "$1": {"type": "var", "name": "map"}
+                  })");
+                auto const* code = R"(jst.keys(jst.env('map')))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "keys"
+                  , "$1":
+                    { "type": "singleton_map"
+                    , "key": {"type": "var", "name": "key"}
+                    , "value": "foo"
+                    }
+                  })");
+                auto const* code = R"(jst.keys({[jst.env('key')]: 'foo'}))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+    }
+
+    SECTION("values() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"([])");
+                auto const* code = R"(jst.values({}))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                // sorted by keys and deduplicated (latest wins)
+                auto expected = nlohmann::json::parse(R"(
+                  ["bar", {"type": "var", "name": "baz"}]
+                )");
+                auto const* code = R"(
+                  jst.values({foo: 'foo', bar: 'bar', ['foo']: jst.env('baz')})
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(["bar", "foo"])");
+                auto const* code = R"(jst.values(map={a: 'bar', b: 'foo'}))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "values"
+                  , "$1": {"type": "var", "name": "map"}
+                  })");
+                auto const* code = R"(jst.values(jst.env('map')))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "values"
+                  , "$1":
+                    { "type": "singleton_map"
+                    , "key": {"type": "var", "name": "key"}
+                    , "value": "foo"
+                    }
+                  })");
+                auto const* code = R"(jst.values({[jst.env('key')]: 'foo'}))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("type errors") {
+            {
+                auto const* code = R"(jst.values([]))";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(jst.values('foo'))";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+    }
+
+    SECTION("assert_non_empty() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"("foo")");
+                auto const* code = R"(jst.assert_non_empty('foo'))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected =
+                    nlohmann::json::parse(R"([{"type": "var", "name": "x"}])");
+                auto const* code = R"(jst.assert_non_empty([jst.env('x')]))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  {"type": "singleton_map", "key": "foo", "value": "foo"}
+                )");
+                auto const* code = R"(
+                  jst.assert_non_empty({foo: 'foo'}, msg='empty')
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto const* code = R"(jst.assert_non_empty(''))";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(jst.assert_non_empty([], 'empty'))";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            {
+                auto const* code = R"(jst.assert_non_empty({}, msg='empty'))";
+                CHECK_FALSE(Preprocess(code));
+            }
+
+            // as in the expression language, values of other types are never
+            // non-empty (also if not known, but their type is)
+            for (auto const* code : {"jst.assert_non_empty(null)",
+                                     "jst.assert_non_empty(true)",
+                                     "jst.assert_non_empty(1)",
+                                     "jst.assert_non_empty(jst.length("
+                                     "jst.env('x')))"}) {
+                INFO(code);
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "assert_non_empty"
+                  , "$1": {"type": "var", "name": "x"}
+                  })");
+                auto const* code = R"(jst.assert_non_empty(jst.env('x')))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "assert_non_empty"
+                  , "$1": {"type": "var", "name": "x"}
+                  , "msg": ["empty", {"type": "var", "name": "y"}]
+                  })");
+                auto const* code = R"(
+                  jst.assert_non_empty(jst.env('x'), ['empty', jst.env('y')])
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                // other literals are never non-empty, rejected statically
+                auto const* code = R"(
+                  jst.assert_non_empty(42, msg='not a string, list, or map')
+                )";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+    }
+
+    SECTION("context() with mandatory arguments") {
+        SECTION("statically evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(["foo", 42.0])");
+                auto const* code = R"(jst.context(['foo', 42], 'context'))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("runtime evaluated") {
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "context"
+                  , "$1": {"type": "var", "name": "x"}
+                  , "msg": "context"
+                  })");
+                auto const* code = R"(jst.context(jst.env('x'), 'context'))";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+
+            {
+                auto expected = nlohmann::json::parse(R"(
+                  { "type": "context"
+                  , "$1": ["foo", {"type": "var", "name": "x"}]
+                  , "msg": ["context", {"type": "var", "name": "y"}]
+                  })");
+                auto const* code = R"(
+                  jst.context(
+                    value=['foo', jst.env('x')],
+                    msg=['context', jst.env('y')],
+                  )
+                )";
+                auto just_ast = Preprocess(code);
+                CHECK(ToJson(just_ast) == expected);
+            }
+        }
+
+        SECTION("missing arguments") {
+            {
+                auto const* code = R"(jst.context(jst.env('x')))";
+                CHECK_FALSE(Preprocess(code));
+            }
+        }
+    }
 }
 
 TEST_CASE("preprocessor", "[arithmetics]") {

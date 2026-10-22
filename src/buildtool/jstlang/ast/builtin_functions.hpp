@@ -180,6 +180,19 @@ class BuiltIn final {
                                           EvalCallback const&,
                                           CallNode::params_t const&)
         -> ASTNodePtr;
+
+    [[nodiscard]] static auto values(Location const&,
+                                     EvalCallback const&,
+                                     CallNode::params_t const&) -> ASTNodePtr;
+
+    [[nodiscard]] static auto assert_non_empty(Location const&,
+                                               EvalCallback const&,
+                                               CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto context(Location const&,
+                                      EvalCallback const&,
+                                      CallNode::params_t const&) -> ASTNodePtr;
 };
 
 [[nodiscard]] auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr;
@@ -194,7 +207,8 @@ auto const kBuiltinFunctions = std::unordered_map<std::string,
     {"get", BuiltIn::get},          // get(key=<any>,map=<any>,default=<any>)
     {"join", BuiltIn::join},        // join(items=<any>,sep=<any>)
     {"flatten", BuiltIn::flatten},  // flatten(lists=<any>)
-    {"union", BuiltIn::map_union},  // union(maps=<any>, disjoint=<any>)
+    {"union", BuiltIn::map_union},  // union(maps=<any>, disjoint=<any>,
+                                    //       msg=<any>)
     {"keys", BuiltIn::keys},        // keys(map=<any>)
     {"fail", BuiltIn::fail},        // fail(msg=<any>)
     {"json_encode", BuiltIn::json_encode},  // json_encode(data=<any>)
@@ -230,7 +244,11 @@ auto const kBuiltinFunctions = std::unordered_map<std::string,
     {"to_subdir", BuiltIn::to_subdir},  // to_subdir(map=<map>, subdir=<string>,
                                         // flat=<any>, msg=<any>)
     {"from_subdir",
-     BuiltIn::from_subdir},  // from_subdir(map=<map>, subdir=<string>)
+     BuiltIn::from_subdir},       // from_subdir(map=<map>, subdir=<string>)
+    {"values", BuiltIn::values},  // values(map=<map>)
+    {"assert_non_empty",
+     BuiltIn::assert_non_empty},    // assert_non_empty(value=<any>, msg=<any>)
+    {"context", BuiltIn::context},  // context(value=<any>, msg=<any>)
 };
 
 }  // namespace jstlang

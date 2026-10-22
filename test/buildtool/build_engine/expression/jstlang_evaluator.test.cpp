@@ -248,6 +248,19 @@ TEST_CASE("runtime evaluator", "[built-in functions]") {
     CheckSame("jst.to_subdir({a: 'A'}, subdir='sub')");
     CheckSame("jst.to_subdir({'x/a': 'A'}, subdir='sub', flat=true)");
     CheckSame("jst.from_subdir({'sub/a': 'A', b: 'B'}, subdir='sub')");
+    CheckSame("jst.keys({b: 1, a: 2})");
+    CheckSame("jst.values(jst.env('m', default={b: 1, a: 2}))", kConfigs);
+    CheckSame("jst.assert_non_empty(jst.env('l', default=['d']), msg='empty')",
+              kConfigs);
+    CheckSame("jst.context(jst.env('x', default='d'), 'context')", kConfigs);
+    CheckSame(
+        "jst.union([{a: 'A'}, jst.env('m', default={})], disjoint=true,"
+        " msg=['conflict', jst.env('x')])",
+        kConfigs);
+    CheckSame(
+        "jst.to_subdir({a: 'A'}, subdir=jst.env('x', default='d'),"
+        " msg=['conflict', jst.env('x')])",
+        kConfigs);
 }
 
 TEST_CASE("runtime evaluator", "[imports]") {

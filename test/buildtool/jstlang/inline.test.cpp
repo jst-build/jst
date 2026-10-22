@@ -1826,7 +1826,7 @@ TEST_CASE("ast_inline", "[builtin_call]") {
         auto const* call = ASTNode::Cast<BuiltinCallNode const*>(ast.get());
         REQUIRE(call != nullptr);
         CHECK(call->GetName() == "union");
-        REQUIRE(call->GetArgs().size() == 2);
+        REQUIRE(call->GetArgs().size() == 3);
         REQUIRE(call->GetArgs()[1] != nullptr);
         CHECK(call->GetArgs()[1]->TruthValue() == true);
 

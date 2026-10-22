@@ -122,6 +122,11 @@ template <typename T = jstlang::ASTNode>
 [[nodiscard]] auto RefEqual(jstlang::RefData const& lhs,
                             jstlang::RefData const& rhs) -> bool;
 
+/// \brief Whether a value is empty for assert_non_empty(), i.e., not a
+/// non-empty string, list, or map; nullopt if not known statically.
+[[nodiscard]] auto IsEmptyLiteral(jstlang::ASTNodePtr const& node)
+    -> std::optional<bool>;
+
 [[nodiscard]] auto LiteralEqual(jstlang::ASTNode const& lhs,
                                 jstlang::ASTNode const& rhs)
     -> std::optional<bool>;
@@ -375,6 +380,7 @@ auto BuiltIn::map_union(Location const& loc,
     static const std::array kExpected = {
         ExpectedParameter{"maps", {ValueType::Any, ValueType::List}, true},
         ExpectedParameter{"disjoint", {}, false},
+        ExpectedParameter{"msg", {}, false},
     };
     static auto const kItemTypes =
         std::unordered_set<ValueType>{ValueType::Any, ValueType::Map};
@@ -399,6 +405,7 @@ auto BuiltIn::map_union(Location const& loc,
         throw BuiltInError(loc,
                            "union: Parameter \"disjoint\" must be a literal.");
     }
+    ASTNodePtr msg_node = RetrieveAs(named_params, kExpected[2]);
 
     // attempt static evaluation
     auto const* items_list = ASTNode::Cast<ListNode const*>(maps_node.get());
@@ -479,11 +486,18 @@ auto BuiltIn::map_union(Location const& loc,
                                     break;
                                 }
                                 if (not *equal) {
-                                    throw BuiltInError(
-                                        loc,
-                                        "disjoint union: Got "
-                                        "conflicting field name \"" +
-                                            name->GetValue() + "\"");
+                                    std::ostringstream oss{};
+                                    if (auto const* msg_str =
+                                            ASTNode::Cast<StringNode const*>(
+                                                msg_node.get())) {
+                                        if (not msg_str->GetValue().empty()) {
+                                            oss << msg_str->GetValue() << "\n";
+                                        }
+                                    }
+                                    oss << "disjoint union: Got conflicting "
+                                           "field name \""
+                                        << name->GetValue() << "\"";
+                                    throw BuiltInError(loc, oss.str());
                                 }
                             }
                             else {
@@ -518,7 +532,9 @@ auto BuiltIn::map_union(Location const& loc,
         loc,
         "union",
         BuiltinCallNode::args_t{
-            maps_node, disjoint_node == kNullNode ? nullptr : disjoint_node},
+            maps_node,
+            disjoint_node == kNullNode ? nullptr : disjoint_node,
+            msg_node},
         ValueType::Map);
 }
 
@@ -1730,7 +1746,7 @@ auto BuiltIn::to_subdir(Location const& loc,
         ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
         ExpectedParameter{"subdir", {ValueType::Any, ValueType::String}, false},
         ExpectedParameter{"flat", {}, false},
-        ExpectedParameter{"msg", {ValueType::String}, false},
+        ExpectedParameter{"msg", {}, false},
     };
 
     NamedParams named_params;
@@ -1922,6 +1938,122 @@ auto BuiltIn::from_subdir(Location const& loc,
         ValueType::Map);
 }
 
+auto BuiltIn::values(Location const& loc,
+                     EvalCallback const& /*unused*/,
+                     CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"map", {ValueType::Any, ValueType::Map}, true},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("values: ") + e.what());
+    }
+
+    ASTNodePtr map_node = RetrieveAs(named_params, kExpected[0]);
+    if (map_node == nullptr) {
+        throw BuiltInError(loc, "values: Missing mandatory parameter \"map\"");
+    }
+    if (auto const* map_obj = ASTNode::Cast<MapNode const*>(map_node.get())) {
+        // map with literal keys -> generate list of values, sorted by keys
+        if (auto entries = SortedLiteralEntries(*map_obj)) {
+            auto values = ListNode::items_t{};
+            values.reserve(entries->size());
+            for (auto const& [_, value] : *entries) {
+                values.emplace_back(value);
+            }
+            return std::make_shared<ListNode>(loc, std::move(values));
+        }
+    }
+
+    return std::make_shared<BuiltinCallNode>(
+        loc, "values", BuiltinCallNode::args_t{map_node}, ValueType::List);
+}
+
+auto BuiltIn::assert_non_empty(Location const& loc,
+                               EvalCallback const& /*unused*/,
+                               CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"value", {}, true},
+        ExpectedParameter{"msg", {}, false},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("assert_non_empty: ") + e.what());
+    }
+
+    ASTNodePtr value_node = RetrieveAs(named_params, kExpected[0]);
+    if (value_node == nullptr) {
+        throw BuiltInError(
+            loc, "assert_non_empty: Missing mandatory parameter \"value\"");
+    }
+    ASTNodePtr msg_node = RetrieveAs(named_params, kExpected[1]);
+
+    // attempt static evaluation
+    if (auto is_empty = IsEmptyLiteral(value_node)) {
+        if (not *is_empty) {
+            return value_node;
+        }
+        std::ostringstream oss{};
+        if (auto const* msg_str =
+                ASTNode::Cast<StringNode const*>(msg_node.get())) {
+            if (not msg_str->GetValue().empty()) {
+                oss << msg_str->GetValue() << "\n";
+            }
+        }
+        oss << "assert_non_empty: Got empty value";
+        throw BuiltInError(loc, oss.str());
+    }
+
+    return std::make_shared<BuiltinCallNode>(
+        loc,
+        "assert_non_empty",
+        BuiltinCallNode::args_t{value_node, msg_node},
+        value_node->EvalType());
+}
+
+auto BuiltIn::context(Location const& loc,
+                      EvalCallback const& /*unused*/,
+                      CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"value", {}, true},
+        ExpectedParameter{"msg", {}, true},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("context: ") + e.what());
+    }
+
+    ASTNodePtr value_node = RetrieveAs(named_params, kExpected[0]);
+    if (value_node == nullptr) {
+        throw BuiltInError(loc,
+                           "context: Missing mandatory parameter \"value\"");
+    }
+    ASTNodePtr msg_node = RetrieveAs(named_params, kExpected[1]);
+    if (msg_node == nullptr) {
+        throw BuiltInError(loc, "context: Missing mandatory parameter \"msg\"");
+    }
+
+    // literal JSON values cannot fail evaluation, no context needed
+    if (NodeToJson(value_node, /*json_only=*/true)) {
+        return value_node;
+    }
+
+    return std::make_shared<BuiltinCallNode>(
+        loc,
+        "context",
+        BuiltinCallNode::args_t{value_node, msg_node},
+        value_node->EvalType());
+}
+
 auto BuiltinsObject() -> ASTNodePtr const& {
     // per thread, as all evaluations share its nodes (whose reference counts
     // would otherwise contend between threads)
@@ -2099,6 +2231,9 @@ template <typename T>
     entries.emplace_back(MakeBuiltinObjEntry("enumerate"));
     entries.emplace_back(MakeBuiltinObjEntry("to_subdir"));
     entries.emplace_back(MakeBuiltinObjEntry("from_subdir"));
+    entries.emplace_back(MakeBuiltinObjEntry("values"));
+    entries.emplace_back(MakeBuiltinObjEntry("assert_non_empty"));
+    entries.emplace_back(MakeBuiltinObjEntry("context"));
     return std::make_shared<jstlang::MapNode>(jstlang::Location{}, entries);
 }
 
@@ -2307,6 +2442,36 @@ template <typename T>
     }
     // null
     return true;
+}
+
+[[nodiscard]] auto IsEmptyLiteral(jstlang::ASTNodePtr const& node)
+    -> std::optional<bool> {
+    using jstlang::ASTNode;
+    if (auto const* str =
+            ASTNode::Cast<jstlang::StringNode const*>(node.get())) {
+        return str->GetValue().empty();
+    }
+    if (auto const* list =
+            ASTNode::Cast<jstlang::ListNode const*>(node.get())) {
+        return list->GetItems().empty();
+    }
+    if (auto const* map = ASTNode::Cast<jstlang::MapNode const*>(node.get())) {
+        // fields with computed names are never merged to zero fields
+        return map->GetFields().empty();
+    }
+    if (ASTNode::Cast<jstlang::RefNode const*>(node.get()) != nullptr) {
+        return std::nullopt;  // value (string or list) in full evaluation
+    }
+    // as in the expression language, only strings, lists, and maps can be
+    // non-empty; values of other types (e.g., numbers or artifacts) cannot
+    auto const type = node->EvalType();
+    if (node->IsLiteral() or (type != jstlang::ValueType::Any and
+                              type != jstlang::ValueType::String and
+                              type != jstlang::ValueType::List and
+                              type != jstlang::ValueType::Map)) {
+        return true;
+    }
+    return std::nullopt;
 }
 
 [[nodiscard]] auto ShellQuote(std::string arg) -> std::string {
