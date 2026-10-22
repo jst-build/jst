@@ -97,6 +97,7 @@
       @'./build-fails:TESTS',
       @'./execution-service:TESTS',
       @'./generated-binary:TESTS',
+      @'./jstlang:TESTS',
       @'./target-tests:TESTS',
       @'./user-errors:TESTS',
     ],

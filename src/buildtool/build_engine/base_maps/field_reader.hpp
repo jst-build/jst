@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,18 +20,22 @@
 #include <cstddef>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>  // std::move
+#include <variant>
 #include <vector>
 
 #include "fmt/format.h"
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
+#include "src/buildtool/build_engine/base_maps/field_expression.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/common/repository_config.hpp"
@@ -86,68 +91,105 @@ class FieldReader {
                       true);
             return std::nullopt;
         }
-        return FieldReader(json, id, entity_type, logger);
+        return FieldReader(EntityDefinition{json}, id, entity_type, logger);
     }
 
-    [[nodiscard]] static auto CreatePtr(nlohmann::json const& json,
+    [[nodiscard]] static auto CreatePtr(EntityDefinition desc,
                                         EntityName const& id,
                                         std::string const& entity_type,
                                         AsyncMapConsumerLoggerPtr const& logger)
         -> Ptr {
-        if (not json.is_object()) {
+        if (not desc.IsObject()) {
             (*logger)(fmt::format("{} definition {} is not an object.",
                                   entity_type,
                                   id.GetNamedTarget().name),
                       true);
             return nullptr;
         }
-        return std::make_shared<FieldReader>(json, id, entity_type, logger);
+        return std::make_shared<FieldReader>(
+            std::move(desc), id, entity_type, logger);
     }
 
     [[nodiscard]] auto ReadExpression(std::string const& field_name) const
         -> ExpressionPtr {
-        auto expr_it = json_.find(field_name);
-        if (expr_it == json_.end()) {
-            (*logger_)(fmt::format("Missing mandatory field {} in {} {}.",
-                                   field_name,
-                                   entity_type_,
-                                   id_.GetNamedTarget().name),
-                       true);
+        auto json = ReadJson(field_name);
+        if (not json) {
             return ExpressionPtr{nullptr};
         }
-
-        auto expr = Expression::FromJson(expr_it.value());
-        if (not expr) {
-            (*logger_)(
-                fmt::format("Failed to create expression from JSON:\n  {}",
-                            json_.dump()),
-                true);
+        if (not *json) {
+            LogMissingField(field_name);
+            return ExpressionPtr{nullptr};
         }
-        return expr;
+        return ToExpression(**json);
     }
 
     [[nodiscard]] auto ReadOptionalExpression(
         std::string const& field_name,
         ExpressionPtr const& default_value) const -> ExpressionPtr {
-        auto expr_it = json_.find(field_name);
-        if (expr_it == json_.end()) {
+        auto json = ReadJson(field_name);
+        if (not json) {
+            return ExpressionPtr{nullptr};
+        }
+        if (not *json) {
             return default_value;
         }
+        return ToExpression(**json);
+    }
 
-        auto expr = Expression::FromJson(expr_it.value());
+    /// \brief Read field as expression for evaluation in a configuration.
+    [[nodiscard]] auto ReadFieldExpression(std::string const& field_name) const
+        -> FieldExpression {
+        auto expr = desc_.ReadFieldExpression(field_name);
         if (not expr) {
-            (*logger_)(
-                fmt::format("Failed to create expression from JSON:\n  {}",
-                            json_.dump()),
-                true);
+            LogMissingField(field_name);
+            return FieldExpression{};
         }
-        return expr;
+        if (not *expr) {
+            LogConversionFailure();
+        }
+        return *std::move(expr);
+    }
+
+    /// \brief Read optional field as expression for evaluation in a
+    /// configuration.
+    [[nodiscard]] auto ReadOptionalFieldExpression(
+        std::string const& field_name,
+        ExpressionPtr const& default_value) const -> FieldExpression {
+        auto expr = desc_.ReadFieldExpression(field_name);
+        if (not expr) {
+            return default_value;
+        }
+        if (not *expr) {
+            LogConversionFailure();
+        }
+        return *std::move(expr);
+    }
+
+    /// \brief Read map field as expressions (one per entry) for evaluation in
+    /// a configuration. A missing field is read as empty map.
+    [[nodiscard]] auto ReadFieldExpressionMap(std::string const& field_name)
+        const -> std::optional<std::map<std::string, FieldExpression>> {
+        auto exprs = desc_.ReadFieldExpressions(
+            field_name, [this](std::string const& msg) {
+                (*logger_)(fmt::format("In {} {}:\n{}",
+                                       entity_type_,
+                                       id_.GetNamedTarget().name,
+                                       msg),
+                           true);
+            });
+        if (not exprs) {
+            return std::nullopt;
+        }
+        return exprs->value_or(std::map<std::string, FieldExpression>{});
     }
 
     [[nodiscard]] auto ReadStringList(std::string const& field_name) const
         -> std::optional<std::vector<std::string>> {
-        auto const& list =
-            GetOrDefault(json_, field_name, nlohmann::json::array());
+        auto json = ReadJson(field_name);
+        if (not json) {
+            return std::nullopt;
+        }
+        auto const& list = json->value_or(nlohmann::json::array());
         if (not list.is_array()) {
             (*logger_)(fmt::format("Field {} in {} {} is not a list",
                                    field_name,
@@ -182,8 +224,11 @@ class FieldReader {
         std::string const& field_name,
         gsl::not_null<const RepositoryConfig*> const& repo_config) const
         -> std::optional<EntityAliases> {
-        auto const& map =
-            GetOrDefault(json_, field_name, nlohmann::json::object());
+        auto json = ReadJson(field_name);
+        if (not json) {
+            return std::nullopt;
+        }
+        auto const& map = json->value_or(nlohmann::json::object());
         if (not map.is_object()) {
             (*logger_)(fmt::format("Field {} in {} {} is not an object",
                                    field_name,
@@ -222,7 +267,7 @@ class FieldReader {
 
     void ExpectFields(std::unordered_set<std::string> const& expected) {
         auto unexpected = nlohmann::json::array();
-        for (auto const& [key, value] : json_.items()) {
+        for (auto const& key : desc_.FieldNames()) {
             if (not expected.contains(key)) {
                 unexpected.push_back(key);
             }
@@ -236,20 +281,54 @@ class FieldReader {
         }
     }
 
-    FieldReader(nlohmann::json json,
+    FieldReader(EntityDefinition desc,
                 EntityName id,
                 std::string entity_type,
                 AsyncMapConsumerLoggerPtr logger) noexcept
-        : json_(std::move(json)),
+        : desc_(std::move(desc)),
           id_{std::move(id)},
           entity_type_{std::move(entity_type)},
           logger_{std::move(logger)} {}
 
   private:
-    nlohmann::json json_;
+    EntityDefinition desc_;
     EntityName id_;
     std::string entity_type_;
     AsyncMapConsumerLoggerPtr logger_;
+
+    [[nodiscard]] auto ReadJson(std::string const& field_name) const
+        -> expected<std::optional<nlohmann::json>, std::monostate> {
+        return desc_.ReadJson(field_name, [this](std::string const& msg) {
+            (*logger_)(fmt::format("In {} {}:\n{}",
+                                   entity_type_,
+                                   id_.GetNamedTarget().name,
+                                   msg),
+                       true);
+        });
+    }
+
+    [[nodiscard]] auto ToExpression(nlohmann::json const& json) const
+        -> ExpressionPtr {
+        auto expr = Expression::FromJson(json);
+        if (not expr) {
+            LogConversionFailure();
+        }
+        return expr;
+    }
+
+    void LogMissingField(std::string const& field_name) const {
+        (*logger_)(fmt::format("Missing mandatory field {} in {} {}.",
+                               field_name,
+                               entity_type_,
+                               id_.GetNamedTarget().name),
+                   true);
+    }
+
+    void LogConversionFailure() const {
+        (*logger_)(fmt::format("Failed to create expression from JSON:\n  {}",
+                               desc_.ToJson().dump()),
+                   true);
+    }
 };
 
 }  // namespace BuildMaps::Base

@@ -16,12 +16,16 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "fmt/format.h"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entities_file.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/base_maps/field_reader.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/module_name.hpp"
 #include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
@@ -53,9 +57,11 @@ auto LookupCache(BuildMaps::Target::ConfiguredTarget const& ctarget,
                   /*fatal=*/true);
         return unexpected(std::monostate{});
     }
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(repository_config, 1);
-    nlohmann::json targets_file{};
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(repository_config, 1);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, repository_config, 1);
+    std::optional<BuildMaps::Base::EntitiesFile> targets_file{};
     bool failed{false};
     {
         TaskSystem ts{1};
@@ -74,20 +80,29 @@ auto LookupCache(BuildMaps::Target::ConfiguredTarget const& ctarget,
     if (failed) {
         return unexpected(std::monostate{});
     }
-    auto desc_it = targets_file.find(ctarget.target.GetNamedTarget().name);
-    if (desc_it == targets_file.end()) {
+    auto const& target_name = ctarget.target.GetNamedTarget().name;
+    if (not targets_file->Contains(target_name)) {
         (*logger)("Not referring to a defined target", /*fatal=*/true);
         return unexpected(std::monostate{});
     }
-    nlohmann::json const& desc = *desc_it;
-    auto rule_it = desc.find("type");
-    if (rule_it == desc.end()) {
+    auto const desc_logger = [&logger](std::string const& msg) {
+        (*logger)(msg, /*fatal=*/true);
+    };
+    auto desc = targets_file->GetEntity(target_name, desc_logger);
+    if (not desc) {
+        return unexpected(std::monostate{});
+    }
+    auto rule_type = desc->ReadJson("type", desc_logger);
+    if (not rule_type) {
+        return unexpected(std::monostate{});
+    }
+    if (not *rule_type) {
         (*logger)(fmt::format("No type specified in target-description {}",
-                              desc.dump()),
+                              desc->ToJson().dump()),
                   true);
         return unexpected(std::monostate{});
     }
-    auto const& rule = *rule_it;
+    auto const& rule = **rule_type;
     if (not(rule.is_string() and rule.get<std::string>() == "export")) {
         (*logger)(fmt::format("Target not an export target, but of type {}",
                               rule.dump()),
@@ -95,7 +110,7 @@ auto LookupCache(BuildMaps::Target::ConfiguredTarget const& ctarget,
         return unexpected(std::monostate{});
     }
     auto reader = BuildMaps::Base::FieldReader::CreatePtr(
-        desc, ctarget.target, "export target", logger);
+        *desc, ctarget.target, "export target", logger);
     auto flexible_vars = reader->ReadStringList("flexible_config");
     if (not flexible_vars) {
         return unexpected(std::monostate{});

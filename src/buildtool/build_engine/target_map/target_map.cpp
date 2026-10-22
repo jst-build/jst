@@ -39,9 +39,12 @@
 
 #include "fmt/format.h"
 #include "src/buildtool/build_engine/analysed_target/target_graph_information.hpp"
+#include "src/buildtool/build_engine/base_maps/entities_file.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/base_maps/expression_function.hpp"
+#include "src/buildtool/build_engine/base_maps/field_expression.hpp"
 #include "src/buildtool/build_engine/base_maps/field_reader.hpp"
 #include "src/buildtool/build_engine/base_maps/module_name.hpp"
 #include "src/buildtool/build_engine/base_maps/user_rule.hpp"
@@ -106,18 +109,21 @@ using namespace std::string_literals;
 struct TargetData {
     using Ptr = std::shared_ptr<TargetData>;
 
+    using FieldExpression = BuildMaps::Base::FieldExpression;
+    using field_exprs_t = std::unordered_map<std::string, FieldExpression>;
+
     std::vector<std::string> target_vars;
-    std::unordered_map<std::string, ExpressionPtr> config_exprs;
-    std::unordered_map<std::string, ExpressionPtr> string_exprs;
-    std::unordered_map<std::string, ExpressionPtr> target_exprs;
-    ExpressionPtr tainted_expr;
+    field_exprs_t config_exprs;
+    field_exprs_t string_exprs;
+    field_exprs_t target_exprs;
+    FieldExpression tainted_expr;
     bool parse_target_names{};
 
     TargetData(std::vector<std::string> target_vars,
-               std::unordered_map<std::string, ExpressionPtr> config_exprs,
-               std::unordered_map<std::string, ExpressionPtr> string_exprs,
-               std::unordered_map<std::string, ExpressionPtr> target_exprs,
-               ExpressionPtr tainted_expr,
+               field_exprs_t config_exprs,
+               field_exprs_t string_exprs,
+               field_exprs_t target_exprs,
+               FieldExpression tainted_expr,
                bool parse_target_names)
         : target_vars{std::move(target_vars)},
           config_exprs{std::move(config_exprs)},
@@ -132,16 +138,14 @@ struct TargetData {
         desc->ExpectFields(rule->ExpectedFields());
 
         auto target_vars = desc->ReadStringList("arguments_config");
-        auto tainted_expr =
-            desc->ReadOptionalExpression("tainted", Expression::kEmptyList);
+        auto tainted_expr = desc->ReadOptionalFieldExpression(
+            "tainted", Expression::kEmptyList);
 
         auto convert_to_exprs =
-            [&desc](gsl::not_null<
-                        std::unordered_map<std::string, ExpressionPtr>*> const&
-                        expr_map,
+            [&desc](gsl::not_null<field_exprs_t*> const& expr_map,
                     std::vector<std::string> const& field_names) -> bool {
             for (auto const& field_name : field_names) {
-                auto expr = desc->ReadOptionalExpression(
+                auto expr = desc->ReadOptionalFieldExpression(
                     field_name, Expression::kEmptyList);
                 if (not expr) {
                     return false;
@@ -151,9 +155,9 @@ struct TargetData {
             return true;
         };
 
-        std::unordered_map<std::string, ExpressionPtr> config_exprs;
-        std::unordered_map<std::string, ExpressionPtr> string_exprs;
-        std::unordered_map<std::string, ExpressionPtr> target_exprs;
+        field_exprs_t config_exprs;
+        field_exprs_t string_exprs;
+        field_exprs_t target_exprs;
         if (target_vars and tainted_expr and
             convert_to_exprs(&config_exprs, rule->ConfigFields()) and
             convert_to_exprs(&string_exprs, rule->StringFields()) and
@@ -178,9 +182,9 @@ struct TargetData {
         auto const& string_fields = node.string_fields->Map();
         auto const& target_fields = node.target_fields->Map();
 
-        std::unordered_map<std::string, ExpressionPtr> config_exprs;
-        std::unordered_map<std::string, ExpressionPtr> string_exprs;
-        std::unordered_map<std::string, ExpressionPtr> target_exprs;
+        field_exprs_t config_exprs;
+        field_exprs_t string_exprs;
+        field_exprs_t target_exprs;
 
         for (auto const& field_name : rule->ConfigFields()) {
             if (target_fields.Find(field_name)) {
@@ -235,7 +239,7 @@ struct TargetData {
                     BuildMaps::Base::AnonymousTarget{
                         .rule_map = rule_map, .target_node = node_expr}});
             }
-            target_exprs.emplace(field_name, targets);
+            target_exprs.emplace(field_name, ExpressionPtr{std::move(targets)});
         }
 
         return std::make_shared<TargetData>(std::vector<std::string>{},
@@ -1509,7 +1513,7 @@ void withRuleDefinition(
 void withTargetsFile(
     const gsl::not_null<AnalyseContext*>& context,
     const BuildMaps::Target::ConfiguredTarget& key,
-    const nlohmann::json& targets_file,
+    const BuildMaps::Base::EntitiesFile& targets_file,
     const gsl::not_null<BuildMaps::Base::SourceTargetMap*>& source_target,
     const gsl::not_null<BuildMaps::Base::UserRuleMap*>& rule_map,
     const gsl::not_null<TaskSystem*>& ts,
@@ -1517,8 +1521,8 @@ void withTargetsFile(
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
     const BuildMaps::Target::TargetMap::LoggerPtr& logger,
     const gsl::not_null<BuildMaps::Target::ResultTargetMap*> result_map) {
-    auto desc_it = targets_file.find(key.target.GetNamedTarget().name);
-    if (desc_it == targets_file.end()) {
+    auto const& target_name = key.target.GetNamedTarget().name;
+    if (not targets_file.Contains(target_name)) {
         // Not a defined taraget, treat as source target
         source_target->ConsumeAfterKeysReady(
             ts,
@@ -1533,19 +1537,33 @@ void withTargetsFile(
             });
     }
     else {
-        nlohmann::json desc = *desc_it;
-        auto rule_it = desc.find("type");
-        if (rule_it == desc.end()) {
+        auto const desc_logger = [&logger, &key](std::string const& msg) {
+            (*logger)(fmt::format("While reading the definition of target "
+                                  "{}:\n{}",
+                                  key.target.ToString(),
+                                  msg),
+                      true);
+        };
+        auto desc = targets_file.GetEntity(target_name, desc_logger);
+        if (not desc) {
+            return;
+        }
+        auto rule_type = desc->ReadJson("type", desc_logger);
+        if (not rule_type) {
+            return;
+        }
+        if (not *rule_type) {
             (*logger)(
                 fmt::format("No type specified in the definition of target {}",
                             key.target.ToString()),
                 true);
             return;
         }
+        auto const* rule_it = &**rule_type;
         // Handle built-in rule, if it is
         auto handled_as_builtin = BuildMaps::Target::HandleBuiltin(context,
                                                                    *rule_it,
-                                                                   desc,
+                                                                   *desc,
                                                                    key,
                                                                    subcaller,
                                                                    setter,
@@ -1572,7 +1590,7 @@ void withTargetsFile(
             return;
         }
         auto desc_reader = BuildMaps::Base::FieldReader::CreatePtr(
-            desc,
+            *desc,
             key.target,
             fmt::format("{} target", rule_name->ToString()),
             logger);

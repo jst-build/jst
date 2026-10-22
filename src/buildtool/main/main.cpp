@@ -36,8 +36,12 @@
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
 #include "src/buildtool/build_engine/analysed_target/analysed_target.hpp"
+#include "src/buildtool/build_engine/base_maps/entities_file.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
+#include "src/buildtool/build_engine/base_maps/module_name.hpp"
+#include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
@@ -396,41 +400,35 @@ void SetupFileChunker() {
         Logger::Log(LogLevel::Error, "Expected file at {}.", target_file);
         std::exit(kExitFailure);
     }
-    auto file_content = target_root->ReadContent(target_file);
-    if (not file_content) {
-        Logger::Log(LogLevel::Error, "Cannot read file {}.", target_file);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(repo_config, 1);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, repo_config, 1);
+    std::optional<BuildMaps::Base::EntitiesFile> targets_file{};
+    {
+        TaskSystem ts{1};
+        targets_file_map.ConsumeAfterKeysReady(
+            &ts,
+            {BuildMaps::Base::ModuleName{repo, module}},
+            [&targets_file](auto const& values) { targets_file = *values[0]; },
+            [&target_file](auto const& msg, bool fatal) {
+                Logger::Log(fatal ? LogLevel::Error : LogLevel::Warning,
+                            "While searching for the default target in {}:\n{}",
+                            target_file,
+                            msg);
+            });
+    }
+    if (not targets_file) {
         std::exit(kExitFailure);
     }
-    auto json = nlohmann::json();
-    try {
-        json = nlohmann::json::parse(*file_content);
-    } catch (std::exception const& e) {
-        auto jstlang_ast = target_root->ReadJstlang(repo,
-                                                    target_file,
-                                                    std::move(*file_content),
-                                                    JustFileType::kTargets);
-        if (not jstlang_ast) {
-            Logger::Log(LogLevel::Error,
-                        "While searching for the default target in {}:\n"
-                        "Parsing failed as it does not contain valid JSON nor "
-                        "Jstlang code.",
-                        target_file);
-            std::exit(kExitFailure);
-        }
-        json = std::move(*jstlang_ast);
-    }
-    if (not json.is_object()) {
-        Logger::Log(
-            LogLevel::Error, "Invalid content in target file {}.", target_file);
-        std::exit(kExitFailure);
-    }
-    if (json.empty()) {
+    auto names = targets_file->Names();
+    if (names.empty()) {
         Logger::Log(LogLevel::Error,
                     "Missing target descriptions in file {}.",
                     target_file);
         std::exit(kExitFailure);
     }
-    return json.begin().key();
+    return names.front();
 }
 
 /// \brief Decode the target reference given on the command line. Without one,

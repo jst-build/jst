@@ -31,7 +31,10 @@
 #include "fmt/color.h"
 #include "fmt/format.h"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entities_file.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/module_name.hpp"
 #include "src/buildtool/build_engine/base_maps/rule_map.hpp"
 #include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
@@ -635,8 +638,10 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
     }
 
     // process with a present target root
-    auto targets_file_map = Base::CreateTargetsFileMap(repo_config, jobs);
-    nlohmann::json targets_file{};
+    auto jstlang_file_map = Base::CreateJstlangFileMap(repo_config, jobs);
+    auto targets_file_map =
+        Base::CreateTargetsFileMap(&jstlang_file_map, repo_config, jobs);
+    std::optional<Base::EntitiesFile> targets_file{};
     bool failed{false};
     {
         TaskSystem ts{jobs};
@@ -654,14 +659,21 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
     if (failed) {
         return kExitAnalysisFailure;
     }
-    auto desc_it = targets_file.find(id.target.GetNamedTarget().name);
-    if (desc_it == targets_file.end()) {
+    auto const& target_name = id.target.GetNamedTarget().name;
+    if (not targets_file->Contains(target_name)) {
         PrintTargetHeader(style, id.target.ToString());
         std::cout << style.Dim("        implicitly a source file") << "\n"
                   << std::flush;
         return kExitSuccess;
     }
-    nlohmann::json desc = *desc_it;
+    auto target_desc = targets_file->GetEntity(
+        target_name,
+        [](auto const& msg) { Logger::Log(LogLevel::Error, "{}", msg); });
+    if (not target_desc) {
+        return kExitAnalysisFailure;
+    }
+    // only fields that can be evaluated statically are described
+    nlohmann::json desc = target_desc->ToJson();
     auto rule_it = desc.find("type");
     if (rule_it == desc.end()) {
         Logger::Log(LogLevel::Error,

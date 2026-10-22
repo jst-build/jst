@@ -64,7 +64,6 @@ auto ReadJsonFile(std::string const& target_file_name,
     auto repo_config = SetupConfig(target_file_name, storage_config, use_git);
     auto json_files = CreateJsonFileMap<&RepositoryConfig::WorkspaceRoot,
                                         &RepositoryConfig::TargetFileName,
-                                        JustFileType::kTargets,
                                         kMandatory>(&repo_config, 0);
     bool success{true};
     {

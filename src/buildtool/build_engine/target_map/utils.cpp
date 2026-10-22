@@ -203,7 +203,7 @@ auto BuildMaps::Target::Utils::add_dir_for(
 auto BuildMaps::Target::Utils::getTainted(
     std::set<std::string>* tainted,
     const Configuration& config,
-    const ExpressionPtr& tainted_exp,
+    const BuildMaps::Base::FieldExpression& tainted_exp,
     const BuildMaps::Target::TargetMap::LoggerPtr& logger) -> bool {
     if (not tainted_exp) {
         return false;

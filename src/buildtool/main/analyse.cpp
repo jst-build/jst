@@ -21,6 +21,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -31,6 +32,7 @@
 #include "src/buildtool/build_engine/base_maps/directory_map.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/base_maps/expression_map.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/rule_map.hpp"
 #include "src/buildtool/build_engine/base_maps/source_map.hpp"
 #include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
@@ -42,6 +44,7 @@
 #include "src/buildtool/common/action.hpp"
 #include "src/buildtool/common/action_description.hpp"
 #include "src/buildtool/crypto/hash_function.hpp"
+#include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/multithreading/async_map_utils.hpp"
 #include "src/buildtool/multithreading/task_system.hpp"
@@ -135,9 +138,11 @@ namespace Target = BuildMaps::Target;
         Base::CreateDirectoryEntriesMap(context->repo_config, jobs);
     auto expressions_file_map =
         Base::CreateExpressionFileMap(context->repo_config, jobs);
+    auto jstlang_file_map =
+        Base::CreateJstlangFileMap(context->repo_config, jobs);
     auto rule_file_map = Base::CreateRuleFileMap(context->repo_config, jobs);
-    auto targets_file_map =
-        Base::CreateTargetsFileMap(context->repo_config, jobs);
+    auto targets_file_map = Base::CreateTargetsFileMap(
+        &jstlang_file_map, context->repo_config, jobs);
     auto expr_map = Base::CreateExpressionMap(
         &expressions_file_map, context->repo_config, jobs);
     auto rule_map = Base::CreateRuleMap(
@@ -219,6 +224,14 @@ namespace Target = BuildMaps::Target;
             Logger::Log(logger, LogLevel::Error, *error_msg);
             return std::nullopt;
         }
+        if (auto error_msg = DetectAndReportCycle(
+                "jstlang imports",
+                jstlang_file_map,
+                std::function<std::string(jstlang::FileLocation const&)>{
+                    [](auto const& file) { return file.ToString(); }})) {
+            Logger::Log(logger, LogLevel::Error, *error_msg);
+            return std::nullopt;
+        }
         if (auto error_msg =
                 DetectAndReportCycle("target dependencies",
                                      target_map,
@@ -242,6 +255,7 @@ namespace Target = BuildMaps::Target;
         source_targets.Clear(&ts);
         directory_entries.Clear(&ts);
         expressions_file_map.Clear(&ts);
+        jstlang_file_map.Clear(&ts);
         rule_file_map.Clear(&ts);
         targets_file_map.Clear(&ts);
         expr_map.Clear(&ts);

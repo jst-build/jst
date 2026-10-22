@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@
 #include <cstddef>
 #include <exception>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <utility>  // std::move
 
@@ -41,10 +43,79 @@ using RootGetter = auto (RepositoryConfig::*)(std::string const&) const
 using FileNameGetter = auto (RepositoryConfig::*)(std::string const&) const
     -> std::string const*;
 
-template <RootGetter kGetRoot,
-          FileNameGetter kGetName,
-          JustFileType kFileType,
-          bool kMandatory = true>
+/// \brief Content of a module's file (e.g., a TARGETS file).
+struct ModuleFile {
+    FileRoot const* root;
+    std::filesystem::path path;
+    std::optional<std::string> content;  // nullopt if missing and optional
+};
+
+/// \brief Read the content of a module's file.
+/// \returns nullopt on error (reported via logger).
+template <RootGetter kGetRoot, FileNameGetter kGetName, bool kMandatory = true>
+[[nodiscard]] auto ReadModuleFile(
+    gsl::not_null<const RepositoryConfig*> const& repo_config,
+    ModuleName const& key,
+    AsyncMapConsumerLoggerPtr const& logger) -> std::optional<ModuleFile> {
+    auto const* root = ((*repo_config).*kGetRoot)(key.repository);
+
+    auto const* json_file_name = ((*repo_config).*kGetName)(key.repository);
+    if (root == nullptr or json_file_name == nullptr) {
+        (*logger)(fmt::format("Cannot determine root or JSON file name for "
+                              "repository {}.",
+                              key.repository),
+                  true);
+        return std::nullopt;
+    }
+    auto module = std::filesystem::path{key.module}.lexically_normal();
+    if (module.is_absolute() or *module.begin() == "..") {
+        (*logger)(fmt::format("Modules have to live inside their "
+                              "repository, but found {}.",
+                              key.module),
+                  true);
+        return std::nullopt;
+    }
+    auto json_file_path = module / *json_file_name;
+
+    if (root->IsAbsent()) {
+        std::string missing_root = "[unknown]";
+        auto absent_tree = root->GetAbsentTreeId();
+        if (absent_tree) {
+            missing_root = *absent_tree;
+        }
+        (*logger)(
+            fmt::format("Would have to read JSON file {} of absent root {}.",
+                        json_file_path.string(),
+                        missing_root),
+            true);
+        return std::nullopt;
+    }
+
+    if (not root->IsFile(json_file_path)) {
+        if constexpr (kMandatory) {
+            (*logger)(fmt::format("JSON file {} does not exist.",
+                                  json_file_path.string()),
+                      true);
+            return std::nullopt;
+        }
+        return ModuleFile{.root = root,
+                          .path = std::move(json_file_path),
+                          .content = std::nullopt};
+    }
+
+    auto file_content = root->ReadContent(json_file_path);
+    if (not file_content) {
+        (*logger)(
+            fmt::format("cannot read JSON file {}.", json_file_path.string()),
+            true);
+        return std::nullopt;
+    }
+    return ModuleFile{.root = root,
+                      .path = std::move(json_file_path),
+                      .content = std::move(file_content)};
+}
+
+template <RootGetter kGetRoot, FileNameGetter kGetName, bool kMandatory = true>
 auto CreateJsonFileMap(
     gsl::not_null<const RepositoryConfig*> const& repo_config,
     std::size_t jobs) -> JsonFileMap {
@@ -53,84 +124,26 @@ auto CreateJsonFileMap(
                                           auto logger,
                                           auto /* unused */,
                                           auto const& key) {
-        auto const* root = ((*repo_config).*kGetRoot)(key.repository);
-
-        auto const* json_file_name = ((*repo_config).*kGetName)(key.repository);
-        if (root == nullptr or json_file_name == nullptr) {
-            (*logger)(fmt::format("Cannot determine root or JSON file name for "
-                                  "repository {}.",
-                                  key.repository),
-                      true);
+        auto file = ReadModuleFile<kGetRoot, kGetName, kMandatory>(
+            repo_config, key, logger);
+        if (not file) {
             return;
         }
-        auto module = std::filesystem::path{key.module}.lexically_normal();
-        if (module.is_absolute() or *module.begin() == "..") {
-            (*logger)(fmt::format("Modules have to live inside their "
-                                  "repository, but found {}.",
-                                  key.module),
-                      true);
+        if (not file->content) {
+            (*setter)(nlohmann::json::object());
             return;
         }
-        auto json_file_path = module / *json_file_name;
-
-        if (root->IsAbsent()) {
-            std::string missing_root = "[unknown]";
-            auto absent_tree = root->GetAbsentTreeId();
-            if (absent_tree) {
-                missing_root = *absent_tree;
-            }
-            (*logger)(fmt::format(
-                          "Would have to read JSON file {} of absent root {}.",
-                          json_file_path.string(),
-                          missing_root),
-                      true);
-            return;
-        }
-
-        if (not root->IsFile(json_file_path)) {
-            if constexpr (kMandatory) {
-                (*logger)(fmt::format("JSON file {} does not exist.",
-                                      json_file_path.string()),
-                          true);
-            }
-            else {
-                (*setter)(nlohmann::json::object());
-            }
-            return;
-        }
-
-        auto const file_content = root->ReadContent(json_file_path);
-        if (not file_content) {
-            (*logger)(fmt::format("cannot read JSON file {}.",
-                                  json_file_path.string()),
-                      true);
-            return;
-        }
+        auto const& json_file_path = file->path;
         auto json = nlohmann::json();
         try {
-            json = nlohmann::json::parse(*file_content);
+            json = nlohmann::json::parse(*file->content);
         } catch (std::exception const& e) {
-            if constexpr (kFileType != JustFileType::kTargets) {
-                (*logger)(
-                    fmt::format("JSON file {} does not contain valid JSON:\n{}",
-                                json_file_path.string(),
-                                e.what()),
-                    true);
-                return;
-            }
-            // failed, so try jstlang
-            auto jlang_ast = root->ReadJstlang(key.repository,
-                                               json_file_path,
-                                               std::move(*file_content),
-                                               kFileType);
-            if (not jlang_ast) {
-                (*logger)(fmt::format("Parsing file {} failed. It does not "
-                                      "contain valid JSON nor Jstlang code.",
-                                      json_file_path.string()),
-                          true);
-                return;
-            }
-            json = std::move(*jlang_ast);
+            (*logger)(
+                fmt::format("JSON file {} does not contain valid JSON:\n{}",
+                            json_file_path.string(),
+                            e.what()),
+                true);
+            return;
         }
         if (not json.is_object()) {
             (*logger)(fmt::format("JSON in {} is not an object.",

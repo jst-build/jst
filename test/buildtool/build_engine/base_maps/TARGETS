@@ -140,6 +140,27 @@
     stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
   },
 
+  field_reader: {
+    type: @'rules//CC/test:test',
+    name: ['field_reader'],
+    srcs: ['field_reader.test.cpp'],
+    'private-deps': [
+      @'catch2//:catch2',
+      @'json//:json',
+      @'src//src/buildtool/build_engine/base_maps:entities_file',
+      @'src//src/buildtool/build_engine/base_maps:entity_definition',
+      @'src//src/buildtool/build_engine/base_maps:entity_name_data',
+      @'src//src/buildtool/build_engine/base_maps:field_reader',
+      @'src//src/buildtool/build_engine/base_maps:jstlang_entities_file',
+      @'src//src/buildtool/build_engine/expression:expression',
+      @'src//src/buildtool/jstlang:file_data',
+      @'src//src/buildtool/jstlang:parser',
+      @'src//src/buildtool/jstlang/ast:ast',
+      @'//:catch-main',
+    ],
+    stage: ['test', 'buildtool', 'build_engine', 'base_maps'],
+  },
+
   jstlang_entities_file: {
     type: @'rules//CC/test:test',
     name: ['jstlang_entities_file'],
@@ -243,6 +264,7 @@
       'directory_map',
       'entity_name',
       'expression_map',
+      'field_reader',
       'json_file_map',
       'jstlang_entities_file',
       'jstlang_file_map',

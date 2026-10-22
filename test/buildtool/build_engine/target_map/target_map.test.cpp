@@ -31,6 +31,7 @@
 #include "src/buildtool/build_engine/base_maps/directory_map.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/base_maps/expression_map.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/rule_map.hpp"
 #include "src/buildtool/build_engine/base_maps/source_map.hpp"
 #include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
@@ -113,8 +114,10 @@ TEST_CASE("simple targets", "[target_map]") {  // NOLINT
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -742,8 +745,10 @@ TEST_CASE("configuration deduplication", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -854,8 +859,10 @@ TEST_CASE("generator functions in string arguments", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -978,8 +985,10 @@ TEST_CASE("built-in rules", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -1277,8 +1286,10 @@ TEST_CASE("target reference", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -1444,8 +1455,10 @@ TEST_CASE("trees", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -1575,8 +1588,10 @@ TEST_CASE("tree_overlays", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -1761,8 +1776,10 @@ TEST_CASE("RESULT error reporting", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);
@@ -1951,8 +1968,10 @@ TEST_CASE("wrong arguments", "[target_map]") {
         &directory_entries,
         &repo_config,
         storage_config.Get().hash_function.GetType());
-    auto targets_file_map =
-        BuildMaps::Base::CreateTargetsFileMap(&repo_config, 0);
+    auto jstlang_file_map =
+        BuildMaps::Base::CreateJstlangFileMap(&repo_config, 0);
+    auto targets_file_map = BuildMaps::Base::CreateTargetsFileMap(
+        &jstlang_file_map, &repo_config, 0);
     auto rule_file_map = BuildMaps::Base::CreateRuleFileMap(&repo_config, 0);
     static auto expressions_file_map =
         BuildMaps::Base::CreateExpressionFileMap(&repo_config, 0);

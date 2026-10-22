@@ -25,6 +25,7 @@
 #include "gsl/gsl"
 #include "src/buildtool/build_engine/analysed_target/analysed_target.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
+#include "src/buildtool/build_engine/base_maps/field_expression.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/build_engine/expression/function_map.hpp"
@@ -66,7 +67,7 @@ auto add_dir_for(const std::string& cwd,
 
 auto getTainted(std::set<std::string>* tainted,
                 const Configuration& config,
-                const ExpressionPtr& tainted_exp,
+                const BuildMaps::Base::FieldExpression& tainted_exp,
                 const BuildMaps::Target::TargetMap::LoggerPtr& logger) -> bool;
 
 auto createAction(const ActionDescription::outputs_t& output_files,

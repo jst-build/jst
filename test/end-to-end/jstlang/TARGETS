@@ -1,0 +1,14 @@
+{
+  runtime_evaluation: {
+    type: @'rules//shell/test:script',
+    name: ['runtime_evaluation'],
+    test: ['runtime_evaluation.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
+  TESTS: {
+    type: @'rules//test:suite',
+    stage: ['jstlang'],
+    deps: ['runtime_evaluation'],
+  },
+}

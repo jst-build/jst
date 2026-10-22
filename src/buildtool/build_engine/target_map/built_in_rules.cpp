@@ -217,7 +217,7 @@ void BlobGenRuleWithDeps(
     auto got_tainted = BuildMaps::Target::Utils::getTainted(
         &tainted,
         param_config,
-        desc->ReadOptionalExpression("tainted", Expression::kEmptyList),
+        desc->ReadOptionalFieldExpression("tainted", Expression::kEmptyList),
         logger);
     if (not got_tainted) {
         return;
@@ -241,7 +241,7 @@ void BlobGenRuleWithDeps(
                               (*dep)->ImpliedExport().end());
     }
 
-    auto name_exp = desc->ReadOptionalExpression(
+    auto name_exp = desc->ReadOptionalFieldExpression(
         "name", ExpressionPtr{std::string{"out.txt"}});
     if (not name_exp) {
         return;
@@ -259,8 +259,8 @@ void BlobGenRuleWithDeps(
                   true);
         return;
     }
-    auto data_exp =
-        desc->ReadOptionalExpression("data", ExpressionPtr{std::string{""}});
+    auto data_exp = desc->ReadOptionalFieldExpression(
+        "data", ExpressionPtr{std::string{""}});
     if (not data_exp) {
         return;
     }
@@ -314,7 +314,7 @@ void BlobGenRuleWithDeps(
 
 void BlobGenRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -336,7 +336,7 @@ void BlobGenRule(
 
     // Collect dependencies: deps
     auto const& empty_list = Expression::kEmptyList;
-    auto deps_exp = desc->ReadOptionalExpression("deps", empty_list);
+    auto deps_exp = desc->ReadOptionalFieldExpression("deps", empty_list);
     if (not deps_exp) {
         return;
     }
@@ -403,7 +403,7 @@ void BlobGenRule(
 
 void FileGenRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -421,7 +421,7 @@ void FileGenRule(
 
 void SymlinkRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -456,7 +456,7 @@ void TreeRuleWithDeps(
     auto got_tainted = BuildMaps::Target::Utils::getTainted(
         &tainted,
         param_config,
-        desc->ReadOptionalExpression("tainted", Expression::kEmptyList),
+        desc->ReadOptionalFieldExpression("tainted", Expression::kEmptyList),
         logger);
     if (not got_tainted) {
         return;
@@ -588,7 +588,7 @@ void TreeRuleWithDeps(
 
 void CommonTreeRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -614,7 +614,7 @@ void CommonTreeRule(
 
     // Collect dependencies: deps
     auto const& empty_list = Expression::kEmptyList;
-    auto deps_exp = desc->ReadOptionalExpression("deps", empty_list);
+    auto deps_exp = desc->ReadOptionalFieldExpression("deps", empty_list);
     if (not deps_exp) {
         return;
     }
@@ -650,8 +650,8 @@ void CommonTreeRule(
         dependency_keys.emplace_back(
             BuildMaps::Target::ConfiguredTarget{*dep_target, key.config});
     }
-    auto name_exp =
-        desc->ReadOptionalExpression("name", ExpressionPtr{std::string{""}});
+    auto name_exp = desc->ReadOptionalFieldExpression(
+        "name", ExpressionPtr{std::string{""}});
     if (not name_exp) {
         return;
     }
@@ -694,7 +694,7 @@ void CommonTreeRule(
 
 void TreeRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -712,7 +712,7 @@ void TreeRule(
 
 void DisjointTreeOverlayRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -724,7 +724,7 @@ void DisjointTreeOverlayRule(
 
 void TreeOverlayRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -782,7 +782,7 @@ void InstallRuleWithDeps(
     auto got_tainted = BuildMaps::Target::Utils::getTainted(
         &tainted,
         key.config.Prune(*param_vars),
-        desc->ReadOptionalExpression("tainted", Expression::kEmptyList),
+        desc->ReadOptionalFieldExpression("tainted", Expression::kEmptyList),
         logger);
     if (not got_tainted) {
         return;
@@ -901,7 +901,7 @@ void InstallRuleWithDeps(
 
 void InstallRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -918,7 +918,7 @@ void InstallRule(
 
     // Collect dependencies: deps
     auto const& empty_list = Expression::kEmptyList;
-    auto deps_exp = desc->ReadOptionalExpression("deps", empty_list);
+    auto deps_exp = desc->ReadOptionalFieldExpression("deps", empty_list);
     if (not deps_exp) {
         return;
     }
@@ -959,21 +959,13 @@ void InstallRule(
     }
 
     // Collect dependencies: files
-    auto const& empty_map = Expression::kEmptyMap;
-    auto files_exp = desc->ReadOptionalExpression("files", empty_map);
+    auto files_exp = desc->ReadFieldExpressionMap("files");
     if (not files_exp) {
         return;
     }
-    if (not files_exp->IsMap()) {
-        (*logger)(fmt::format("Expected files to be a map of target "
-                              "expressions, but found {}",
-                              files_exp->ToString()),
-                  true);
-        return;
-    }
     auto files = std::unordered_map<std::string, BuildMaps::Base::EntityName>{};
-    files.reserve(files_exp->Map().size());
-    for (auto const& [path, dep_exp] : files_exp->Map()) {
+    files.reserve(files_exp->size());
+    for (auto const& [path, dep_exp] : *files_exp) {
         auto dep_name = dep_exp.Evaluate(
             param_config, {}, [&logger, &path = path](auto const& msg) {
                 (*logger)(
@@ -1005,7 +997,7 @@ void InstallRule(
     }
 
     // Collect dependencies: dirs
-    auto dirs_exp = desc->ReadOptionalExpression("dirs", empty_list);
+    auto dirs_exp = desc->ReadOptionalFieldExpression("dirs", empty_list);
     if (not dirs_exp) {
         return;
     }
@@ -1124,7 +1116,7 @@ void GenericRuleWithDeps(
     auto got_tainted = BuildMaps::Target::Utils::getTainted(
         &tainted,
         key.config.Prune(*param_vars),
-        desc->ReadOptionalExpression("tainted", Expression::kEmptyList),
+        desc->ReadOptionalFieldExpression("tainted", Expression::kEmptyList),
         logger);
     if (not got_tainted) {
         return;
@@ -1181,8 +1173,9 @@ void GenericRuleWithDeps(
     auto const& empty_list = Expression::kEmptyList;
     auto param_config = key.config.Prune(*param_vars);
 
-    auto outs_exp = desc->ReadOptionalExpression("outs", empty_list);
-    auto out_dirs_exp = desc->ReadOptionalExpression("out_dirs", empty_list);
+    auto outs_exp = desc->ReadOptionalFieldExpression("outs", empty_list);
+    auto out_dirs_exp =
+        desc->ReadOptionalFieldExpression("out_dirs", empty_list);
 
     std::vector<std::string> outs{};
     std::vector<std::string> out_dirs{};
@@ -1272,7 +1265,7 @@ void GenericRuleWithDeps(
         return;
     }
 
-    auto cmd_exp = desc->ReadOptionalExpression("cmds", empty_list);
+    auto cmd_exp = desc->ReadOptionalFieldExpression("cmds", empty_list);
     if (not cmd_exp) {
         return;
     }
@@ -1302,7 +1295,8 @@ void GenericRuleWithDeps(
         cmd_ss << x->String();
         cmd_ss << "\n";
     }
-    auto label_exp = desc->ReadOptionalExpression("label", Expression::kNone);
+    auto label_exp =
+        desc->ReadOptionalFieldExpression("label", Expression::kNone);
     if (not label_exp) {
         return;
     }
@@ -1325,7 +1319,7 @@ void GenericRuleWithDeps(
         return;
     }
     auto cwd_exp =
-        desc->ReadOptionalExpression("cwd", Expression::kEmptyString);
+        desc->ReadOptionalFieldExpression("cwd", Expression::kEmptyString);
     if (not cwd_exp) {
         return;
     }
@@ -1350,7 +1344,7 @@ void GenericRuleWithDeps(
         return;
     }
     auto const& empty_map_exp = Expression::kEmptyMapExpr;
-    auto env_exp = desc->ReadOptionalExpression("env", empty_map_exp);
+    auto env_exp = desc->ReadOptionalFieldExpression("env", empty_map_exp);
     if (not env_exp) {
         return;
     }
@@ -1378,7 +1372,8 @@ void GenericRuleWithDeps(
         }
     }
 
-    auto sh_exp = desc->ReadOptionalExpression("sh -c", Expression::kEmptyList);
+    auto sh_exp =
+        desc->ReadOptionalFieldExpression("sh -c", Expression::kEmptyList);
     if (not sh_exp) {
         return;
     }
@@ -1416,7 +1411,7 @@ void GenericRuleWithDeps(
     }
 
     auto scale_exp =
-        desc->ReadOptionalExpression("timeout scaling", Expression::kOne);
+        desc->ReadOptionalFieldExpression("timeout scaling", Expression::kOne);
     if (not scale_exp) {
         return;
     }
@@ -1436,8 +1431,8 @@ void GenericRuleWithDeps(
         return;
     }
 
-    auto props_exp = desc->ReadOptionalExpression("execution properties",
-                                                  Expression::kEmptyMapExpr);
+    auto props_exp = desc->ReadOptionalFieldExpression(
+        "execution properties", Expression::kEmptyMapExpr);
     if (not props_exp) {
         return;
     }
@@ -1554,7 +1549,7 @@ void GenericRuleWithDeps(
 
 void GenericRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -1569,7 +1564,7 @@ void GenericRule(
     }
     auto param_config = key.config.Prune(*param_vars);
     auto const& empty_list = Expression::kEmptyList;
-    auto deps_exp = desc->ReadOptionalExpression("deps", empty_list);
+    auto deps_exp = desc->ReadOptionalFieldExpression("deps", empty_list);
     if (not deps_exp) {
         return;
     }
@@ -1631,7 +1626,7 @@ void GenericRule(
 
 void ConfigureRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
@@ -1646,7 +1641,7 @@ void ConfigureRule(
     }
     auto param_config = key.config.Prune(*param_vars);
 
-    auto configured_target_name_exp = desc->ReadExpression("target");
+    auto configured_target_name_exp = desc->ReadFieldExpression("target");
     if (not configured_target_name_exp) {
         return;
     }
@@ -1678,21 +1673,25 @@ void ConfigureRule(
     auto got_tainted = BuildMaps::Target::Utils::getTainted(
         &tainted,
         param_config,
-        desc->ReadOptionalExpression("tainted", Expression::kEmptyList),
+        desc->ReadOptionalFieldExpression("tainted", Expression::kEmptyList),
         logger);
     if (not got_tainted) {
         return;
     }
 
-    auto eval_config =
-        desc->ReadOptionalExpression("config", Expression::kEmptyMapExpr);
-    if (not eval_config->IsMap()) {
+    auto eval_config_exp =
+        desc->ReadOptionalFieldExpression("config", Expression::kEmptyMapExpr);
+    if (not eval_config_exp) {
+        return;
+    }
+    if (auto const& plain = eval_config_exp.Plain();
+        plain and not plain->IsMap()) {
         (*logger)(fmt::format("eval_config has to be an expr, but found {}",
-                              eval_config->ToString()),
+                              plain->ToString()),
                   true);
         return;
     }
-    eval_config = eval_config.Evaluate(
+    auto eval_config = eval_config_exp.Evaluate(
         param_config, {}, [logger](std::string const& msg) {
             (*logger)(
                 fmt::format("Evaluating 'config' failed with error:\n{}", msg),
@@ -1772,7 +1771,7 @@ auto const kBuiltIns = std::unordered_map<
     std::string,
     std::function<void(
         const gsl::not_null<AnalyseContext*>&,
-        const nlohmann::json&,
+        const BuildMaps::Base::EntityDefinition&,
         const BuildMaps::Target::ConfiguredTarget&,
         const BuildMaps::Target::TargetMap::SubCallerPtr&,
         const BuildMaps::Target::TargetMap::SetterPtr&,
@@ -1803,7 +1802,7 @@ auto IsBuiltInRule(nlohmann::json const& rule_type) -> bool {
 
 auto HandleBuiltin(const gsl::not_null<AnalyseContext*>& context,
                    const nlohmann::json& rule_type,
-                   const nlohmann::json& desc,
+                   const BuildMaps::Base::EntityDefinition& desc,
                    const BuildMaps::Target::ConfiguredTarget& key,
                    const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
                    const BuildMaps::Target::TargetMap::SetterPtr& setter,

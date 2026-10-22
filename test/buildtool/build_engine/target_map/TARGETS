@@ -38,6 +38,7 @@
       @'src//src/buildtool/build_engine/base_maps:directory_map',
       @'src//src/buildtool/build_engine/base_maps:entity_name_data',
       @'src//src/buildtool/build_engine/base_maps:expression_map',
+      @'src//src/buildtool/build_engine/base_maps:jstlang_file_map',
       @'src//src/buildtool/build_engine/base_maps:rule_map',
       @'src//src/buildtool/build_engine/base_maps:source_map',
       @'src//src/buildtool/build_engine/base_maps:targets_file_map',

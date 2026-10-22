@@ -17,6 +17,7 @@
 
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/target_map/configured_target.hpp"
 #include "src/buildtool/build_engine/target_map/result_map.hpp"
 #include "src/buildtool/build_engine/target_map/target_map.hpp"
@@ -25,7 +26,7 @@
 namespace BuildMaps::Target {
 auto HandleBuiltin(const gsl::not_null<AnalyseContext*>& context,
                    const nlohmann::json& rule_type,
-                   const nlohmann::json& desc,
+                   const BuildMaps::Base::EntityDefinition& desc,
                    const BuildMaps::Target::ConfiguredTarget& key,
                    const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
                    const BuildMaps::Target::TargetMap::SetterPtr& setter,

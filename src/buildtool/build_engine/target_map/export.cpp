@@ -125,7 +125,7 @@ void FinalizeExport(
 
 void ExportRule(
     const gsl::not_null<AnalyseContext*>& context,
-    const nlohmann::json& desc_json,
+    const BuildMaps::Base::EntityDefinition& desc_json,
     const BuildMaps::Target::ConfiguredTarget& key,
     const BuildMaps::Target::TargetMap::SubCallerPtr& subcaller,
     const BuildMaps::Target::TargetMap::SetterPtr& setter,
