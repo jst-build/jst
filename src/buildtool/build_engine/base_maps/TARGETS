@@ -221,6 +221,7 @@
     name: ['expression_function'],
     hdrs: ['expression_function.hpp'],
     deps: [
+      'field_expression',
       @'fmt//:fmt',
       @'gsl//:gsl',
       @'json//:json',
@@ -276,10 +277,14 @@
     hdrs: ['rule_map.hpp'],
     srcs: ['rule_map.cpp'],
     deps: [
+      'entities_file',
+      'entity_definition',
       'entity_name_data',
       'expression_map',
-      'json_file_map',
+      'field_expression',
+      'jstlang_file_map',
       'module_name',
+      'targets_file_map',
       'user_rule',
       @'fmt//:fmt',
       @'gsl//:gsl',

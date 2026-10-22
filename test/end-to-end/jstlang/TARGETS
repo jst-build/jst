@@ -6,9 +6,19 @@
     deps: [@'//:tool-under-test'],
   },
 
+  rules_evaluation: {
+    type: @'rules//shell/test:script',
+    name: ['rules_evaluation'],
+    test: ['rules_evaluation.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
   TESTS: {
     type: @'rules//test:suite',
     stage: ['jstlang'],
-    deps: ['runtime_evaluation'],
+    deps: [
+      'rules_evaluation',
+      'runtime_evaluation',
+    ],
   },
 }

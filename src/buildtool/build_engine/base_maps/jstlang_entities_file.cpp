@@ -19,7 +19,8 @@
 auto BuildMaps::Base::JstlangEntitiesFile::Create(
     jstlang::ASTNodePtr const& ast,
     Logger const& logger,
-    jstlang::ImportResolver imports) noexcept -> Ptr {
+    jstlang::ImportResolver imports,
+    bool allow_unfold) noexcept -> Ptr {
     try {
         auto node = ast;
 
@@ -51,7 +52,8 @@ auto BuildMaps::Base::JstlangEntitiesFile::Create(
         return std::make_shared<JstlangEntitiesFile const>(
             std::make_shared<jstlang::Bindings const>(std::move(bindings),
                                                       std::move(imports)),
-            std::move(entities));
+            std::move(entities),
+            allow_unfold);
     } catch (std::exception const& e) {
         logger(e.what());
     }
@@ -66,5 +68,6 @@ auto BuildMaps::Base::JstlangEntitiesFile::GetFields(std::string const& name,
         logger("'" + name + "' is not defined.");
         return std::nullopt;
     }
-    return JstlangEvaluator::EvaluateFields(it->second, bindings_, logger);
+    return JstlangEvaluator::EvaluateFields(
+        it->second, bindings_, allow_unfold_, logger);
 }

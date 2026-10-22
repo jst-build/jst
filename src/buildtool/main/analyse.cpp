@@ -140,7 +140,8 @@ namespace Target = BuildMaps::Target;
         Base::CreateExpressionFileMap(context->repo_config, jobs);
     auto jstlang_file_map =
         Base::CreateJstlangFileMap(context->repo_config, jobs);
-    auto rule_file_map = Base::CreateRuleFileMap(context->repo_config, jobs);
+    auto rule_file_map =
+        Base::CreateRuleFileMap(&jstlang_file_map, context->repo_config, jobs);
     auto targets_file_map = Base::CreateTargetsFileMap(
         &jstlang_file_map, context->repo_config, jobs);
     auto expr_map = Base::CreateExpressionMap(

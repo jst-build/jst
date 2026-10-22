@@ -19,24 +19,28 @@
 
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/entities_file.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name_data.hpp"
 #include "src/buildtool/build_engine/base_maps/expression_map.hpp"
-#include "src/buildtool/build_engine/base_maps/json_file_map.hpp"
+#include "src/buildtool/build_engine/base_maps/jstlang_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/module_name.hpp"
+#include "src/buildtool/build_engine/base_maps/targets_file_map.hpp"
 #include "src/buildtool/build_engine/base_maps/user_rule.hpp"
 #include "src/buildtool/common/repository_config.hpp"
 #include "src/buildtool/multithreading/async_map_consumer.hpp"
 
 namespace BuildMaps::Base {
 
-using RuleFileMap = AsyncMapConsumer<ModuleName, nlohmann::json>;
+using RuleFileMap = AsyncMapConsumer<ModuleName, EntitiesFile>;
 
 [[nodiscard]] static inline auto CreateRuleFileMap(
+    gsl::not_null<JstlangFileMap*> const& jstlang_file_map,
     gsl::not_null<const RepositoryConfig*> const& repo_config,
-    std::size_t jobs) -> JsonFileMap {
-    return CreateJsonFileMap<&RepositoryConfig::RuleRoot,
-                             &RepositoryConfig::RuleFileName,
-                             /*kMandatory=*/true>(repo_config, jobs);
+    std::size_t jobs) -> RuleFileMap {
+    return CreateEntitiesFileMap<&RepositoryConfig::RuleRoot,
+                                 &RepositoryConfig::RuleFileName,
+                                 JustFileType::kRules>(
+        jstlang_file_map, repo_config, jobs);
 }
 
 using UserRuleMap = AsyncMapConsumer<EntityName, UserRulePtr>;

@@ -509,8 +509,10 @@ auto DescribeUserDefinedRule(
     std::size_t jobs,
     DescribeOptions const& options) -> int {
     bool failed{};
-    auto rule_file_map = Base::CreateRuleFileMap(repo_config, jobs);
-    nlohmann::json rules_file;
+    auto jstlang_file_map = Base::CreateJstlangFileMap(repo_config, jobs);
+    auto rule_file_map =
+        Base::CreateRuleFileMap(&jstlang_file_map, repo_config, jobs);
+    std::optional<Base::EntitiesFile> rules_file{};
     {
         TaskSystem ts{jobs};
         rule_file_map.ConsumeAfterKeysReady(
@@ -527,19 +529,26 @@ auto DescribeUserDefinedRule(
     if (failed) {
         return kExitAnalysisFailure;
     }
-    auto ruledesc_it = rules_file.find(rule_name.GetNamedTarget().name);
-    if (ruledesc_it == rules_file.end()) {
+    auto const& name = rule_name.GetNamedTarget().name;
+    if (not rules_file->Contains(name)) {
         Logger::Log(LogLevel::Error,
                     "Rule definition of {} is missing",
                     rule_name.ToString());
         return kExitAnalysisFailure;
     }
+    auto rule_desc = rules_file->GetEntity(
+        name, [](auto const& msg) { Logger::Log(LogLevel::Error, "{}", msg); });
+    if (not rule_desc) {
+        return kExitAnalysisFailure;
+    }
+    // only fields that can be evaluated statically are described
+    auto ruledesc = rule_desc->ToJson();
     if (options.print_json) {
-        PrintRuleAsOrderedJson(*ruledesc_it, rule_name.ToJson());
+        PrintRuleAsOrderedJson(ruledesc, rule_name.ToJson());
         return kExitSuccess;
     }
     PrettyPrintRule(
-        *ruledesc_it, rule_name, repo_config, Style{options.colored}, options);
+        ruledesc, rule_name, repo_config, Style{options.colored}, options);
     return kExitSuccess;
 }
 

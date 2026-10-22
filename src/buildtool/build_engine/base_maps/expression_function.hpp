@@ -26,6 +26,7 @@
 #include "fmt/format.h"
 #include "gsl/gsl"
 #include "nlohmann/json.hpp"
+#include "src/buildtool/build_engine/base_maps/field_expression.hpp"
 #include "src/buildtool/build_engine/expression/configuration.hpp"
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
@@ -45,7 +46,7 @@ class ExpressionFunction {
 
     ExpressionFunction(std::vector<std::string> vars,
                        imports_t imports,
-                       ExpressionPtr expr) noexcept
+                       FieldExpression expr) noexcept
         : vars_{std::move(vars)},
           imports_{std::move(imports)},
           expr_{std::move(expr)} {}
@@ -120,7 +121,7 @@ class ExpressionFunction {
   private:
     std::vector<std::string> vars_;
     imports_t imports_;
-    ExpressionPtr expr_;
+    FieldExpression expr_;
 };
 
 using ExpressionFunctionPtr = ExpressionFunction::Ptr;

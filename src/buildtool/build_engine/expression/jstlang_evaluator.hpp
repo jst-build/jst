@@ -43,11 +43,13 @@ class JstlangEvaluator final {
         Field(jstlang::ASTNodePtr expr,
               jstlang::Bindings::Ptr bindings,
               std::vector<std::string> path,
-              jstlang::ASTNodePtr static_value) noexcept
+              jstlang::ASTNodePtr static_value,
+              bool allow_unfold) noexcept
             : expr_{std::move(expr)},
               bindings_{std::move(bindings)},
               path_{std::move(path)},
-              static_value_{std::move(static_value)} {}
+              static_value_{std::move(static_value)},
+              allow_unfold_{allow_unfold} {}
 
         /// \brief Expression containing the field.
         [[nodiscard]] auto Expr() const noexcept -> jstlang::ASTNodePtr const& {
@@ -74,11 +76,18 @@ class JstlangEvaluator final {
             return static_value_;
         }
 
+        /// \brief Whether maps of this field that are not literal maps may
+        /// be unfolded to obtain their structure (see EvaluateFields()).
+        [[nodiscard]] auto AllowUnfold() const noexcept -> bool {
+            return allow_unfold_;
+        }
+
       private:
         jstlang::ASTNodePtr expr_;
         jstlang::Bindings::Ptr bindings_;
         std::vector<std::string> path_;
         jstlang::ASTNodePtr static_value_;
+        bool allow_unfold_;
     };
     using FieldPtr = std::shared_ptr<Field const>;
     using Fields = std::map<std::string, FieldPtr>;
@@ -119,12 +128,14 @@ class JstlangEvaluator final {
     /// the values of its fields (their values may depend on the
     /// configuration, the structure of the map must not). The fields of a
     /// literal map are evaluated separately. Other expressions are unfolded
-    /// to obtain the map's structure; fields whose unfolded values are
+    /// to obtain the map's structure, if allowed (otherwise, the expression
+    /// must be a literal map); fields whose unfolded values are
     /// self-contained are evaluated from those.
     /// \returns the map's fields or nullopt on error (reported via logger).
     [[nodiscard]] static auto EvaluateFields(
         jstlang::ASTNodePtr const& expr,
         jstlang::Bindings::Ptr const& bindings,
+        bool allow_unfold,
         Logger const& logger) noexcept -> std::optional<Fields>;
 
     /// \brief Statically evaluate value of field to a map, without evaluating

@@ -61,7 +61,8 @@ auto ReadUserRule(EntityName const& id,
     auto repo_config = SetupConfig(storage_config, use_git);
     auto expr_file_map = CreateExpressionFileMap(&repo_config, 0);
     auto expr_func_map = CreateExpressionMap(&expr_file_map, &repo_config);
-    auto rule_file_map = CreateRuleFileMap(&repo_config, 0);
+    auto jstlang_file_map = CreateJstlangFileMap(&repo_config, 0);
+    auto rule_file_map = CreateRuleFileMap(&jstlang_file_map, &repo_config, 0);
     auto user_rule_map =
         CreateRuleMap(&rule_file_map, &expr_func_map, &repo_config);
 

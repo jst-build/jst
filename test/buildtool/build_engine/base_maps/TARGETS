@@ -194,6 +194,7 @@
       @'json//:json',
       @'src//src/buildtool/build_engine/base_maps:entity_name_data',
       @'src//src/buildtool/build_engine/base_maps:expression_map',
+      @'src//src/buildtool/build_engine/base_maps:jstlang_file_map',
       @'src//src/buildtool/build_engine/base_maps:rule_map',
       @'src//src/buildtool/build_engine/expression:expression',
       @'src//src/buildtool/common:config',

@@ -396,7 +396,8 @@ class RuleFunctions final {
                                     expr,
                                     bindings,
                                     std::move(entry_path),
-                                    IsSelfContained(*entry) ? entry : nullptr));
+                                    IsSelfContained(*entry) ? entry : nullptr,
+                                    /*allow_unfold=*/true));
     }
     return fields;
 }
@@ -404,7 +405,8 @@ class RuleFunctions final {
 /// \brief Fields of a map in source code (literal names), whose values are
 /// evaluated separately.
 [[nodiscard]] auto FieldsOfMapSyntax(MapNode const& map,
-                                     Bindings::Ptr const& bindings)
+                                     Bindings::Ptr const& bindings,
+                                     bool allow_unfold)
     -> std::optional<JstlangEvaluator::Fields> {
     auto fields = JstlangEvaluator::Fields{};
     for (auto const& [key, value] : map.GetFields()) {
@@ -417,7 +419,8 @@ class RuleFunctions final {
                                     value,
                                     bindings,
                                     std::vector<std::string>{},
-                                    value->IsLiteral() ? value : nullptr));
+                                    value->IsLiteral() ? value : nullptr,
+                                    allow_unfold));
     }
     return fields;
 }
@@ -506,13 +509,17 @@ auto JstlangEvaluator::Evaluate(
 
 auto JstlangEvaluator::EvaluateFields(ASTNodePtr const& expr,
                                       Bindings::Ptr const& bindings,
+                                      bool allow_unfold,
                                       Logger const& logger) noexcept
     -> std::optional<Fields> {
     try {
         if (auto const* map = ASTNode::Cast<MapNode const*>(expr.get())) {
-            if (auto fields = FieldsOfMapSyntax(*map, bindings)) {
+            if (auto fields = FieldsOfMapSyntax(*map, bindings, allow_unfold)) {
                 return fields;
             }
+        }
+        if (not allow_unfold) {
+            throw EvalError{"Expected a literal map with literal field names."};
         }
         return FieldsOfValue(EvaluateStructure(expr, bindings),
                              expr,
@@ -528,7 +535,8 @@ auto JstlangEvaluator::EvaluateFields(FieldPtr const& field,
                                       Logger const& logger) noexcept
     -> std::optional<Fields> {
     if (field->Path().empty()) {
-        return EvaluateFields(field->Expr(), field->GetBindings(), logger);
+        return EvaluateFields(
+            field->Expr(), field->GetBindings(), field->AllowUnfold(), logger);
     }
     try {
         auto value = field->StaticValue();

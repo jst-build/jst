@@ -66,7 +66,9 @@ static inline void LoadJstlangEntitiesFile(
                     -> jstlang::ASTNodePtr {
                     auto it = imports->find(location);
                     return it != imports->end() ? it->second : nullptr;
-                });
+                },
+                // only the entities of targets may be unfolded
+                /*allow_unfold=*/file.root == jstlang::RootKind::Targets);
             if (targets_file) {
                 (*setter)(EntitiesFile{std::move(targets_file)});
             }

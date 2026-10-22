@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +24,10 @@
 #include <vector>
 
 #include "fmt/format.h"
+#include "src/buildtool/build_engine/base_maps/entity_definition.hpp"
 #include "src/buildtool/build_engine/base_maps/entity_name.hpp"
 #include "src/buildtool/build_engine/base_maps/expression_function.hpp"
+#include "src/buildtool/build_engine/base_maps/field_expression.hpp"
 #include "src/buildtool/build_engine/base_maps/field_reader.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
@@ -209,40 +212,43 @@ auto const kRuleFields = std::unordered_set<std::string>{"anonymous",
 }
 
 [[nodiscard]] auto ReadConfigTransitionsObject(
-    EntityName const& id,
-    nlohmann::json const& json,
+    FieldReader const& reader,
     std::vector<std::string> const& config_vars,
-    ExpressionFunction::imports_t const& imports,
-    AsyncMapConsumerLoggerPtr const& logger)
+    ExpressionFunction::imports_t const& imports)
     -> std::optional<UserRule::config_trans_t> {
-    auto map =
-        GetOrDefault(json, "config_transitions", nlohmann::json::object());
-    if (not map.is_object()) {
-        (*logger)(
-            fmt::format("Field config_transitions in rule {} is not an object",
-                        id.GetNamedTarget().name),
-            true);
+    auto map = reader.ReadFieldExpressionMap("config_transitions");
+    if (not map) {
         return std::nullopt;
     }
 
     auto config_transitions = UserRule::config_trans_t{};
-    config_transitions.reserve(map.size());
+    config_transitions.reserve(map->size());
 
-    for (auto const& [key, val] : map.items()) {
-        auto expr = Expression::FromJson(val);
-        if (not expr) {
-            (*logger)(fmt::format("Failed to create expression for entry {} in "
-                                  "config_transitions list of rule {}.",
-                                  key,
-                                  id.GetNamedTarget().name),
-                      true);
-            return std::nullopt;
-        }
-        config_transitions.emplace(
-            key,
-            std::make_shared<ExpressionFunction>(config_vars, imports, expr));
+    for (auto& [key, expr] : *map) {
+        config_transitions.emplace(key,
+                                   std::make_shared<ExpressionFunction>(
+                                       config_vars, imports, std::move(expr)));
     }
     return config_transitions;
+}
+
+/// \brief Read the fields of a rule definition that are only used as plain
+/// JSON (statically evaluated for jstlang rule definitions).
+[[nodiscard]] auto ReadPlainFields(EntityDefinition const& desc,
+                                   AsyncMapConsumerLoggerPtr const& logger)
+    -> std::optional<nlohmann::json> {
+    auto json = nlohmann::json::object();
+    for (auto const* field : {"anonymous", "implicit"}) {
+        auto value = desc.ReadJson(
+            field, [&logger](std::string const& msg) { (*logger)(msg, true); });
+        if (not value) {
+            return std::nullopt;
+        }
+        if (*value) {
+            json[field] = **value;
+        }
+    }
+    return json;
 }
 
 }  // namespace
@@ -266,25 +272,35 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
             ts,
             {id.ToModule()},
             [ts, expr_map, repo_config, setter = std::move(setter), logger, id](
-                auto json_values) {
+                auto rules_files) {
                 const auto& target = id.GetNamedTarget();
-                auto rule_it = json_values[0]->find(target.name);
-                if (rule_it == json_values[0]->end()) {
+                auto const& rules_file = *rules_files[0];
+                if (not rules_file.Contains(target.name)) {
                     (*logger)(fmt::format("Cannot find rule {} in {}",
                                           nlohmann::json(target.name).dump(),
                                           nlohmann::json(target.module).dump()),
                               true);
                     return;
                 }
+                auto desc = rules_file.GetEntity(
+                    target.name, [&logger](std::string const& msg) {
+                        (*logger)(msg, true);
+                    });
+                if (not desc) {
+                    return;
+                }
+                auto plain_fields = ReadPlainFields(*desc, logger);
+                if (not plain_fields) {
+                    return;
+                }
 
-                auto reader =
-                    FieldReader::Create(rule_it.value(), id, "rule", logger);
+                auto reader = FieldReader::Create(*desc, id, "rule", logger);
                 if (not reader) {
                     return;
                 }
                 reader->ExpectFields(kRuleFields);
 
-                auto expr = reader->ReadExpression("expression");
+                auto expr = reader->ReadFieldExpression("expression");
                 if (not expr) {
                     return;
                 }
@@ -304,14 +320,14 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
                     return;
                 }
 
-                auto implicit_targets = ReadImplicitObject(
-                    id, rule_it.value(), repo_config, logger);
+                auto implicit_targets =
+                    ReadImplicitObject(id, *plain_fields, repo_config, logger);
                 if (not implicit_targets) {
                     return;
                 }
 
-                auto anonymous_defs = ReadAnonymousObject(
-                    id, rule_it.value(), repo_config, logger);
+                auto anonymous_defs =
+                    ReadAnonymousObject(id, *plain_fields, repo_config, logger);
                 if (not anonymous_defs) {
                     return;
                 }
@@ -337,7 +353,7 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
                     ts,
                     std::move(ids),
                     [id,
-                     json = rule_it.value(),
+                     reader = *std::move(reader),
                      expr = std::move(expr),
                      target_fields = std::move(*target_fields),
                      string_fields = std::move(*string_fields),
@@ -356,7 +372,7 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
                         }
 
                         auto config_transitions = ReadConfigTransitionsObject(
-                            id, json, config_vars, imports, logger);
+                            reader, config_vars, imports);
                         if (not config_transitions) {
                             return;
                         }

@@ -84,14 +84,22 @@ class FieldReader {
                                      std::string const& entity_type,
                                      AsyncMapConsumerLoggerPtr const& logger)
         -> std::optional<FieldReader> {
-        if (not json.is_object()) {
+        return Create(EntityDefinition{json}, id, entity_type, logger);
+    }
+
+    [[nodiscard]] static auto Create(EntityDefinition desc,
+                                     EntityName const& id,
+                                     std::string const& entity_type,
+                                     AsyncMapConsumerLoggerPtr const& logger)
+        -> std::optional<FieldReader> {
+        if (not desc.IsObject()) {
             (*logger)(fmt::format("{} definition {} is not an object.",
                                   entity_type,
                                   id.GetNamedTarget().name),
                       true);
             return std::nullopt;
         }
-        return FieldReader(EntityDefinition{json}, id, entity_type, logger);
+        return FieldReader(std::move(desc), id, entity_type, logger);
     }
 
     [[nodiscard]] static auto CreatePtr(EntityDefinition desc,

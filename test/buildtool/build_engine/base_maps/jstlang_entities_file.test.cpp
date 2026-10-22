@@ -158,4 +158,18 @@ TEST_CASE("jstlang entities file", "[entities]") {
         CHECK_FALSE(
             JstlangEntitiesFile::Create(Parse("{[jst.env('x')]: {}}"), logger));
     }
+
+    SECTION("literal maps required without unfolding (rules)") {
+        auto rules = JstlangEntitiesFile::Create(
+            Parse(code), logger, nullptr, /*allow_unfold=*/false);
+        REQUIRE(rules);
+        // literal maps are fine, also nested ones
+        auto fields = rules->GetFields("a", logger);
+        REQUIRE(fields);
+        CHECK(eval(fields->at("flexible_config"), std::nullopt) ==
+              nlohmann::json::parse(R"(["FLAG"])"));
+        // entities created by functions are not unfolded
+        CHECK_FALSE(rules->GetFields("b", logger));
+        CHECK_FALSE(rules->GetFields("c", logger));
+    }
 }

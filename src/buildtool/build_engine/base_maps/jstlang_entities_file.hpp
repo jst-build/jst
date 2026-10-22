@@ -37,8 +37,11 @@ class JstlangEntitiesFile final {
     using Logger = JstlangEvaluator::Logger;
 
     JstlangEntitiesFile(jstlang::Bindings::Ptr bindings,
-                        std::map<std::string, jstlang::ASTNodePtr> entities)
-        : bindings_{std::move(bindings)}, entities_{std::move(entities)} {
+                        std::map<std::string, jstlang::ASTNodePtr> entities,
+                        bool allow_unfold)
+        : bindings_{std::move(bindings)},
+          entities_{std::move(entities)},
+          allow_unfold_{allow_unfold} {
         names_.reserve(entities_.size());
         for (auto const& [name, _] : entities_) {
             names_.emplace_back(name);
@@ -51,11 +54,16 @@ class JstlangEntitiesFile final {
     /// \param logger   Reports errors.
     /// \param imports  Resolver of the imported files, for resolving deferred
     ///                 imports; empty if the imports are resolved in the AST.
+    /// \param allow_unfold  Whether entities (and maps of their fields) that
+    ///                 are not literal maps are unfolded to obtain their
+    ///                 structure (TARGETS files); otherwise, they must be
+    ///                 literal maps (RULES files, so that their fields are
+    ///                 only evaluated, never unfolded).
     /// \returns nullptr on error (reported via logger).
-    [[nodiscard]] static auto Create(
-        jstlang::ASTNodePtr const& ast,
-        Logger const& logger,
-        jstlang::ImportResolver imports = nullptr) noexcept -> Ptr;
+    [[nodiscard]] static auto Create(jstlang::ASTNodePtr const& ast,
+                                     Logger const& logger,
+                                     jstlang::ImportResolver imports = nullptr,
+                                     bool allow_unfold = true) noexcept -> Ptr;
 
     /// \brief The names of the entities in lexicographic order.
     [[nodiscard]] auto Names() const noexcept
@@ -76,6 +84,7 @@ class JstlangEntitiesFile final {
   private:
     jstlang::Bindings::Ptr bindings_;
     std::map<std::string, jstlang::ASTNodePtr> entities_;
+    bool allow_unfold_;
     std::vector<std::string> names_;
 };
 
