@@ -80,6 +80,15 @@ auto ASTToStringVisitor::operator()(ClosureNode const* node) const
     return oss.str();
 }
 
+auto ASTToStringVisitor::ExternalValueToString(
+    ExternalValueNode const& node) const -> std::string {
+    auto const space = IndentString(indent_);
+    std::ostringstream oss{};
+    oss << space << TypeToString(node.EvalType()) << "("
+        << node.GetValue()->ToString() << ")\n";
+    return oss.str();
+}
+
 auto ASTToStringVisitor::operator()(BuiltinNode const* node) const
     -> std::string {
     auto const space = IndentString(indent_);

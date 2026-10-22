@@ -32,6 +32,7 @@
 #include <variant>
 #include <vector>
 
+#include "nlohmann/json.hpp"
 #include "src/buildtool/jstlang/ast/node_variant.hpp"
 #include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
@@ -48,6 +49,10 @@ enum class ValueType : std::uint8_t {
     Map,
     Ref,
     Func,
+    Artifact,
+    Result,
+    AnonTarget,
+    EntityName,
     Any
 };
 
@@ -70,6 +75,14 @@ enum class ValueType : std::uint8_t {
             return "Ref";
         case jstlang::ValueType::Func:
             return "Func";
+        case jstlang::ValueType::Artifact:
+            return "Artifact";
+        case jstlang::ValueType::Result:
+            return "Result";
+        case jstlang::ValueType::AnonTarget:
+            return "AnonTarget";
+        case jstlang::ValueType::EntityName:
+            return "EntityName";
         case jstlang::ValueType::Any:
             return "Any";
     }
@@ -108,6 +121,10 @@ enum class NodeKind : std::uint8_t {
     BinaryOperation,
     Ref,
     Closure,
+    Artifact,
+    Result,
+    AnonTarget,
+    EntityName,
 };
 
 /// \brief Position in a source file (compact, the source file is owned by the
@@ -156,8 +173,9 @@ class ASTNode {
     }
 
     /// \brief Whether node is a literal value (null, bool, number, string,
-    /// reference, or a list or map of those), i.e., contains no residual code
-    /// and no functions. Computed on construction.
+    /// reference, a value of the build engine, or a list or map of those),
+    /// i.e., contains no residual code and no functions. Computed on
+    /// construction.
     [[nodiscard]] auto IsLiteral() const noexcept -> bool {
         return is_literal_;
     }
@@ -941,6 +959,139 @@ inline auto MapNode::RemoveDuplicateFields(fields_t fields) -> fields_t {
     return fields;
 }
 
+/// \brief Value of the build engine that is opaque to jstlang (e.g., an
+/// artifact), only passed around and compared. Implemented by the build
+/// engine; stored type-erased by the nodes of external values below.
+class OpaqueValue {
+  public:
+    OpaqueValue() = default;
+    OpaqueValue(OpaqueValue const&) = delete;
+    OpaqueValue(OpaqueValue&&) = delete;
+    auto operator=(OpaqueValue const&) -> OpaqueValue& = delete;
+    auto operator=(OpaqueValue&&) -> OpaqueValue& = delete;
+    virtual ~OpaqueValue() = default;
+
+    /// \brief Value for JSON encoding (null for values that are not JSON).
+    [[nodiscard]] virtual auto ToJson() const -> nlohmann::json = 0;
+
+    /// \brief Identity of the value: equal values have equal identities. Must
+    /// be valid UTF-8, as it is used in JSON (e.g., for deduplication).
+    [[nodiscard]] virtual auto Identity() const -> std::string = 0;
+
+    /// \brief Whether the value may be compared implicitly (e.g., for
+    /// deduplication; not for names, as in the expression language).
+    [[nodiscard]] virtual auto IsComparable() const -> bool = 0;
+
+    /// \brief Human-readable representation (e.g., for error messages).
+    [[nodiscard]] virtual auto ToString() const -> std::string = 0;
+};
+
+/// \brief Base of the nodes of values of the build engine (artifacts,
+/// results, anonymous targets, entity names): literals of their own type, only
+/// created by the evaluator (from values of the build engine), whose content is
+/// opaque to jstlang. They are compared by their identity and encoded as their
+/// JSON value (null if not JSON, as in the expression language).
+class ExternalValueNode : public ASTNode {
+  public:
+    ExternalValueNode(ExternalValueNode&&) = delete;
+    auto operator=(ExternalValueNode&&) -> ExternalValueNode& = delete;
+    auto operator=(ExternalValueNode const&) -> ExternalValueNode& = delete;
+
+    [[nodiscard]] auto GetValue() const noexcept
+        -> std::shared_ptr<OpaqueValue const> const& {
+        return value_;
+    }
+
+    /// \brief Whether node is a value of the build engine.
+    [[nodiscard]] static auto IsExternalValue(ASTNode const& node) noexcept
+        -> bool {
+        switch (node.Kind()) {
+            case NodeKind::Artifact:
+            case NodeKind::Result:
+            case NodeKind::AnonTarget:
+            case NodeKind::EntityName:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// \brief The node as value of the build engine, nullptr if it is not.
+    [[nodiscard]] static auto From(ASTNode const* node) noexcept
+        -> ExternalValueNode const* {
+        if (node == nullptr or not IsExternalValue(*node)) {
+            return nullptr;
+        }
+        // the kind tag ensures the node has the derived type
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+        return static_cast<ExternalValueNode const*>(node);
+    }
+
+  protected:
+    explicit ExternalValueNode(
+        NodeKind kind,
+        ValueType type,
+        Location loc,
+        std::shared_ptr<OpaqueValue const> value) noexcept
+        : ASTNode{kind, loc, type, /*truth_value=*/true},
+          value_{std::move(value)} {
+        SetLiteral(true);
+    }
+    ExternalValueNode(ExternalValueNode const&) = default;
+    ~ExternalValueNode() = default;
+
+  private:
+    std::shared_ptr<OpaqueValue const> value_;
+};
+
+/// \brief Artifact (e.g., of the artifacts or runfiles of a target).
+class ArtifactNode final : public ExternalValueNode {
+  public:
+    static constexpr NodeKind kKind = NodeKind::Artifact;
+
+    explicit ArtifactNode(Location loc,
+                          std::shared_ptr<OpaqueValue const> value) noexcept
+        : ExternalValueNode{kKind, ValueType::Artifact, loc, std::move(value)} {
+    }
+};
+
+/// \brief Result of the analysis of a target.
+class ResultNode final : public ExternalValueNode {
+  public:
+    static constexpr NodeKind kKind = NodeKind::Result;
+
+    explicit ResultNode(Location loc,
+                        std::shared_ptr<OpaqueValue const> value) noexcept
+        : ExternalValueNode{kKind, ValueType::Result, loc, std::move(value)} {}
+};
+
+/// \brief Anonymous target, i.e., a target node (an abstract node or a value
+/// node).
+class AnonTargetNode final : public ExternalValueNode {
+  public:
+    static constexpr NodeKind kKind = NodeKind::AnonTarget;
+
+    explicit AnonTargetNode(Location loc,
+                            std::shared_ptr<OpaqueValue const> value) noexcept
+        : ExternalValueNode{kKind,
+                            ValueType::AnonTarget,
+                            loc,
+                            std::move(value)} {}
+};
+
+/// \brief Name of an entity (e.g., of a target or a rule).
+class EntityNameNode final : public ExternalValueNode {
+  public:
+    static constexpr NodeKind kKind = NodeKind::EntityName;
+
+    explicit EntityNameNode(Location loc,
+                            std::shared_ptr<OpaqueValue const> value) noexcept
+        : ExternalValueNode{kKind,
+                            ValueType::EntityName,
+                            loc,
+                            std::move(value)} {}
+};
+
 inline auto ASTNode::ToVariant() const noexcept -> ASTNodeVariant {
     switch (kind_) {
         case NodeKind::Let:
@@ -987,6 +1138,14 @@ inline auto ASTNode::ToVariant() const noexcept -> ASTNodeVariant {
             return Cast<RefNode const*>(this);
         case NodeKind::Closure:
             return Cast<ClosureNode const*>(this);
+        case NodeKind::Artifact:
+            return Cast<ArtifactNode const*>(this);
+        case NodeKind::Result:
+            return Cast<ResultNode const*>(this);
+        case NodeKind::AnonTarget:
+            return Cast<AnonTargetNode const*>(this);
+        case NodeKind::EntityName:
+            return Cast<EntityNameNode const*>(this);
     }
     return Cast<RefNode const*>(this);  // unreachable
 }

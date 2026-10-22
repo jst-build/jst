@@ -15,6 +15,7 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_JSON_VISITOR_HPP
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_JSON_VISITOR_HPP
 
+#include <concepts>
 #include <cstdint>
 
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
@@ -51,6 +52,13 @@ class ASTToJsonVisitor final {
         throw std::runtime_error{"Node type cannot be serialized."};
     }
 
+    // values of the build engine (artifacts, results, ...)
+    template <class T>
+        requires std::derived_from<T, ExternalValueNode>
+    [[nodiscard]] auto operator()(T const* node) const -> nlohmann::json {
+        return ExternalValueToJson(*node);
+    }
+
     [[nodiscard]] auto operator()(BuiltinCallNode const* node) const
         -> nlohmann::json;
     [[nodiscard]] auto operator()(ListNode const* node) const -> nlohmann::json;
@@ -72,6 +80,8 @@ class ASTToJsonVisitor final {
     [[nodiscard]] auto operator()(RefNode const* node) const -> nlohmann::json;
 
   private:
+    [[nodiscard]] auto ExternalValueToJson(ExternalValueNode const& node) const
+        -> nlohmann::json;
     VerbatimType vtype_;
     bool json_only_;
 };

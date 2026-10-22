@@ -108,6 +108,17 @@ template <typename T = jstlang::ASTNode>
 [[nodiscard]] auto SortedLiteralEntries(jstlang::MapNode const& map)
     -> std::optional<jstlang::MapNode::fields_t>;
 
+/// \brief JSON value identifying a literal (values of the build engine by
+/// their identity), for deduplication.
+/// \throws if node is not a literal or contains values that cannot be compared
+/// implicitly (e.g., names)
+[[nodiscard]] auto IdentityKey(jstlang::ASTNode const& node) -> nlohmann::json;
+
+/// \brief String identifying a literal, for deduplication (fast for strings).
+/// \throws if node is not a literal
+[[nodiscard]] auto IdentityKeyString(jstlang::ASTNode const& node)
+    -> std::string;
+
 [[nodiscard]] auto RefEqual(jstlang::RefData const& lhs,
                             jstlang::RefData const& rhs) -> bool;
 
@@ -1298,14 +1309,12 @@ auto BuiltIn::nub_right(Location const& loc,
         auto seen = std::unordered_set<std::string>{};
         out_items.reserve(items.size());
         seen.reserve(items.size());
-        auto serializer =
-            ASTToJsonVisitor{VerbatimType::Full, /*json_only=*/true};
         bool contains_non_serializable_items{};
         auto item_it = items.rbegin();
         while (item_it != items.rend()) {
             auto const& item_node = *item_it++;
             try {
-                auto json_str = serializer.ToJson(*item_node).dump();
+                auto json_str = IdentityKeyString(*item_node);
                 if (seen.emplace(std::move(json_str)).second) {
                     out_items.emplace_back(item_node);
                 }
@@ -1356,12 +1365,10 @@ auto BuiltIn::nub_left(Location const& loc,
         auto seen = std::unordered_set<std::string>{};
         out_items.reserve(items.size());
         seen.reserve(items.size());
-        auto serializer =
-            ASTToJsonVisitor{VerbatimType::Full, /*json_only=*/true};
         bool contains_non_serializable_items{};
         for (auto const& item_node : items) {
             try {
-                auto json_str = serializer.ToJson(*item_node).dump();
+                auto json_str = IdentityKeyString(*item_node);
                 if (seen.emplace(std::move(json_str)).second) {
                     out_items.emplace_back(item_node);
                 }
@@ -2151,6 +2158,52 @@ template <typename T>
 /// \brief Check if two references are equal. References of different kinds
 /// are never equal, as their values in the expression language differ (a
 /// string for local references, lists of different lengths for the others).
+[[nodiscard]] auto IdentityKey(jstlang::ASTNode const& node) -> nlohmann::json {
+    using jstlang::ASTNode;
+    if (auto const* ext = jstlang::ExternalValueNode::From(&node)) {
+        if (not ext->GetValue()->IsComparable()) {
+            throw std::runtime_error{TypeToString(node.EvalType()) +
+                                     " values cannot be compared implicitly."};
+        }
+        // key starting with NUL, not a field name of a jstlang map literal
+        return nlohmann::json{
+            {std::string(1, '\0') + TypeToString(node.EvalType()),
+             ext->GetValue()->Identity()}};
+    }
+    if (auto const* list = ASTNode::Cast<jstlang::ListNode const*>(&node)) {
+        auto keys = nlohmann::json::array();
+        for (auto const& item : list->GetItems()) {
+            keys.push_back(IdentityKey(*item));
+        }
+        return keys;
+    }
+    if (auto const* map = ASTNode::Cast<jstlang::MapNode const*>(&node)) {
+        auto keys = nlohmann::json::object();
+        for (auto const& [key, value] : map->GetFields()) {
+            auto const* name =
+                ASTNode::Cast<jstlang::StringNode const*>(key.get());
+            if (name == nullptr) {
+                throw std::runtime_error{"Computed field name."};
+            }
+            keys[name->GetValue()] = IdentityKey(*value);  // latest wins
+        }
+        return keys;
+    }
+    return jstlang::ASTToJsonVisitor{jstlang::VerbatimType::Full,
+                                     /*json_only=*/true}
+        .ToJson(node);
+}
+
+[[nodiscard]] auto IdentityKeyString(jstlang::ASTNode const& node)
+    -> std::string {
+    if (auto const* str =
+            jstlang::ASTNode::Cast<jstlang::StringNode const*>(&node)) {
+        // cannot clash with JSON, which never starts with a control character
+        return '\x01' + str->GetValue();
+    }
+    return IdentityKey(node).dump();
+}
+
 [[nodiscard]] auto RefEqual(jstlang::RefData const& lhs,
                             jstlang::RefData const& rhs) -> bool {
     using jstlang::RefType;
@@ -2191,6 +2244,11 @@ template <typename T>
     }
     if (lhs.EvalType() != rhs.EvalType()) {
         return false;
+    }
+    if (auto const* lext = jstlang::ExternalValueNode::From(&lhs)) {
+        // values of the build engine (of the same type) by their identity
+        return lext->GetValue()->Identity() ==
+               jstlang::ExternalValueNode::From(&rhs)->GetValue()->Identity();
     }
     if (auto const* lstr = ASTNode::Cast<jstlang::StringNode const*>(&lhs)) {
         return lstr->GetValue() ==

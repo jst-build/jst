@@ -15,6 +15,7 @@
 #ifndef INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_STRING_VISITOR_HPP
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_TO_STRING_VISITOR_HPP
 
+#include <concepts>
 #include <cstddef>
 #include <string>
 
@@ -56,8 +57,18 @@ class ASTToStringVisitor final {
         -> std::string;
     [[nodiscard]] auto operator()(RefNode const* node) const -> std::string;
 
+    // values of the build engine (artifacts, results, ...)
+    template <class T>
+        requires std::derived_from<T, ExternalValueNode>
+    [[nodiscard]] auto operator()(T const* node) const -> std::string {
+        return ExternalValueToString(*node);
+    }
+
   private:
     std::size_t indent_;
+
+    [[nodiscard]] auto ExternalValueToString(
+        ExternalValueNode const& node) const -> std::string;
 };
 
 }  // namespace jstlang

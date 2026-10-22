@@ -130,6 +130,10 @@ void ForEachChild(ASTNode const& node, TFunc const& f) {
         case NodeKind::Null:
         case NodeKind::Ref:
         case NodeKind::Closure:
+        case NodeKind::Artifact:
+        case NodeKind::Result:
+        case NodeKind::AnonTarget:
+        case NodeKind::EntityName:
             break;  // leaf nodes
     }
 }
@@ -337,6 +341,10 @@ template <class TFunc>
         case NodeKind::Null:
         case NodeKind::Ref:
         case NodeKind::Closure:
+        case NodeKind::Artifact:
+        case NodeKind::Result:
+        case NodeKind::AnonTarget:
+        case NodeKind::EntityName:
             break;  // leaf nodes
     }
     return node;

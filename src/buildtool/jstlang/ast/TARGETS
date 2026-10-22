@@ -9,6 +9,7 @@
       'scope.hpp',
     ],
     deps: [
+      @'json//:json',
       @'//src/buildtool/jstlang:file_data',
       @'//src/buildtool/jstlang:ref',
       @'//src/utils/cpp:gsl',

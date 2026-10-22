@@ -51,7 +51,8 @@ concept IsLeafNode = IsAnyOf<T,
                              jstlang::StringNode,
                              jstlang::NumberNode,
                              jstlang::BuiltinNode,
-                             jstlang::ClosureNode>;
+                             jstlang::ClosureNode> or
+                     std::derived_from<T, jstlang::ExternalValueNode>;
 
 /// \brief Evaluator for jstlang ASTs, using environments (scopes of lazily
 /// evaluated bindings) instead of substitution. Each node is evaluated to a

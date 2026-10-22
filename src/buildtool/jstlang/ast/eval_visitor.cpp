@@ -130,6 +130,10 @@ auto FindResidual(ASTNode const& node) -> ASTNode const* {
         case NodeKind::Ref:
         case NodeKind::Builtin:
         case NodeKind::Closure:
+        case NodeKind::Artifact:
+        case NodeKind::Result:
+        case NodeKind::AnonTarget:
+        case NodeKind::EntityName:
             return nullptr;
         case NodeKind::List:
             for (auto const& item :

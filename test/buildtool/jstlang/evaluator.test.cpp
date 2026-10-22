@@ -161,6 +161,25 @@ namespace {
     return std::nullopt;
 }
 
+/// \brief Value of the build engine for testing, identified by a string.
+class TestValue final : public jstlang::OpaqueValue {
+  public:
+    explicit TestValue(std::string id, bool comparable = true)
+        : id_{std::move(id)}, comparable_{comparable} {}
+    [[nodiscard]] auto ToJson() const -> nlohmann::json final {
+        return nullptr;
+    }
+    [[nodiscard]] auto Identity() const -> std::string final { return id_; }
+    [[nodiscard]] auto IsComparable() const -> bool final {
+        return comparable_;
+    }
+    [[nodiscard]] auto ToString() const -> std::string final { return id_; }
+
+  private:
+    std::string id_;
+    bool comparable_;
+};
+
 }  // namespace
 
 TEST_CASE("evaluate", "[consistency]") {
@@ -471,4 +490,68 @@ TEST_CASE("evaluate", "[reuse unchanged nodes]") {
     auto rebuilt = evaluate(Mode::Full);
     CHECK(rebuilt != ast);
     CHECK(ToJson(rebuilt) == ToJson(ast));
+}
+
+TEST_CASE("evaluate", "[external values]") {
+    // runtime variables are values of the build engine: artifacts o1, o1_copy
+    // (equal to o1), o2; result r1 (same identity as o1); entity names n1,
+    // n1_copy (equal to n1, but not comparable implicitly)
+    auto lookup = jstlang::EvalOptions::ConfigLookup{
+        [](std::string const& name) -> jstlang::ASTNodePtr {
+            auto const loc = jstlang::Location{};
+            if (name == "r1") {
+                return std::make_shared<jstlang::ResultNode>(
+                    loc, std::make_shared<TestValue>("o1"));
+            }
+            if (name.starts_with("n1")) {
+                return std::make_shared<jstlang::EntityNameNode>(
+                    loc,
+                    std::make_shared<TestValue>("n1", /*comparable=*/false));
+            }
+            auto id = name == "o1_copy" ? std::string{"o1"} : name;
+            return std::make_shared<jstlang::ArtifactNode>(
+                loc, std::make_shared<TestValue>(id));
+        }};
+    auto options = jstlang::EvalOptions{
+        .mode = jstlang::EvalOptions::Mode::Full, .config = &lookup};
+    auto eval = [&options](std::string const& code) {
+        auto value = jstlang::Evaluator{options}.EvaluateAST(Parse(R"(
+              local o1 = jst.env('o1');
+              local o1_copy = jst.env('o1_copy');
+              local o2 = jst.env('o2');
+              local r1 = jst.env('r1');
+              local n1 = jst.env('n1');
+              local n1_copy = jst.env('n1_copy');
+            )" + code));
+        jstlang::RequireValue(value);
+        return value;
+    };
+
+    // compared by identity, values of different types are never equal
+    CHECK(ToJson(eval("[jst.eq(o1, o1_copy), jst.eq(o1, o2), o1 == 'o1', "
+                      "o1 == r1, n1 == n1_copy]")) ==
+          nlohmann::json::parse("[true, false, false, false, true]"));
+
+    // deduplicated by identity, names cannot be compared implicitly
+    CHECK(ToJson(eval("jst.length(jst.nub_left([o1, o2, o1_copy, r1]))")) ==
+          nlohmann::json(3));
+    CHECK_THROWS(eval("jst.nub_left([n1, n1_copy])"));
+    CHECK(ToJson(eval("jst.keys(jst.to_subdir({'a/x': o1, 'b/x': o1_copy, "
+                      "y: o2}, subdir='d', flat=true))")) ==
+          nlohmann::json::parse(R"(["d/x", "d/y"])"));
+    CHECK_THROWS(eval("jst.to_subdir({'a/x': o1, 'b/x': o2}, flat=true)"));
+
+    // encoded as their JSON value (null if not JSON)
+    CHECK(ToJson(eval("jst.json_encode([o1])")) == nlohmann::json("[null]"));
+
+    // typed: operations of other types are rejected
+    CHECK_THROWS(eval("o1 + 'x'"));
+
+    // passed through, keeping their type
+    auto value = eval("jst.get('k', {k: o2})");
+    auto const* artifact =
+        jstlang::ASTNode::Cast<jstlang::ArtifactNode const*>(value.get());
+    REQUIRE(artifact != nullptr);
+    CHECK(artifact->EvalType() == jstlang::ValueType::Artifact);
+    CHECK(artifact->GetValue()->Identity() == "o2");
 }

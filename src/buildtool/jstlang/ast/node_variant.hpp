@@ -39,7 +39,11 @@ using ASTNodeVariant = std::variant<class LetNode const*,
                                     class LookupNode const*,
                                     class BinaryOperationNode const*,
                                     class RefNode const*,
-                                    class ClosureNode const*>;
+                                    class ClosureNode const*,
+                                    class ArtifactNode const*,
+                                    class ResultNode const*,
+                                    class AnonTargetNode const*,
+                                    class EntityNameNode const*>;
 }  // namespace jstlang
 
 #endif  // INCLUDED_SRC_BUILDTOOL_JSTLANG_AST_NODE_VARIANT_HPP

@@ -140,6 +140,16 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
     return root;
 }
 
+auto ASTToJsonVisitor::ExternalValueToJson(ExternalValueNode const& node) const
+    -> nlohmann::json {
+    if (not json_only_) {
+        throw std::runtime_error{TypeToString(node.EvalType()) +
+                                 " values cannot be serialized."};
+    }
+    // as for the expression language, values that are not JSON are null
+    return node.GetValue()->ToJson();
+}
+
 auto ASTToJsonVisitor::operator()(ListNode const* node) const
     -> nlohmann::json {
     auto root = nlohmann::json::array();
