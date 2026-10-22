@@ -391,3 +391,150 @@ TEST_CASE("builtins", "[residual]") {
     REQUIRE(result != nullptr);
     CHECK(not result->GetValue());
 }
+
+TEST_CASE("builtins", "[rule-only functions]") {
+    // calls of rule-only functions stay calls (evaluated by the rule analysis),
+    // serialized as in the expression language
+    SECTION("rule-only functions") {
+        auto rule_expression = [](std::string const& expr) {
+            return jstlang::ASTToJsonVisitor{}.ToJson(*ParseAndInline(expr));
+        };
+
+        CHECK(rule_expression("jst.field('deps')") ==
+              nlohmann::json::parse(R"({"type": "FIELD", "name": "deps"})"));
+
+        CHECK(rule_expression("jst.dep_artifacts(jst.env('x'))") ==
+              nlohmann::json::parse(R"(
+              {"type": "DEP_ARTIFACTS", "dep": {"type": "var", "name": "x"}})"));
+        CHECK(rule_expression("jst.dep_artifacts(transition={}, "
+                              "dep=jst.env('x'))") == nlohmann::json::parse(R"(
+                { "type": "DEP_ARTIFACTS"
+                , "dep": {"type": "var", "name": "x"}
+                , "transition": {"type": "empty_map"}
+                })"));
+
+        CHECK(rule_expression("jst.dep_runfiles(jst.env('x'), {})") ==
+              nlohmann::json::parse(R"(
+                { "type": "DEP_RUNFILES"
+                , "dep": {"type": "var", "name": "x"}
+                , "transition": {"type": "empty_map"}
+                })"));
+
+        CHECK(rule_expression("jst.dep_provides(jst.env('x'), 'foo')") ==
+              nlohmann::json::parse(R"(
+                { "type": "DEP_PROVIDES"
+                , "dep": {"type": "var", "name": "x"}
+                , "provider": "foo"
+                })"));
+        CHECK(rule_expression("jst.dep_provides(jst.env('x'), 'foo', "
+                              "default=null)") == nlohmann::json::parse(R"(
+                { "type": "DEP_PROVIDES"
+                , "dep": {"type": "var", "name": "x"}
+                , "provider": "foo"
+                , "default": null
+                })"));
+
+        CHECK(rule_expression("jst.make_blob()") ==
+              nlohmann::json::parse(R"({"type": "BLOB"})"));
+        CHECK(rule_expression("jst.make_blob('data')") ==
+              nlohmann::json::parse(R"({"type": "BLOB", "data": "data"})"));
+
+        CHECK(rule_expression("jst.make_symlink('libfoo.so.1.2.3')") ==
+              nlohmann::json::parse(
+                  R"({"type": "SYMLINK", "data": "libfoo.so.1.2.3"})"));
+        CHECK(
+            rule_expression("jst.make_symlink(target=jst.env('x'))") ==
+            nlohmann::json::parse(
+                R"({"type": "SYMLINK", "data": {"type": "var", "name": "x"}})"));
+
+        CHECK(rule_expression("jst.make_tree({})") == nlohmann::json::parse(R"(
+                {"type": "TREE", "$1": {"type": "empty_map"}})"));
+
+        CHECK(rule_expression("jst.tree_overlay([])") ==
+              nlohmann::json::parse(R"({"type": "TREE_OVERLAY", "$1": []})"));
+        CHECK(rule_expression("jst.tree_overlay([], disjoint=true)") ==
+              nlohmann::json::parse(
+                  R"({"type": "DISJOINT_TREE_OVERLAY", "$1": []})"));
+
+        CHECK(rule_expression(R"(
+                jst.action(
+                  outs=['out'],
+                  cmd=['touch', 'out'],
+                  timeout_scaling=2,
+                  execution_properties={},
+                  may_fail=['test'],
+                  fail_message='failed',
+                  no_cache=['test'],
+                ))") == nlohmann::json::parse(R"(
+                  { "type": "ACTION"
+                  , "outs": ["out"]
+                  , "cmd": ["touch", "out"]
+                  , "timeout scaling": 2.0
+                  , "execution properties": {"type": "empty_map"}
+                  , "may_fail": ["test"]
+                  , "fail_message": "failed"
+                  , "no_cache": ["test"]
+                  })"));
+        CHECK(rule_expression(R"(
+                jst.action(
+                  inputs={},
+                  out_dirs=['out'],
+                  env={},
+                  cwd='work',
+                  label='Running',
+                ))") == nlohmann::json::parse(R"(
+                  { "type": "ACTION"
+                  , "inputs": {"type": "empty_map"}
+                  , "out_dirs": ["out"]
+                  , "env": {"type": "empty_map"}
+                  , "cwd": "work"
+                  , "label": "Running"
+                  })"));
+
+        CHECK(rule_expression("jst.result()") ==
+              nlohmann::json::parse(R"({"type": "RESULT"})"));
+        CHECK(rule_expression("jst.result({}, {}, {})") ==
+              nlohmann::json::parse(R"(
+                { "type": "RESULT"
+                , "artifacts": {"type": "empty_map"}
+                , "runfiles": {"type": "empty_map"}
+                , "provides": {"type": "empty_map"}
+                })"));
+
+        CHECK(rule_expression("jst.value_node(jst.result())") ==
+              nlohmann::json::parse(R"(
+                {"type": "VALUE_NODE", "$1": {"type": "RESULT"}})"));
+
+        CHECK(rule_expression("jst.abstract_node('node', target_fields={})") ==
+              nlohmann::json::parse(R"(
+                { "type": "ABSTRACT_NODE"
+                , "node_type": "node"
+                , "target_fields": {"type": "empty_map"}
+                })"));
+    }
+
+    SECTION("errors") {
+        // missing mandatory argument
+        CHECK_THROWS(ParseAndInline("jst.field()"));
+        CHECK_THROWS(ParseAndInline("jst.dep_provides(jst.env('x'))"));
+        CHECK_THROWS(ParseAndInline("jst.make_tree()"));
+        CHECK_THROWS(ParseAndInline("jst.make_symlink()"));
+        // wrong argument type
+        CHECK_THROWS(ParseAndInline("jst.action(outs={})"));
+        CHECK_THROWS(ParseAndInline("jst.make_symlink([])"));
+        CHECK_THROWS(ParseAndInline("jst.dep_artifacts('x')"));
+        CHECK_THROWS(ParseAndInline("jst.value_node({})"));
+        CHECK_THROWS(ParseAndInline("jst.value_node(jst.make_blob())"));
+        // disjoint must be a literal
+        CHECK_THROWS(ParseAndInline("jst.tree_overlay([], jst.env('x'))"));
+    }
+
+    SECTION("types of results") {
+        // results of rule-only functions are typed, e.g., an artifact is not a
+        // string
+        CHECK_THROWS(ParseAndInline("jst.make_blob('data') + 'x'"));
+        CHECK_NOTHROW(ParseAndInline("jst.value_node(jst.result())"));
+        CHECK_NOTHROW(
+            ParseAndInline("jst.dep_artifacts(jst.abstract_node('n'))"));
+    }
+}

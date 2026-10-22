@@ -193,6 +193,64 @@ class BuiltIn final {
     [[nodiscard]] static auto context(Location const&,
                                       EvalCallback const&,
                                       CallNode::params_t const&) -> ASTNodePtr;
+
+    // rule-only functions
+    [[nodiscard]] static auto field(Location const&,
+                                    EvalCallback const&,
+                                    CallNode::params_t const&) -> ASTNodePtr;
+
+    [[nodiscard]] static auto dep_artifacts(Location const&,
+                                            EvalCallback const&,
+                                            CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto dep_runfiles(Location const&,
+                                           EvalCallback const&,
+                                           CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto dep_provides(Location const&,
+                                           EvalCallback const&,
+                                           CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto make_blob(Location const&,
+                                        EvalCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto make_symlink(Location const&,
+                                           EvalCallback const&,
+                                           CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto make_tree(Location const&,
+                                        EvalCallback const&,
+                                        CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto tree_overlay(Location const&,
+                                           EvalCallback const&,
+                                           CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto action(Location const&,
+                                     EvalCallback const&,
+                                     CallNode::params_t const&) -> ASTNodePtr;
+
+    [[nodiscard]] static auto result(Location const&,
+                                     EvalCallback const&,
+                                     CallNode::params_t const&) -> ASTNodePtr;
+
+    [[nodiscard]] static auto value_node(Location const&,
+                                         EvalCallback const&,
+                                         CallNode::params_t const&)
+        -> ASTNodePtr;
+
+    [[nodiscard]] static auto abstract_node(Location const&,
+                                            EvalCallback const&,
+                                            CallNode::params_t const&)
+        -> ASTNodePtr;
 };
 
 [[nodiscard]] auto ProvideBuiltinsToAST(ASTNodePtr const& ast) -> ASTNodePtr;
@@ -249,6 +307,35 @@ auto const kBuiltinFunctions = std::unordered_map<std::string,
     {"assert_non_empty",
      BuiltIn::assert_non_empty},    // assert_non_empty(value=<any>, msg=<any>)
     {"context", BuiltIn::context},  // context(value=<any>, msg=<any>)
+    // rule-only functions
+    {"field", BuiltIn::field},                  // field(name=<string>)
+    {"dep_artifacts", BuiltIn::dep_artifacts},  // dep_artifacts(dep=<any>,
+                                                //   transition=<map>)
+    {"dep_runfiles", BuiltIn::dep_runfiles},    // dep_runfiles(dep=<any>,
+                                                //   transition=<map>)
+    {"dep_provides", BuiltIn::dep_provides},    // dep_provides(dep=<any>,
+                                                //   provider=<string>,
+                                                //   transition=<map>,
+                                                //   default=<any>)
+    {"make_blob", BuiltIn::make_blob},          // make_blob(data=<string>)
+    {"make_symlink", BuiltIn::make_symlink},    // make_symlink(
+                                                //   target=<string>)
+    {"make_tree", BuiltIn::make_tree},          // make_tree(stage=<map>)
+    {"tree_overlay", BuiltIn::tree_overlay},    // tree_overlay(stages=<list>,
+                                                //   disjoint=<any>)
+    {"action", BuiltIn::action},  // action(inputs=<map>, cmd=<list>,
+                                  //   outs=<list>, out_dirs=<list>,
+                                  //   env=<map>, cwd=<string>, label=<any>,
+                                  //   may_fail=<list>, fail_message=<any>,
+                                  //   no_cache=<list>, timeout_scaling=<any>,
+                                  //   execution_properties=<any>)
+    {"result", BuiltIn::result},  // result(artifacts=<map>, runfiles=<map>,
+                                  //   provides=<map>)
+    {"value_node", BuiltIn::value_node},        // value_node(result=<any>)
+    {"abstract_node", BuiltIn::abstract_node},  // abstract_node(
+                                                //   node_type=<string>,
+                                                //   string_fields=<map>,
+                                                //   target_fields=<map>)
 };
 
 }  // namespace jstlang

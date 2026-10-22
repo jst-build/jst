@@ -108,6 +108,37 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
             {"values", {"values", {"$1"}}},
             {"assert_non_empty", {"assert_non_empty", {"$1", "msg"}}},
             {"context", {"context", {"$1", "msg"}}},
+            // rule-only functions
+            {"field", {"FIELD", {"name"}}},
+            {"dep_artifacts", {"DEP_ARTIFACTS", {"dep", "transition"}}},
+            {"dep_runfiles", {"DEP_RUNFILES", {"dep", "transition"}}},
+            {"dep_provides",
+             {"DEP_PROVIDES", {"dep", "provider", "transition", "default"}}},
+            {"make_blob", {"BLOB", {"data"}}},
+            {"make_symlink", {"SYMLINK", {"data"}}},
+            {"make_tree", {"TREE", {"$1"}}},
+            // type depends on the parameter "disjoint", which is not
+            // serialized
+            {"tree_overlay", {"TREE_OVERLAY", {"$1", ""}}},
+            {"action",
+             {"ACTION",
+              {"inputs",
+               "cmd",
+               "outs",
+               "out_dirs",
+               "env",
+               "cwd",
+               "label",
+               "may_fail",
+               "fail_message",
+               "no_cache",
+               "timeout scaling",
+               "execution properties"}}},
+            {"result", {"RESULT", {"artifacts", "runfiles", "provides"}}},
+            {"value_node", {"VALUE_NODE", {"$1"}}},
+            {"abstract_node",
+             {"ABSTRACT_NODE",
+              {"node_type", "string_fields", "target_fields"}}},
         };
     static auto const kEmptyMapNode =
         std::make_shared<MapNode>(Location{}, MapNode::fields_t{});
@@ -122,11 +153,12 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
 
     auto root = nlohmann::json::object();
     root["type"] = type;
-    bool const disjoint = name == "union" and args.size() > 1 and
-                          args[1] != nullptr and
+    bool const disjoint = (name == "union" or name == "tree_overlay") and
+                          args.size() > 1 and args[1] != nullptr and
                           args[1]->TruthValue().value_or(false);
     if (disjoint) {
-        root["type"] = "disjoint_map_union";
+        root["type"] =
+            name == "union" ? "disjoint_map_union" : "DISJOINT_TREE_OVERLAY";
     }
     for (std::size_t pos = 0; pos < args.size() and pos < keys.size(); ++pos) {
         auto const& arg = args[pos];

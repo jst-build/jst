@@ -93,6 +93,17 @@ template <std::size_t kN>
     jstlang::CallNode::params_t const& source_args,
     std::array<ExpectedParameter, kN> const& expected_args) -> NamedParams;
 
+// Create a call of a rule-only built-in function (evaluated by the rule
+// analysis), with all arguments being optional, except the ones marked as
+// mandatory. Arguments are stored by parameter position.
+template <std::size_t kN>
+[[nodiscard]] auto MakeRuleCall(
+    jstlang::Location const& loc,
+    jstlang::CallNode::params_t const& args,
+    std::string const& name,
+    std::array<ExpectedParameter, kN> const& expected_args,
+    jstlang::ValueType eval_type) -> jstlang::ASTNodePtr;
+
 template <typename T = jstlang::ASTNode>
 [[nodiscard]] auto RetrieveAs(NamedParams const& params,
                               ExpectedParameter const& to_retrieve)
@@ -2054,6 +2065,183 @@ auto BuiltIn::context(Location const& loc,
         value_node->EvalType());
 }
 
+auto BuiltIn::field(Location const& loc,
+                    EvalCallback const& /*unused*/,
+                    CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"name", {ValueType::Any, ValueType::String}, true},
+    };
+    return MakeRuleCall(loc, args, "field", kExpected, ValueType::List);
+}
+
+auto BuiltIn::dep_artifacts(Location const& loc,
+                            EvalCallback const& /*unused*/,
+                            CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{
+            "dep",
+            {ValueType::Any, ValueType::EntityName, ValueType::AnonTarget},
+            true},
+        ExpectedParameter{
+            "transition", {ValueType::Any, ValueType::Map}, false},
+    };
+    return MakeRuleCall(loc, args, "dep_artifacts", kExpected, ValueType::Map);
+}
+
+auto BuiltIn::dep_runfiles(Location const& loc,
+                           EvalCallback const& /*unused*/,
+                           CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{
+            "dep",
+            {ValueType::Any, ValueType::EntityName, ValueType::AnonTarget},
+            true},
+        ExpectedParameter{
+            "transition", {ValueType::Any, ValueType::Map}, false},
+    };
+    return MakeRuleCall(loc, args, "dep_runfiles", kExpected, ValueType::Map);
+}
+
+auto BuiltIn::dep_provides(Location const& loc,
+                           EvalCallback const& /*unused*/,
+                           CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{
+            "dep",
+            {ValueType::Any, ValueType::EntityName, ValueType::AnonTarget},
+            true},
+        ExpectedParameter{
+            "provider", {ValueType::Any, ValueType::String}, true},
+        ExpectedParameter{
+            "transition", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{"default", {}, false},
+    };
+    return MakeRuleCall(loc, args, "dep_provides", kExpected, ValueType::Any);
+}
+
+auto BuiltIn::make_blob(Location const& loc,
+                        EvalCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"data", {ValueType::Any, ValueType::String}, false},
+    };
+    return MakeRuleCall(
+        loc, args, "make_blob", kExpected, ValueType::Artifact);
+}
+
+auto BuiltIn::make_symlink(Location const& loc,
+                           EvalCallback const& /*unused*/,
+                           CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"target", {ValueType::Any, ValueType::String}, true},
+    };
+    return MakeRuleCall(
+        loc, args, "make_symlink", kExpected, ValueType::Artifact);
+}
+
+auto BuiltIn::make_tree(Location const& loc,
+                        EvalCallback const& /*unused*/,
+                        CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"stage", {ValueType::Any, ValueType::Map}, true},
+    };
+    return MakeRuleCall(loc, args, "make_tree", kExpected, ValueType::Artifact);
+}
+
+auto BuiltIn::tree_overlay(Location const& loc,
+                           EvalCallback const& /*unused*/,
+                           CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"stages", {ValueType::Any, ValueType::List}, true},
+        ExpectedParameter{"disjoint", {}, false},
+    };
+
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, kExpected);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, std::string("tree_overlay: ") + e.what());
+    }
+
+    ASTNodePtr stages_node = RetrieveAs(named_params, kExpected[0]);
+    if (stages_node == nullptr) {
+        throw BuiltInError(
+            loc, "tree_overlay: Missing mandatory parameter \"stages\"");
+    }
+    ASTNodePtr disjoint_node = RetrieveAs(named_params, kExpected[1]);
+    if (not disjoint_node) {
+        disjoint_node = kNullNode;
+    }
+    auto disjoint_value = disjoint_node->TruthValue();
+    if (not disjoint_value) {
+        throw BuiltInError(
+            loc, "tree_overlay: Parameter \"disjoint\" must be a literal.");
+    }
+
+    return std::make_shared<BuiltinCallNode>(
+        loc,
+        "tree_overlay",
+        BuiltinCallNode::args_t{
+            stages_node, disjoint_node == kNullNode ? nullptr : disjoint_node},
+        ValueType::Artifact);
+}
+
+auto BuiltIn::action(Location const& loc,
+                     EvalCallback const& /*unused*/,
+                     CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"inputs", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{"cmd", {ValueType::Any, ValueType::List}, false},
+        ExpectedParameter{"outs", {ValueType::Any, ValueType::List}, false},
+        ExpectedParameter{"out_dirs", {ValueType::Any, ValueType::List}, false},
+        ExpectedParameter{"env", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{"cwd", {ValueType::Any, ValueType::String}, false},
+        ExpectedParameter{"label", {}, false},
+        ExpectedParameter{"may_fail", {ValueType::List}, false},
+        ExpectedParameter{"fail_message", {}, false},
+        ExpectedParameter{"no_cache", {ValueType::List}, false},
+        ExpectedParameter{"timeout_scaling", {}, false},
+        ExpectedParameter{"execution_properties", {}, false},
+    };
+    return MakeRuleCall(loc, args, "action", kExpected, ValueType::Map);
+}
+
+auto BuiltIn::result(Location const& loc,
+                     EvalCallback const& /*unused*/,
+                     CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"artifacts", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{"runfiles", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{"provides", {ValueType::Any, ValueType::Map}, false},
+    };
+    return MakeRuleCall(loc, args, "result", kExpected, ValueType::Result);
+}
+
+auto BuiltIn::value_node(Location const& loc,
+                         EvalCallback const& /*unused*/,
+                         CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{"result", {ValueType::Any, ValueType::Result}, true},
+    };
+    return MakeRuleCall(
+        loc, args, "value_node", kExpected, ValueType::AnonTarget);
+}
+
+auto BuiltIn::abstract_node(Location const& loc,
+                            EvalCallback const& /*unused*/,
+                            CallNode::params_t const& args) -> ASTNodePtr {
+    static const std::array kExpected = {
+        ExpectedParameter{
+            "node_type", {ValueType::Any, ValueType::String}, true},
+        ExpectedParameter{
+            "string_fields", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{
+            "target_fields", {ValueType::Any, ValueType::Map}, false},
+    };
+    return MakeRuleCall(
+        loc, args, "abstract_node", kExpected, ValueType::AnonTarget);
+}
+
 auto BuiltinsObject() -> ASTNodePtr const& {
     // per thread, as all evaluations share its nodes (whose reference counts
     // would otherwise contend between threads)
@@ -2129,6 +2317,29 @@ template <std::size_t kN>
         }
     }
     return named;
+}
+
+template <std::size_t kN>
+[[nodiscard]] auto MakeRuleCall(
+    jstlang::Location const& loc,
+    jstlang::CallNode::params_t const& args,
+    std::string const& name,
+    std::array<ExpectedParameter, kN> const& expected_args,
+    jstlang::ValueType eval_type) -> jstlang::ASTNodePtr {
+    NamedParams named_params;
+    try {
+        named_params = MakeNamedParameters(args, expected_args);
+    } catch (const std::exception& e) {
+        throw BuiltInError(loc, name + ": " + e.what());
+    }
+
+    auto call_args = jstlang::BuiltinCallNode::args_t{};
+    call_args.reserve(kN);
+    for (std::size_t i{}; i < kN; ++i) {
+        call_args.emplace_back(RetrieveAs(named_params, expected_args.at(i)));
+    }
+    return std::make_shared<jstlang::BuiltinCallNode>(
+        loc, name, std::move(call_args), eval_type);
 }
 
 template <typename T>
@@ -2234,6 +2445,19 @@ template <typename T>
     entries.emplace_back(MakeBuiltinObjEntry("values"));
     entries.emplace_back(MakeBuiltinObjEntry("assert_non_empty"));
     entries.emplace_back(MakeBuiltinObjEntry("context"));
+    // rule-only functions
+    entries.emplace_back(MakeBuiltinObjEntry("field"));
+    entries.emplace_back(MakeBuiltinObjEntry("dep_artifacts"));
+    entries.emplace_back(MakeBuiltinObjEntry("dep_runfiles"));
+    entries.emplace_back(MakeBuiltinObjEntry("dep_provides"));
+    entries.emplace_back(MakeBuiltinObjEntry("make_blob"));
+    entries.emplace_back(MakeBuiltinObjEntry("make_symlink"));
+    entries.emplace_back(MakeBuiltinObjEntry("make_tree"));
+    entries.emplace_back(MakeBuiltinObjEntry("tree_overlay"));
+    entries.emplace_back(MakeBuiltinObjEntry("action"));
+    entries.emplace_back(MakeBuiltinObjEntry("result"));
+    entries.emplace_back(MakeBuiltinObjEntry("value_node"));
+    entries.emplace_back(MakeBuiltinObjEntry("abstract_node"));
     return std::make_shared<jstlang::MapNode>(jstlang::Location{}, entries);
 }
 
