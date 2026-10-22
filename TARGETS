@@ -139,7 +139,7 @@ local default_options =
     flexible_config: config_vars,
   },
 
-  // The jstlang compiler binary. Not part of INSTALL.
+  // The Jstlang evaluator binary. Not part of INSTALL.
   jstlangc: {
     type: 'export',
     target: 'jstlangc_configured',
@@ -163,11 +163,11 @@ local default_options =
     config: default_options,
   },
 
-  // Sets default options (OS/ARCH) for the jstlang compiler binary.
+  // Sets default options (OS/ARCH) for the Jstlang evaluator binary.
   jstlangc_configured: {
     type: 'configure',
     arguments_config: ['OS', 'ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
-    target: @'//src/buildtool/jstlang/preproc:jstlangc',
+    target: @'//src/buildtool/jstlang:jstlangc',
     config: default_options,
   },
 

@@ -47,6 +47,7 @@
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
+#include "src/buildtool/build_engine/expression/jstlang_evaluator.hpp"
 #include "src/buildtool/build_engine/target_map/absent_target_map.hpp"
 #include "src/buildtool/build_engine/target_map/configured_target.hpp"
 #include "src/buildtool/build_engine/target_map/result_map.hpp"
@@ -61,6 +62,7 @@
 #include "src/buildtool/execution_api/common/execution_api.hpp"
 #include "src/buildtool/file_system/file_root.hpp"
 #include "src/buildtool/file_system/file_system_manager.hpp"
+#include "src/buildtool/jstlang/file_data.hpp"
 #include "src/buildtool/jstlang/ref.hpp"
 #include "src/buildtool/logging/log_config.hpp"
 #include "src/buildtool/logging/log_level.hpp"
@@ -819,7 +821,8 @@ auto main(int argc, char* argv[]) -> int {
                                  : std::filesystem::path{eval_args.root_path};
             auto root = FileRoot{root_path};
 
-            auto content = std::string{};
+            // content of stdin, otherwise the file is read via the reader
+            auto content = std::optional<std::string>{};
             if (eval_args.file_path == "-") {
                 eval_args.file_path = "<stdin>";
                 auto oss = std::ostringstream{};
@@ -830,59 +833,37 @@ auto main(int argc, char* argv[]) -> int {
                 }
                 content = oss.str();
             }
-            else {
-                auto file_content = root.ReadContent(eval_args.file_path);
-                if (not file_content) {
-                    Logger::Log(LogLevel::Error,
-                                "Cannot read file {} in root {}.",
-                                eval_args.file_path,
-                                root_path.string());
-                    return kExitFailure;
-                }
-                content = std::move(*file_content);
-            }
 
-            auto json = std::optional<nlohmann::json>{};
-            try {
-                json = nlohmann::json::parse(content);
-            } catch (...) {
-                Logger::Log(LogLevel::Debug,
-                            "Parsing as JSON failed, retrying as Jstlang.");
-                json = root.ReadJstlang("",
-                                        eval_args.file_path,
-                                        std::move(content),
-                                        eval_args.type);
-            }
-
-            if (not json) {
-                Logger::Log(LogLevel::Error, "Parsing input file failed.");
+            auto reader = jstlang::FileReader{
+                [&root, &root_path](jstlang::FileLocation const& location)
+                    -> std::optional<std::string> {
+                    auto file_content = root.ReadContent(location.path);
+                    if (not file_content) {
+                        Logger::Log(LogLevel::Error,
+                                    "Cannot read file {} in root {}.",
+                                    location.path.string(),
+                                    root_path.string());
+                    }
+                    return file_content;
+                }};
+            auto analysis_args = AnalysisArguments{};
+            analysis_args.defines = std::move(eval_args.defines);
+            analysis_args.config_file = std::move(eval_args.config_file);
+            auto expr = JstlangEvaluator::EvaluateFile(
+                reader,
+                jstlang::FileLocation{.repo = "", .path = eval_args.file_path},
+                content,
+                Configuration(
+                    Expression::FromJson(ReadConfiguration(analysis_args))),
+                [](std::string const& error) {
+                    Logger::Log(LogLevel::Error, error);
+                });
+            if (not expr) {
                 return kExitFailure;
             }
+            auto json = expr->ToJson();
 
-            if (eval_args.type == JustFileType::kPlain and
-                not eval_args.show_ir) {
-                auto analysis_args = AnalysisArguments{};
-                analysis_args.defines = std::move(eval_args.defines);
-                analysis_args.config_file = std::move(eval_args.config_file);
-                auto expr = Evaluator::EvaluateExpression(
-                    Expression::FromJson(*json),
-                    Configuration(
-                        Expression::FromJson(ReadConfiguration(analysis_args))),
-                    FunctionMap::Ptr{nullptr},
-                    [](std::string const& error) {
-                        Logger::Log(LogLevel::Error, error);
-                    },
-                    [](ExpressionPtr const& p) -> std::string {
-                        return p->ToString();
-                    },
-                    []() {});
-                if (not expr) {
-                    return kExitFailure;
-                }
-                *json = expr->ToJson();
-            }
-
-            std::cout << json->dump(2) << std::endl;
+            std::cout << json.dump(2) << std::endl;
             return kExitSuccess;
         }
 #endif  // BOOTSTRAP_BUILD_TOOL

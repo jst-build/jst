@@ -24,7 +24,9 @@
 
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
 #include "src/buildtool/build_engine/expression/expression.hpp"
+#include "src/buildtool/jstlang/ast/ast_context.hpp"
 #include "src/buildtool/jstlang/ast/eval_error.hpp"
+#include "src/buildtool/jstlang/parser.hpp"
 
 using jstlang::AnonTargetNode;
 using jstlang::ArtifactNode;
@@ -506,6 +508,30 @@ auto JstlangEvaluator::Evaluate(
         logger(ErrorMessage(e, annotate_object));
     } catch (std::exception const& e) {
         logger(e.what());
+    }
+    return ExpressionPtr{nullptr};
+}
+
+auto JstlangEvaluator::EvaluateFile(jstlang::FileReader const& reader,
+                                    jstlang::FileLocation const& location,
+                                    std::optional<std::string> const& content,
+                                    Configuration const& env,
+                                    Logger const& logger) noexcept
+    -> ExpressionPtr {
+    try {
+        // the context owns the parsed files, the value does not refer to them
+        auto context = jstlang::ASTContext{};
+        auto parser = jstlang::Parser{&context, reader};
+        auto ast = content ? parser.ParseData(location, *content)
+                           : parser.ParseFile(location);
+        if (not ast) {
+            logger("Parsing file " + location.ToString() + " failed.");
+            return ExpressionPtr{nullptr};
+        }
+        return Evaluate(
+            ast, /*bindings=*/nullptr, &env, FunctionMapPtr{nullptr}, logger);
+    } catch (std::exception const& e) {
+        logger("Parsing file " + location.ToString() + " failed:\n" + e.what());
     }
     return ExpressionPtr{nullptr};
 }

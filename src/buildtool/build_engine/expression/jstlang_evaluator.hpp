@@ -26,6 +26,7 @@
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/build_engine/expression/function_map.hpp"
 #include "src/buildtool/jstlang/evaluator.hpp"
+#include "src/buildtool/jstlang/file_data.hpp"
 
 /// \brief Evaluation of jstlang ASTs for the build engine, based on the
 /// evaluator of jstlang (full evaluation). Values are converted to and from
@@ -112,6 +113,18 @@ class JstlangEvaluator final {
             [](auto const& /*unused*/) { return std::string{}; },
         NoteUserContext const& note_user_context =
             []() {}) noexcept -> ExpressionPtr;
+
+    /// \brief Parse and evaluate a file, with its imports (from the same
+    /// repository) read via the reader.
+    /// \param content  The content of the file; if not given, the file is
+    ///                 read via the reader as well.
+    /// \returns the value or nullptr on error (reported via logger).
+    [[nodiscard]] static auto EvaluateFile(
+        jstlang::FileReader const& reader,
+        jstlang::FileLocation const& location,
+        std::optional<std::string> const& content,
+        Configuration const& env,
+        Logger const& logger) noexcept -> ExpressionPtr;
 
     /// \brief Evaluate value of field, see Evaluate() for parameters.
     [[nodiscard]] static auto Evaluate(

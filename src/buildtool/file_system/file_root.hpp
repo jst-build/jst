@@ -46,18 +46,12 @@
 #include "src/buildtool/file_system/precomputed_root.hpp"
 #include "src/buildtool/logging/log_level.hpp"
 #include "src/buildtool/logging/logger.hpp"
-#include "src/buildtool/multithreading/atomic_value.hpp"
 #include "src/buildtool/storage/config.hpp"
 #include "src/utils/cpp/concepts.hpp"
 #include "src/utils/cpp/expected.hpp"
 #include "src/utils/cpp/hex_string.hpp"
 // Keep it to ensure fmt::format works on JSON objects
 #include "src/utils/cpp/json.hpp"  // IWYU pragma: keep
-
-namespace Frontend {
-class Processor;
-using ProcessorPtr = std::shared_ptr<Processor>;
-}  // namespace Frontend
 
 /// FilteredIterator is an helper class to allow for iteration over
 /// directory-only or file-only entries stored inside the class
@@ -650,13 +644,6 @@ class FileRoot {
         return DirectoryEntries{DirectoryEntries::pairs_t{}};
     }
 
-    /// \brief Read jstlang file
-    [[nodiscard]] auto ReadJstlang(std::string const& global_repo_name,
-                                   std::filesystem::path const& file_path,
-                                   std::string file_content,
-                                   JustFileType file_type) const noexcept
-        -> std::optional<nlohmann::json>;
-
     /// \brief Get type of blob at given path in non-absent root.
     /// Returns value only for valid entries.
     [[nodiscard]] auto BlobType(std::filesystem::path const& file_path)
@@ -940,7 +927,6 @@ class FileRoot {
     // directories instead of erroring out. This means implicitly also that
     // there are no more fast tree lookups, i.e., tree traversal is a must.
     bool ignore_special_{};
-    mutable AtomicValue<Frontend::ProcessorPtr> file_proc_{};
 };
 
 #endif  // INCLUDED_SRC_BUILDTOOL_FILE_SYSTEM_FILE_ROOT_HPP

@@ -36,37 +36,6 @@
     stage: ['test', 'buildtool', 'jstlang'],
   },
 
-  expr_serializer: {
-    type: @'rules//CC/test:test',
-    name: ['expr_serializer'],
-    srcs: ['expr_serializer.test.cpp'],
-    'private-deps': [
-      @'catch2//:catch2',
-      @'json//:json',
-      @'src//src/buildtool/jstlang:file_data',
-      @'src//src/buildtool/jstlang/ast:ast',
-      @'src//src/buildtool/jstlang/preproc:expr_serializer',
-      @'src//src/buildtool/jstlang/preproc:preprocessor',
-      @'//:catch-main',
-    ],
-    stage: ['test', 'buildtool', 'jstlang'],
-  },
-
-  preprocessor: {
-    type: @'rules//CC/test:test',
-    name: ['preprocessor'],
-    srcs: ['preprocessor.test.cpp'],
-    'private-deps': [
-      @'catch2//:catch2',
-      @'json//:json',
-      @'src//src/buildtool/jstlang:file_data',
-      @'src//src/buildtool/jstlang/preproc:preprocessor',
-      @'src//src/buildtool/jstlang/ast:ast',
-      @'//:catch-main',
-    ],
-    stage: ['test', 'buildtool', 'jstlang'],
-  },
-
   ref: {
     type: @'rules//CC/test:test',
     name: ['ref'],
@@ -165,12 +134,10 @@
     deps: [
       'builtins',
       'evaluator',
-      'expr_serializer',
       'imports',
       'inline',
       'lexer',
       'parser',
-      'preprocessor',
       'ref',
       'traversal',
     ],

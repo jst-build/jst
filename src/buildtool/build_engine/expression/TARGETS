@@ -79,8 +79,13 @@
       'expression',
       'expression_ptr_interface',
       @'//src/buildtool/jstlang:evaluator',
+      @'//src/buildtool/jstlang:file_data',
     ],
-    'private-deps': [@'//src/buildtool/jstlang/ast:eval_error'],
+    'private-deps': [
+      @'//src/buildtool/jstlang:parser',
+      @'//src/buildtool/jstlang/ast:ast',
+      @'//src/buildtool/jstlang/ast:eval_error',
+    ],
     stage: ['src', 'buildtool', 'build_engine', 'expression'],
   },
 }

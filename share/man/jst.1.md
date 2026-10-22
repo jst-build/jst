@@ -1143,9 +1143,8 @@ for evaluating code from stdin). Runtime data can injected via options
 **`--config`** and **`--defines`**. To stop the evaluation after
 preprocessing and print only the generated low-level JSON code, use the
 option **`--ir`**. By default, no special restrictions on the file type
-are applied during preprocessing. Restrictions can be enabled by
-specifying **`--targets`**, **`--rules`**, or **`--expressions`** (all
-of them implying **`--ir`**).
+are applied during preprocessing. The restrictions of `TARGETS` files
+can be enabled by specifying **`--targets`** (implying **`--ir`**).
 
 **`execute`**
 -------------

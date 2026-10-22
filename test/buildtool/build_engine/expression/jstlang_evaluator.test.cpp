@@ -66,7 +66,7 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     return Configuration{Expression::FromJson(json)};
 }
 
-/// \brief Evaluate via preprocessor (lowering to expression language).
+/// \brief Evaluate via lowering to the expression language.
 [[nodiscard]] auto EvalLowered(jstlang::ASTNodePtr const& ast,
                                Configuration const& config)
     -> std::optional<nlohmann::json> {
@@ -363,7 +363,7 @@ TEST_CASE("runtime evaluator", "[runtime types]") {
     CHECK(EvalRuntime("jst.env('m').k", {{"m", nlohmann::json::object()}}) ==
           nullptr);
     CHECK(EvalRuntime("jst.env('l')[-1]", {{"l", {"a", "b"}}}) == "b");
-    // keys are sorted, as for the runtime evaluation of the preprocessor
+    // keys are sorted, as for the evaluation of lowered code
     CHECK(EvalRuntime("jst.keys({b: 1, a: 2})") ==
           nlohmann::json::parse(R"(["a", "b"])"));
 }
