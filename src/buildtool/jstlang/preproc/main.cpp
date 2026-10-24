@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -108,59 +109,44 @@ auto main(int argc, const char** argv) -> int {
     auto [filename, file_type] = ParseArguments(argc, argv);
 
     auto cwd = std::filesystem::current_path();
-    auto file_reader = jstlang::FileData::reader_t{
-        [&cwd](jstlang::FileLocation const& imported_from,
-               std::filesystem::path const& filename,
-               std::string const* repo) -> std::optional<jstlang::FileData> {
-            auto data = jstlang::FileData{};
-
-            if (repo != nullptr) {
-                if (*repo != kDefaultRepo) {
-                    // only support the default repo for local file processing
-                    std::cerr << "Found unsupported repository binding '"
-                              << *repo << "'.\n";
-                    return std::nullopt;
-                }
-                data.location.repo = *repo;
-            }
-            else {
-                // no need to translate local repo name to global repo name
-                data.location.repo = imported_from.repo;
-            }
-
-            if (filename.empty()) {
-                std::cerr << "Cannot read empty filename.\n";
+    auto file_reader =
+        jstlang::FileReader{[&cwd](jstlang::FileLocation const& location)
+                                -> std::optional<std::string> {
+            auto read_path = cwd / location.path;
+            auto in_file = std::ifstream(read_path);
+            if (not in_file.good()) {
+                std::cerr << "Cannot read file " << read_path << "\n";
                 return std::nullopt;
             }
-
-            if (filename == "-") {
-                data.location.path = "<stdin>";
-                data.content = ReadData(std::cin);
+            return ReadData(in_file);
+        }};
+    // only the default repository is available for local file processing
+    auto repos = jstlang::RepoResolver{
+        [](std::string const& /*repo*/,
+           std::string const& name) -> std::optional<std::string> {
+            if (name == kDefaultRepo) {
+                return kDefaultRepo;
             }
-            else {
-                data.location.path =
-                    (repo == nullptr and filename.is_relative()
-                         ? imported_from.path.parent_path() / filename
-                         : filename)
-                        .lexically_proximate("/")
-                        .lexically_normal();
-                auto read_path = cwd / data.location.path;
-                auto in_file = std::ifstream(read_path);
-                if (not in_file.good()) {
-                    std::cerr << "Cannot read file " << read_path << "\n";
-                    std::exit(EXIT_FAILURE);
-                }
-                data.content = ReadData(in_file);
-            }
-            return data;
+            return std::nullopt;
         }};
 
     auto preproc = jstlang::Preprocessor{
         std::move(file_reader),
-        [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
+        [](auto /*type*/, auto const& msg) { std::cerr << msg; },
+        std::move(repos)};
     // the context must outlive the AST and its uses (until serialized)
     auto context = jstlang::ASTContext{};
-    auto output = preproc.Process(&context, kDefaultRepo, filename, file_type);
+    auto output =
+        filename == "-"
+            ? preproc.Process(&context,
+                              jstlang::FileLocation{.repo = kDefaultRepo,
+                                                    .path = "<stdin>"},
+                              ReadData(std::cin),
+                              file_type)
+            : preproc.Process(
+                  &context,
+                  jstlang::FileLocation::Create(kDefaultRepo, filename),
+                  file_type);
 
     if (not output) {
         std::cerr << "Parsing failed.\n";

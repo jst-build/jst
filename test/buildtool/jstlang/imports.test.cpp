@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -38,31 +39,18 @@ using file_map_t = std::unordered_map<std::string, std::string>;
     return &context;
 }
 
-[[nodiscard]] auto MakeReader(file_map_t files) -> jstlang::FileData::reader_t {
-    return
-        [files = std::move(files)](
-            jstlang::FileLocation const& import_from,
-            std::filesystem::path const& file_path,
-            std::string const* /*repo*/) -> std::optional<jstlang::FileData> {
-            auto path = (file_path.is_relative()
-                             ? import_from.path.parent_path() / file_path
-                             : file_path)
-                            .lexically_proximate("/")
-                            .lexically_normal();
-            if (auto it = files.find(path.string()); it != files.end()) {
-                return jstlang::FileData{
-                    .location = jstlang::FileLocation{.repo = "", .path = path},
-                    .content = it->second};
-            }
-            return std::nullopt;
-        };
+/// \brief Reader of the files of the main repository, by path.
+[[nodiscard]] auto MakeReader(file_map_t files) -> jstlang::FileReader {
+    return [files = std::move(files)](jstlang::FileLocation const& location)
+               -> std::optional<std::string> {
+        if (auto it = files.find(location.path.string()); it != files.end()) {
+            return it->second;
+        }
+        return std::nullopt;
+    };
 }
 
-[[nodiscard]] auto MainFile(std::string content) -> jstlang::FileData {
-    return jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "main.jst"},
-        .content = std::move(content)};
-}
+auto const kMain = jstlang::FileLocation{.repo = "", .path = "main.jst"};
 
 [[nodiscard]] auto Lower(jstlang::ASTNodePtr const& ast) -> nlohmann::json {
     auto opts =
@@ -82,10 +70,10 @@ auto const kFiles = file_map_t{
 TEST_CASE("imports", "[deferred imports]") {
     // imports are unresolved references
     auto reader = MakeReader(kFiles);
-    auto main = MainFile("{a: import 'a.jst', b: import 'b.jst'}");
+    auto const* main = "{a: import 'a.jst', b: import 'b.jst'}";
     auto ast =
         jstlang::Parser{Context(), reader, /*defer_imports=*/true}.ParseData(
-            main);
+            kMain, main);
     auto imports = jstlang::CollectImports(ast);
     REQUIRE(imports.size() == 2);
     CHECK(imports[0] == jstlang::FileLocation{.repo = "", .path = "a.jst"});
@@ -94,12 +82,75 @@ TEST_CASE("imports", "[deferred imports]") {
 
     // eagerly parsed imports are resolved
     CHECK(jstlang::CollectImports(
-              jstlang::Parser{Context(), reader}.ParseData(main))
+              jstlang::Parser{Context(), reader}.ParseData(kMain, main))
               .empty());
 
     // unsupported deferred imports are parse errors
     CHECK_THROWS_AS((jstlang::Parser{Context(), reader, /*defer_imports=*/true})
-                        .ParseData(MainFile("import ''")),
+                        .ParseData(kMain, "import ''"),
+                    jstlang::ASTParseError);
+}
+
+TEST_CASE("imports", "[other repositories]") {
+    using jstlang::FileLocation;
+    using jstlang::RootKind;
+    // repository "main" binds the name "lib" to the repository "lib-v1"
+    auto const files = std::unordered_map<FileLocation, std::string>{
+        {FileLocation{
+             .repo = "lib-v1", .path = "lib.jst", .root = RootKind::Rules},
+         "{v: 'rules'}"},
+        {FileLocation{.repo = "lib-v1", .path = "lib.jst"}, "{v: 'targets'}"},
+        {FileLocation{
+             .repo = "lib-v1", .path = "sub/x.jst", .root = RootKind::Rules},
+         "import '../lib.jst'"},
+    };
+    auto reader =
+        [&files](FileLocation const& location) -> std::optional<std::string> {
+        if (auto it = files.find(location); it != files.end()) {
+            return it->second;
+        }
+        return std::nullopt;
+    };
+    auto repos = [](std::string const& repo,
+                    std::string const& name) -> std::optional<std::string> {
+        if (repo == "main" and name == "lib") {
+            return "lib-v1";
+        }
+        return std::nullopt;
+    };
+    auto parse = [&reader, &repos](RootKind root,
+                                   std::string const& code,
+                                   bool defer_imports = false) {
+        return jstlang::Parser{Context(), reader, defer_imports, repos}
+            .ParseData(
+                FileLocation{.repo = "main", .path = "dir/RULES", .root = root},
+                code);
+    };
+
+    // the file is read from the bound repository, from the root of the same
+    // kind, with the path relative to that root
+    CHECK(jstlang::CollectImports(
+              parse(RootKind::Rules, "import @'lib//sub/x.jst'", true)) ==
+          std::vector{FileLocation{
+              .repo = "lib-v1", .path = "sub/x.jst", .root = RootKind::Rules}});
+    CHECK(Lower(parse(RootKind::Rules,
+                      "local lib = import @'lib//lib.jst'; lib.v")) == "rules");
+    CHECK(Lower(parse(RootKind::Targets,
+                      "local lib = import @'lib//lib.jst'; lib.v")) ==
+          "targets");
+    // relative imports of the imported file stay in the imported repository
+    CHECK(Lower(parse(RootKind::Rules,
+                      "local lib = import @'lib//sub/x.jst'; lib.v")) ==
+          "rules");
+
+    // names that are not bound, missing repositories, and imports from other
+    // repositories without resolver are parse errors
+    CHECK_THROWS_AS(parse(RootKind::Rules, "import @'other//lib.jst'", true),
+                    jstlang::ASTParseError);
+    CHECK_THROWS_AS(parse(RootKind::Rules, "import @'//lib.jst'", true),
+                    jstlang::ASTParseError);
+    CHECK_THROWS_AS((jstlang::Parser{Context(), reader, true})
+                        .ParseData(kMain, "import @'lib//lib.jst'"),
                     jstlang::ASTParseError);
 }
 
@@ -118,6 +169,12 @@ TEST_CASE("imports", "[file locations]") {
     CHECK(ref("../c/./x.jst").path == "a/c/x.jst");
     CHECK(ref("/x.jst").path == "x.jst");
     CHECK(ref("/a/b/x.jst") == ref("x.jst"));
+
+    // in another repository: relative to its root of the same kind
+    CHECK(from.ResolveIn("t", "c/../x.jst") ==
+          jstlang::FileLocation{
+              .repo = "t", .path = "x.jst", .root = jstlang::RootKind::Rules});
+    CHECK(from.ResolveIn("t", "/x.jst") == from.ResolveIn("t", "x.jst"));
 
     // different repository or root, different file
     auto refs = std::unordered_set<jstlang::FileLocation>{ref("x.jst")};

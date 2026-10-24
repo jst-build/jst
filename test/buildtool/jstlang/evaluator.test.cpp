@@ -46,13 +46,9 @@ namespace {
 /// \brief Parse code, optionally with deferred imports.
 [[nodiscard]] auto Parse(std::string const& code,
                          bool defer_imports = false) -> jstlang::ASTNodePtr {
-    auto reader = [](auto const& /*import_from*/,
-                     auto const& /*file_path*/,
-                     auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser{Context(), std::move(reader), defer_imports};
-    return parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code});
+    auto parser = jstlang::Parser{Context(), /*reader=*/nullptr, defer_imports};
+    return parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
 }
 
 /// \brief Literal AST of a JSON value.

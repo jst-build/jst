@@ -42,29 +42,27 @@ using file_map_t = std::unordered_map<std::string, std::string>;
 [[nodiscard]] auto Preprocess(std::string const& global_repo,
                               std::filesystem::path const& file_path,
                               file_map_t const& files) {
-    auto file_map_reader =
-        [&files](auto const& import_from,
-                 auto const& file_path,
-                 auto const* repo) -> std::optional<jstlang::FileData> {
-        auto data = jstlang::FileData{};
-        data.location.repo = repo == nullptr ? import_from.repo : *repo;
-        data.location.path = (repo == nullptr and file_path.is_relative()
-                                  ? import_from.path.parent_path() / file_path
-                                  : file_path)
-                                 .lexically_proximate("/")
-                                 .lexically_normal();
-        if (auto file_it = files.find(data.location.ToString());
+    auto file_map_reader = [&files](jstlang::FileLocation const& location)
+        -> std::optional<std::string> {
+        if (auto file_it = files.find(location.ToString());
             file_it != files.end()) {
-            data.content = file_it->second;
-            return data;
+            return file_it->second;
         }
         return std::nullopt;
     };
+    // every repository binds the names of all repositories to themselves
+    auto repos = [](std::string const& /*repo*/,
+                    std::string const& name) -> std::optional<std::string> {
+        return name;
+    };
     auto preproc = jstlang::Preprocessor{
         std::move(file_map_reader),
-        [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
+        [](auto /*type*/, auto const& msg) { std::cerr << msg; },
+        std::move(repos)};
     return preproc.Process(
-        Context(), global_repo, file_path, jstlang::FileType::Plain);
+        Context(),
+        jstlang::FileLocation::Create(global_repo, file_path),
+        jstlang::FileType::Plain);
 }
 
 [[nodiscard]] auto Preprocess(std::string const& code) {
@@ -75,10 +73,8 @@ using file_map_t = std::unordered_map<std::string, std::string>;
 }
 
 [[nodiscard]] auto ToJson(jstlang::ASTNodePtr const& ast) {
-    auto moc_reader = [](auto const&, auto const&, auto const*)
-        -> std::optional<jstlang::FileData> { return std::nullopt; };
     auto preproc = jstlang::Preprocessor{
-        std::move(moc_reader),
+        /*reader=*/nullptr,
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
     return preproc.Serialize(ast, jstlang::FileType::Plain);
 }
@@ -3980,7 +3976,6 @@ TEST_CASE("preprocessor", "[file imports]") {
         CHECK(ToJson(just_ast) == expected);
     }
 
-#ifdef SUPPORT_IMPORT_VIA_EXT_REF
     SECTION("external") {
         auto const foo =
             jstlang::FileLocation{.repo = "", .path = "foo/foo.jst"};
@@ -4004,7 +3999,6 @@ TEST_CASE("preprocessor", "[file imports]") {
         REQUIRE(just_ast != nullptr);
         CHECK(ToJson(just_ast) == expected);
     }
-#endif
 
     SECTION("cycle detection") {
         SECTION("cycle via self import") {
@@ -4041,7 +4035,6 @@ TEST_CASE("preprocessor", "[file imports]") {
             CHECK(not Preprocess(foo.repo, foo.path, files));
         }
 
-#ifdef SUPPORT_IMPORT_VIA_EXT_REF
         SECTION("cycle via external file's imports") {
             auto const foo =
                 jstlang::FileLocation{.repo = "", .path = "foo.jst"};
@@ -4064,6 +4057,5 @@ TEST_CASE("preprocessor", "[file imports]") {
             )";
             CHECK(not Preprocess(foo.repo, foo.path, files));
         }
-#endif
     }
 }

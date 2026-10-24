@@ -36,13 +36,9 @@ namespace {
 }
 
 [[nodiscard]] auto Parse(std::string const& code) -> jstlang::ASTNodePtr {
-    auto reader = [](auto const& /*import_from*/,
-                     auto const& /*file_path*/,
-                     auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser{Context(), std::move(reader)};
-    return parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code});
+    auto parser = jstlang::Parser{Context(), /*reader=*/nullptr};
+    return parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
 }
 
 /// \brief Number of nodes in the tree.

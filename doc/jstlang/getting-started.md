@@ -169,6 +169,17 @@ foo.bar;    // 'BAR'
 foo.baz();  // 'BAZ'
 ```
 
+Files of other repositories are imported by a file-reference
+`@'<repo>//<path>'`, with `<repo>` being a name the current repository binds
+to the other repository (as for target references), and the path being relative
+to the root of the other repository. The file is read from the root of the same
+kind as the current file, e.g., a `RULES` file imports from the rule root of
+the other repository.
+
+``` jsonnet
+local common = import @'rules//expressions.jst';
+```
+
 ### Runtime Variables
 
 Runtime variables (typically set via `--defines` or `--config`) can be read via

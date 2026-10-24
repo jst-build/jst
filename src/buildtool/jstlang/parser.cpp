@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -192,13 +193,15 @@ namespace jstlang {
 class NativeParser {
   public:
     NativeParser(gsl::not_null<ASTContext*> const& context,
-                 FileData::reader_t reader,
+                 FileReader reader,
                  std::vector<SourceFile const*> import_chain,
-                 bool defer_imports = false)
+                 bool defer_imports = false,
+                 RepoResolver repos = nullptr)
         : context_{context},
           reader_{std::move(reader)},
           import_chain_{std::move(import_chain)},
-          defer_imports_{defer_imports} {}
+          defer_imports_{defer_imports},
+          repos_{std::move(repos)} {}
     NativeParser(const NativeParser&) = delete;
     NativeParser(NativeParser&&) = delete;
     ~NativeParser() = default;
@@ -206,8 +209,10 @@ class NativeParser {
     auto operator=(const NativeParser&) = delete;
     auto operator=(NativeParser&&) = delete;
 
-    [[nodiscard]] auto ParseData(const FileData& file_data)
-        -> jstlang::ASTNodePtr;
+    [[nodiscard]] auto ParseFile(FileLocation const& location) -> ASTNodePtr;
+
+    [[nodiscard]] auto ParseData(FileLocation location,
+                                 std::string content) -> ASTNodePtr;
 
   private:
     class TokenStream {
@@ -229,13 +234,19 @@ class NativeParser {
     };
 
     gsl::not_null<ASTContext*> context_;
-    FileData::reader_t reader_;
+    FileReader reader_;
     std::vector<SourceFile const*> import_chain_;
     bool defer_imports_{};
+    RepoResolver repos_;
     TokenStream tokens_{};
 
     /// \brief Throw if file is already in the import chain.
     void CheckImportCycle(FileLocation const& location) const;
+    /// \brief Location of a file imported from the current file, from the
+    /// repository bound to the given name (if any), see Parser.
+    [[nodiscard]] auto ResolveImport(std::optional<std::string> const& repo,
+                                     std::string const& file,
+                                     Location const& loc) const -> FileLocation;
     [[nodiscard]] auto ParseSource(SourceFile const& source) -> ASTNodePtr;
     [[nodiscard]] auto Parse(unsigned priority) -> ASTNodePtr;
     [[nodiscard]] auto ParseSimple() -> ASTNodePtr;
@@ -301,14 +312,59 @@ auto NativeParser::TokenStream::PopCheck(TokenType token_type,
     return token;
 }
 
-auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
+auto NativeParser::ParseFile(FileLocation const& location) -> ASTNodePtr {
     try {
-        CheckImportCycle(file_data.location);
-        return ParseSource(
-            context_->AddSource(file_data.location, file_data.content));
+        CheckImportCycle(location);
+        auto content =
+            reader_ ? reader_(location) : std::optional<std::string>{};
+        if (not content) {
+            throw ParserException{"Failed to read file " + location.ToString() +
+                                  "."};
+        }
+        return ParseSource(context_->AddSource(location, *std::move(content)));
+    } catch (ASTParseError const&) {
+        throw;
     } catch (std::exception const& e) {
         throw ASTParseError{e.what()};
     }
+}
+
+auto NativeParser::ParseData(FileLocation location,
+                             std::string content) -> ASTNodePtr {
+    try {
+        CheckImportCycle(location);
+        return ParseSource(
+            context_->AddSource(std::move(location), std::move(content)));
+    } catch (ASTParseError const&) {
+        throw;
+    } catch (std::exception const& e) {
+        throw ASTParseError{e.what()};
+    }
+}
+
+auto NativeParser::ResolveImport(std::optional<std::string> const& repo,
+                                 std::string const& file,
+                                 Location const& loc) const -> FileLocation {
+    if (file.empty()) {
+        throw ParserException{"Cannot import empty file name.", loc};
+    }
+    auto const& from = import_chain_.back()->location;
+    if (not repo) {
+        return from.Resolve(file);
+    }
+    if (not repos_) {
+        throw ParserException{
+            "Imports from other repositories are not supported here.", loc};
+    }
+    auto global_repo = repos_(from.repo, *repo);
+    if (not global_repo) {
+        throw ParserException{
+            "Repository " + QuoteRefSegment(*repo, RefSegment::Repo) +
+                " is not bound by repository " +
+                QuoteRefSegment(from.repo, RefSegment::Repo) + ".",
+            loc};
+    }
+    return from.ResolveIn(*std::move(global_repo), file);
 }
 
 void NativeParser::CheckImportCycle(FileLocation const& location) const {
@@ -890,62 +946,42 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
                     file = tok.value;
                     break;
                 case TokenType::REF_STRING: {
-#ifdef SUPPORT_IMPORT_VIA_EXT_REF
-                    // encoded file-reference: @'<repo>//<file>'
+                    // file-reference to another repository: @'<repo>//<file>'
                     auto const& data =
                         DecodeRefString(tok.value, jstlang::RefContext::File);
                     if (data.type != jstlang::RefType::Ext) {
                         throw ParserException{
                             "Missing repository for import from external "
-                            "file-reference @'<repo>//<file_path>'."};
+                            "file-reference @'<repo>//<file_path>'.",
+                            CreateLocation(tok, import_chain_.back())};
                     }
                     file = data.module;
                     repo = data.repo;
-#else
-                    throw ParserException{
-                        "Imports from ref-strings are not supported."};
-#endif
                 } break;
                 default: {
-#ifdef SUPPORT_IMPORT_VIA_EXT_REF
                     throw ParserException{
-                        "Only imports from plain path or ref-strings are "
-                        "supported."};
-#else
-                    throw ParserException{
-                        "Only imports from plain path are supported."};
-#endif
+                        "Only imports from plain paths or ref-strings are "
+                        "supported.",
+                        CreateLocation(tok, import_chain_.back())};
                 } break;
             }
 
+            auto location = ResolveImport(
+                repo, file, CreateLocation(tok, import_chain_.back()));
+            auto loc =
+                CreateLocation(begin, tokens_.Peek(), import_chain_.back());
             if (defer_imports_) {
                 // unresolved, resolved during evaluation by the location of
-                // the imported file (relative to the importing file)
-                if (file.empty()) {
-                    throw ParserException{"Cannot import empty file name."};
-                }
-                if (repo) {
-                    throw ParserException{
-                        "Importing from repository bindings is not "
-                        "supported."};
-                }
+                // the imported file
                 return std::make_shared<jstlang::ForeignNode>(
-                    CreateLocation(begin, tokens_.Peek(), import_chain_.back()),
-                    std::make_shared<FileLocation const>(
-                        import_chain_.back()->location.Resolve(file)));
+                    loc,
+                    std::make_shared<FileLocation const>(std::move(location)));
             }
 
-            if (auto data = reader_(import_chain_.back()->location,
-                                    file,
-                                    repo ? &(*repo) : nullptr)) {
-                auto import_parser = std::make_unique<NativeParser>(
-                    context_, reader_, import_chain_);
-                return std::make_shared<jstlang::ForeignNode>(
-                    CreateLocation(begin, tokens_.Peek(), import_chain_.back()),
-                    import_parser->ParseData(data.value()));
-            }
-
-            throw ParserException("Failed to import file");
+            auto import_parser = std::make_unique<NativeParser>(
+                context_, reader_, import_chain_, false, repos_);
+            return std::make_shared<jstlang::ForeignNode>(
+                loc, import_parser->ParseFile(location));
         }
 
         case TokenType::FUNCTION: {
@@ -1063,17 +1099,24 @@ class ParserImpl : public NativeParser {
 };
 
 Parser::Parser(gsl::not_null<ASTContext*> const& context,
-               FileData::reader_t reader,
-               bool defer_imports)
+               FileReader reader,
+               bool defer_imports,
+               RepoResolver repos)
     : impl_{std::make_unique<ParserImpl>(context,
                                          std::move(reader),
                                          std::vector<SourceFile const*>{},
-                                         defer_imports)} {}
+                                         defer_imports,
+                                         std::move(repos))} {}
 
 Parser::~Parser() = default;
 
-[[nodiscard]] auto Parser::ParseData(FileData const& file_data) -> ASTNodePtr {
-    return impl_->ParseData(file_data);
+auto Parser::ParseFile(FileLocation const& location) -> ASTNodePtr {
+    return impl_->ParseFile(location);
+}
+
+auto Parser::ParseData(FileLocation location,
+                       std::string content) -> ASTNodePtr {
+    return impl_->ParseData(std::move(location), std::move(content));
 }
 
 namespace {

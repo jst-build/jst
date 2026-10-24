@@ -36,15 +36,12 @@ using file_map_t = std::unordered_map<std::string, std::string>;
 }
 
 [[nodiscard]] auto CreateMocReader(file_map_t const* files)
-    -> jstlang::FileData::reader_t {
-    return [files](auto const& /*import_from*/,
-                   auto const& file_path,
-                   auto const* /*repo*/) -> std::optional<jstlang::FileData> {
-        if (auto found = files->find(file_path); found != files->end()) {
-            return jstlang::FileData{
-                .location =
-                    jstlang::FileLocation{.repo = "", .path = file_path},
-                .content = found->second};
+    -> jstlang::FileReader {
+    return [files](jstlang::FileLocation const& location)
+               -> std::optional<std::string> {
+        if (auto found = files->find(location.path.string());
+            found != files->end()) {
+            return found->second;
         }
         return std::nullopt;
     };
@@ -53,11 +50,9 @@ using file_map_t = std::unordered_map<std::string, std::string>;
 [[nodiscard]] auto nativeParser(std::string const& code,
                                 std::string const& entry = "<stdin>",
                                 file_map_t const& files = {}) -> std::string {
-    auto file_data = jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = entry},
-        .content = code};
     auto parser = jstlang::Parser{Context(), CreateMocReader(&files)};
-    auto ast = parser.ParseData(file_data);
+    auto ast = parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = entry}, code);
     return jstlang::ASTToStringVisitor{}.Dump(*ast);
 }
 

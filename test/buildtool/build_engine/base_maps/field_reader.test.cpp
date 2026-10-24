@@ -51,12 +51,10 @@ using nlohmann::literals::operator""_json;
 }
 
 [[nodiscard]] auto ParseTargets(std::string const& code) -> EntitiesFile {
-    auto parser = jstlang::Parser{
-        Context(),
-        [](auto const&, auto const&, auto const*) { return std::nullopt; }};
-    auto ast = parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "TARGETS"},
-        .content = code});
+    auto parser = jstlang::Parser{Context(),
+                                  /*reader=*/nullptr};
+    auto ast = parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "TARGETS"}, code);
     auto file =
         BuildMaps::Base::JstlangEntitiesFile::Create(ast, [](auto const&) {});
     REQUIRE(file);

@@ -38,16 +38,14 @@ namespace {
 
 [[nodiscard]] auto Process(std::string const& code,
                            jstlang::FileType type) -> jstlang::ASTNodePtr {
-    auto reader =
-        [&code](auto const& import_from,
-                auto const& /*file_path*/,
-                auto const* /*repo*/) -> std::optional<jstlang::FileData> {
-        return jstlang::FileData{.location = import_from, .content = code};
-    };
     auto preproc = jstlang::Preprocessor{
-        std::move(reader),
+        /*reader=*/nullptr,
         [](auto /*type*/, auto const& msg) { std::cerr << msg; }};
-    auto ast = preproc.Process(Context(), "", "TARGETS", type);
+    auto ast =
+        preproc.Process(Context(),
+                        jstlang::FileLocation{.repo = "", .path = "TARGETS"},
+                        code,
+                        type);
     REQUIRE(ast);
     return ast;
 }

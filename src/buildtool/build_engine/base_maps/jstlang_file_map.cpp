@@ -64,9 +64,11 @@ namespace {
 }
 
 /// \brief Parse the content of a jstlang file, with deferred imports, in the
-/// given context (which owns the parsed file).
+/// given context (which owns the parsed file). Imports from other repositories
+/// are resolved via the bindings of the file's repository.
 /// \returns nullptr on error (reported via logger).
 [[nodiscard]] auto ParseJstlangFile(
+    gsl::not_null<RepositoryConfig const*> const& repo_config,
     gsl::not_null<jstlang::ASTContext*> const& context,
     jstlang::FileLocation const& file,
     std::string content,
@@ -75,11 +77,16 @@ namespace {
         // imports are deferred, so the parser never reads other files
         auto parser = jstlang::Parser{
             context,
-            [](auto const& /*from*/, auto const& /*path*/, auto const* /*repo*/)
-                -> std::optional<jstlang::FileData> { return std::nullopt; },
-            /*defer_imports=*/true};
-        auto ast = parser.ParseData(
-            jstlang::FileData{.location = file, .content = std::move(content)});
+            /*reader=*/nullptr,
+            /*defer_imports=*/true,
+            [repo_config](std::string const& repo, std::string const& name)
+                -> std::optional<std::string> {
+                if (auto const* global = repo_config->GlobalName(repo, name)) {
+                    return *global;
+                }
+                return std::nullopt;
+            }};
+        auto ast = parser.ParseData(file, std::move(content));
         if (ast) {
             return ast;
         }
@@ -140,8 +147,8 @@ auto CreateJstlangFileMap(
         }
         // the context owns the parsed file, it is kept in the map's value
         auto context = std::make_shared<jstlang::ASTContext>();
-        auto ast =
-            ParseJstlangFile(context.get(), key, *std::move(content), logger);
+        auto ast = ParseJstlangFile(
+            repo_config, context.get(), key, *std::move(content), logger);
         if (not ast) {
             return;
         }

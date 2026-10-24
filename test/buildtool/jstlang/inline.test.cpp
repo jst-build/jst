@@ -39,14 +39,9 @@ namespace {
 
 [[nodiscard]] auto ParseAndInlineAST(std::string const& code)
     -> jstlang::ASTNodePtr {
-    auto moc_reader = [](auto const& /*import_from*/,
-                         auto const& /*file_path*/,
-                         auto const* /*repo*/) { return std::nullopt; };
-    auto file_data = jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code};
-    auto parser = jstlang::Parser{Context(), std::move(moc_reader)};
-    auto just_ast = parser.ParseData(file_data);
+    auto parser = jstlang::Parser{Context(), /*reader=*/nullptr};
+    auto just_ast = parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
     return jstlang::Evaluator{
         jstlang::EvalOptions{.mode = jstlang::EvalOptions::Mode::Lowering}}
         .EvaluateAST(just_ast);

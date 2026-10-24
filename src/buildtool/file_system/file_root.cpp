@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@ namespace Frontend {
 
 class Processor {
   public:
-    explicit Processor(jstlang::FileData::reader_t file_reader,
+    explicit Processor(jstlang::FileReader file_reader,
                        jstlang::Preprocessor::logger_t logger)
         : lang_proc_{
               std::make_unique<jstlang::Preprocessor>(std::move(file_reader),
@@ -48,42 +49,17 @@ class Processor {
                 }
             }};
 
-        auto file_reader = jstlang::FileData::reader_t{
-            [root](
-                jstlang::FileLocation const& imported_from,
-                std::filesystem::path const& filename,
-                std::string const* repo) -> std::optional<jstlang::FileData> {
-                if (repo != nullptr) {
-                    Logger::Log(
-                        LogLevel::Error,
-                        "Importing from repository bindings is not supported.");
-                    return std::nullopt;
+        // without repository bindings, imported files are always of the same
+        // repository, i.e., read from this root
+        auto file_reader =
+            jstlang::FileReader{[root](jstlang::FileLocation const& location)
+                                    -> std::optional<std::string> {
+                if (auto content = root->ReadContent(location.path)) {
+                    return content;
                 }
-
-                if (filename.empty()) {
-                    Logger::Log(LogLevel::Error, "Cannot read empty filename.");
-                    return std::nullopt;
-                }
-
-                auto full_path =
-                    (filename.is_relative()
-                         ? imported_from.path.parent_path() / filename
-                         : filename)
-                        .lexically_proximate("/")
-                        .lexically_normal();
-
-                if (auto content = root->ReadContent(full_path)) {
-                    auto location =
-                        jstlang::FileLocation{.repo = imported_from.repo,
-                                              .path = std::move(full_path)};
-                    return jstlang::FileData{.location = std::move(location),
-                                             .content = std::move(*content)};
-                }
-
                 Logger::Log(LogLevel::Error,
                             "Failed reading content of file {}.",
-                            full_path.string());
-
+                            location.ToString());
                 return std::nullopt;
             }};
 
@@ -95,17 +71,15 @@ class Processor {
                                std::string content,
                                jstlang::FileType file_type)
         -> std::optional<nlohmann::json> {
-        auto file_data = jstlang::FileData{
-            .location =
-                jstlang::FileLocation{.repo = global_repo_name, .path = path},
-            .content = std::move(content)};
-
         // the context must outlive the AST and its uses (until serialized)
         auto context = jstlang::ASTContext{};
-        if (auto ast = lang_proc_->Process(&context, file_data, file_type)) {
+        if (auto ast = lang_proc_->Process(
+                &context,
+                jstlang::FileLocation::Create(global_repo_name, path),
+                std::move(content),
+                file_type)) {
             return lang_proc_->Serialize(ast, file_type);
         }
-
         return std::nullopt;
     }
 

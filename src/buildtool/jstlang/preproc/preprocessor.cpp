@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +16,11 @@
 #include "src/buildtool/jstlang/preproc/preprocessor.hpp"
 
 #include <exception>
-#include <filesystem>
+#include <functional>
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "nlohmann/json.hpp"  // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
@@ -32,30 +34,36 @@
 #include "src/buildtool/jstlang/file_data.hpp"
 
 auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
-                                    std::string const& global_repo,
-                                    std::filesystem::path const& file_path,
+                                    FileLocation const& location,
                                     jstlang::FileType type) noexcept
     -> jstlang::ASTNodePtr {
-    auto root = jstlang::FileLocation{.repo = global_repo, .path = "/"};
-    auto data = reader_(root, file_path, nullptr);
-    if (not data) {
-        root.path = file_path;
-        logger_(LogType::Error,
-                "Reading file " + root.ToString() + " failed.\n");
-        return nullptr;
-    }
-
-    return Process(context, *data, type);
+    return ProcessWith(
+        context,
+        [&location](Parser& parser) { return parser.ParseFile(location); },
+        type);
 }
 
 auto jstlang::Preprocessor::Process(gsl::not_null<ASTContext*> const& context,
-                                    jstlang::FileData const& file_data,
+                                    FileLocation location,
+                                    std::string content,
                                     jstlang::FileType type) noexcept
     -> jstlang::ASTNodePtr {
+    return ProcessWith(
+        context,
+        [&location, &content](Parser& parser) {
+            return parser.ParseData(std::move(location), std::move(content));
+        },
+        type);
+}
+
+auto jstlang::Preprocessor::ProcessWith(
+    gsl::not_null<ASTContext*> const& context,
+    std::function<ASTNodePtr(Parser&)> const& parse,
+    jstlang::FileType type) noexcept -> jstlang::ASTNodePtr {
     auto err_msg = std::ostringstream{};
-    auto parser = Parser{context, reader_};
     try {
-        auto jst_ast = parser.ParseData(file_data);
+        auto parser = Parser{context, reader_, /*defer_imports=*/false, repos_};
+        auto jst_ast = parse(parser);
 
 #ifndef NDEBUG
         logger_(LogType::Debug,

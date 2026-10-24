@@ -42,12 +42,10 @@ using BuildMaps::Base::JstlangEntitiesFile;
 }
 
 [[nodiscard]] auto Parse(std::string const& code) -> jstlang::ASTNodePtr {
-    auto parser = jstlang::Parser{
-        Context(),
-        [](auto const&, auto const&, auto const*) { return std::nullopt; }};
-    return parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code});
+    auto parser = jstlang::Parser{Context(),
+                                  /*reader=*/nullptr};
+    return parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
 }
 
 [[nodiscard]] auto ToConfig(nlohmann::json const& json) -> Configuration {

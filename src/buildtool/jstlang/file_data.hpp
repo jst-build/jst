@@ -30,7 +30,8 @@
 namespace jstlang {
 
 /// \brief Root of a repository that files are read from. Imported files are
-/// read from the root of the importing file.
+/// read from the root of the same kind as the importing file (also when
+/// imported from another repository).
 enum class RootKind : std::uint8_t { Targets, Rules };
 
 /// \brief Location of a file among the repositories: global repository name,
@@ -66,6 +67,15 @@ struct FileLocation {
                       root);
     }
 
+    /// \brief Location of a file imported from this file, from another
+    /// repository (given by its global name) and the root of the same kind.
+    /// The path is relative to that root.
+    [[nodiscard]] auto ResolveIn(std::string global_repo,
+                                 std::filesystem::path const& import_path) const
+        -> FileLocation {
+        return Create(std::move(global_repo), import_path, root);
+    }
+
     /// \brief String representation "[<repo>] <path>", or "[<repo> rule_root]
     /// <path>" for the rule root. The repository is always given (an empty
     /// repository name is quoted as ""), the path is separated by a space (so
@@ -80,22 +90,24 @@ struct FileLocation {
         -> bool = default;
 };
 
-struct FileData {
-    using reader_t = std::function<std::optional<FileData>(
-        FileLocation const&,           // imported from file
-        std::filesystem::path const&,  // file path
-        std::string const*)>;          // optional: local repository name
-
-    FileLocation location;
-    std::string content;
-};
-
 /// \brief Source file, read once and never modified. Owned by an ASTContext
 /// (see ast_context.hpp).
 struct SourceFile {
     FileLocation location;
     std::string content;
 };
+
+/// \brief Reader of file contents; returns nullopt if the file cannot be read
+/// (reporting the reason is up to the reader).
+using FileReader =
+    std::function<std::optional<std::string>(FileLocation const&)>;
+
+/// \brief Resolver of repository names: the global name of the repository
+/// that a repository (given by its global name) binds to a name, nullopt if
+/// the name is not bound.
+using RepoResolver =
+    std::function<std::optional<std::string>(std::string const& /*repo*/,
+                                             std::string const& /*name*/)>;
 
 }  // namespace jstlang
 

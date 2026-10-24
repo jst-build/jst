@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +17,6 @@
 #define INCLUDED_SRC_BUILDTOOL_JSTLANG_PREPROC_PREPROCESSOR_HPP
 
 #include <cstdint>
-#include <filesystem>
 #include <functional>
 #include <optional>
 #include <string>
@@ -32,13 +32,24 @@
 
 namespace jstlang {
 
+class Parser;
+
 class Preprocessor {
   public:
     enum class LogType : std::uint8_t { Debug, Error };
     using logger_t = std::function<void(LogType, std::string const&)>;
 
-    explicit Preprocessor(FileData::reader_t reader, logger_t logger)
-        : reader_{std::move(reader)}, logger_{std::move(logger)} {}
+    /// \param reader  Reads the files to process (incl. imports).
+    /// \param logger  Reports debug output and errors.
+    /// \param repos   Resolves the repository names of imports from other
+    ///                repositories (see Parser); if empty, such imports are
+    ///                not supported.
+    explicit Preprocessor(FileReader reader,
+                          logger_t logger,
+                          RepoResolver repos = nullptr)
+        : reader_{std::move(reader)},
+          logger_{std::move(logger)},
+          repos_{std::move(repos)} {}
 
     /// \brief Parse and inline file, which is read via the reader.
     /// \param context The context of the returned AST, which must outlive the
@@ -46,13 +57,13 @@ class Preprocessor {
     ///                ASTContext).
     /// \returns nullptr on error (reported via logger).
     [[nodiscard]] auto Process(gsl::not_null<ASTContext*> const& context,
-                               std::string const& global_repo,
-                               std::filesystem::path const& file_path,
+                               FileLocation const& location,
                                FileType type) noexcept -> jstlang::ASTNodePtr;
 
-    /// \brief Parse and inline given file data, see above.
+    /// \brief Parse and inline given content of file, see above.
     [[nodiscard]] auto Process(gsl::not_null<ASTContext*> const& context,
-                               FileData const& file_data,
+                               FileLocation location,
+                               std::string content,
                                FileType type) noexcept -> jstlang::ASTNodePtr;
 
     /// \brief Serialize the (processed) AST of a file of the given type to
@@ -62,8 +73,14 @@ class Preprocessor {
         -> std::optional<nlohmann::json>;
 
   private:
-    FileData::reader_t reader_;
+    FileReader reader_;
     logger_t logger_;
+    RepoResolver repos_;
+
+    [[nodiscard]] auto ProcessWith(
+        gsl::not_null<ASTContext*> const& context,
+        std::function<ASTNodePtr(Parser&)> const& parse,
+        FileType type) noexcept -> jstlang::ASTNodePtr;
 };
 
 }  // namespace jstlang

@@ -50,13 +50,9 @@ struct Case final {
 
 [[nodiscard]] auto ParseAndInline(std::string const& code)
     -> jstlang::ASTNodePtr {
-    auto reader = [](auto const& /*import_from*/,
-                     auto const& /*file_path*/,
-                     auto const* /*repo*/) { return std::nullopt; };
-    auto parser = jstlang::Parser{Context(), std::move(reader)};
-    auto ast = parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code});
+    auto parser = jstlang::Parser{Context(), /*reader=*/nullptr};
+    auto ast = parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
     return jstlang::Evaluator{
         jstlang::EvalOptions{.mode = jstlang::EvalOptions::Mode::Lowering}}
         .EvaluateAST(ast);

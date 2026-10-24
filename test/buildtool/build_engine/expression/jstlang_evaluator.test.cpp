@@ -49,27 +49,17 @@ using file_map_t = std::unordered_map<std::string, std::string>;
 
 [[nodiscard]] auto Parse(std::string const& code,
                          file_map_t files = {}) -> jstlang::ASTNodePtr {
-    auto reader =
-        [files = std::move(files)](
-            jstlang::FileLocation const& import_from,
-            std::filesystem::path const& file_path,
-            std::string const* /*repo*/) -> std::optional<jstlang::FileData> {
-        auto path = (file_path.is_relative()
-                         ? import_from.path.parent_path() / file_path
-                         : file_path)
-                        .lexically_proximate("/")
-                        .lexically_normal();
-        if (auto it = files.find(path.string()); it != files.end()) {
-            return jstlang::FileData{
-                .location = jstlang::FileLocation{.repo = "", .path = path},
-                .content = it->second};
+    auto reader = [files =
+                       std::move(files)](jstlang::FileLocation const& location)
+        -> std::optional<std::string> {
+        if (auto it = files.find(location.path.string()); it != files.end()) {
+            return it->second;
         }
         return std::nullopt;
     };
     auto parser = jstlang::Parser{Context(), std::move(reader)};
-    return parser.ParseData(jstlang::FileData{
-        .location = jstlang::FileLocation{.repo = "", .path = "<stdin>"},
-        .content = code});
+    return parser.ParseData(
+        jstlang::FileLocation{.repo = "", .path = "<stdin>"}, code);
 }
 
 [[nodiscard]] auto ToConfig(nlohmann::json const& json) -> Configuration {
@@ -288,13 +278,11 @@ TEST_CASE("runtime evaluator", "[imports]") {
 TEST_CASE("runtime evaluator", "[deferred imports]") {
     // files parsed with deferred imports, resolved via the bindings' imports
     auto parse = [](std::string const& path, std::string const& code) {
-        auto parser = jstlang::Parser{
-            Context(),
-            [](auto const&, auto const&, auto const*) { return std::nullopt; },
-            /*defer_imports=*/true};
-        return parser.ParseData(jstlang::FileData{
-            .location = jstlang::FileLocation{.repo = "", .path = path},
-            .content = code});
+        auto parser = jstlang::Parser{Context(),
+                                      /*reader=*/nullptr,
+                                      /*defer_imports=*/true};
+        return parser.ParseData(jstlang::FileLocation{.repo = "", .path = path},
+                                code);
     };
     auto file = [](std::string const& path) {
         return jstlang::FileLocation{.repo = "", .path = path};
