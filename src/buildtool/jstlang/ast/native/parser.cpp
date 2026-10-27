@@ -261,6 +261,12 @@ auto NativeParser::ParseData(const FileData& file_data) -> jstlang::ASTNodePtr {
         import_chain_.emplace_back(std::move(import_loc));
         // callback for reading imports
         auto expr = Parse(kMaxPriority);
+        // a file contains exactly one expression
+        if (auto const& next = tokens_.Peek();
+            next.type != TokenType::END_OF_FILE) {
+            throw ParserException{"Expected end of file after the expression.",
+                                  CreateLocation(next, import_chain_.back())};
+        }
         import_chain_.pop_back();
         return expr;
     } catch (std::exception const& e) {

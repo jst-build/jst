@@ -2856,6 +2856,20 @@ TEST_CASE("ast_parser", "[end of file]") {
             CHECK_THROWS(nativeParser(fail_code));
         }
     }
+
+    SECTION("tokens after the expression") {
+        // a file contains exactly one expression
+        auto const* fail_code = GENERATE("1 2",
+                                         "'a' 'b'",
+                                         "1)",
+                                         "1;",
+                                         "local x = 1; x x",
+                                         "[1]\njst.env('a')");
+        DYNAMIC_SECTION("tokens after the expression in '" << fail_code
+                                                           << "'") {
+            CHECK_THROWS(nativeParser(fail_code));
+        }
+    }
 }
 
 }  // namespace
