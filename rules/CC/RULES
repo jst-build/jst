@@ -302,6 +302,7 @@ local get_field(name, default) =
       'proto',
       'private-proto',
       'components',
+      'private-components',
     ],
     bool_fields: ['pure C'],
     string_fields: [
@@ -349,6 +350,11 @@ local get_field(name, default) =
         Any other libraries that are considered part of this library;
         all object files of those are included unconditionally into this
         library.
+      |||,
+      'private-components': |||
+        Any other libraries that are considered part of this library;
+        all object files of those are included unconditionally into this
+        library but without forwarding their transitive public headers.
       |||,
       stage: |||
         The logical location of all header and source files, as well as the
@@ -564,6 +570,7 @@ local get_field(name, default) =
       'private-proto-deps': [transitions.with_fpic_not_object_only()],
       defaults: [transitions.with_fpic_not_object_only()],
       components: [transitions.with_fpic_object_only()],
+      'private-components': [transitions.with_fpic_object_only()],
     },
     expression:
       local name = jst.join(jst.field('name'));
@@ -618,9 +625,14 @@ local get_field(name, default) =
         'private-proto-deps',
         'defaults',
         'components',
+        'private-components',
       ];
       local component_fieldnames = ['components'];
-      local modified_transitions = {components: component_transition};
+      local private_component_fieldnames = ['private-components'];
+      local modified_transitions = {
+        components: component_transition,
+        'private-components': component_transition,
+      };
       local shared = jst.field('shared') && !$BUILD_OBJECT_ONLY;
       if shared then
         cc.shared_result(
@@ -641,6 +653,7 @@ local get_field(name, default) =
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
           component_fieldnames=component_fieldnames,
+          private_component_fieldnames=private_component_fieldnames,
         )
       else if $BUILD_OBJECT_ONLY then
         cc.object_result(
@@ -658,6 +671,7 @@ local get_field(name, default) =
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
           component_fieldnames=component_fieldnames,
+          private_component_fieldnames=private_component_fieldnames,
           deps_transition=deps_transition,
           modified_transitions=modified_transitions,
           defaults_transition=defaults_transition,
@@ -679,6 +693,7 @@ local get_field(name, default) =
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
           component_fieldnames=component_fieldnames,
+          private_component_fieldnames=private_component_fieldnames,
           deps_transition=deps_transition,
           modified_transitions=modified_transitions,
           defaults_transition=defaults_transition,

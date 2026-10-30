@@ -177,6 +177,7 @@ A C++ library
 | `proto` | Any `//proto:library` this target depends upon directly. The creation of C++ bindings for this proto library as well as of its dependencies will be taken care of (as anonymous targets, so no duplicate work will be carried out, even if the same proto library is used at various places). |
 | `private-proto` | Any `//proto:library` this target depends upon privately. The creation of C++ bindings for this proto library as well as of its dependencies will be taken care of (as anonymous targets, so no duplicate work will be carried out, even if the same proto library is used at various places). |
 | `components` | Any other libraries that are considered part of this library; all object files of those are included unconditionally into this library. |
+| `private-components` | Any other libraries that are considered part of this library; all object files of those are included unconditionally into this library but without forwarding their transitive public headers. |
 | `shared` | If true, produce a shared instead of a static library. |
 
 | Config variable | Description |

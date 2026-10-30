@@ -12,6 +12,27 @@
     components: ['foo', 'bar'],
   },
 
+  // private bar; its headers should be dropped
+  private_combined_static_lib: {
+    type: '@rules//CC:library',
+    name: 'privcombstatic',
+    hdrs: ['foobar.hpp'],
+    srcs: ['foobar.cpp'],
+    components: ['foo'],
+    'private-components': ['bar'],
+  },
+
+  // private bar; its headers should be dropped
+  private_combined_shared_lib: {
+    type: '@rules//CC:library',
+    name: 'privcombshared',
+    hdrs: ['foobar.hpp'],
+    srcs: ['foobar.cpp'],
+    shared: true,
+    components: ['foo'],
+    'private-components': ['bar'],
+  },
+
   foo: {
     type: '@rules//CC:library',
     name: 'foo',
@@ -53,6 +74,26 @@
     targets: ['main-shared'],
   },
 
+  // includes foobar.hpp only, bar.hpp is not available
+  private_main: {
+    type: '@rules//CC:binary',
+    name: 'main',
+    srcs: ['private_main.cpp'],
+    'private-deps': ['private_combined_static_lib'],
+  },
+
+  'private_main-shared': {
+    type: '@rules//CC:binary',
+    name: 'main',
+    srcs: ['private_main.cpp'],
+    'private-deps': ['private_combined_shared_lib'],
+  },
+
+  'private_main-dynamic': {
+    type: '@rules//CC:install-with-deps',
+    targets: ['private_main-shared'],
+  },
+
   installed_static: {
     type: '@rules//CC:install-with-deps',
     targets: ['combined_static_lib'],
@@ -61,5 +102,15 @@
   installed_shared: {
     type: '@rules//CC:install-with-deps',
     targets: ['combined_shared_lib'],
+  },
+
+  private_installed_static: {
+    type: '@rules//CC:install-with-deps',
+    targets: ['private_combined_static_lib'],
+  },
+
+  private_installed_shared: {
+    type: '@rules//CC:install-with-deps',
+    targets: ['private_combined_shared_lib'],
   },
 }

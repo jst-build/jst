@@ -1068,14 +1068,14 @@ local lib_action(name, pure_c, srcs, hdrs, private_hdrs, stage, compile_deps_, c
   );
 
 // Build a static library and return the result of the rule.
-local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, public_fieldnames, private_fieldnames, env={}, ldflags=[], private_ldflags=[], pkg_name=null, extra_provides={}, component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
+local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, public_fieldnames, private_fieldnames, env={}, ldflags=[], private_ldflags=[], pkg_name=null, extra_provides={}, component_fieldnames=[], private_component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
   local debug = jst.env('DEBUG', default={});
   local deps_fieldnames = private_fieldnames;
   local compile_deps_ = compile_deps(
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local compile_args = jst.nub_right(
     jst.flatten(
@@ -1099,7 +1099,7 @@ local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags,
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local lib_action_result = lib_action(
     env=env,
@@ -1113,7 +1113,7 @@ local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags,
     compile_args=compile_args,
     cflags_files=cflags_files,
     defaults_transition=defaults_transition,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
   );
@@ -1148,7 +1148,7 @@ local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags,
         private_hdrs=private_hdrs,
         compile_deps_=compile_deps_,
         cflags_files=cflags_files,
-        lint_deps_fieldnames=['deps', 'private-deps', 'components'],
+        lint_deps_fieldnames=['deps', 'private-deps', 'components', 'private-components'],
         deps_transition=deps_transition,
         deps_fieldnames=deps_fieldnames,
         compile_args=compile_args,
@@ -1380,14 +1380,14 @@ local shared_action(name, pure_c, srcs, hdrs, private_hdrs, soversion, compile_d
   );
 
 // Build a shared library and return the result of the rule.
-local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, soversion, pkg_name, public_fieldnames, private_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, defaults_transition={}, deps_transition={}, modified_transitions={}, component_fieldnames=[]) =
+local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, soversion, pkg_name, public_fieldnames, private_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, defaults_transition={}, deps_transition={}, modified_transitions={}, component_fieldnames=[], private_component_fieldnames=[]) =
   local debug = jst.env('DEBUG', default={});
   local deps_fieldnames = private_fieldnames;
   local compile_deps_ = compile_deps(
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local compile_args = jst.nub_right(
     jst.flatten(
@@ -1411,7 +1411,7 @@ local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local link_args = link_args_deps(
     deps_fieldnames=deps_fieldnames,
@@ -1457,7 +1457,7 @@ local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
     cflags_files=cflags_files,
     ldflags_files=ldflags_files,
     defaults_transition=defaults_transition,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
   );
@@ -1508,7 +1508,7 @@ local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
         private_hdrs=private_hdrs,
         compile_deps_=compile_deps_,
         cflags_files=cflags_files,
-        lint_deps_fieldnames=['deps', 'private-deps', 'components'],
+        lint_deps_fieldnames=['deps', 'private-deps', 'components', 'private-components'],
         deps_transition=deps_transition,
         deps_fieldnames=deps_fieldnames,
         compile_args=compile_args,
@@ -1645,14 +1645,14 @@ local object_artifacts(pure_c, srcs, hdrs, private_hdrs, compile_deps_, compile_
 
 // Compile the objects of a library (object-only build) and return the
 // result of the rule.
-local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, pkg_name, public_fieldnames, private_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
+local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, pkg_name, public_fieldnames, private_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, component_fieldnames=[], private_component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
   local debug = jst.env('DEBUG', default={});
   local deps_fieldnames = private_fieldnames;
   local compile_deps_ = compile_deps(
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local compile_args = jst.nub_right(
     jst.flatten(
@@ -1676,7 +1676,7 @@ local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
     deps_fieldnames=deps_fieldnames,
     deps_transition=deps_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local object_artifacts_with_env = object_artifacts(
     pure_c=pure_c,
@@ -1688,7 +1688,7 @@ local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
     cflags_files=cflags_files,
     defaults_transition=defaults_transition,
     modified_transitions=modified_transitions,
-    component_fieldnames=component_fieldnames,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
   );
   local objects_ = jst.get('objects', object_artifacts_with_env);
   local dwarf_objects = jst.get('dwarf objects', object_artifacts_with_env);
@@ -1725,7 +1725,7 @@ local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cfla
         private_hdrs=private_hdrs,
         compile_deps_=compile_deps_,
         cflags_files=cflags_files,
-        lint_deps_fieldnames=['deps', 'private-deps', 'components'],
+        lint_deps_fieldnames=['deps', 'private-deps', 'components', 'private-components'],
         deps_transition=deps_transition,
         deps_fieldnames=deps_fieldnames,
         compile_args=compile_args,
