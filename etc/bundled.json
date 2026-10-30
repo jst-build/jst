@@ -575,7 +575,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "libgit2/v1.9.7",
-        "commit": "a72fdf5fcdc864c4b5124af25a10c7a48fff9740",
+        "commit": "262af8e913d0543eb5910b48e03c289c2d552032",
         "subdir": "config"
       }
     },
@@ -584,7 +584,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/imports-cc",
         "branch": "libgit2/v1.9.7",
-        "commit": "a72fdf5fcdc864c4b5124af25a10c7a48fff9740",
+        "commit": "262af8e913d0543eb5910b48e03c289c2d552032",
         "subdir": "targets"
       }
     },
