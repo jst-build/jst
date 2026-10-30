@@ -629,6 +629,12 @@ local get_field(name, default) =
       ];
       local component_fieldnames = ['components'];
       local private_component_fieldnames = ['private-components'];
+      local lint_deps_fieldnames = [
+        'deps',
+        'private-deps',
+        'components',
+        'private-components',
+      ];
       local modified_transitions = {
         components: component_transition,
         'private-components': component_transition,
@@ -652,6 +658,7 @@ local get_field(name, default) =
           modified_transitions=modified_transitions,
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
+          lint_deps_fieldnames=lint_deps_fieldnames,
           component_fieldnames=component_fieldnames,
           private_component_fieldnames=private_component_fieldnames,
         )
@@ -670,6 +677,7 @@ local get_field(name, default) =
           pkg_name=pkg_name,
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
+          lint_deps_fieldnames=lint_deps_fieldnames,
           component_fieldnames=component_fieldnames,
           private_component_fieldnames=private_component_fieldnames,
           deps_transition=deps_transition,
@@ -692,6 +700,7 @@ local get_field(name, default) =
           pkg_name=pkg_name,
           public_fieldnames=public_fieldnames,
           private_fieldnames=private_fieldnames,
+          lint_deps_fieldnames=lint_deps_fieldnames,
           component_fieldnames=component_fieldnames,
           private_component_fieldnames=private_component_fieldnames,
           deps_transition=deps_transition,

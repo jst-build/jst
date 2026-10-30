@@ -211,6 +211,7 @@ local get_field(name, default) =
         stage=stage,
         public_fieldnames=['deps', 'proto-defaults', 'defaults'],
         private_fieldnames=['deps', 'proto-defaults', 'defaults'],
+        lint_deps_fieldnames=['deps'],
       ),
   },
 
@@ -237,6 +238,7 @@ local get_field(name, default) =
         service_support=true,
         public_fieldnames=['deps', 'proto-defaults', 'defaults'],
         private_fieldnames=['deps', 'proto-defaults', 'defaults'],
+        lint_deps_fieldnames=['deps'],
       ),
   },
 }

@@ -94,12 +94,13 @@ local protoc_deps() = common.field_map_provider(
 );
 
 // Generate C++ sources from the proto sources and build them as library.
-// - `name`               The name of the library.
-// - `stage`              The stage of the library.
-// - `public_fieldnames`  The fields of public dependencies.
-// - `private_fieldnames` The fields of private dependencies.
-// - `service_support`    Also generate gRPC service code.
-local protoc_compile(name, stage, public_fieldnames, private_fieldnames, service_support=false) =
+// - `name`                 The name of the library.
+// - `stage`                The stage of the library.
+// - `public_fieldnames`    The fields of public dependencies.
+// - `private_fieldnames`   The fields of private dependencies.
+// - `lint_deps_fieldnames` The fields of dependencies providing lint information.
+// - `service_support`      Also generate gRPC service code.
+local protoc_compile(name, stage, public_fieldnames, private_fieldnames, lint_deps_fieldnames, service_support=false) =
   local toolchain_dir = 'toolchain';
   local toolchain = default_toolchain();
   local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
@@ -227,6 +228,7 @@ local protoc_compile(name, stage, public_fieldnames, private_fieldnames, service
     extra_provides=extra_provides,
     public_fieldnames=public_fieldnames,
     private_fieldnames=private_fieldnames,
+    lint_deps_fieldnames=lint_deps_fieldnames,
   );
 
 {
