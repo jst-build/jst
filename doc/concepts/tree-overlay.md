@@ -34,12 +34,12 @@ the description maintainable over updates, the include files are
 collected as a whole directory.
 
 The use cases mentioned above are handled in jst-build by means of
-the in-memory actions of type `TREE_OVERLAY` that rules can use
-to construct new trees out of existing ones by overlaying the
-contents; there is also a variant `DISJOINT_TREE_OVERLAY` that
+in-memory tree-overlay actions that rules can create (via the
+function `jst.tree_overlay`) to construct new trees out of existing
+ones by overlaying the contents; there is also a disjoint variant that
 enforces that the overlaid trees do not conflict on any path. For
 ad-hoc constructions, there are built-in rules `tree_overlay` and
-`disjoint_tree_overlay` reflecting these action constructors.
+`disjoint_tree_overlay` reflecting these two variants.
 
 ## Action graph data structure: actions of overlaying trees
 
@@ -83,18 +83,17 @@ any case, when adding the new tree objects that are part of the
 overlaid tree, `jst backend` adds them to the applicable
 CAS in topological order, in order to keep the tree invariant.
 
-## Functions in rule definition: `TREE_OVERLAY` and `DISJOINT_TREE_OVERLAY`
+## Function in rule definition: `jst.tree_overlay`
 
-In the defining expressions of rules, the constructors `TREE_OVERLAY`
-and `DISJOINT_TREE_OVERLAY` can be used to describe parts of the
-action graph. These constructors have one argument `"$1"` which
-has to evaluate to a list of tree-conflict&mdash;free mappings
-of strings to artifacts, also called "stages". The result of this
-function is a single artifact, the tree defined to be the overlay
-or conflict-free overlay, respectively, of the trees corresponding
-to the stages.
+In the defining expressions of rules, the function
+`jst.tree_overlay(stages, disjoint=false)` can be used to describe parts
+of the action graph. Its argument `stages` has to evaluate to a list of
+tree-conflict&mdash;free mappings of strings to artifacts, also called
+"stages". The result of this function is a single artifact, the tree
+defined to be the overlay or, if `disjoint` is true, the conflict-free
+overlay of the trees corresponding to the stages.
 
-The reason we require stages to be passed to these constructors
+The reason we require stages to be passed to this function
 rather than artifacts that happen to be trees is twofold.
 
 - We want to find malformed expressions already analysis time;
@@ -105,7 +104,7 @@ rather than artifacts that happen to be trees is twofold.
   explicitly specified.
 - One the other hand, we expect that often the inputs are the
   artifacts of a dependency, which is naturally given as a stage
-  via `DEP_ARTIFACTS`. So this form of definition is actually more
+  via `jst.dep_artifacts`. So this form of definition is actually more
   convenient to use.
 
 ## Built-in functions `tree_overlay` and `disjoint_tree_overlay`

@@ -240,8 +240,8 @@ Repository description
 ----------------------
 
 A *repository description* is defined as a JSON object, containing a
-*workspace root description*, directory roots and names for targets,
-rules, and expressions files, and bindings to other repositories.
+*workspace root description*, directory roots and names for targets
+and rules files, and bindings to other repositories.
 
 Specifically, the following fields are supported:
 
@@ -250,19 +250,15 @@ Specifically, the following fields are supported:
 
  - *`"target_root"`*,
 
- - *`"rule_root"`*,
-
- - *`"expression_root"`* define the root directories for the targets,
-   rules, and expressions, respectively. If provided, they are passed on
+ - *`"rule_root"`* define the root directories for the targets and
+   rules, respectively. If provided, they are passed on
    expanded to the workspace root of the repository named by their
    value.
 
  - *`"target_file_name"`*,
 
- - *`"rule_file_name"`*,
-
- - *`"expression_file_name"`* refer to the name of the files containing
-   the targets, rules, and expressions, respectively, located relative
+ - *`"rule_file_name"`* refer to the name of the files containing
+   the targets and rules, respectively, located relative
    to the corresponding root directories. These entries are optional.
    If provided, they are passed on as-is.
 

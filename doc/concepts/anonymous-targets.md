@@ -222,24 +222,25 @@ We have two kinds of nodes.
 
 These represent a target that, in any configuration, returns a fixed
 value. Source files would typically be represented this way. The
-constructor function `"VALUE_NODE"` takes a single argument `"$1"`
-that has to be a result value.
+constructor function `jst.value_node(result)` takes a single argument
+`result` that has to be a result value.
 
 #### Abstract nodes
 
 These represent internal nodes in the dag. Their constructor
-`"ABSTRACT_NODE"` takes the following arguments (all evaluated).
+`jst.abstract_node(node_type, string_fields={}, target_fields={})`
+takes the following arguments.
 
- - `"node_type"`. An arbitrary string, not interpreted in any way,
+ - `node_type`. An arbitrary string, not interpreted in any way,
    to indicate the role that the node has in the dependency
    structure. When we create an anonymous target from a node, this
    will serve as the key into the rule mapping to be applied.
- - `"string_fields"`. This has to be a map of strings.
- - `"target_fields"`. These have to be a map of lists of graph
+ - `string_fields`. This has to be a map of strings.
+ - `target_fields`. These have to be a map of lists of graph
    nodes.
 
 Moreover, we require that the keys for maps provided as
-`"string_fields"` and `"target_fields"` be disjoint.
+`string_fields` and `target_fields` be disjoint.
 
 ### Graph nodes in `export` targets
 
@@ -271,7 +272,7 @@ It should be noted that such an anonymous target contains all the
 information needed to evaluate it in the same way as a regular
 (named) target defined by a user-defined rule. It is an analysis
 error analysing an anonymous target where there is no entry in the
-rules map for the string given as `"node_type"` for the
+rules map for the string given as `node_type` for the
 corresponding node.
 
 #### Anonymous targets as additional dependencies
@@ -283,25 +284,25 @@ fixed steps in the evaluation of a target. To still achieve a
 meaningful use of anonymous targets our rule language handles
 anonymous targets in the following way.
 
-##### Rules parameter `"anonymous"`
+##### Rules parameter `anonymous`
 
-In the rule definition a parameter `"anonymous"` (with empty map
+In the rule definition a parameter `anonymous` (with empty map
 as default) is allowed. It is used to define an additional
 dependency on anonymous targets. The value has to be a map with
 keys the additional implicitly defined field names. It is hence
 a requirement that the set of keys be disjoint from all other
-field names (the values of `"config_fields"`, `"string_fields"`,
-and `"target_fields"`, as well as the keys of the `"implict"`
-parameter). Another consequence is that `"config_transitions"`
+field names (the values of `config_fields`, `string_fields`,
+and `target_fields`, as well as the keys of the `implicit`
+parameter). Another consequence is that `config_transitions`
 map may now also have meaningful entries for the keys of the
-`"anonymous"` map. Each value in the map has to be itself a map,
-with entries `"target"`, `"provider"`, and `"rule_map"`.
+`anonymous` map. Each value in the map has to be itself a map,
+with entries `target`, `provider`, and `rule_map`.
 
-For `"target"`, a single string has to be specified, and the
-value has to be a member of the `"target_fields"` list. For
+For `target`, a single string has to be specified, and the
+value has to be a member of the `target_fields` list. For
 provider, a single string has to be specified as well. The idea
 is that the nodes are collected from that provider of the
-targets in the specified target field. For `"rule_map"` a map
+targets in the specified target field. For `rule_map` a map
 has to be specified from strings to rule names; the latter are
 evaluated in the context of the rule definition.
 
@@ -310,18 +311,19 @@ evaluated in the context of the rule definition.
 For generating language bindings for protocol buffers, a
 rule might look as follows.
 
-``` jsonc
-{ "cc_proto_bindings":
-  { "target_fields": ["proto_deps"]
-  , "anonymous":
-    { "protos":
-      { "target": "proto_deps"
-      , "provider": "proto"
-      , "rule_map": {"proto_library": "cc_proto_library"}
-      }
-    }
-  , "expression": {...}
-  }
+``` jsonnet
+{
+  cc_proto_bindings: {
+    target_fields: ['proto_deps'],
+    anonymous: {
+      protos: {
+        target: 'proto_deps',
+        provider: 'proto',
+        rule_map: {proto_library: 'cc_proto_library'},
+      },
+    },
+    expression: ...,
+  },
 }
 ```
 
@@ -332,11 +334,11 @@ handled as follows. After the target fields are evaluated as
 usual, an additional step is carried out.
 
 For each anonymous-target field, i.e., for each key in the
-`"anonymous"` map, a list of anonymous targets is generated from
+`anonymous` map, a list of anonymous targets is generated from
 the corresponding value: take all targets from the specified
-`"target"` field in all their specified configuration
+`target` field in all their specified configuration
 transitions (they have already been evaluated) and take the
-values provided for the specified `"provider"` key (using the
+values provided for the specified `provider` key (using the
 empty list as default). That value has to be a list of nodes.
 All the node lists obtained that way are concatenated. The
 configuration transition for the respective field name is

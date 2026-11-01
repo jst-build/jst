@@ -9,260 +9,265 @@ point how all targets of a given type are built.
 Rules files
 -----------
 
-Rules are defined in rules files (by default named `RULES`). Those
-contain a JSON object mapping rule names to their rule definition. For
-rules, the same naming scheme as for targets applies. However, built-in
-rules (always named by a single string) take precedence in naming; to
-explicitly refer to a rule defined in the current module, the module has
-to be specified, possibly by a relative path, e.g.,
-`./:install`.
+Rules are defined in rules files (by default named `RULES`), written in
+[Jstlang](jstlang.md). A rules file evaluates to a map from rule names
+to their rule definition. For rules, the same naming scheme as for
+targets applies. However, built-in rules (always named by a single
+string) take precedence in naming; to explicitly refer to a rule defined
+in the current module, the module has to be specified, possibly by a
+relative path, e.g., `@'./:install'`.
+
+Code shared between rules is written as functions. Functions used by a
+single rules file are defined as `local` functions before the map of
+rules; functions used by several rules files are defined in separate
+Jstlang files and imported, either from the same rule root
+(`import '/CC/expressions.jst'`) or from the rule root of another
+repository (`import @'rules//CC/expressions.jst'`).
+
+``` jsonnet
+// Stage all artifacts of the targets in field "srcs"
+local srcs() = jst.union(
+  [jst.dep_artifacts(dep) for dep in jst.field('srcs')],
+  disjoint=true,
+);
+
+{
+  copy: {
+    target_fields: ['srcs'],
+    expression: jst.result(artifacts=srcs()),
+  },
+}
+```
 
 Basic components of a rule
 --------------------------
 
-A rule is defined through a JSON object with various keys. The only
-mandatory key is `"expression"` containing the defining expression of
-the rule.
+A rule is defined through a map with various keys. The only mandatory
+key is `expression` containing the defining expression of the rule.
 
-### `"config_fields"`, `"string_fields"` and `"target_fields"`
+The rule definition has to be a literal map, as have to be the maps
+among its values (e.g., `config_transitions`). The values of
+`expression` and of the entries of `config_transitions` are evaluated
+for every target defined by that rule, in the target's configuration.
+All other values are evaluated once, when the rules file is read;
+therefore, they must not depend on the configuration.
+
+### `config_fields`, `string_fields` and `target_fields`
 
 These keys specify the fields that a target defined by that rule can
 have. In particular, those have to be disjoint lists of strings.
 
-For `"config_fields"` and `"string_fields"` the respective field has to
-evaluate to a list of strings, whereas `"target_fields"` have to
+For `config_fields` and `string_fields` the respective field has to
+evaluate to a list of strings, whereas `target_fields` have to
 evaluate to a list of target references. Those references are evaluated
 immediately, and in the name context of the target they occur in.
 
-The difference between `"config_fields"` and `"string_fields"` is that
-`"config_fields"` are evaluated before the target fields and hence can
+The difference between `config_fields` and `string_fields` is that
+`config_fields` are evaluated before the target fields and hence can
 be used by the rule to specify config transitions for the target fields.
-`"string_fields"` on the other hand are evaluated *after*
+`string_fields` on the other hand are evaluated *after*
 the target fields; hence the rule cannot use them to specify a
 configuration transition, however the target definition in those fields
-may use the `"outs"` and `"runfiles"` functions to have access to the
+may use the `outs` and `runfiles` functions to have access to the
 names of the artifacts or runfiles of a target specified in one of the
 target fields.
 
-### `"implicit"`
+### `implicit`
 
 This key specifies a map of implicit dependencies. The keys of the map
 are additional target fields, the values are the fixed list of targets
-for those fields. If a short-form name of a target is used (e.g., only a
-string instead of a module-target pair), it is interpreted relative to
-the repository and module the rule is defined in, not the one the rule
-is used in. Other than this, those fields are evaluated the same way as
+for those fields. Target references are interpreted relative to the
+repository and module the rule is defined in, not the one the rule is
+used in. Other than this, those fields are evaluated the same way as
 target fields settable on invocation of the rule.
 
-### `"config_vars"`
+### `config_vars`
 
 This is a list of strings specifying which parts of the configuration
-the rule uses. The defining expression of the rule is evaluated in an
-environment that is the configuration restricted to those variables; if
-one of those variables is not specified in the configuration the value
-in the restriction is `null`.
+the rule uses. The defining expression of the rule is evaluated in a
+configuration restricted to those variables; they can be read via
+`$'<var>'` or `jst.env('<var>', default=...)`. If one of those variables
+is not specified in the configuration, its value is `null` (or the given
+default value).
 
-### `"config_transitions"`
+### `config_transitions`
 
 This key specifies a map of (some of) the target fields (whether
-declared as `"target_fields"` or as `"implicit"`) to a configuration
-expression. Here, a configuration expression is any expression in our
-language. It has access to the `"config_vars"` and the `"config_fields"`
-and has to evaluate to a list of maps. Each map specifies a transition
-to the current configuration by amending it on the domain of that map to
-the given value.
+declared as `target_fields` or as `implicit`) to a list of
+configuration transitions. Each transition is a map that amends the
+current configuration on the domain of that map to the given value. The
+transitions have access to the `config_vars` and the `config_fields`
+(via `jst.field`).
 
-### `"imports"`
+### `expression`
 
-This specifies a map of expressions that can later be used by
-`CALL_EXPRESSION`. In this way, duplication of (rule) code can be
-avoided. For each key, we have to have a name of an expression;
-expressions are named following the same naming scheme as targets and
-rules. The names are resolved in the context of the rule. Expressions
-themselves are defined in expression files, the default name being
-`EXPRESSIONS`.
+This specifies the defining expression of the rule, which has to
+evaluate to a result value (created by `jst.result`). Besides the
+[standard library](jstlang.md#regular-functions), it has access to the
+[rule functions](#rule-functions) to read the fields of the
+target (`jst.field`), to access the targets depended upon
+(`jst.dep_artifacts`, `jst.dep_runfiles`, and `jst.dep_provides`), and
+to define new artifacts (e.g., `jst.make_blob`, `jst.make_symlink`, and
+`jst.action`). The rule functions can also be used in functions defined
+outside the rule definition (locally in the rules file, or in imported
+files), as long as those functions are called from the defining
+expression of a rule.
 
-Each expression is a JSON object. The only mandatory key is
-`"expression"` which has to be an expression in our language. It
-optionally can have a key `"vars"` where the value has to be a list of
-strings (and the default is the empty list). Additionally, it can have
-another optional key `"imports"` following the same scheme as the
-`"imports"` key of a rule; in the `"imports"` key of an expression,
-names are resolved in the context of that expression. It is a
-requirement that the `"imports"` graph be cycle free.
+Target fields evaluate to abstract names of the targets. These names are
+opaque within Jstlang (but meaningful when reported in error messages)
+and should only be used to be passed on to the rule functions that
+expect names as inputs. When accessing a target depended upon, a
+configuration transition can be given; it is an error to request a
+target-transition pair for a target that was not requested in the given
+transition through one of the target fields.
 
-### `"expression"`
+Rule functions
+--------------
 
-This specifies the defining expression of the rule. The value has to be
-an expression of our expression language (basically, an abstract syntax
-tree serialized as JSON). It has access to the following extra functions
-and, when evaluated, has to return a result value.
+The following functions are only available in the defining expression of
+a rule and in the `config_transitions` of a rule, including functions
+called from there. They are evaluated for every target defined by the
+rule. Abstract names of targets are obtained from `jst.field` only.
 
-#### `FIELD`
+ - `jst.field(name)` The value of the field `name` of the target. For
+   string and config fields, this is a list of strings; for target
+   fields, it is the list of the abstract names of the targets, which
+   can only be passed on to the other rule functions.
 
-The field function takes one argument, `name` which has to evaluate
-to the name of a field. For string fields, the given list of strings
-is returned; for target fields, the list of abstract names for the
-given target is returned. These abstract names are opaque within the
-rule language (but meaningful when reported in error messages) and
-should only be used to be passed on to other functions that expect
-names as inputs.
+   ``` jsonnet
+   jst.field('name')   // e.g., ['hello']
+   ```
 
-#### `DEP_ARTIFACTS` and `DEP_RUNFILES`
+ - `jst.dep_artifacts(dep, transition={})` The artifacts of the target
+   `dep` depended upon, staged at their logical paths, as a map. The
+   target has to be requested in the given configuration `transition`
+   through one of the target fields.
 
-These functions give access to the artifacts, or runfiles,
-respectively, of one of the targets depended upon. It takes two
-(evaluated) arguments, the mandatory `"dep"` and the optional
-`"transition"`.
+   ``` jsonnet
+   jst.union([jst.dep_artifacts(dep) for dep in jst.field('srcs')])
+   ```
 
-The argument `"dep"` has to evaluate to an abstract name (as can be
-obtained from the `FIELD` function) of some target specified in one
-of the target fields. The `"transition"` argument has to evaluate to
-a configuration transition (i.e., a map) and the empty transition is
-taken as default. It is an error to request a target-transition pair
-for a target that was not requested in the given transition through
-one of the target fields.
+ - `jst.dep_runfiles(dep, transition={})` The runfiles of the target
+   `dep` depended upon, staged at their logical paths, as a map.
 
-#### `DEP_PROVIDES`
+   ``` jsonnet
+   jst.union([jst.dep_runfiles(dep) for dep in jst.field('deps')])
+   ```
 
-This function gives access to a particular entry of the provides map
-of one of the targets depended upon. The arguments `"dep"` and
-`"transition"` are as for `DEP_ARTIFACTS`; additionally, there is
-the mandatory argument `"provider"` which has to evaluate to a
-string. The function returns the value of the provides map of the
-target at the given provider. If the key is not in the provides map
-(or the value at that key is `null`), the optional argument
-`"default"` is evaluated and returned. The default for `"default"`
-is the empty list.
+ - `jst.dep_provides(dep, provider, transition={}, default=[])` The
+   value of the key `provider` in the provides map of the target `dep`
+   depended upon. If the key is missing or its value is `null`, the
+   `default` is returned.
 
-#### `BLOB`
+   ``` jsonnet
+   [jst.dep_provides(dep, 'packages', default={}) for dep in jst.field('deps')]
+   ```
 
-The `BLOB` function takes a single (evaluated) argument `data` which
-is optional and defaults to the empty string. This argument has to
-evaluate to a string. The function returns an artifact that is a
-non-executable file with the given string as content.
+ - `jst.make_blob(data='')` A (non-executable) file artifact with the given
+   content `data`.
 
-#### `TREE`
+   ``` jsonnet
+   {'hello.txt': jst.make_blob('Hello World!\n')}
+   ```
 
-The `TREE` function takes a single (evaluated) argument `$1` which
-has to be a map of artifacts. The result is a single tree artifact
-formed from the input map. It is an error if the map cannot be
-transformed into a tree (e.g., due to staging conflicts).
+ - `jst.make_symlink(target)` A symlink artifact pointing to the path
+   `target`. Like any symlink, the target is interpreted relative to the
+   directory the symlink is staged in, and it does not need to exist (the
+   symlink is not resolved). The `target` has to be a relative path that
+   does not point upwards out of that directory (e.g., `'lib.so.1'` or
+   `'sub/file'`, but not `'/usr/lib'` or `'../file'`). Not to be confused
+   with `jst.symlink(path)`, which refers to an existing symlink in the
+   source tree.
 
-### `TREE_OVERLAY` and `DISJOINT_TREE_OVERLAY`
+   ``` jsonnet
+   {'libfoo.so.1': jst.make_symlink('libfoo.so.1.2.3')}
+   ```
 
-The `TREE_OVERLAY` and `DISJOINT_TREE_OVERLAY` functions take a
-single (evaluated) argument `$1` which has to be a list of maps
-of artifacts. Each entry in the list is transformed into a single
-tree artifact formed from that map and it is an error if the map
-cannot be transformed into a tree (e.g., due to a staging conflict).
-The result is a single tree artifact defined as the overlay of the
-specified trees in that order (latest wins on each path after build
-evaluation); in the case of `DISJOINT_TREE_OVERLAY` it is a build
-error if a non-trivial conflict arises when computing the overlay
-in the build phase.
+ - `jst.make_tree(stage)` A tree artifact created from the map `stage`
+   from paths to artifacts. It is an error if the map cannot be
+   transformed into a tree (e.g., due to staging conflicts).
 
-#### `ACTION`
+   ``` jsonnet
+   {docs: jst.make_tree({'README.md': jst.make_blob('# Docs\n')})}
+   ```
 
-Actions are a way to define new artifacts from (zero or more)
-already defined artifacts by running a command, typically a
-compiler, linker, archiver, etc. The action function takes the
-following arguments.
+ - `jst.tree_overlay(stages, disjoint=false)` A tree artifact as
+   overlay of the trees of the given list `stages` of maps of artifacts,
+   in the given order (latest wins on each path). If the static argument
+   `disjoint` is true, it is an error if the trees conflict on any path.
+   The overlay is computed in the build phase, see
+   [tree overlays](tree-overlay.md).
 
- - `"inputs"` A map of artifacts. These artifacts are present when
-   the command is executed; the keys of the map are the relative
-   path from the working directory of the command. The command must
-   not make any assumption about the location of the working
-   directory in the file system (and instead should refer to files
-   by path relative to the working directory). Moreover, the
-   command must not modify the input files in any way. (In-place
-   operations can be simulated by staging, as is shown in the
-   example later in this document.)
+   ``` jsonnet
+   jst.tree_overlay([jst.dep_artifacts(dep) for dep in jst.field('deps')])
+   ```
 
-   It is an additional requirement that no conflicts occur when
-   interpreting the keys as paths. For example, `"foo.txt"` and
-   `"./foo.txt"` are different as strings and hence legitimately
-   can be assigned different values in a map. When interpreted as a
-   path, however, they name the same path; so, if the `"inputs"`
-   map contains both those keys, the corresponding values have to
-   be equal.
+ - `jst.action(inputs={}, cmd, outs=[], out_dirs=[], env={}, cwd='',
+   label=null, may_fail=[], fail_message='action failed', no_cache=[],
+   timeout_scaling=1.0, execution_properties={})` Define an action
+   creating new artifacts by running the command `cmd` (a non-empty list
+   of strings) in the directory `cwd` (relative to the action root), in
+   the environment `env`, on the map `inputs` from paths to artifacts.
+   The result is the map of the outputs, staged at the paths given in
+   `outs` (output files) and `out_dirs` (output directories); those
+   paths are relative to the action root, not to `cwd`, and have to be
+   disjoint. It is an error if the command does not create all of them.
+   The command must not modify its inputs, and must not make any
+   assumption about the location of the working directory in the file
+   system. The keys of `inputs` are interpreted as paths; keys naming
+   the same path (e.g., `'foo.txt'` and `'./foo.txt'`) must have equal
+   values. The `label` is a short description of the action for the
+   [progress reporting](progress-reporting.md), which crops labels
+   longer than 40 characters. For the static lists `may_fail` and
+   `no_cache` (taintedness strings) as well as `fail_message`,
+   `timeout_scaling`, and `execution_properties`, see
+   [cache pragma](cache-pragma.md) and
+   [execution properties](execution-properties.md).
 
- - `"cmd"` The command to execute, given as `argv` vector, i.e., a
-   non-empty list of strings. The 0'th element of that list will
-   also be the program to be executed.
+   ``` jsonnet
+   jst.action(
+     inputs={'in.txt': jst.make_blob('hello\n')},
+     cmd=['/bin/sh', '-c', 'tr a-z A-Z < in.txt > out.txt'],
+     outs=['out.txt'],
+     label='Converting in.txt',
+   )['out.txt']
+   ```
 
- - `"label"` An optional label that describes the build task in a
-   human-readable, concise manner, e.g., `Compiling xyz.cpp` or `Running
-   test xyz`. It is not part of the action definition, but only used in
-   progress reporting: the dynamic progress report constantly displays
-   the tasks that are executed during the build process, and the plain
-   build log prints one line per action, at the time the action is
-   started. The progress reporting is laid out for labels of up to 40
-   characters, so labels should not exceed that length: longer labels
-   are cropped in the dynamic progress report and break the column
-   alignment of the plain build log (see
-   [progress reporting](progress-reporting.md)). This
-   field is optional and defaults to `null`, in which case a generic
-   label is used in progress reporting.
+ - `jst.result(artifacts={}, runfiles={}, provides={})` The result of
+   the target, consisting of the maps `artifacts` and `runfiles` from
+   paths to artifacts, and the map `provides` with information for
+   consuming targets. The defining expression of a rule has to evaluate
+   to a result. The keys of `artifacts` and `runfiles` are interpreted
+   as paths; it is an error if this yields conflicts. Other targets see
+   them as normalized paths. Results are opaque and cannot be
+   deconstructed.
 
- - `"cwd"` The directory inside the action root to change to before
-   executing the command. The directory has to be given as a string
-   describing a non-upwards relative path. This field is optional
-   and defaults to `""`.
+   ``` jsonnet
+   jst.result(artifacts={'hello.txt': jst.make_blob('Hello World!\n')})
+   ```
 
- - `"env"` The environment in which the command should be executed,
-   given as a map of strings to strings.
+ - `jst.value_node(result)` A graph node of a target with the fixed
+   `result`, to be used for [anonymous targets](anonymous-targets.md).
 
- - `"outs"` and `"out_dirs"` Two list of strings naming the files
-   and directories, respectively, the command is expected to
-   create. Those paths are interpreted relative to the action root
-   (not relative to `"cwd"`).
-   It is an error if the command fails to create the
-   promised output files. These two lists have to be disjoint, but
-   an entry of `"outs"` may well name a location inside one of the
-   `"out_dirs"`.
+   ``` jsonnet
+   jst.value_node(jst.result(artifacts={'a.proto': jst.make_blob('...')}))
+   ```
 
-This function returns a map with keys the strings mentioned in
-`"outs"` and `"out_dirs"`. As values this map has artifacts defined
-to be the ones created by running the given command (in the given
-environment with the given inputs).
+ - `jst.abstract_node(node_type, string_fields={}, target_fields={})` An
+   internal graph node, to be used for
+   [anonymous targets](anonymous-targets.md). The `node_type` is the key
+   into the rule map of the anonymous target; `string_fields` maps field
+   names to lists of strings and `target_fields` maps field names to
+   lists of nodes. The keys of `string_fields` and `target_fields` have
+   to be disjoint.
 
-#### `RESULT`
-
-The `RESULT` function is the only way to obtain a result value. It
-takes three (evaluated) arguments, `"artifacts"`, `"runfiles"`, and
-`"provides"`, all of which are optional and default to the empty
-map. It defines the result of a target that has the given artifacts,
-runfiles, and provided data, respectively. In particular,
-`"artifacts"` and `"runfiles"` have to be maps to artifacts, and
-`"provides"` has to be a map. Moreover, the keys in `"runfiles"`
-and `"artifacts"` are treated as paths; it is an error if this
-interpretation yields to conflicts. The keys in the artifacts or
-runfile maps as seen by other targets are the normalized paths of
-the keys given.
-
-Result values themselves are opaque in our expression language and
-cannot be deconstructed in any way. Their only purpose is to be the
-result of the evaluation of the defining expression of a target.
-
-#### `CALL_EXPRESSION`
-
-This function takes one mandatory argument `"name"` which is
-unevaluated; it has to a be a string literal. The expression
-imported by that name through the imports field is evaluated in the
-current environment restricted to the variables of that expression.
-The result of that evaluation is the result of the `CALL_EXPRESSION`
-statement.
-
-During the evaluation of an expression, rule fields can still be
-accessed through the functions `FIELD`, `DEP_ARTIFACTS`, etc. In
-particular, even an expression with no variables (that, hence, is
-always evaluated in the empty environment) can carry out non-trivial
-computations and be non-constant. The special functions `BLOB`,
-`ACTION`, and `RESULT` are also available. If inside the evaluation
-of an expression the function `CALL_EXPRESSION` is used, the name
-argument refers to the `"imports"` map of that expression. So the
-call graph is deliberately recursion free.
+   ``` jsonnet
+   jst.abstract_node(
+     'library',
+     string_fields={name: ['addressbook']},
+     target_fields={srcs: srcs_nodes},
+   )
+   ```
 
 Evaluation of a target
 ----------------------
@@ -308,11 +313,15 @@ to write a rule that programmatically patches some files.
 
 ### Framework: The minimal rule
 
-Every rule has to have a defining expression evaluating to a `RESULT`.
-So the minimally correct rule is the `"null"` rule in the following
-example rule file.
+Every rule has to have a defining expression evaluating to a result
+value. So the minimally correct rule is the `null` rule in the following
+example rules file.
 
-    { "null": {"expression": {"type": "RESULT"}}}
+``` jsonnet
+{
+  'null': {expression: jst.result()},
+}
+```
 
 This rule accepts no parameters, and has the empty map as artifacts,
 runfiles, and provided data. So it is not very useful.
@@ -321,40 +330,23 @@ runfiles, and provided data. So it is not very useful.
 
 Let's allow the target definition to have some fields. The most simple
 fields are `string_fields`; they are given by a list of strings. In the
-defining expression we can access them directly via the `FIELD`
-function. Strings can be used when defining maps, but we can also create
-artifacts from them, using the `BLOB` function. To create a map, we can
-use the `singleton_map` function. We define values step by step, using
-the `let*` construct.
+defining expression we can access them directly via `jst.field`.
+Strings can be used when defining maps, but we can also create
+artifacts from them, using `jst.make_blob`. We define values step by step,
+using `local` definitions.
 
-``` jsonc
-{ "script only":
-  { "string_fields": ["script"]
-  , "expression":
-    { "type": "let*"
-    , "bindings":
-      [ [ "script content"
-        , { "type": "join"
-          , "separator": "\n"
-          , "$1":
-            { "type": "++"
-            , "$1":
-              [["H"], {"type": "FIELD", "name": "script"}, ["w", "q", ""]]
-            }
-          }
-        ]
-      , [ "script"
-        , { "type": "singleton_map"
-          , "key": "script.ed"
-          , "value":
-            {"type": "BLOB", "data": {"type": "var", "name": "script content"}}
-          }
-        ]
-      ]
-    , "body":
-      {"type": "RESULT", "artifacts": {"type": "var", "name": "script"}}
-    }
-  }
+``` jsonnet
+{
+  script_only: {
+    string_fields: ['script'],
+    expression:
+      local script_content = jst.join(
+        ['H'] + jst.field('script') + ['w', 'q', ''],
+        sep='\n',
+      );
+      local script = {'script.ed': jst.make_blob(script_content)};
+      jst.result(artifacts=script),
+  },
 }
 ```
 
@@ -362,11 +354,12 @@ the `let*` construct.
 
 Now it is time to add the input files. Source files are targets like any
 other target (and happen to contain precisely one artifact). So we add a
-target field `"srcs"` for the file to be patched. Here we have to keep
+target field `srcs` for the file to be patched. Here we have to keep
 in mind that, on the one hand, target fields accept a list of targets
 and, on the other hand, the artifacts of a target are a whole map. We
-chose to patch all the artifacts of all given `"srcs"` targets. We can
-iterate over lists with `foreach` and maps with `foreach_map`.
+chose to patch all the artifacts of all given `srcs` targets. We can
+iterate over lists with list comprehensions and over maps with map
+comprehensions over their keys.
 
 Next, we have to keep in mind that targets may place their artifacts at
 arbitrary logical locations. For us that means that first we have to
@@ -379,106 +372,56 @@ of side effects. With that choice of logical artifact placement, we have
 to decide what to do if two (or more) input targets place their
 artifacts at logically the same location. We could simply take a
 "latest wins" semantics (keep in mind that target fields give a list
-of targets, not a set) as provided by the `map_union` function. We chose
-to consider it a user error if targets with conflicting artifacts are
-specified. This is provided by the `disjoint_map_union` that also allows
+of targets, not a set) as provided by `jst.union`. We chose to consider
+it a user error if targets with conflicting artifacts are specified.
+This is provided by `jst.union` with `disjoint=true`, which also allows
 to specify an error message to be provided the user. Here, conflict
 means that values for the same map position are defined in a different
 way.
 
-The actual patching is done by an `ACTION`. We have the script already;
+The actual patching is done by `jst.action`. We have the script already;
 to make things easy, we stage the input to a fixed place and also expect
-a fixed output location. Then the actual command is a simple shell
+a fixed output location, which we look up in the map of outputs
+returned by `jst.action`. Then the actual command is a simple shell
 script. The only thing we have to keep in mind is that we want useful
 output precisely if the action fails. Also note that, while we define
-our actions sequentially, they will be executed in parallel, as none of
-them depends on the output of another one of them.
+our actions in a comprehension, they will be executed in parallel, as
+none of them depends on the output of another one of them.
 
-``` jsonc
-{ "ed patch":
-  { "string_fields": ["script"]
-  , "target_fields": ["srcs"]
-  , "expression":
-    { "type": "let*"
-    , "bindings":
-      [ [ "script content"
-        , { "type": "join"
-          , "separator": "\n"
-          , "$1":
-            { "type": "++"
-            , "$1":
-              [["H"], {"type": "FIELD", "name": "script"}, ["w", "q", ""]]
-            }
-          }
-        ]
-      , [ "script"
-        , { "type": "singleton_map"
-          , "key": "script.ed"
-          , "value":
-            {"type": "BLOB", "data": {"type": "var", "name": "script content"}}
-          }
-        ]
-      , [ "patched files per target"
-        , { "type": "foreach"
-          , "var": "src"
-          , "range": {"type": "FIELD", "name": "srcs"}
-          , "body":
-            { "type": "foreach_map"
-            , "var_key": "file_name"
-            , "var_val": "file"
-            , "range":
-              {"type": "DEP_ARTIFACTS", "dep": {"type": "var", "name": "src"}}
-            , "body":
-              { "type": "let*"
-              , "bindings":
-                [ [ "action output"
-                  , { "type": "ACTION"
-                    , "inputs":
-                      { "type": "map_union"
-                      , "$1":
-                        [ {"type": "var", "name": "script"}
-                        , { "type": "singleton_map"
-                          , "key": "in"
-                          , "value": {"type": "var", "name": "file"}
-                          }
-                        ]
-                      }
-                    , "cmd":
-                      [ "/bin/sh"
-                      , "-c"
-                      , "cp in out && chmod 644 out && /bin/ed out < script.ed > log 2>&1 || (cat log && exit 1)"
-                      ]
-                    , "outs": ["out"]
-                    }
-                  ]
-                ]
-              , "body":
-                { "type": "singleton_map"
-                , "key": {"type": "var", "name": "file_name"}
-                , "value":
-                  { "type": "lookup"
-                  , "map": {"type": "var", "name": "action output"}
-                  , "key": "out"
-                  }
-                }
-              }
-            }
-          }
-        ]
-      , [ "artifacts"
-        , { "type": "disjoint_map_union"
-          , "msg": "srcs artifacts must not overlap"
-          , "$1":
-            { "type": "++"
-            , "$1": {"type": "var", "name": "patched files per target"}
-            }
-          }
-        ]
-      ]
-    , "body":
-      {"type": "RESULT", "artifacts": {"type": "var", "name": "artifacts"}}
-    }
-  }
+``` jsonnet
+{
+  ed_patch: {
+    string_fields: ['script'],
+    target_fields: ['srcs'],
+    expression:
+      local script_content = jst.join(
+        ['H'] + jst.field('script') + ['w', 'q', ''],
+        sep='\n',
+      );
+      local script = {'script.ed': jst.make_blob(script_content)};
+      local patched_files_per_target = [
+        local files = jst.dep_artifacts(src);
+        {
+          [file_name]: jst.action(
+            inputs=script + {'in': files[file_name]},
+            cmd=[
+              '/bin/sh',
+              '-c',
+              'cp in out && chmod 644 out && /bin/ed out < script.ed > log 2>&1 || (cat log && exit 1)',
+            ],
+            outs=['out'],
+          ).out
+          for file_name in jst.keys(files)
+        }
+        for src in jst.field('srcs')
+      ];
+      local artifacts = jst.union(
+        patched_files_per_target,
+        disjoint=true,
+        msg='srcs artifacts must not overlap',
+      );
+      jst.result(artifacts=artifacts),
+  },
 }
 ```
 
@@ -488,7 +431,7 @@ following.
 ``` jsonnet
 {
   'input.txt': {
-    type: 'ed patch',
+    type: 'ed_patch',
     script: ['%g/world/s//user/g', '%g/World/s//USER/g'],
     srcs: [jst.file('input.txt')],
   },
@@ -518,23 +461,24 @@ Then we have to do some additional considerations.
    a configuration transition.
  - As our defining expression also needs the configuration transition
    to access the artifacts of that implicit target, we better define it
-   as a reusable expression. Other rules in our rule collection might
-   also have the same task; so `["transitions", "for host"]` might be a
-   good place to define it. In fact, it can look like the expression
-   with that name in our own code base.
+   as a reusable function. Other rules in our rule collection might also
+   have the same task; so `/transitions/expressions.jst` might be a good
+   place to define it. In fact, it can look like the function `for_host`
+   in our own code base.
 
 So, the overall organization of our rule might be as follows.
 
-``` jsonc
-{ "generated code":
-  { "target_fields": ["srcs"]
-  , "implicit": {"generator": [["generators", "foogen"]]}
-  , "config_vars": ["HOST_ARCH"]
-  , "imports": {"for host": ["transitions", "for host"]}
-  , "config_transitions":
-    {"generator": [{"type": "CALL_EXPRESSION", "name": "for host"}]}
-  , "expression": ...
-  }
+``` jsonnet
+local transitions = import '/transitions/expressions.jst';
+
+{
+  generated_code: {
+    target_fields: ['srcs'],
+    implicit: {generator: [@'//generators:foogen']},
+    config_vars: ['ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
+    config_transitions: {generator: [transitions.for_host()]},
+    expression: ...,
+  },
 }
 ```
 
@@ -565,29 +509,26 @@ It is a deliberate design choice that a target is given only by the
 result of its analysis, regardless of where it is coming from.
 Therefore, all this information needs to be part of the result of a
 target. Such kind of information is precisely, what the mentioned
-`"provides"` map is for. As a map, it can contain an arbitrary amount of
-information and the interface function `"DEP_PROVIDES"` is in such a way
-that adding more providers does not affect targets not aware of them
+`provides` map is for. As a map, it can contain an arbitrary amount of
+information and the interface function `jst.dep_provides` is in such a
+way that adding more providers does not affect targets not aware of them
 (there is no function asking for all providers of a target). The keys
 and their meaning have to be agreed upon by a target and its consumers.
 As the latter, however, typically are a target of the same family
 (authored by the same group), this usually is not a problem.
 
-A typical example of computing a provided value is the `"link-args"` in
+A typical example of computing a provided value is the `link-args` in
 the rules used by `jst` itself. They are defined by the following
 expression.
 
-``` jsonc
-{ "type": "nub_right"
-, "$1":
-  { "type": "++"
-  , "$1":
-    [ {"type": "keys", "$1": {"type": "var", "name": "lib"}}
-    , {"type": "CALL_EXPRESSION", "name": "link-args-deps"}
-    , {"type": "var", "name": "link external", "default": []}
-    ]
-  }
-}
+``` jsonnet
+jst.nub_right(
+  jst.flatten([
+    jst.keys(lib),
+    link_args_deps(deps_fieldnames=deps_fieldnames),
+    link_external,
+  ]),
+)
 ```
 
 This expression
@@ -597,6 +538,6 @@ This expression
  - deduplicates the resulting list, keeping only the right-most
    occurrence of each entry.
 
-In this way, the invariant is kept, that the `"link-args"` from a
-topological ordering of the dependencies (in the order that a each entry
+In this way, the invariant is kept, that the `link-args` form a
+topological ordering of the dependencies (in the order that each entry
 is mentioned before its dependencies).

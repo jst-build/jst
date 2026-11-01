@@ -1,5 +1,5 @@
-Expression language
-===================
+JSON Expression Language
+========================
 
 In order to define a rule, we need a
 restricted form of functional computation. This is achieved by our

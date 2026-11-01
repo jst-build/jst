@@ -77,8 +77,8 @@ Repository data
 ---------------
 
 A repository uses a (logical) directory for several purposes: to obtain
-source files, to read definitions of targets, to read rules, and to read
-expressions that can be used by rules. While all those directories can be
+source files, to read definitions of targets, and to read rules. While
+all those directories can be
 (and often are) the same, this does not have to be the case. For each
 of those purposes, a different logical directory (also called "root")
 can be used. In this way, one can, e.g., add target definitions to a
@@ -96,8 +96,8 @@ motivates the need of adding target definitions without changing the
 root itself.
 
 The same flexibility as for the roots is also present for the names of
-the files defining targets, rules, and expressions. While the default
-names `TARGETS`, `RULES`, and `EXPRESSIONS` are often used, other file
+the files defining targets and rules. While the default names `TARGETS`
+and `RULES` are often used, other file
 names can be specified for those as well, either in the repository
 configuration or (for the main repository) on the command line.
 
@@ -111,20 +111,29 @@ Targets
 
 ### Target naming
 
-In description files, targets, rules, and expressions are referred to by
-name. As the context always determines whether a name for a target, rule, or
-expression is expected, they all use the same naming scheme.
+In description files, targets and rules are referred to by name. As the
+context always determines whether a name for a target or a rule is
+expected, they both use the same naming scheme. Names are written as
+[references](jstlang.md#references) `@'<ref>'`, with `<ref>` being of one
+of the following forms.
 
- - A single string refers to the target with this name in the same
-   module.
- - A ref-string `@'//module:name'` refers to the target `name` in the module
-   `module` of the same repository.
- - A ref-string `@'./relative-module-path:name'` refers to a target with
-   the given name in the module that has the specified path relative to
-   the current module (in the current repository).
- - A ref-string `@'repository//module:name'` refers to the target with
-   the specified name in the specified module of the specified
-   repository.
+ - `:<target>` refers to the target `<target>` in the same module. A
+   single string `'<target>'` is a short-hand for `@':<target>'`.
+ - `./<module>:<target>` refers to the target `<target>` in the module
+   that has the path `<module>` relative to the current module (in the
+   current repository).
+ - `<repo>//<module>:<target>` refers to the target `<target>` in the
+   module `<module>` of the repository `<repo>`, a name the current
+   repository binds to another repository. If `<repo>` is omitted, the
+   current repository is meant; an empty `<module>` refers to the
+   top-level module.
+
+For the latter two forms, omitting `:<target>` refers to the target named
+like the last path segment of the module, e.g., `@'//foo/bar'` refers to
+the target `bar` in module `foo/bar`. Every segment may be specified in
+double-quotes, containing a JSON-encoded string. The same encoding is
+used to name targets on the command line, which additionally allows
+some shortcuts, see `jst`(1).
 
 Additionally, there are special targets that can also be referred to in
 target files.

@@ -54,19 +54,19 @@ under high load or extended usage.
 Interfaces related to action-controlled execution properties
 ------------------------------------------------------------
 
-### Properties of the `"ACTION"` function
+### Arguments of the `jst.action` function
 
-The `"ACTION"` function available in the rule definition also has
-the following attributes. All of those attributes are optional.
+The `jst.action` function available in the rule definition also has
+the following arguments. All of those arguments are optional.
 
-#### `"execution properties"`
+#### `execution_properties`
 
 This value has to evaluate to a map of strings or `null`;
 if not given or evaluating to `null`, the
 empty map is taken as default. This map is taken as a union with any
 remote-execution properties specified at the invocation of the build
 (if keys are defined both for the entire build and in
-`"execution properties"` of a specific action, the latter takes
+`execution_properties` of a specific action, the latter takes
 precedence).
 
 Local execution continues to ignore any execution properties specified.
@@ -74,7 +74,7 @@ However, with the dispatch functionality of `jst backend` described later, such
 execution properties can also influence a build that is local by
 default.
 
-#### `"timeout scaling"`
+#### `timeout_scaling`
 
 If given, the value has to evaluate to a number greater than or equal to
 `1.0`, or to `null`. If not given, or evaluating to `null`, the value
@@ -90,7 +90,7 @@ definition of an action in an ad-hoc fashion, it also provides the
 same attributes. More precisely, the fields `"timeout scaling"`
 and `"execution properties"` are taken as additional arguments to
 the underlying action, with the same semantics as the respective
-fields of the `"ACTION"` constructor.
+arguments of the `jst.action` function.
 
 ### `jst backend` dispatching based on remote-execution properties
 

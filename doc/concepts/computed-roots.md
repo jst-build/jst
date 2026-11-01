@@ -27,24 +27,19 @@ the target file could be a function of that library which can form its
 own content-fixed root (e.g., a `git tree` root), so that the computed
 value is easily cacheable.
 
-### Simplified rule definition and alternative syntax
+### Simplified rule definition
 
-Rules can share computation through expressions. However, the interface
-deliberately has to be explicit, including the documentation strings
-that are used by `jst describe`. While this allows easy and efficient
-implementation of `jst describe`, there is some redundancy involved, as
-often fields are only there to be used by a common expression, but they
-still have to be documented in a redundant way (causing additional
-maintenance burden).
+Rules can share computation through functions. However, the interface
+of a rule deliberately has to be explicit, including the documentation
+strings that are used by `jst describe`. While this allows easy and
+efficient implementation of `jst describe`, there is some redundancy
+involved, as often fields are only there to be used by a common
+function, but they still have to be documented in a redundant way
+(causing additional maintenance burden).
 
-Moreover, using JSON encoding of abstract syntax trees is an
-unambiguously readable format that is easy to process automatically,
-but people argue that it is hard to write by hand. However, it is unlikely
-to get agreement on which syntax is best to use. Now, if rule and
-expression files can be generated, this argument is not
-necessary. Moreover, rules are typically versioned and infrequently
-changed, so the step of generating the official syntax from the
-convenient one would typically be in cache.
+If rules files can be generated, this redundancy can be avoided.
+Moreover, rules are typically versioned and infrequently changed, so
+the step of generating them would typically be in cache.
 
 Root types depending on computation
 -----------------------------------

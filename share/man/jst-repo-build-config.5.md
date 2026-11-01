@@ -78,13 +78,6 @@ Specifically the following fields are supported:
  - *`"rule_file_name"`* contains the file name of rule files to use. If
    this entry is missing, the default rule file name *`RULES`* is used.
 
- - *`"expression_root"`* contains the *`file root`* where the expression
-   files are located. If this entry is missing, the rule root is taken.
-
- - *`"expression_file_name"`* contains the file name of expression files
-   to use. If this entry is missing, the default expression file name
-   *`EXPRESSIONS`* is used.
-
  - *`"bindings"`* contains a JSON object that defines bindings to other
    repositories by mapping local repository names to global ones. The
    object's key is local name, while the value is a string representing

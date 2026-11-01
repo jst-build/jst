@@ -110,6 +110,12 @@
   repository under `extern/justlang`, now lives in the main source tree at
   `src/buildtool/jstlang`. Its compiler binary is available as the export
   target `jstlangc`, which is deliberately not part of `INSTALL`.
+- Rules can now be defined in `jstlang`, like targets; an experimental
+  translation of the rules shipped with `jst` (`etc/rules`) have shown: For a
+  target graph of about 1,250 targets and 4,300 actions (the bundled tests, `jst
+  analyse --main tests -C etc/bundled.json ALL`), analysis takes about 10% more
+  CPU time, the memory footprint is about 12% smaller, and the rules are about
+  43% less code.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the

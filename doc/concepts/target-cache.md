@@ -58,10 +58,10 @@ repositories "content-fixed" repositories.
 
 The local data of a repository consists of the following.
 
- - The roots (for workspace, targets, rules, expressions). As the tree
+ - The roots (for workspace, targets, rules). As the tree
    identifier already defines the content, we leave out the path to the
    repository containing the tree.
- - The names of the targets, rules, and expression files.
+ - The names of the targets and rules files.
  - The names of the outgoing "bindings".
 
 Additionally, repositories can reach additional repositories via
@@ -86,11 +86,11 @@ descriptions). The serialisation itself is stored in CAS.
 
 These identifications and replacements of global names do not change
 the semantics, as our name data types are completely opaque to our
-expression language. In the `"json_encode"` expression, they're
+expression language. In the `jst.json_encode` function, they're
 serialized as `null` and string representation is only generated in user
 messages not available to the language itself. Moreover, names cannot be
 compared for equality either, so their only observable properties, i.e.,
-the way `"DEP_ARTIFACTS"`, `"DEP_RUNFILES"`, and `"DEP_PROVIDES"` react
+the way `jst.dep_artifacts`, `jst.dep_runfiles`, and `jst.dep_provides` react
 to them, are invariant under repository bisimulation.
 
 Configuration and the `"export"` rule

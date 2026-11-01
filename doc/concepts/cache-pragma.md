@@ -81,18 +81,18 @@ dependencies are tainted with.
 For tainted targets, the `analyse`, `build`, and `install` commands
 report the set of strings the target is tainted with.
 
-### `"may_fail"` and `"no_cache"` properties of `"ACTION"`
+### `may_fail` and `no_cache` arguments of `jst.action`
 
-The `"ACTION"` function in the defining expression of a rule has two
-additional parameters (besides inputs, etc.), `"may_fail"` and
-`"no_cache"`. Those are not evaluated and have to be lists of strings
-(with empty assumed if the respective parameter is not present). Only
+The `jst.action` function in the defining expression of a rule has two
+additional parameters (besides inputs, etc.), `may_fail` and
+`no_cache`. Those have to be literal lists of strings (with empty
+assumed if the respective argument is not given). Only
 strings the defining rule is tainted with may occur in that list. If the
 list is not empty, the corresponding may-fail or no-cache bit of the
 action is set.
 
-For actions with the `"may_fail"` bit set, the optional parameter
-`"fail_message"` with default value `"action failed"` is evaluated. That
+For actions with the may-fail bit set, the optional argument
+`fail_message` with default value `'action failed'` is evaluated. That
 message will be reported if the action returns a non-zero exit value.
 
 Actions with the no-cache bit set are never cached. If an action with

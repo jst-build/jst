@@ -107,28 +107,27 @@ If it fails, **`jst`** errors out.
 For non-main repositories, the *`workspace_root`* entry must be declared
 in the multi-repository configuration file.
 
-Afterwards, *`target_root`*, *`rule_root`*, and *`expression_root`*
-directories for the main repository are set using the following
-strategy. If the corresponding command-line option is specified, then it
-is honored. Otherwise, it is read from the multi-repo configuration
-file. If it is not specified there, the default value is used. The
-default value of *`target_root`* is *`workspace_root`*, of *`rule_root`*
-is *`target_root`*, and of *`expression_root`* is *`rule_root`*.
+Afterwards, *`target_root`* and *`rule_root`* directories for the main
+repository are set using the following strategy. If the corresponding
+command-line option is specified, then it is honored. Otherwise, it is
+read from the multi-repo configuration file. If it is not specified
+there, the default value is used. The default value of *`target_root`*
+is *`workspace_root`*, and of *`rule_root`* is *`target_root`*.
 
-Finally, the file names where *targets*, *rules*, and *expressions* are
-defined for the main repository. If the corresponding key is present in
+Finally, the file names where *targets* and *rules* are defined for the
+main repository. If the corresponding key is present in
 the multi-repository configuration file, it is set accordingly. If the
 user gives the corresponding command-line option, it overwrites what is
 eventually read from the configuration file. If they are not explicitly
 stated neither within the multi-repository configuration file nor on the
-command line, the default values are used, which are *`TARGETS`*,
-*`RULES`*, and *`EXPRESSIONS`*, respectively.
+command line, the default values are used, which are *`TARGETS`* and
+*`RULES`*, respectively.
 
 For non-main repositories (i.e., repositories defining targets required
 by the target given on the command line), *`target_root`*,
-*`rule_root`*, *`expression_root`*, and file names of targets, rules and
-expressions, if different from the default values, must be declared in
-the multi-repository configuration file.
+*`rule_root`*, and file names of targets and rules, if different from
+the default values, must be declared in the multi-repository
+configuration file.
 
 The repositories to build from are described in a multi-repository
 configuration; **`jst`** fetches them as needed and derives the workspace roots
@@ -484,16 +483,6 @@ An action can be specified in the following ways
    identifier does not start with either *`%`* or *`#`* and the number
    does not happen to be a valid action identifier.
 
-Supported by: analyse|build|describe|install|rebuild.
-
-**`--expression-file-name`** *`TEXT`*  
-Name of the expressions file.  
-Supported by: analyse|build|describe|install|rebuild.
-
-**`--expression-root`** *`PATH`*  
-Path of the expression files' root directory. Default: Same as
-
-**`--rule-root`**.  
 Supported by: analyse|build|describe|install|rebuild.
 
 **`--rule-file-name`** *`TEXT`*  

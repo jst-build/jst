@@ -28,8 +28,8 @@ value is an object; its keys are the global names of the specified
 repositories. For each repository, there is an object describing it. The
 key `"workspace_root"` describes where to find the repository and should
 be present for all (direct or indirect) external dependencies of the
-repository worked upon. Additional roots and file names (for targets,
-rules, and expressions) can be specified. For keys not given, the same rules for
+repository worked upon. Additional roots and file names (for targets
+and rules) can be specified. For keys not given, the same rules for
 default values apply as for the corresponding command-line arguments.
 Additionally, for each repository, the key "bindings" specifies the
 map of the open repository names to the global names that provide these
@@ -138,9 +138,9 @@ To handle this naming problem, we note the following. During the
 evaluation of a target names occur at two places: as the result of
 evaluating the parameters (for target fields) and in the evaluation of
 the defining expression when requesting properties of a target dependent
-upon (via `DEP_ARTIFACTS` and related functions). In the latter case,
-however, the only legitimate way to obtain a target name is by the
-`FIELD` function. To enforce this behavior, and to avoid problems with
+upon (via `jst.dep_artifacts` and related functions). In the latter
+case, however, the only legitimate way to obtain a target name is by the
+`jst.field` function. To enforce this behavior, and to avoid problems with
 serializing target names, our expression language considers target names
 as opaque values. More precisely,
 
@@ -148,10 +148,10 @@ as opaque values. More precisely,
    result of the evaluation is parsed, in the context of the module the
    `TARGET` file belongs to, as a target name, and
  - during evaluation of the defining expression of the target's
-   rule, when accessing `FIELD` the values of target fields will be
+   rule, when accessing `jst.field` the values of target fields will be
    reported as abstract name values, and when querying values of
-   dependencies (via `DEP_ARTIFACTS` etc.) the correct abstract target
-   name has to be provided.
+   dependencies (via `jst.dep_artifacts` etc.) the correct abstract
+   target name has to be provided.
 
 While the defining expression has access to target names (via target
 fields), it is not useful to provide them in provided data; a consuming

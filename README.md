@@ -70,18 +70,14 @@ Hello World!
 - [Basics](examples/basics-tutorial/README.md)
 - [C/C++](examples/cpp-tutorial/README.md)
 
-## Jstlang documentation
-
-- [Getting Started](doc/jstlang/getting-started.md)
-- [Standard Library](doc/jstlang/stdlib.md)
-- [Troubleshooting](doc/jstlang/troubleshoot.md)
-
-## General documentation
+## Documentation
 
 - [Overview](doc/concepts/overview.md)
 - [Build Configurations](doc/concepts/configuration.md)
 - [Multi-Repository Builds](doc/concepts/multi-repo.md)
+- [Expression Language](doc/concepts/jstlang.md)
 - [Built-in Rules](doc/concepts/built-in-rules.md)
+- [User-defined Rules](doc/concepts/rules.md)
 - [Cache Pragma and Testing](doc/concepts/cache-pragma.md)
 - [Target-Level Caching](doc/concepts/target-cache.md)
 - [Target-Level Caching as a Service](doc/concepts/service-target-cache.md)
