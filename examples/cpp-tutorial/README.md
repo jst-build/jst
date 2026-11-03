@@ -675,11 +675,11 @@ Now the `libgreet` target can access the top-level target `fmt` from
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
     shared:
-      if $'BUILD_SHARED' then ['yes'],
+      if $BUILD_SHARED then ['yes'],
     'private-cflags':
-      if $'USE_FMTLIB' then ['-DUSE_FMTLIB'],
+      if $USE_FMTLIB then ['-DUSE_FMTLIB'],
     'private-deps':
-      if $'USE_FMTLIB' then [@'fmtlib//:fmt'],
+      if $USE_FMTLIB then [@'fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers
@@ -764,7 +764,7 @@ The last missing piece is providing the target description in file
     defines: [
       'BUILD_GMOCK=OFF',
       'gtest_force_shared_crt=OFF',
-      'CMAKE_BUILD_TYPE=' + (if $'DEBUG' then 'Debug' else 'Release'),
+      'CMAKE_BUILD_TYPE=' + (if $DEBUG then 'Debug' else 'Release'),
     ],
     out_libs: ['libgtest_main.a', 'libgtest.a'],
     out_hdr_dirs: ['gtest'],

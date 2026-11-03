@@ -75,8 +75,8 @@ dependency could look as follows.
     name: ['foo'],
     hdrs: ['foo.hpp'],
     srcs: ['foo.cpp'],
-    defines: if jst.env('DEBUG') then ['DEBUG'],
-    deps: ['libbar', 'libbaz'] + if jst.env('DEBUG') then ['libdebuglog'],
+    defines: if $DEBUG then ['DEBUG'],
+    deps: ['libbar', 'libbaz'] + if $DEBUG then ['libdebuglog'],
   }
 }
 ```

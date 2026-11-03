@@ -60,7 +60,7 @@ depending on the configuration.
       'mkdir -p bin',
       jst.join([
         'for tool in ',
-        jst.join_cmd($'FOO_BINS'),
+        jst.join_cmd($FOO_BINS),
         ' ; do echo "foo binary ${tool}" > bin/"${tool}"',
         ' ; chmod 755 bin/"${tool}"',
         ' ; done',
@@ -112,7 +112,7 @@ Now, assume we have another such target.
       'mkdir -p bin',
       jst.join([
         'for tool in ',
-        jst.join_cmd($'BAR_BINS'),
+        jst.join_cmd($BAR_BINS),
         ' ; do echo "bar binary ${tool}" > bin/"${tool}"',
         ' ; chmod 755 bin/"${tool}"',
         ' ; done',
