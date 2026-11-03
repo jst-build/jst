@@ -126,6 +126,13 @@
     deps: [@'//:tool-under-test'],
   },
 
+  describe_doc_strings: {
+    type: @'rules//shell/test:script',
+    name: ['describe_doc_strings'],
+    test: ['describe_doc_strings.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
   output: {
     type: @'rules//shell/test:script',
     name: ['output'],
@@ -164,6 +171,7 @@
         'install archived repo',
         'conflict report',
         'describe',
+        'describe_doc_strings',
         'target_reference',
       ]
       + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then

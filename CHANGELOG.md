@@ -86,6 +86,9 @@
   backend alone, use the backend passthrough, e.g. `jst backend build
   --local-build-root DIR`; the options of `jst` are given between `backend` and
   the backend subcommand, as everything from there on is forwarded unchanged.
+- `jst describe --json` reports documentation fields (`doc`, `field_doc`,
+  `config_doc`, etc.) as a single string instead of a list of strings. Lists
+  given in the deprecated form are joined, each entry terminated by a newline.
 
 ### Other changes
 
@@ -116,6 +119,10 @@
   analyse --main tests -C etc/bundled.json ALL`), analysis takes about 10% more
   CPU time, the memory footprint is about 12% smaller, and the rules are about
   43% less code.
+- Documentation fields of rules and targets (`doc`, `field_doc`, `config_doc`,
+  etc.) are now given as a single string, which is convenient for multi-line
+  strings. Lists of strings are still accepted for backward compatibility, but
+  are deprecated.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the

@@ -13,19 +13,16 @@ add documentation directly into the respective definitions.
 Multi-line documentation
 ------------------------
 
-Documentation is given as lists of strings, with the understanding that
-they describe the strings obtained by joining the entries with newline
-characters. Longer texts are best written as a single
-[multi-line string](jstlang.md#multi-line-strings)
-using the `|||` syntax.
+Documentation is given as strings. Longer texts are best written as
+[multi-line strings](jstlang.md#multi-line-strings) using the `|||` syntax.
 
 Documentation is optional
 -------------------------
 
 While documentation is highly recommended, it still remains optional.
-Therefore, when in the following we state that a key is for a list or a
-map, it is always implied that it may be absent; in this case, the empty
-list or the empty map is taken as default, respectively.
+Therefore, when in the following we state that a key is for a string
+or a map, it is always implied that it may be absent; in this case, no
+documentation or the empty map is taken as default, respectively.
 
 Rules
 -----
@@ -34,14 +31,13 @@ Each rule is described as a map with a fixed set of keys. So
 having fixed keys for documentation does not cause conflicts. More
 precisely, the keys `doc`, `field_doc`, `config_doc`, `artifacts_doc`,
 `runfiles_doc`, and `provides_doc` are reserved for documentation. Here,
-`doc` has to be a list of strings describing the rule in general.
-`field_doc` has to be a map from (some of) the field names to a list
-of strings, containing additional information on that particular field.
-`config_doc` has to be a map from (some of) the config variables to a
-list of strings describing the respective variable. `artifacts_doc` is
-a list of strings describing the artifacts produced by the rule.
-`runfiles_doc` is a list of strings describing the runfiles produced
-by this rule. Finally, `provides_doc` is a map describing (some of) the
+`doc` has to be a string describing the rule in general. `field_doc` has
+to be a map from (some of) the field names to a string, containing
+additional information on that particular field. `config_doc` has to be a
+map from (some of) the config variables to a string describing the
+respective variable. `artifacts_doc` is a string describing the artifacts
+produced by the rule. `runfiles_doc` is a string describing the runfiles
+produced by this rule. Finally, `provides_doc` is a map describing (some of) the
 providers of that rule; as opposed to fields or config variables, there
 is no authoritative list of providers given elsewhere in the rule, so it
 is up to the rule author to give accurate documentation of the
@@ -52,62 +48,60 @@ provided data.
 ``` jsonnet
 {
   library: {
-    doc: [|||
+    doc: |||
       A C library
 
       Define a library that can be used to be statically linked to a
       binary. To do so, the target can simply be specified in the deps
       field of a binary; it can also be a dependency of another library
       and the information is then propagated to the corresponding binary.
-    |||],
+    |||,
     string_fields: ['name'],
     target_fields: ['srcs', 'hdrs', 'private_hdrs', 'deps'],
     field_doc: {
-      name: [
+      name:
         'The base name of the library (i.e., the name without the leading lib).',
-      ],
-      srcs: ['The source files (i.e., *.c files) of the library.'],
-      hdrs: [|||
+      srcs: 'The source files (i.e., *.c files) of the library.',
+      hdrs: |||
         The public header files of this library. Targets depending on
         this library will have access to those header files
-      |||],
-      private_hdrs: [|||
+      |||,
+      private_hdrs: |||
         Additional internal header files that are used when compiling
         the source files. Targets depending on this library have no access
         to those header files.
-      |||],
-      deps: [|||
+      |||,
+      deps: |||
         Any other libraries that this library uses. The dependency is
         also propagated (via the link-deps provider) to any consumers of
         this target. So only direct dependencies should be declared.
-      |||],
+      |||,
     },
     config_vars: ['CC'],
     config_doc: {
-      CC: [|||
+      CC: |||
         single string. defaulting to "cc", specifying the compiler
         to be used. The compiler is also used to launch the preprocessor.
-      |||],
+      |||,
     },
-    artifacts_doc: [
+    artifacts_doc:
       'The actual library (libname.a) staged in the specified directory',
-    ],
-    runfiles_doc: ['The public headers of this library'],
+    runfiles_doc: 'The public headers of this library',
     provides_doc: {
-      'compile-deps': [|||
+      'compile-deps': |||
         Map of artifacts specifying any additional files that, besides the
         runfiles, have to be present in compile actions of targets depending
         on this library
-      |||],
-      'link-deps': [|||
+      |||,
+      'link-deps': |||
         Map of artifacts specifying any additional files that, besides the
         artifacts, have to be present in a link actions of targets depending
         on this library
-      |||],
-      'link-args': [|||
+      |||,
+      'link-args': |||
         List of strings that have to be added to the command line for
         linking actions in targets depending on this library
-      |||],
+      |||,
     },
     expression: ...,
   },
@@ -120,10 +114,10 @@ Export targets
 As export targets play the role of interfaces between repositories, it
 is important that they be documented as well. Again, export targets are
 described as a map with a fixed set of keys, and we use the keys
-`doc` and `config_doc` for documentation. Here `doc` is a list of
-strings describing the target in general and `config_doc` is a map
-from (some of) the variables of the `flexible_config` to a list of
-strings describing this parameter.
+`doc` and `config_doc` for documentation. Here `doc` is a string
+describing the target in general and `config_doc` is a map from (some of)
+the variables of the `flexible_config` to a string describing this
+parameter.
 
 Configure targets
 -----------------
@@ -132,8 +126,8 @@ As configure targets often serve as an internal interface to external
 export targets (e.g., in order to set a needed configuration), we
 support documentation here as well. As configure targets, being
 built-in, have a fixed set of fields, a `doc` field can be used
-for this purpose without conflicts. Again, the `doc` field is a
-list of strings describing the target in general.
+for this purpose without conflicts. Again, the `doc` field is a string
+describing the target in general.
 
 Presentation of the documentation
 ---------------------------------

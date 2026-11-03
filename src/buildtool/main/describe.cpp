@@ -156,38 +156,79 @@ class Style {
     return keys;
 }
 
-void PrintDoc(const nlohmann::json& doc, const std::string& indent) {
+/// \brief Normalize deprecated doc-string list-of-strings to single string.
+[[nodiscard]] auto NormalizeDoc(nlohmann::json const& doc) -> nlohmann::json {
     if (not doc.is_array()) {
+        return doc;
+    }
+    std::string joined{};
+    for (auto const& line : doc) {
+        if (line.is_string()) {
+            auto const& str = line.get_ref<std::string const&>();
+            joined += str;
+            if (str.empty() or str.back() != '\n') {
+                joined += '\n';
+            }
+        }
+    }
+    return joined;
+}
+
+/// \brief Normalize deprecated doc-string fields of a description.
+/// Supports only 'export'/'configure' targets, and rules (if `is_rule` is set).
+[[nodiscard]] auto NormalizeDocs(nlohmann::json const& desc,
+                                 bool is_rule) -> nlohmann::json {
+    if (not desc.is_object()) {
+        return desc;
+    }
+    auto result = desc;
+    auto const normalize = [&result](std::string const& key, bool is_map) {
+        auto doc = result.find(key);
+        if (doc == result.end()) {
+            return;
+        }
+        if (not is_map) {
+            *doc = NormalizeDoc(*doc);
+        }
+        else if (doc->is_object()) {
+            for (auto const& entry : doc->items()) {
+                entry.value() = NormalizeDoc(entry.value());
+            }
+        }
+    };
+    normalize("doc", /*is_map=*/false);
+    normalize("config_doc", /*is_map=*/true);
+    if (is_rule) {
+        normalize("field_doc", /*is_map=*/true);
+        normalize("artifacts_doc", /*is_map=*/false);
+        normalize("runfiles_doc", /*is_map=*/false);
+        normalize("provides_doc", /*is_map=*/true);
+    }
+    return result;
+}
+
+void PrintDoc(const nlohmann::json& doc, const std::string& indent) {
+    if (not doc.is_string()) {
         return;
     }
-    // Print a single line of documentation. Blank lines, which are used to
+    // Print the documentation line by line. Blank lines, which are used to
     // separate paragraphs, are printed without indentation, as to not leave
     // any trailing whitespace behind.
-    auto const print_line = [&indent](std::string_view line) {
+    auto const str = std::string_view{doc.get_ref<std::string const&>()};
+    std::size_t start{};
+    while (start < str.size()) {
+        auto end = str.find('\n', start);
+        if (end == std::string_view::npos) {
+            end = str.size();
+        }
+        auto const line = str.substr(start, end - start);
         if (line.find_first_not_of(" \t") == std::string_view::npos) {
             std::cout << "\n";
         }
         else {
             std::cout << indent << line << "\n";
         }
-    };
-    for (auto const& line : doc) {
-        if (line.is_string()) {
-            auto const& str = line.get<std::string>();
-            std::size_t start{};
-            auto end = str.find('\n', start);
-            while (end != std::string::npos) {
-                print_line(std::string_view{&str[start], end - start});
-                start = end + 1;
-                end = str.find('\n', start);
-            }
-            if (start < str.size()) {
-                print_line(std::string_view{&str[start], str.size() - start});
-            }
-            else if (str.empty()) {
-                print_line(std::string_view{});
-            }
-        }
+        start = end + 1;
     }
 }
 
@@ -542,7 +583,7 @@ auto DescribeUserDefinedRule(
         return kExitAnalysisFailure;
     }
     // only fields that can be evaluated statically are described
-    auto ruledesc = rule_desc->ToJson();
+    auto ruledesc = NormalizeDocs(rule_desc->ToJson(), /*is_rule=*/true);
     if (options.print_json) {
         PrintRuleAsOrderedJson(ruledesc, rule_name.ToJson());
         return kExitSuccess;
@@ -634,7 +675,8 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             // "type": "export", so we can just print the description
             PrintTargetHeader(style, id.target.ToString());
             PrintRuleHeader(style, QuoteEntity("export"), /*built_in=*/true);
-            PrintExportDescription(style, desc, options);
+            PrintExportDescription(
+                style, NormalizeDocs(desc, /*is_rule=*/false), options);
             std::cout << std::flush;
             return kExitSuccess;
         }
@@ -703,10 +745,11 @@ auto DescribeTarget(BuildMaps::Target::ConfiguredTarget const& id,
             style, QuoteEntity(rule_it->get<std::string>()), /*built_in=*/true);
         if (*rule_it == "export") {
             // export targets may have doc fields of their own.
-            PrintExportDescription(style, desc, options);
+            PrintExportDescription(
+                style, NormalizeDocs(desc, /*is_rule=*/false), options);
         }
         else if (*rule_it == "configure") {
-            PrintDescription(desc);
+            PrintDescription(NormalizeDocs(desc, /*is_rule=*/false));
             if (auto target = desc.find("target"); target != desc.end()) {
                 PrintSection(style, "CONFIGURED TARGET");
                 std::cout << kIndentEntry
