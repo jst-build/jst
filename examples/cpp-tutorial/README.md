@@ -807,7 +807,7 @@ local config_vars = // ...
 {
   helloworld: {
     type: 'export',
-    doc: ['Exported helloworld binary'],
+    doc: 'Exported helloworld binary',
     flexible_config: config_vars,
     config_doc: config_doc,
     target: @'//src:helloworld',
@@ -815,7 +815,7 @@ local config_vars = // ...
 
   libgreet: {
     type: 'export',
-    doc: ['Exported libgreet library'],
+    doc: 'Exported libgreet library',
     flexible_config: config_vars,
     config_doc: config_doc,
     target: @'//src:libgreet',
