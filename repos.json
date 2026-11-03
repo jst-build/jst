@@ -17,7 +17,7 @@
         "type": "git",
         "repository": "https://github.com/jst-build/rules-cc",
         "branch": "master",
-        "commit": "9279f494cf11696d4ad28ad33480e1edfafb92c2",
+        "commit": "32f24f98936735013cb07e490b4da4b8c3f81c0a",
         "subdir": "rules"
       }
     }
