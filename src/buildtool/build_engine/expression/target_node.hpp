@@ -74,7 +74,7 @@ class TargetNode {
             auto const& abs_r = other.GetAbstract();
             return abs_l.node_type == abs_r.node_type and
                    abs_l.string_fields == abs_r.string_fields and
-                   abs_l.target_fields == abs_r.string_fields;
+                   abs_l.target_fields == abs_r.target_fields;
         } catch (...) {
             // should never happen
             return false;
