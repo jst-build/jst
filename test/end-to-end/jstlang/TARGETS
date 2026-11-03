@@ -20,6 +20,13 @@
     deps: [@'//:tool-under-test'],
   },
 
+  bool_fields: {
+    type: @'rules//shell/test:script',
+    name: ['bool_fields'],
+    test: ['bool_fields.sh'],
+    deps: [@'//:tool-under-test'],
+  },
+
   conflict_report: {
     type: @'rules//shell/test:script',
     name: ['conflict_report'],
@@ -31,6 +38,7 @@
     type: @'rules//test:suite',
     stage: ['jstlang'],
     deps: [
+      'bool_fields',
       'conflict_report',
       'external_imports',
       'rules_evaluation',

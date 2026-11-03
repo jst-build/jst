@@ -27,6 +27,7 @@
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/build_engine/expression/function_map.hpp"
 #include "src/buildtool/build_engine/expression/linked_map.hpp"
+#include "src/buildtool/build_engine/expression/target_node.hpp"
 #include "src/buildtool/build_engine/expression/target_result.hpp"
 #include "src/buildtool/common/artifact_description.hpp"
 
@@ -2131,5 +2132,33 @@ TEST_CASE("Expression hash computation", "[expression]") {
                 CHECK_FALSE(l->ToHash() == r->ToHash());
             }
         }
+    }
+}
+
+TEST_CASE("Abstract target nodes", "[expression]") {
+    auto const node = [](ExpressionPtr bool_fields) {
+        return ExpressionPtr{TargetNode{TargetNode::Abstract{
+            .node_type = "type",
+            .bool_fields = std::move(bool_fields),
+            .string_fields = Expression::FromJson(R"({"s": ["x"]})"_json),
+            .target_fields = Expression::kEmptyMap}}};
+    };
+    auto const without = node(Expression::kEmptyMap);
+    auto const with = node(Expression::FromJson(R"({"b": true})"_json));
+
+    SECTION("bool fields are always serialized") {
+        CHECK(without->Node().ToJson() == R"(
+            { "type": "ABSTRACT_NODE"
+            , "node_type": "type"
+            , "bool_fields": {}
+            , "string_fields": {"s": ["x"]}
+            , "target_fields": {}
+            })"_json);
+    }
+
+    SECTION("bool fields are part of the identity") {
+        CHECK(with->Node().ToJson()["bool_fields"] == R"({"b": true})"_json);
+        CHECK_FALSE(with == without);
+        CHECK_FALSE(with->ToHash() == without->ToHash());
     }
 }

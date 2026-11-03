@@ -228,19 +228,24 @@ constructor function `jst.value_node(result)` takes a single argument
 #### Abstract nodes
 
 These represent internal nodes in the dag. Their constructor
-`jst.abstract_node(node_type, string_fields={}, target_fields={})`
-takes the following arguments.
+`jst.abstract_node(node_type, bool_fields={}, string_fields={},
+target_fields={})` takes the following arguments.
 
  - `node_type`. An arbitrary string, not interpreted in any way,
    to indicate the role that the node has in the dependency
    structure. When we create an anonymous target from a node, this
    will serve as the key into the rule mapping to be applied.
- - `string_fields`. This has to be a map of strings.
+ - `bool_fields`. This can be a map of arbitrary values, which are
+   reduced to their truth values.
+ - `string_fields`. This has to be a map of lists of strings.
  - `target_fields`. These have to be a map of lists of graph
    nodes.
 
 Moreover, we require that the keys for maps provided as
-`string_fields` and `target_fields` be disjoint.
+`bool_fields`, `string_fields`, and `target_fields` be disjoint. When an
+anonymous target is created from the node, the (config) bool fields of
+its rule are taken from `bool_fields`, the (config) string fields from
+`string_fields`, and the target fields from `target_fields`.
 
 ### Graph nodes in `export` targets
 
@@ -291,8 +296,9 @@ as default) is allowed. It is used to define an additional
 dependency on anonymous targets. The value has to be a map with
 keys the additional implicitly defined field names. It is hence
 a requirement that the set of keys be disjoint from all other
-field names (the values of `config_fields`, `string_fields`,
-and `target_fields`, as well as the keys of the `implicit`
+field names (the values of `bool_fields`, `string_fields`,
+`target_fields`, `config_bool_fields`, and `config_string_fields`, as
+well as the keys of the `implicit`
 parameter). Another consequence is that `config_transitions`
 map may now also have meaningful entries for the keys of the
 `anonymous` map. Each value in the map has to be itself a map,

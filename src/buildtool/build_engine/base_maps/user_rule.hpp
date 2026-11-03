@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,8 +75,10 @@ class UserRule {
 
     [[nodiscard]] static auto Create(
         std::vector<std::string> target_fields,
+        std::vector<std::string> bool_fields,
         std::vector<std::string> string_fields,
-        std::vector<std::string> config_fields,
+        std::vector<std::string> config_bool_fields,
+        std::vector<std::string> config_string_fields,
         implicit_t const& implicit_targets,
         anonymous_defs_t anonymous_defs,
         std::vector<std::string> const& config_vars,
@@ -101,13 +104,17 @@ class UserRule {
         std::sort(anonymous_fields.begin(), anonymous_fields.end());
 
         std::sort(target_fields.begin(), target_fields.end());
+        std::sort(bool_fields.begin(), bool_fields.end());
         std::sort(string_fields.begin(), string_fields.end());
-        std::sort(config_fields.begin(), config_fields.end());
+        std::sort(config_bool_fields.begin(), config_bool_fields.end());
+        std::sort(config_string_fields.begin(), config_string_fields.end());
 
         auto dups = GetDuplicates</*kTriangular=*/false>(kReservedKeywords,
                                                          target_fields,
+                                                         bool_fields,
                                                          string_fields,
-                                                         config_fields,
+                                                         config_bool_fields,
+                                                         config_string_fields,
                                                          implicit_fields,
                                                          anonymous_fields);
         if (not dups.empty()) {
@@ -119,8 +126,10 @@ class UserRule {
         }
 
         dups = GetDuplicates</*kTriangular=*/true>(target_fields,
+                                                   bool_fields,
                                                    string_fields,
-                                                   config_fields,
+                                                   config_bool_fields,
+                                                   config_string_fields,
                                                    implicit_fields,
                                                    anonymous_fields);
 
@@ -178,8 +187,10 @@ class UserRule {
 
         return std::make_shared<UserRule>(
             std::move(target_fields),
+            std::move(bool_fields),
             std::move(string_fields),
-            std::move(config_fields),
+            std::move(config_bool_fields),
+            std::move(config_string_fields),
             implicit_targets,
             std::move(implicit_target_exp),
             std::move(anonymous_defs),
@@ -190,8 +201,10 @@ class UserRule {
     }
 
     UserRule(std::vector<std::string> target_fields,
+             std::vector<std::string> bool_fields,
              std::vector<std::string> string_fields,
-             std::vector<std::string> config_fields,
+             std::vector<std::string> config_bool_fields,
+             std::vector<std::string> config_string_fields,
              implicit_t implicit_targets,
              implicit_exp_t implicit_target_exp,
              anonymous_defs_t anonymous_defs,
@@ -200,8 +213,10 @@ class UserRule {
              config_trans_t config_transitions,
              ExpressionFunctionPtr expr) noexcept
         : target_fields_{std::move(target_fields)},
+          bool_fields_{std::move(bool_fields)},
           string_fields_{std::move(string_fields)},
-          config_fields_{std::move(config_fields)},
+          config_bool_fields_{std::move(config_bool_fields)},
+          config_string_fields_{std::move(config_string_fields)},
           implicit_targets_{std::move(implicit_targets)},
           implicit_target_exp_{std::move(implicit_target_exp)},
           anonymous_defs_{std::move(anonymous_defs)},
@@ -219,6 +234,15 @@ class UserRule {
         return std::move(target_fields_);
     }
 
+    [[nodiscard]] auto BoolFields() const& noexcept
+        -> std::vector<std::string> const& {
+        return bool_fields_;
+    }
+
+    [[nodiscard]] auto BoolFields() && noexcept -> std::vector<std::string> {
+        return std::move(bool_fields_);
+    }
+
     [[nodiscard]] auto StringFields() const& noexcept
         -> std::vector<std::string> const& {
         return string_fields_;
@@ -228,13 +252,24 @@ class UserRule {
         return std::move(string_fields_);
     }
 
-    [[nodiscard]] auto ConfigFields() const& noexcept
+    [[nodiscard]] auto ConfigBoolFields() const& noexcept
         -> std::vector<std::string> const& {
-        return config_fields_;
+        return config_bool_fields_;
     }
 
-    [[nodiscard]] auto ConfigFields() && noexcept -> std::vector<std::string> {
-        return std::move(config_fields_);
+    [[nodiscard]] auto ConfigBoolFields() && noexcept
+        -> std::vector<std::string> {
+        return std::move(config_bool_fields_);
+    }
+
+    [[nodiscard]] auto ConfigStringFields() const& noexcept
+        -> std::vector<std::string> const& {
+        return config_string_fields_;
+    }
+
+    [[nodiscard]] auto ConfigStringFields() && noexcept
+        -> std::vector<std::string> {
+        return std::move(config_string_fields_);
     }
 
     [[nodiscard]] auto ImplicitTargets() const& noexcept -> implicit_t const& {
@@ -307,28 +342,28 @@ class UserRule {
         "tainted",
         "type"};
 
-    static auto ComputeExpectedEntries(std::vector<std::string> tfields,
-                                       std::vector<std::string> sfields,
-                                       std::vector<std::string> cfields)
+    static auto ComputeExpectedEntries(
+        std::vector<std::vector<std::string> const*> const& field_lists)
         -> std::unordered_set<std::string> {
-        std::size_t n = 0;
-        n += tfields.size();
-        n += sfields.size();
-        n += cfields.size();
-        n += kReservedKeywords.size();
+        std::size_t n = kReservedKeywords.size();
+        for (auto const* fields : field_lists) {
+            n += fields->size();
+        }
         std::unordered_set<std::string> expected_entries{};
         expected_entries.reserve(n);
-        expected_entries.insert(tfields.begin(), tfields.end());
-        expected_entries.insert(sfields.begin(), sfields.end());
-        expected_entries.insert(cfields.begin(), cfields.end());
+        for (auto const* fields : field_lists) {
+            expected_entries.insert(fields->begin(), fields->end());
+        }
         expected_entries.insert(kReservedKeywords.begin(),
                                 kReservedKeywords.end());
         return expected_entries;
     }
 
     std::vector<std::string> target_fields_;
+    std::vector<std::string> bool_fields_;
     std::vector<std::string> string_fields_;
-    std::vector<std::string> config_fields_;
+    std::vector<std::string> config_bool_fields_;
+    std::vector<std::string> config_string_fields_;
     implicit_t implicit_targets_;
     implicit_exp_t implicit_target_exp_;
     anonymous_defs_t anonymous_defs_;
@@ -337,7 +372,11 @@ class UserRule {
     config_trans_t config_transitions_;
     ExpressionFunctionPtr expr_;
     std::unordered_set<std::string> expected_entries_{
-        ComputeExpectedEntries(target_fields_, string_fields_, config_fields_)};
+        ComputeExpectedEntries({&target_fields_,
+                                &bool_fields_,
+                                &string_fields_,
+                                &config_bool_fields_,
+                                &config_string_fields_})};
 };
 
 using UserRulePtr = UserRule::Ptr;

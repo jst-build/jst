@@ -350,6 +350,7 @@ auto const kBuiltinFunctions = std::unordered_map<std::string,
     {"value_node", BuiltIn::value_node},        // value_node(result=<any>)
     {"abstract_node", BuiltIn::abstract_node},  // abstract_node(
                                                 //   node_type=<string>,
+                                                //   bool_fields=<map>,
                                                 //   string_fields=<map>,
                                                 //   target_fields=<map>)
 };

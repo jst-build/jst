@@ -138,7 +138,7 @@ auto ASTToJsonVisitor::operator()(BuiltinCallNode const* node) const
             {"value_node", {"VALUE_NODE", {"$1"}}},
             {"abstract_node",
              {"ABSTRACT_NODE",
-              {"node_type", "string_fields", "target_fields"}}},
+              {"node_type", "bool_fields", "string_fields", "target_fields"}}},
         };
     static auto const kEmptyMapNode =
         std::make_shared<MapNode>(Location{}, MapNode::fields_t{});

@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ auto TargetNode::ToJson() const -> nlohmann::json {
     auto const& data = GetAbstract();
     return {{"type", "ABSTRACT_NODE"},
             {"node_type", data.node_type},
+            {"bool_fields", data.bool_fields->ToJson()},
             {"string_fields", data.string_fields->ToJson()},
             {"target_fields",
              data.target_fields->ToJson(

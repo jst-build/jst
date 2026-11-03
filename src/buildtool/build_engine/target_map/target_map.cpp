@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,20 +114,26 @@ struct TargetData {
     using field_exprs_t = std::unordered_map<std::string, FieldExpression>;
 
     std::vector<std::string> target_vars;
-    field_exprs_t config_exprs;
+    field_exprs_t config_bool_exprs;
+    field_exprs_t config_string_exprs;
+    field_exprs_t bool_exprs;
     field_exprs_t string_exprs;
     field_exprs_t target_exprs;
     FieldExpression tainted_expr;
     bool parse_target_names{};
 
     TargetData(std::vector<std::string> target_vars,
-               field_exprs_t config_exprs,
+               field_exprs_t config_bool_exprs,
+               field_exprs_t config_string_exprs,
+               field_exprs_t bool_exprs,
                field_exprs_t string_exprs,
                field_exprs_t target_exprs,
                FieldExpression tainted_expr,
                bool parse_target_names)
         : target_vars{std::move(target_vars)},
-          config_exprs{std::move(config_exprs)},
+          config_bool_exprs{std::move(config_bool_exprs)},
+          config_string_exprs{std::move(config_string_exprs)},
+          bool_exprs{std::move(bool_exprs)},
           string_exprs{std::move(string_exprs)},
           target_exprs{std::move(target_exprs)},
           tainted_expr{std::move(tainted_expr)},
@@ -155,15 +162,22 @@ struct TargetData {
             return true;
         };
 
-        field_exprs_t config_exprs;
+        field_exprs_t config_bool_exprs;
+        field_exprs_t config_string_exprs;
+        field_exprs_t bool_exprs;
         field_exprs_t string_exprs;
         field_exprs_t target_exprs;
         if (target_vars and tainted_expr and
-            convert_to_exprs(&config_exprs, rule->ConfigFields()) and
+            convert_to_exprs(&config_bool_exprs, rule->ConfigBoolFields()) and
+            convert_to_exprs(&config_string_exprs,
+                             rule->ConfigStringFields()) and
+            convert_to_exprs(&bool_exprs, rule->BoolFields()) and
             convert_to_exprs(&string_exprs, rule->StringFields()) and
             convert_to_exprs(&target_exprs, rule->TargetFields())) {
             return std::make_shared<TargetData>(std::move(*target_vars),
-                                                std::move(config_exprs),
+                                                std::move(config_bool_exprs),
+                                                std::move(config_string_exprs),
+                                                std::move(bool_exprs),
                                                 std::move(string_exprs),
                                                 std::move(target_exprs),
                                                 std::move(tainted_expr),
@@ -179,38 +193,89 @@ struct TargetData {
         gsl::not_null<AsyncMapConsumerLoggerPtr> const& logger)
         -> TargetData::Ptr {
 
+        auto const& bool_fields = node.bool_fields->Map();
         auto const& string_fields = node.string_fields->Map();
         auto const& target_fields = node.target_fields->Map();
 
-        field_exprs_t config_exprs;
+        field_exprs_t config_bool_exprs;
+        field_exprs_t config_string_exprs;
+        field_exprs_t bool_exprs;
         field_exprs_t string_exprs;
         field_exprs_t target_exprs;
 
-        for (auto const& field_name : rule->ConfigFields()) {
-            if (target_fields.Find(field_name)) {
-                (*logger)(
-                    fmt::format(
-                        "Expected config field '{}' in string_fields of "
-                        "abstract node type '{}', and not in target_fields",
-                        field_name,
-                        node.node_type),
-                    /*fatal=*/true);
+        // Check that a field of the rule is not given in a map of the abstract
+        // node other than the expected one
+        auto const in_other_maps =
+            [&logger, &node](
+                std::string const& field_name,
+                std::string const& kind,
+                std::string const& expected,
+                std::vector<
+                    std::pair<std::string, Expression::map_t const*>> const&
+                    others) -> bool {
+            auto const other =
+                std::ranges::find_if(others, [&field_name](auto const& entry) {
+                    return entry.second->Find(field_name).has_value();
+                });
+            if (other == others.end()) {
+                return false;
+            }
+            (*logger)(fmt::format("Expected {} field '{}' in {} of abstract "
+                                  "node type '{}', and not in {}",
+                                  kind,
+                                  field_name,
+                                  expected,
+                                  node.node_type,
+                                  other->first),
+                      /*fatal=*/true);
+            return true;
+        };
+
+        for (auto const& field_name : rule->ConfigBoolFields()) {
+            if (in_other_maps(field_name,
+                              "config bool",
+                              "bool_fields",
+                              {{"string_fields", &string_fields},
+                               {"target_fields", &target_fields}})) {
+                return nullptr;
+            }
+            auto const& config_expr =
+                *(bool_fields.Find(field_name).value_or(&Expression::kFalse));
+            config_bool_exprs.emplace(field_name, config_expr);
+        }
+
+        for (auto const& field_name : rule->ConfigStringFields()) {
+            if (in_other_maps(field_name,
+                              "config string",
+                              "string_fields",
+                              {{"bool_fields", &bool_fields},
+                               {"target_fields", &target_fields}})) {
                 return nullptr;
             }
             auto const& config_expr = *(string_fields.Find(field_name)
                                             .value_or(&Expression::kEmptyList));
-            config_exprs.emplace(field_name, config_expr);
+            config_string_exprs.emplace(field_name, config_expr);
+        }
+
+        for (auto const& field_name : rule->BoolFields()) {
+            if (in_other_maps(field_name,
+                              "bool",
+                              "bool_fields",
+                              {{"string_fields", &string_fields},
+                               {"target_fields", &target_fields}})) {
+                return nullptr;
+            }
+            auto const& bool_expr =
+                *(bool_fields.Find(field_name).value_or(&Expression::kFalse));
+            bool_exprs.emplace(field_name, bool_expr);
         }
 
         for (auto const& field_name : rule->StringFields()) {
-            if (target_fields.Find(field_name)) {
-                (*logger)(
-                    fmt::format(
-                        "Expected string field '{}' in string_fields of "
-                        "abstract node type '{}', and not in target_fields",
-                        field_name,
-                        node.node_type),
-                    /*fatal=*/true);
+            if (in_other_maps(field_name,
+                              "string",
+                              "string_fields",
+                              {{"bool_fields", &bool_fields},
+                               {"target_fields", &target_fields}})) {
                 return nullptr;
             }
             auto const& string_expr = *(string_fields.Find(field_name)
@@ -219,14 +284,11 @@ struct TargetData {
         }
 
         for (auto const& field_name : rule->TargetFields()) {
-            if (string_fields.Find(field_name)) {
-                (*logger)(
-                    fmt::format(
-                        "Expected target field '{}' in target_fields of "
-                        "abstract node type '{}', and not in string_fields",
-                        field_name,
-                        node.node_type),
-                    /*fatal=*/true);
+            if (in_other_maps(field_name,
+                              "target",
+                              "target_fields",
+                              {{"bool_fields", &bool_fields},
+                               {"string_fields", &string_fields}})) {
                 return nullptr;
             }
             auto const& target_expr = *(target_fields.Find(field_name)
@@ -243,7 +305,9 @@ struct TargetData {
         }
 
         return std::make_shared<TargetData>(std::vector<std::string>{},
-                                            std::move(config_exprs),
+                                            std::move(config_bool_exprs),
+                                            std::move(config_string_exprs),
+                                            std::move(bool_exprs),
                                             std::move(string_exprs),
                                             std::move(target_exprs),
                                             Expression::kEmptyList,
@@ -486,7 +550,26 @@ void withDependencies(
                          ->RunFiles());
              }}});
     auto param_config = key.config.Prune(param_vars);
-    params.reserve(params.size() + rule->StringFields().size());
+    params.reserve(params.size() + rule->BoolFields().size() +
+                   rule->StringFields().size());
+    for (auto const& field_name : rule->BoolFields()) {
+        auto const& field_exp = data->bool_exprs[field_name];
+        auto field_value = field_exp.Evaluate(
+            param_config,
+            string_fields_fcts,
+            [&logger, &field_name](auto const& msg) {
+                (*logger)(
+                    fmt::format(
+                        "While evaluating bool field {}:\n{}", field_name, msg),
+                    true);
+            });
+        if (not field_value) {
+            return;
+        }
+        params.emplace(field_name,
+                       Evaluator::IsTrue(field_value) ? Expression::kTrue
+                                                      : Expression::kFalse);
+    }
     for (auto const& field_name : rule->StringFields()) {
         auto const& field_exp = data->string_exprs[field_name];
         auto field_value = field_exp.Evaluate(
@@ -939,6 +1022,12 @@ void withDependencies(
                   throw Evaluator::EvaluationError{
                       "argument 'node_type' for ABSTRACT_NODE not a string."};
               }
+              auto bool_fields = eval(
+                  expr->Get("bool_fields", Expression::kEmptyMapExpr), env);
+              if (not bool_fields->IsMap()) {
+                  throw Evaluator::EvaluationError{
+                      "argument 'bool_fields' for ABSTRACT_NODE not a map."};
+              }
               auto string_fields = eval(
                   expr->Get("string_fields", Expression::kEmptyMapExpr), env);
               if (not string_fields->IsMap()) {
@@ -950,6 +1039,21 @@ void withDependencies(
               if (not target_fields->IsMap()) {
                   throw Evaluator::EvaluationError{
                       "argument 'target_fields' for ABSTRACT_NODE not a map."};
+              }
+
+              // bool fields are normalized to their truth values
+              auto bools = Expression::map_t::underlying_map_t{};
+              for (auto const& [key, value] : bool_fields->Map()) {
+                  if (string_fields->Map().Find(key) or
+                      target_fields->Map().Find(key)) {
+                      throw Evaluator::EvaluationError{fmt::format(
+                          "bool_fields, string_fields, and target_fields are "
+                          "not disjoint maps, found duplicate key: {}.",
+                          key)};
+                  }
+                  bools.emplace(key,
+                                Evaluator::IsTrue(value) ? Expression::kTrue
+                                                         : Expression::kFalse);
               }
 
               std::optional<std::string> dup_key{std::nullopt};
@@ -1005,8 +1109,11 @@ void withDependencies(
               check_entries(
                   target_fields, is_node, "target_fields", "target node");
 
+              auto bool_map =
+                  ExpressionPtr{Expression::map_t{std::move(bools)}};
               return ExpressionPtr{TargetNode{TargetNode::Abstract{
                   .node_type = type->String(),
+                  .bool_fields = std::move(bool_map),
                   .string_fields = std::move(string_fields),
                   .target_fields = std::move(target_fields)}}};
           }},
@@ -1163,16 +1270,35 @@ void withRuleDefinition(
     const gsl::not_null<BuildMaps::Target::ResultTargetMap*> result_map) {
     auto param_config = key.config.Prune(data->target_vars);
 
-    // Evaluate the config_fields
+    // Evaluate the config fields
 
     std::unordered_map<std::string, ExpressionPtr> params;
-    params.reserve(rule->ConfigFields().size() + rule->TargetFields().size() +
-                   rule->ImplicitTargetExps().size());
-    for (auto const& field_name : rule->ConfigFields()) {
-        auto const& field_expression = data->config_exprs[field_name];
+    params.reserve(
+        rule->ConfigBoolFields().size() + rule->ConfigStringFields().size() +
+        rule->TargetFields().size() + rule->ImplicitTargetExps().size());
+    for (auto const& field_name : rule->ConfigBoolFields()) {
+        auto const& field_expression = data->config_bool_exprs[field_name];
         auto field_value = field_expression.Evaluate(
             param_config, {}, [&logger, &field_name](auto const& msg) {
-                (*logger)(fmt::format("While evaluating config field {}:\n{}",
+                (*logger)(
+                    fmt::format("While evaluating config bool field {}:\n{}",
+                                field_name,
+                                msg),
+                    true);
+            });
+        if (not field_value) {
+            return;
+        }
+        params.emplace(field_name,
+                       Evaluator::IsTrue(field_value) ? Expression::kTrue
+                                                      : Expression::kFalse);
+    }
+    for (auto const& field_name : rule->ConfigStringFields()) {
+        auto const& field_expression = data->config_string_exprs[field_name];
+        auto field_value = field_expression.Evaluate(
+            param_config, {}, [&logger, &field_name](auto const& msg) {
+                (*logger)(fmt::format("While evaluating config string field "
+                                      "{}:\n{}",
                                       field_name,
                                       msg),
                           true);
@@ -1181,8 +1307,8 @@ void withRuleDefinition(
             return;
         }
         if (not field_value->IsList()) {
-            (*logger)(fmt::format("Config field {} should evaluate to a list "
-                                  "of strings, but got{}",
+            (*logger)(fmt::format("Config string field {} should evaluate to a "
+                                  "list of strings, but got {}",
                                   field_name,
                                   field_value->ToString()),
                       true);
@@ -1190,8 +1316,8 @@ void withRuleDefinition(
         }
         for (auto const& entry : field_value->List()) {
             if (not entry->IsString()) {
-                (*logger)(fmt::format("Config field {} should evaluate to a "
-                                      "list of strings, but got{}",
+                (*logger)(fmt::format("Config string field {} should evaluate "
+                                      "to a list of strings, but got {}",
                                       field_name,
                                       field_value->ToString()),
                           true);

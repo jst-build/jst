@@ -2254,6 +2254,8 @@ auto BuiltIn::abstract_node(Location const& loc,
         ExpectedParameter{
             "node_type", {ValueType::Any, ValueType::String}, true},
         ExpectedParameter{
+            "bool_fields", {ValueType::Any, ValueType::Map}, false},
+        ExpectedParameter{
             "string_fields", {ValueType::Any, ValueType::Map}, false},
         ExpectedParameter{
             "target_fields", {ValueType::Any, ValueType::Map}, false},

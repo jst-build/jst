@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -128,6 +129,12 @@ auto SerializeTargetResultWithReplacement(
             }
             else {
                 auto const& data = node.GetAbstract();
+                auto bool_fields = SerializeExpression(nodes,
+                                                       provided_artifacts,
+                                                       provided_nodes,
+                                                       provided_results,
+                                                       data.bool_fields,
+                                                       replacements);
                 auto string_fields = SerializeExpression(nodes,
                                                          provided_artifacts,
                                                          provided_nodes,
@@ -142,6 +149,7 @@ auto SerializeTargetResultWithReplacement(
                                                          replacements);
                 json = nlohmann::json{{"type", "ABSTRACT_NODE"},
                                       {"node_type", data.node_type},
+                                      {"bool_fields", bool_fields},
                                       {"string_fields", string_fields},
                                       {"target_fields", target_fields}};
             }
@@ -223,6 +231,15 @@ auto SerializeTargetResultWithReplacement(
                                           provided_nodes,
                                           provided_results,
                                           sofar);
+                // entries written before bool fields existed lack the key;
+                // at() throws for them, so they are treated as unreadable
+                auto bool_fields = DeserializeExpression(hash_type,
+                                                         json.at("bool_fields"),
+                                                         nodes,
+                                                         provided_artifacts,
+                                                         provided_nodes,
+                                                         provided_results,
+                                                         sofar);
                 auto string_fields =
                     DeserializeExpression(hash_type,
                                           json["string_fields"],
@@ -233,6 +250,7 @@ auto SerializeTargetResultWithReplacement(
                                           sofar);
                 auto result = ExpressionPtr{TargetNode{
                     TargetNode::Abstract{.node_type = node_type,
+                                         .bool_fields = bool_fields,
                                          .string_fields = string_fields,
                                          .target_fields = target_fields}}};
                 sofar->emplace(id, result);

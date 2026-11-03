@@ -38,8 +38,11 @@ namespace {
 
 auto const kRuleFields = std::unordered_set<std::string>{"anonymous",
                                                          "artifacts_doc",
+                                                         "bool_fields",
+                                                         "config_bool_fields",
                                                          "config_doc",
                                                          "config_fields",
+                                                         "config_string_fields",
                                                          "config_transitions",
                                                          "config_vars",
                                                          "doc",
@@ -251,6 +254,26 @@ auto const kRuleFields = std::unordered_set<std::string>{"anonymous",
     return json;
 }
 
+/// \brief Read the config string fields of a rule, which may also be given by
+/// the deprecated field name "config_fields".
+[[nodiscard]] auto ReadConfigStringFields(
+    EntityDefinition const& desc,
+    FieldReader const& reader,
+    AsyncMapConsumerLoggerPtr const& logger)
+    -> std::optional<std::vector<std::string>> {
+    if (not desc.Contains("config_fields")) {
+        return reader.ReadStringList("config_string_fields");
+    }
+    if (desc.Contains("config_string_fields")) {
+        (*logger)(
+            "Only one of config_string_fields and config_fields (deprecated) "
+            "can be specified",
+            true);
+        return std::nullopt;
+    }
+    return reader.ReadStringList("config_fields");
+}
+
 }  // namespace
 
 auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
@@ -310,13 +333,25 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
                     return;
                 }
 
+                auto bool_fields = reader->ReadStringList("bool_fields");
+                if (not bool_fields) {
+                    return;
+                }
+
                 auto string_fields = reader->ReadStringList("string_fields");
                 if (not string_fields) {
                     return;
                 }
 
-                auto config_fields = reader->ReadStringList("config_fields");
-                if (not config_fields) {
+                auto config_bool_fields =
+                    reader->ReadStringList("config_bool_fields");
+                if (not config_bool_fields) {
+                    return;
+                }
+
+                auto config_string_fields =
+                    ReadConfigStringFields(*desc, *reader, logger);
+                if (not config_string_fields) {
                     return;
                 }
 
@@ -356,8 +391,10 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
                      reader = *std::move(reader),
                      expr = std::move(expr),
                      target_fields = std::move(*target_fields),
+                     bool_fields = std::move(*bool_fields),
                      string_fields = std::move(*string_fields),
-                     config_fields = std::move(*config_fields),
+                     config_bool_fields = std::move(*config_bool_fields),
+                     config_string_fields = std::move(*config_string_fields),
                      implicit_targets = std::move(*implicit_targets),
                      anonymous_defs = std::move(*anonymous_defs),
                      config_vars = std::move(*config_vars),
@@ -379,8 +416,10 @@ auto CreateRuleMap(gsl::not_null<RuleFileMap*> const& rule_file_map,
 
                         auto rule = UserRule::Create(
                             target_fields,
+                            bool_fields,
                             string_fields,
-                            config_fields,
+                            config_bool_fields,
+                            config_string_fields,
                             implicit_targets,
                             anonymous_defs,
                             config_vars,

@@ -123,6 +123,16 @@
   etc.) are now given as a single string, which is convenient for multi-line
   strings. Lists of strings are still accepted for backward compatibility, but
   are deprecated.
+- Rules can declare `bool_fields` and `config_bool_fields`, whose values are
+  reduced to their truth values; `jst.field` returns `true` or `false` for
+  them. Config fields holding lists of strings are now declared as
+  `config_string_fields`. Accordingly, abstract nodes of anonymous targets
+  accept `bool_fields`, and `jst describe` reports the new kinds of fields.
+- The C/C++ rules shipped with `jst` declare their flags as bool fields: the
+  fields `pure C`, `configure`, `resolve_symlinks`, `flat-libs`, `hdrs-only`,
+  `skip-debug-stage`, and `service`, as well as the config field `shared`.
+  Existing target definitions keep working, as only the truth value of the given
+  value is relevant.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the

@@ -1446,6 +1446,10 @@ auto Evaluator::EvaluationError::WhileEval(const std::string& where,
     return EvaluationError{ss.str(), true, false, ex.InvolvedObjects()};
 }
 
+auto Evaluator::IsTrue(ExpressionPtr const& value) -> bool {
+    return ValueIsTrue(value);
+}
+
 auto Evaluator::EvaluateExpression(
     ExpressionPtr const& expr,
     Configuration const& env,

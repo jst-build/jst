@@ -345,6 +345,16 @@ void PrintNamedSection(Style const& style,
     return nlohmann::json::array();
 }
 
+/// \brief The config string fields of a rule description, which may also be
+/// given by the deprecated field name "config_fields".
+[[nodiscard]] auto GetConfigStringFields(nlohmann::json const& rdesc)
+    -> nlohmann::json {
+    if (rdesc.contains("config_string_fields")) {
+        return GetArray(rdesc, "config_string_fields");
+    }
+    return GetArray(rdesc, "config_fields");
+}
+
 /// \brief Print the description of an export target, which is used for targets
 /// with present as well as with absent roots and hence has to be identical for
 /// both.
@@ -372,6 +382,11 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
     PrintNamedSection(style,
                       "STRING FIELDS",
                       GetArray(rdesc, "string_fields"),
+                      field_doc,
+                      options);
+    PrintNamedSection(style,
+                      "BOOL FIELDS",
+                      GetArray(rdesc, "bool_fields"),
                       field_doc,
                       options);
     PrintNamedSection(style,
@@ -418,8 +433,13 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
     }
 
     PrintNamedSection(style,
-                      "CONFIG FIELDS",
-                      GetArray(rdesc, "config_fields"),
+                      "CONFIG BOOL FIELDS",
+                      GetArray(rdesc, "config_bool_fields"),
+                      field_doc,
+                      options);
+    PrintNamedSection(style,
+                      "CONFIG STRING FIELDS",
+                      GetConfigStringFields(rdesc),
                       field_doc,
                       options);
     PrintNamedSection(style,
@@ -464,30 +484,24 @@ void PrettyPrintRule(nlohmann::json const& rdesc,
 
 void PrintRuleAsOrderedJson(nlohmann::json const& rdesc,
                             nlohmann::json const& rule_name) {
-    auto string_fields = nlohmann::json::array();
-    if (auto doc = rdesc.find("string_fields"); doc != rdesc.end()) {
-        string_fields = *doc;
-    }
-    auto target_fields = nlohmann::json::array();
-    if (auto doc = rdesc.find("target_fields"); doc != rdesc.end()) {
-        target_fields = *doc;
-    }
-    auto config_fields = nlohmann::json::array();
-    if (auto doc = rdesc.find("config_fields"); doc != rdesc.end()) {
-        config_fields = *doc;
-    }
-    auto config_vars = nlohmann::json::array();
-    if (auto doc = rdesc.find("config_vars"); doc != rdesc.end()) {
-        config_vars = *doc;
-    }
+    auto const bool_fields = GetArray(rdesc, "bool_fields");
+    auto const string_fields = GetArray(rdesc, "string_fields");
+    auto const target_fields = GetArray(rdesc, "target_fields");
+    auto const config_bool_fields = GetArray(rdesc, "config_bool_fields");
+    auto const config_string_fields = GetConfigStringFields(rdesc);
+    auto const config_vars = GetArray(rdesc, "config_vars");
 
     auto field_doc = nlohmann::ordered_json::object();
     if (auto doc = rdesc.find("field_doc");
         doc != rdesc.end() and doc->is_object()) {
         auto fields = nlohmann::json::array();
-        fields.insert(fields.end(), string_fields.begin(), string_fields.end());
-        fields.insert(fields.end(), target_fields.begin(), target_fields.end());
-        fields.insert(fields.end(), config_fields.begin(), config_fields.end());
+        for (auto const* field_list : {&string_fields,
+                                       &bool_fields,
+                                       &target_fields,
+                                       &config_string_fields,
+                                       &config_bool_fields}) {
+            fields.insert(fields.end(), field_list->begin(), field_list->end());
+        }
         for (auto const& field : fields) {
             if (doc->contains(field)) {
                 auto name = field.get<std::string>();
@@ -512,14 +526,20 @@ void PrintRuleAsOrderedJson(nlohmann::json const& rdesc,
     if (auto doc = rdesc.find("doc"); doc != rdesc.end()) {
         json_doc["doc"] = *doc;
     }
+    if (not bool_fields.empty()) {
+        json_doc["bool_fields"] = bool_fields;
+    }
     if (not string_fields.empty()) {
         json_doc["string_fields"] = string_fields;
     }
     if (not target_fields.empty()) {
         json_doc["target_fields"] = target_fields;
     }
-    if (not config_fields.empty()) {
-        json_doc["config_fields"] = config_fields;
+    if (not config_bool_fields.empty()) {
+        json_doc["config_bool_fields"] = config_bool_fields;
+    }
+    if (not config_string_fields.empty()) {
+        json_doc["config_string_fields"] = config_string_fields;
     }
     if (not field_doc.empty()) {
         json_doc["field_doc"] = field_doc;

@@ -52,25 +52,27 @@ for every target defined by that rule, in the target's configuration.
 All other values are evaluated once, when the rules file is read;
 therefore, they must not depend on the configuration.
 
-### `config_fields`, `string_fields` and `target_fields`
+### `bool_fields`, `string_fields`, `target_fields`, `config_bool_fields`, and `config_string_fields`
 
 These keys specify the fields that a target defined by that rule can
 have. In particular, those have to be disjoint lists of strings.
 
-For `config_fields` and `string_fields` the respective field has to
-evaluate to a list of strings, whereas `target_fields` have to
-evaluate to a list of target references. Those references are evaluated
-immediately, and in the name context of the target they occur in.
+A bool field can be set to any value, which is reduced to its truth
+value; so the rule obtains `true` or `false` via `jst.field`, with
+`false` if the field is not set. A string field has to evaluate to a
+list of strings, whereas `target_fields` have to evaluate to a list of
+target references. Those references are evaluated immediately, and in
+the name context of the target they occur in.
 
-The difference between `config_fields` and `string_fields` is that
-`config_fields` are evaluated before the target fields and hence can
-be used by the rule to specify config transitions for the target fields.
-`string_fields` on the other hand are evaluated *after*
-the target fields; hence the rule cannot use them to specify a
-configuration transition, however the target definition in those fields
-may use the `outs` and `runfiles` functions to have access to the
-names of the artifacts or runfiles of a target specified in one of the
-target fields.
+The config fields (`config_bool_fields` and `config_string_fields`) are
+evaluated like bool and string fields, respectively, but before the
+target fields; hence they can be used by the rule to specify config
+transitions for the target fields. `bool_fields` and `string_fields` on
+the other hand are evaluated *after* the target fields; hence the rule
+cannot use them to specify a configuration transition, however the
+target definition in those fields may use the `outs` and `runfiles`
+functions to have access to the names of the artifacts or runfiles of a
+target specified in one of the target fields.
 
 ### `implicit`
 
@@ -96,7 +98,7 @@ This key specifies a map of (some of) the target fields (whether
 declared as `target_fields` or as `implicit`) to a list of
 configuration transitions. Each transition is a map that amends the
 current configuration on the domain of that map to the given value. The
-transitions have access to the `config_vars` and the `config_fields`
+transitions have access to the `config_vars` and the config fields
 (via `jst.field`).
 
 ### `expression`
@@ -253,13 +255,13 @@ rule. Abstract names of targets are obtained from `jst.field` only.
    jst.value_node(jst.result(artifacts={'a.proto': jst.make_blob('...')}))
    ```
 
- - `jst.abstract_node(node_type, string_fields={}, target_fields={})` An
-   internal graph node, to be used for
-   [anonymous targets](anonymous-targets.md). The `node_type` is the key
-   into the rule map of the anonymous target; `string_fields` maps field
-   names to lists of strings and `target_fields` maps field names to
-   lists of nodes. The keys of `string_fields` and `target_fields` have
-   to be disjoint.
+ - `jst.abstract_node(node_type, bool_fields={}, string_fields={},
+   target_fields={})` An internal graph node, to be used for [anonymous
+   targets](anonymous-targets.md). The `node_type` is the key into the rule map
+   of the anonymous target; `bool_fields` maps field name to values (reduced to
+   bools), `string_fields` maps field names to lists of strings, and
+   `target_fields` maps field names to lists of nodes. The keys of
+   `bool_fields`, `string_fields`, and `target_fields` have to be disjoint.
 
    ``` jsonnet
    jst.abstract_node(

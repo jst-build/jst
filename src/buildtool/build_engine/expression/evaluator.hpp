@@ -112,6 +112,10 @@ class Evaluator {
         std::function<void(void)> const& note_user_context =
             []() {}) noexcept -> ExpressionPtr;
 
+    /// \brief The truth value of an (evaluated) expression, as used by
+    /// conditionals.
+    [[nodiscard]] static auto IsTrue(ExpressionPtr const& value) -> bool;
+
     constexpr static std::size_t kDefaultExpressionLogLimit = 320;
 
   private:

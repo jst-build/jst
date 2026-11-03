@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +29,7 @@ class TargetNode {
   public:
     struct Abstract {
         std::string node_type;        // arbitrary string that maps to rule
+        ExpressionPtr bool_fields;    // map to bool
         ExpressionPtr string_fields;  // map to list of strings
         ExpressionPtr target_fields;  // map to list of targets
         [[nodiscard]] auto IsCacheable() const noexcept -> bool;
@@ -73,6 +75,7 @@ class TargetNode {
             auto const& abs_l = GetAbstract();
             auto const& abs_r = other.GetAbstract();
             return abs_l.node_type == abs_r.node_type and
+                   abs_l.bool_fields == abs_r.bool_fields and
                    abs_l.string_fields == abs_r.string_fields and
                    abs_l.target_fields == abs_r.target_fields;
         } catch (...) {
