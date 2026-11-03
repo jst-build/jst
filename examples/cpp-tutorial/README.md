@@ -674,8 +674,7 @@ Now the `libgreet` target can access the top-level target `fmt` from
     type: @'rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
-    shared:
-      if $BUILD_SHARED then ['yes'],
+    shared: $BUILD_SHARED,
     'private-cflags':
       if $USE_FMTLIB then ['-DUSE_FMTLIB'],
     'private-deps':

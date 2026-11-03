@@ -83,7 +83,7 @@ local config_vars = [opt[0] for opt in options];
   // (useful for local development or static analysis of the local IDE)
   DEV: {
     type: @'rules//CC:install-with-deps',
-    'hdrs-only': ['yes'],
+    'hdrs-only': true,
     targets: [
       @'fmtlib//:fmt',
       @'gtest//:gtest_main',
