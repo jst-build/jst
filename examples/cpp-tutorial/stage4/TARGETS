@@ -1,24 +1,26 @@
 // Variables supported by this project (with documentation)
-local config_doc = {
+local options = [
   // Variables used to parameterize the system toolchain,
   // see https://github.com/jst-build/toolchains-cc/blob/system/README.md#general-configuration
-  DEBUG: ['Build in debug mode (default: false)'],
-  ARCH: ['General architecture for build (default: "x86_64")'],
-  HOST_ARCH: ['Host architecture for build (default: ARCH)'],
-  TARGET_ARCH: ['Target architecture for build (default: ARCH)'],
-  TOOLCHAIN_CONFIG: [|||
+  ['DEBUG', ['Build in debug mode (default: false)']],
+  ['ARCH', ['General architecture for build (default: "x86_64")']],
+  ['HOST_ARCH', ['Host architecture for build (default: ARCH)']],
+  ['TARGET_ARCH', ['Target architecture for build (default: ARCH)']],
+  ['TOOLCHAIN_CONFIG', [|||
     Toolchain configuration map (default: {"FAMILY":"generic"}).
         Set key "FAMILY" to either "gnu", "clang", or "generic"
-  |||],
+  |||]],
 
   // Variables used by this project
-  USE_FMTLIB: ['Use fmtlib for string format (default: false)'],
-  BUILD_SHARED: ['Build shared libraries (default: false)'],
-};
+  ['USE_FMTLIB', ['Use fmtlib for string format (default: false)']],
+  ['BUILD_SHARED', ['Build shared libraries (default: false)']],
+];
 
-// Create variable list from config_doc map
-local config_vars = jst.keys(config_doc);
+// Create configuration documentation map from options list
+local config_doc = {[opt[0]]: opt[1] for opt in options};
 
+// Create variable list from options list (in order)
+local config_vars = [opt[0] for opt in options];
 
 // Public targets of this project (typically 'export' or 'install' targets).
 // When importing projects, ensure to only use their public (exported) targets!

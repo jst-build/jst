@@ -801,6 +801,9 @@ to keep the action graph small for large-scale projects.
 Please see the top-level `TARGETS` file.
 
 ``` jsonnet
+local config_doc = // ...
+local config_vars = // ...
+
 {
   helloworld: {
     type: 'export',
@@ -825,8 +828,8 @@ Export targets use the [built-in rule `export`](../../doc/concepts/built-in-rule
 to restrict the configuration variables to those specified in the field
 `flexible_config` before evaluating the target specified in the field `target`.
 Both export targets support the same configuration variables and documentation.
-Hence, those were defined in common local variables `config_vars` and
-`config_doc`. Finally, both export targets evaluate their respective targets
+Hence, those were defined in common local variables `config_doc` and
+`config_vars`. Finally, both export targets evaluate their respective targets
 `helloworld` and `libgreet` in submodule `src`.
 
 > Note: If an export target is declared, it should be used to replace all

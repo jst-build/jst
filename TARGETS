@@ -1,20 +1,20 @@
 // Options supported by this project
-local options_doc = {
-  OS: [|||
+local options = [
+  ['OS', [|||
     Operating system to build for.
 
     Currently, the only supported value is "linux", which is also the
     default.
-  |||],
-  ARCH: [|||
+  |||]],
+  ['ARCH', [|||
     The underlying architecture. Is taken as a default for "HOST_ARCH" and
     "TARGET_ARCH".
 
     One of "x86", "x86_64", "arm", "arm64". Defaults to "x86_64".
-  |||],
-  HOST_ARCH: ['The architecture on which the build actions are carried out.'],
-  TARGET_ARCH: ['The architecture for which to build the binary.'],
-  TOOLCHAIN_CONFIG: [|||
+  |||]],
+  ['HOST_ARCH', ['The architecture on which the build actions are carried out.']],
+  ['TARGET_ARCH', ['The architecture for which to build the binary.']],
+  ['TOOLCHAIN_CONFIG', [|||
     The toolchain configuration.
 
     Use field "FAMILY" to specify the compiler family.
@@ -26,13 +26,13 @@ local options_doc = {
 
     Use field "BUILD_STATIC" to specify that binaries should be
     statically linked. Boolean, default false.
-  |||],
-  ENV: [|||
+  |||]],
+  ['ENV', [|||
     Map from strings to strings. The build environment to be used for
     build actions. Typically used to include an unusual value of PATH.
-  |||],
-  FINAL_LDFLAGS: ['Compiler flags for linking the final binary.'],
-  DEBUG: [|||
+  |||]],
+  ['FINAL_LDFLAGS', ['Compiler flags for linking the final binary.']],
+  ['DEBUG', [|||
     Map enabling and configuring the debug version.
 
     The key "USE_DEBUG_FISSION" enables debug fission, but does not add
@@ -47,28 +47,34 @@ local options_doc = {
       -Wl,--gdb-index linker flag.
     - subkey "USE_DEBUG_TYPES_SECTION" expects a flag that, if true,
       adds the -fdebug-types-section compile flag.
-  |||],
-  SOURCE_DATE_EPOCH: [|||
+  |||]],
+  ['SOURCE_DATE_EPOCH', [|||
     If set, embed the given time stamp (in seconds since the epoch) into
     the binary.
-  |||],
-  VERSION_EXTRA_SUFFIX: [|||
+  |||]],
+  ['VERSION_EXTRA_SUFFIX', [|||
     String to extend the version suffix with.
 
     Should be used to indicate additional (non-upstream) changes, e.g.,
     due to packaging.
-  |||],
-  CC: ['The C compiler to use.'],
-  CXX: ['The C++ compiler to use.'],
-  AR: ['The archiver to use.'],
-  DWP: ['The DWARF packaging utility to use.'],
-  ADD_CFLAGS: ['Additional C compiler flags.'],
-  ADD_CXXFLAGS: ['Additional C++ compiler flags.'],
-  ADD_LDFLAGS: ['Additional linker flags.'],
-  PKG_CONFIG_ARGS: ['Additional pkg-config arguments.\n'],
-  LOCALBASE: ['Use this localbase for building against system libs'],
-  BUILD_MANPAGES: ['Generate manpages, requires pandoc in PATH (default: false)'],
-};
+  |||]],
+  ['CC', ['The C compiler to use.']],
+  ['CXX', ['The C++ compiler to use.']],
+  ['AR', ['The archiver to use.']],
+  ['DWP', ['The DWARF packaging utility to use.']],
+  ['ADD_CFLAGS', ['Additional C compiler flags.']],
+  ['ADD_CXXFLAGS', ['Additional C++ compiler flags.']],
+  ['ADD_LDFLAGS', ['Additional linker flags.']],
+  ['PKG_CONFIG_ARGS', ['Additional pkg-config arguments.']],
+  ['LOCALBASE', ['Use this localbase for building against system libs']],
+  ['BUILD_MANPAGES', ['Generate manpages, requires pandoc in PATH (default: false)']],
+];
+
+// Create configuration documentation map from options list
+local config_doc = {[opt[0]]: opt[1] for opt in options};
+
+// Create variable list from options list (in order)
+local config_vars = [opt[0] for opt in options];
 
 // Default options for jst binaries.
 local default_options =
@@ -87,8 +93,8 @@ local default_options =
     type: 'export',
     target: 'INSTALL',
     doc: ['The jst installation.'],
-    config_doc: options_doc,
-    flexible_config: jst.keys(options_doc),
+    config_doc: config_doc,
+    flexible_config: config_vars,
   },
 
   // Predefined target combining all binaries, tools, and accompanying
@@ -121,24 +127,24 @@ local default_options =
   jst: {
     type: 'export',
     target: 'jst_configured',
-    config_doc: options_doc,
-    flexible_config: jst.keys(options_doc),
+    config_doc: config_doc,
+    flexible_config: config_vars,
   },
 
   // The jst backend binary.
   jst_backend: {
     type: 'export',
     target: 'jst_backend_configured',
-    config_doc: options_doc,
-    flexible_config: jst.keys(options_doc),
+    config_doc: config_doc,
+    flexible_config: config_vars,
   },
 
   // The jstlang compiler binary. Not part of INSTALL.
   jstlangc: {
     type: 'export',
     target: 'jstlangc_configured',
-    config_doc: options_doc,
-    flexible_config: jst.keys(options_doc),
+    config_doc: config_doc,
+    flexible_config: config_vars,
   },
 
   // Sets default options (OS/ARCH) for the jst main binary.
