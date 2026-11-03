@@ -842,6 +842,34 @@ TEST_CASE("ast_parser", "[special strings]") {
 - NAME: foo "\n bar
 )");
         }
+
+        SECTION("short variable") {
+            auto const* code = R"($FOO_bar1)";
+            auto output = nativeParser(code);
+            CHECK(output == R"(VAR
+- NAME: FOO_bar1
+)");
+        }
+
+        SECTION("short variable ends at non-identifier character") {
+            auto const* code = R"($foo-$_bar)";
+            auto output = nativeParser(code);
+            CHECK(output == R"(BINARY_OPERATION(+)
+- LHS:
+    VAR
+    - NAME: foo
+- RHS:
+    NEGATE
+      VAR
+      - NAME: _bar
+)");
+        }
+
+        SECTION("invalid short variables") {
+            CHECK_THROWS(nativeParser(R"($1foo)"));
+            CHECK_THROWS(nativeParser(R"($ foo)"));
+            CHECK_THROWS(nativeParser(R"($)"));
+        }
     }
 }
 

@@ -267,6 +267,13 @@ TEST_CASE("evaluate", "[full evaluation]") {
               nlohmann::json::parse("[null, 1]"));
     }
 
+    SECTION("variable syntax reads the configuration") {
+        CHECK(EvalFull(Parse("[$x, $'x', $y_1, $'with space', $unset]"),
+                       nlohmann::json::parse(
+                           R"({"x": "a", "y_1": 2, "with space": true})")) ==
+              nlohmann::json::parse(R"(["a", "a", 2, true, null])"));
+    }
+
     SECTION("failure only if needed") {
         auto ast = Parse(
             "if jst.env('c') then jst.fail('boom') else "

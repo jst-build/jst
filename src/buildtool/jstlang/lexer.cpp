@@ -333,9 +333,26 @@ auto Lexer::ScanSpecialString() -> Token {
     auto is_var_str = Peek() == '$';
     Advance();  // Skip @ or $
 
+    // Short variable syntax: $NAME, for names that are identifiers
+    if (is_var_str && !IsAtEnd() &&
+        (static_cast<bool>(std::isalpha(Peek())) || Peek() == '_')) {
+        std::string name;
+        while (!IsAtEnd() &&
+               (static_cast<bool>(std::isalnum(Peek())) || Peek() == '_')) {
+            name += Peek();
+            Advance();
+        }
+        return {TokenType::VAR_STRING,
+                std::move(name),
+                LineNumber{line_},
+                ColumnNumber{column_}};
+    }
+
     // Validate quote
     if (IsAtEnd() || (Peek() != '\'')) {
-        ReportError("Expected single-quote after special prefix");
+        ReportError(is_var_str
+                        ? "Expected variable name or single-quote after '$'"
+                        : "Expected single-quote after special prefix");
     }
 
     const char quote = Peek();

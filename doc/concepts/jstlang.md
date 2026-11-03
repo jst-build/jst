@@ -238,17 +238,17 @@ local common = import @'rules//expressions.jst';
 ### Runtime Variables
 
 Runtime variables (typically set via `--defines` or `--config`) can be read via
-the syntactical construct `$'<var>'`, with `<var>` being the name of the
-variable. If the variable name is in the domain of the environment and the
-value of the environment at the variable name is non-`null`, then the result of
-the evaluation is the value of the variable in the environment; otherwise, it
-is `null`. To specify a different default value, use
-[`jst.env`](#jstenvname-defaultnull).
+the syntactical construct `$<var>`, with `<var>` being the name of the
+variable. This short form requires the name to be a valid identifier (letters,
+digits, and underscores, not starting with a digit); the variable name ends at
+the first character that is not part of an identifier. Variables with any other
+name can be read via the quoted form `$'<var>'`.
 
 ``` jsonnet
-if $'DEBUG'
+if $DEBUG
 then 'DEBUG variable is set with positive truth value'
 else 'DEBUG variable is not set or contains negative truth value'
+// Note: Use $'my-var' for variable names that are not valid identifiers
 ```
 
 ### References
@@ -308,8 +308,11 @@ Like [`$'<var>'`](#runtime-variables), but if the variable is not set (or `null`
 variable `name` has to be a static string.
 
 ``` jsonnet
-jst.env('a')                    // value of variable 'a' (as $'a'), or null
-jst.env('a', default='foo')     // value of variable 'a', or 'foo'
+// returns the value of variable 'a' or null if not set
+jst.env('a')    // identical to the variable-read syntax: $a and $'a'
+
+// returns 'foo' if variable 'a' is not set
+jst.env('a', default='foo')
 ```
 
 ##### Conjunction and disjunction: `jst.all(args)` and `jst.any(args)`
