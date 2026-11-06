@@ -454,7 +454,8 @@ void SetupFileChunker() {
                                 .target = ref_str};
     }
     try {
-        return jstlang::DecodeRefString(ref_str, jstlang::RefContext::CLI);
+        return jstlang::DecodeRefString(
+            ref_str, jstlang::RefContext::CLI, jstlang::RefSyntax::Legacy);
     } catch (std::exception const& e) {
         Logger::Log(LogLevel::Error, "{}", e.what());
         std::exit(kExitFailure);

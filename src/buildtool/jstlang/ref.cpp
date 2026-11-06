@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +36,7 @@ using jstlang::RefContext;
 auto const kSepToken = std::string{":"};
 auto const kAbsToken = std::string{"//"};
 auto const kRelToken = std::string{"./"};
+auto const kExtToken = std::string{"@"};
 
 class RefDecodeError : public std::runtime_error {
   public:
@@ -192,8 +194,14 @@ struct ParseResult {
 
 }  // namespace
 
+auto jstlang::IsReference(std::string const& str) -> bool {
+    return StartsWith(0, str, kSepToken) or StartsWith(0, str, kRelToken) or
+           StartsWith(0, str, kAbsToken) or StartsWith(0, str, kExtToken);
+}
+
 auto jstlang::DecodeRefString(std::string const& ref_str,
-                              RefContext ctx) -> jstlang::RefData {
+                              RefContext ctx,
+                              RefSyntax syntax) -> jstlang::RefData {
     RefData data{};
     auto const allow_missing_target = ctx == RefContext::CLI;
 
@@ -216,10 +224,20 @@ auto jstlang::DecodeRefString(std::string const& ref_str,
             ParseAbs(kRelToken.length(), ref_str, allow_missing_target);
     }
     else {
-        // '<repo>//<submodule>:<target>'
+        // '@<repo>//<submodule>:<target>' (legacy: without '@')
+        auto pos = std::size_t{};
+        if (syntax == RefSyntax::String) {
+            if (not StartsWith(0, ref_str, kExtToken)) {
+                throw RefDecodeError{
+                    ref_str,
+                    "Not a reference; references start with ':', './', '//', "
+                    "or '@'."};
+            }
+            pos = kExtToken.length();
+        }
         data.type = RefType::Ext;
         auto repo = std::string{};
-        std::tie(repo, data.module, data.target) = ParseExt(0, ref_str, ctx);
+        std::tie(repo, data.module, data.target) = ParseExt(pos, ref_str, ctx);
         data.repo = std::move(repo);
     }
 
@@ -256,10 +274,14 @@ auto jstlang::QuoteRefSegment(std::string const& segment,
     return segment;
 }
 
-auto jstlang::EncodeRefData(jstlang::RefData const& data) -> std::string {
+auto jstlang::EncodeRefData(jstlang::RefData const& data,
+                            RefSyntax syntax) -> std::string {
     auto str = std::string{};
     switch (data.type) {
         case RefType::Ext:
+            if (syntax == RefSyntax::String) {
+                str += kExtToken;
+            }
             str += QuoteRefSegment(data.repo.value_or(""), RefSegment::Repo);
             [[fallthrough]];
         case RefType::Abs:

@@ -223,7 +223,8 @@ class EntityName {
                        jstlang::RefData{.type = jstlang::RefType::Ext,
                                         .repo = json[1].get<std::string>(),
                                         .module = json[2].get<std::string>(),
-                                        .target = json[3].get<std::string>()}) +
+                                        .target = json[3].get<std::string>()},
+                       jstlang::RefSyntax::Legacy) +
                    "'";
         }
         return json.dump();

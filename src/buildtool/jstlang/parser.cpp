@@ -556,7 +556,9 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
         case TokenType::REF_STRING:
             return std::make_shared<jstlang::RefNode>(
                 CreateLocation(tok, import_chain_.back()),
-                jstlang::DecodeRefString(tok.value));
+                jstlang::DecodeRefString(tok.value,
+                                         jstlang::RefContext::Target,
+                                         jstlang::RefSyntax::Legacy));
         case TokenType::VAR_STRING:
             return std::make_shared<jstlang::VarNode>(
                 CreateLocation(tok, import_chain_.back()), tok.value);
@@ -796,7 +798,10 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
                 }
                 else if (tok.type == TokenType::REF_STRING) {
                     lhs = std::make_shared<jstlang::RefNode>(
-                        loc, jstlang::DecodeRefString(tok.value));
+                        loc,
+                        jstlang::DecodeRefString(tok.value,
+                                                 jstlang::RefContext::Target,
+                                                 jstlang::RefSyntax::Legacy));
                     tokens_.Advance();  // skip lhs
                 }
                 else if (tok.type == TokenType::VAR_STRING) {
@@ -948,7 +953,9 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
                 case TokenType::REF_STRING: {
                     // file-reference to another repository: @'<repo>//<file>'
                     auto const& data =
-                        DecodeRefString(tok.value, jstlang::RefContext::File);
+                        DecodeRefString(tok.value,
+                                        jstlang::RefContext::File,
+                                        jstlang::RefSyntax::Legacy);
                     if (data.type != jstlang::RefType::Ext) {
                         throw ParserException{
                             "Missing repository for import from external "

@@ -97,7 +97,7 @@ cat <<'EOF' > lib/suffix.jst
 {suffix(s): s + '!'}
 EOF
 cat <<'EOF' > nested/TARGETS
-local common = import '/lib/common.jst';
+local common = import '//lib/common.jst';
 local name = import '../lib/name.jst';
 {nested: common.echo_target(name.name, 'nested.txt')}
 EOF

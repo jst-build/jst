@@ -1,4 +1,5 @@
 // Copyright 2025 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +32,12 @@ enum class RefContext : std::uint8_t {
     CLI,     ///< A target-reference on the CLI; target segments may be omitted.
 };
 
+/// \brief How a reference is spelled.
+enum class RefSyntax : std::uint8_t {
+    String,  ///< A plain string; external references start with '@'.
+    Legacy,  ///< The content of a ref-string @'...'; no '@' for external ones.
+};
+
 struct RefData {
     RefType type;
     std::optional<std::string> repo;    ///< Repo name, if provided.
@@ -38,20 +45,28 @@ struct RefData {
     std::optional<std::string> target;  ///< Target name, if not omitted.
 };
 
-/// \brief Decode ref-string (target, file, or CLI-reference) to RefData.
-/// \param ctx  Where the ref-string is given.
+/// \brief Whether a string is a reference (in its plain-string syntax), i.e.,
+/// starts with ':', './', '//', or '@'; any other string names a target of the
+/// current module.
+[[nodiscard]] auto IsReference(std::string const& str) -> bool;
+
+/// \brief Decode reference (target, file, or CLI-reference) to RefData.
+/// \param ctx     Where the reference is given.
+/// \param syntax  How the reference is spelled; in the legacy syntax, external
+///                references have no leading '@'.
 /// Possible target-reference encodings are:
 ///   - Local:      ':<target>'
 ///   - Rel:        './<module>[:<target>]'
-///   - Abs|Ext:    '[<repo>]//<module>[:<target>]'
+///   - Abs|Ext:    '[@<repo>]//<module>[:<target>]'
 /// Possible file-reference encoding is:
-///   - Abs|Ext:    '[<repo>]//<file_path>'   (<file_path> in RefData::module)
+///   - Abs|Ext:    '[@<repo>]//<file_path>'   (<file_path> in RefData::module)
 /// Possible target-reference encoding on the CLI is:
 ///   - Local:      ':[<target>]'
 ///   - Rel:        './<module>[:[<target>]]'
-///   - Abs|Ext:    '[<repo>]//<module>[:[<target>]]'
+///   - Abs|Ext:    '[@<repo>]//<module>[:[<target>]]'
 [[nodiscard]] auto DecodeRefString(std::string const& ref_str,
-                                   RefContext ctx = RefContext::Target)
+                                   RefContext ctx = RefContext::Target,
+                                   RefSyntax syntax = RefSyntax::String)
     -> RefData;
 
 /// \brief Quote single reference segment (repo, module, target)
@@ -62,7 +77,9 @@ struct RefData {
                                    RefSegment seg_type,
                                    bool allow_empty = false) -> std::string;
 
-[[nodiscard]] auto EncodeRefData(RefData const& data) -> std::string;
+[[nodiscard]] auto EncodeRefData(RefData const& data,
+                                 RefSyntax syntax = RefSyntax::String)
+    -> std::string;
 
 }  // namespace jstlang
 
