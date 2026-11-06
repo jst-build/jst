@@ -70,7 +70,7 @@ Then, a `TARGETS` file describing a simple binary.
 ``` {.jsonnet srcname="TARGETS"}
 {
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['main.cpp'],
   }
@@ -144,10 +144,10 @@ by adding a file `test/TARGETS` containing
 ``` {.jsonnet srcname="test/TARGETS"}
 {
   basic: {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     name: ['basic'],
     test: ['basic.sh'],
-    deps: [@'//:helloworld'],
+    deps: ['//:helloworld'],
   },
 
   'basic.sh': {
@@ -331,14 +331,14 @@ Often, all possible combinations need to be tested, especially
 for projects that are meant to be portable. Doing this by hand
 or manually maintaining all combinations as a list of CI tasks is
 cumbersome and error-prone. Therefore, there is a rule
-`@'rules//test:matrix'` that can take care of handling all
+`'@rules//test:matrix'` that can take care of handling all
 configuration combinations in a single build. The fields are the same
 as those of a test suite.
 
 ``` {.jsonnet srcname="test/TARGETS"}
 ...
 matrix: {
-  type: @'rules//test:matrix',
+  type: '@rules//test:matrix',
   deps: ['basic']
 }
 ...
@@ -365,7 +365,7 @@ its `"deps"` in a product of configurations, with `TEST_MATRIX` cleared there.
 $ jst describe //test:matrix
 INFO: Found 4 repositories involved
 TARGET  '""//test:matrix'
-RULE    'toolchain//test:matrix'  (user-defined)
+RULE    '@toolchain//test:matrix'  (user-defined)
 
   Given a group of tests, build them in a variety of configurations.
 

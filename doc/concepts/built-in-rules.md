@@ -54,7 +54,7 @@ Example:
     type: 'export',
     flexible_config: ['DEBUG', 'TOOLCHAIN_CONFIG'],
     fixed_config: {OS: 'linux', ARCH: 'x86_64'},
-    target: @'//src:foo',
+    target: '//src:foo',
   },
 }
 ```
@@ -92,14 +92,14 @@ Example:
   localbase: {
     type: 'install',
     files: {
-      'bin/foo': @'//src:foo',
-      'bin/bar': @'//src:bar',
+      'bin/foo': '//src:foo',
+      'bin/bar': '//src:bar',
     },
     dirs: [
-      [@'//src:pub_hdrs', 'include'],
-      [@'//doc:man_pages', 'share/man'],
+      ['//src:pub_hdrs', 'include'],
+      ['//doc:man_pages', 'share/man'],
     ],
-    deps: [@'//misc:data']
+    deps: ['//misc:data']
   },
 }
 ```
@@ -224,7 +224,7 @@ Example:
   foobar_tree: {
     type: 'tree',
     name: 'foobar',
-    deps: [@'//src:foo', @'//src:bar'],
+    deps: ['//src:foo', '//src:bar'],
   },
 }
 ```
@@ -249,7 +249,7 @@ Example:
   foobar_overlay: {
     type: 'tree_overlay',
     name: 'foobar',
-    deps: [@'//src:foo', @'//src:bar'],
+    deps: ['//src:foo', '//src:bar'],
   },
 }
 ```
@@ -325,7 +325,7 @@ Example:
       OS: jst.env('OS', default='linux'),
       ARCH: jst.env('ARCH', default='x86_64'),
     },
-    target: @'//src:foo',
+    target: '//src:foo',
   },
 }
 ```

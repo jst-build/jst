@@ -84,7 +84,7 @@ function. So a simple target file could look as follows.
     type: 'generic',
     outs: ['stats.json'],
     cmds: ['./statistics-tool'],
-    deps: ['data', @'tools//:statistics-tool'],
+    deps: ['data', '@tools//:statistics-tool'],
   },
 
   data: {

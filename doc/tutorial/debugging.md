@@ -26,7 +26,7 @@ flags) for our example project. This can be done by extending the existing
 ``` {.jsonnet srcname="tutorial-defaults/CC/TARGETS"}
 {
   defaults: {
-    type: @'//CC:defaults',
+    type: '//CC:defaults',
     CC: ['cc'],
     CXX: ['c++'],
     ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
@@ -75,7 +75,7 @@ To actually collect the artifacts needed to run the debugger, we use the
 ``` {.jsonnet srcname="TARGETS"}
 ...
 helloworld_debug_install: {
-  type: @'rules//CC:install-with-deps',
+  type: '@rules//CC:install-with-deps',
   targets: ['helloworld_debug'],
 }
 ...
@@ -87,7 +87,7 @@ Now this target can be installed to a location of our choice provided by the
 ``` sh
 $ jst install "helloworld_debug_install" -o .ext/debug
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld_debug_install"] with config: {}
+INFO: Requested target '@tutorial//:helloworld_debug_install"] with config: {}
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
 INFO: Discovered 7 actions, 0 tree overlays, 3 trees, 0 blobs
 INFO: Processed 7 actions, 0 cache hits.

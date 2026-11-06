@@ -7,7 +7,7 @@
   // - collects header directory 'gtest'
   // - collects pkg-config file 'gtest.pc' to infer public cflags
   gtest_main: {
-    type: @'rules//CC/foreign/cmake:library',
+    type: '@rules//CC/foreign/cmake:library',
     arguments_config: ['DEBUG'],
     name: ['gtest_main'],
     project: [jst.tree('.')],

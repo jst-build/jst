@@ -5,10 +5,10 @@
   // - depends on 'test_libgreet' and 'test_helloworld'
   // - staged to directory 'test'
   ALL: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     deps: [
-      @':test_libgreet',
-      @':test_helloworld',
+      'test_libgreet',
+      'test_helloworld',
     ],
     stage: ['test'],
   },
@@ -18,12 +18,12 @@
   // - test name 'libgreet'
   // - depends on exported public top-level targets 'libgreet' and 'gtest_main'
   test_libgreet: {
-    type: @'rules//CC/test:test',
+    type: '@rules//CC/test:test',
     name: ['libgreet'],
     srcs: ['test_libgreet.cpp'],
     'private-deps': [
-      @'//:libgreet',
-      @'gtest//:gtest_main',
+      '//:libgreet',
+      '@gtest//:gtest_main',
     ],
   },
 
@@ -33,11 +33,11 @@
   // - test script 'test_helloworld.sh' (see below)
   // - depends on exported public top-level target 'helloworld'
   test_helloworld: {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     name: ['helloworld'],
     test: ['test_helloworld.sh'],
     deps: [
-      @'//:helloworld',
+      '//:helloworld',
     ],
   },
 

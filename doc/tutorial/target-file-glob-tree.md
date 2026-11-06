@@ -92,7 +92,7 @@ with the empty object and refine it later.
 $ echo {} > TARGETS.units
 $ jst install -o . definitions.units
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:definitions.units' with config: {}
+INFO: Requested target '@units//:definitions.units' with config: {}
 INFO: Discovered 0 actions, 0 tree overlays, 0 trees, 0 blobs
 INFO: Processed 0 actions, 0 cache hits.
 INFO: Artifacts can be found in:
@@ -109,7 +109,7 @@ $ diff -u definitions.units.orig definitions.units > files/definitions.units.dif
 $ rm definitions.units*
 ```
 
-Our rules conveniently contain a rule `@'rules//patch:file'` to patch a
+Our rules conveniently contain a rule `'@rules//patch:file'` to patch a
 single file, and we already created the patch. The only other input
 missing is the source file. So far, we could refer to it as
 `"definitions.units"` because there was no target of that name, but now
@@ -124,9 +124,9 @@ allowed for the current module. So we add this target and obtain as
 ``` {.jsonnet srcname="TARGETS.units"}
 {
   'definitions.units': {
-    type: @'rules//patch:file',
+    type: '@rules//patch:file',
     src: [jst.file('definitions.units')],
-    patch: [@'patches//:definitions.units.diff'],
+    patch: ['@patches//:definitions.units.diff'],
   },
 }
 ```
@@ -141,8 +141,8 @@ their inputs) and, in fact, to have a fixed command line.
 ``` sh
 $ jst analyse definitions.units --dump-actions -
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:definitions.units' with config: {}
-INFO: Result of target ['units//:definitions.units',{}]: {
+INFO: Requested target '@units//:definitions.units' with config: {}
+INFO: Result of target ['@units//:definitions.units',{}]: {
         "artifacts": {
           "definitions.units": {"data":{"id":"25d6d534845e948a49064e394712e529b4f6bd915de19d5d42549dacfa60dc41","path":"patched"},"type":"ACTION"}
         },
@@ -152,7 +152,7 @@ INFO: Result of target ['units//:definitions.units',{}]: {
           "definitions.units": {"data":{"id":"25d6d534845e948a49064e394712e529b4f6bd915de19d5d42549dacfa60dc41","path":"patched"},"type":"ACTION"}
         }
       }
-INFO: Actions for target 'units//:definitions.units':
+INFO: Actions for target '@units//:definitions.units':
 [
   {
     "command": ["sh","./run_patch.sh"],
@@ -195,7 +195,7 @@ Building `"definitions.units"`, we find that the patch applied correctly
 ``` sh
 $ jst build definitions.units -P definitions.units | grep -A 5 'German units'
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:definitions.units' with config: {}
+INFO: Requested target '@units//:definitions.units' with config: {}
 INFO: Discovered 1 actions, 0 tree overlays, 0 trees, 1 blobs
 INFO: Processed 1 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -230,8 +230,8 @@ and the output of the patch action.
 ``` sh
 $ jst analyse data-draft
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:data-draft' with config: {}
-INFO: Result of target ['units//:data-draft',{}]: {
+INFO: Requested target '@units//:data-draft' with config: {}
+INFO: Result of target ['@units//:data-draft',{}]: {
         "artifacts": {
           "currency.units": {"data":{"file_type":"f","id":"ac6da8afaac0f34e114e123e4ab3a41e59121b10","size":14707},"type":"KNOWN"},
           "definitions.units": {"data":{"id":"25d6d534845e948a49064e394712e529b4f6bd915de19d5d42549dacfa60dc41","path":"patched"},"type":"ACTION"}
@@ -256,7 +256,7 @@ and the rationale behind it.
 
  - First of all, the artifact (and runfiles) map has an entry for each
    file that matches. In particular, targets have the option to define
-   individual actions for each file, like `@'//CC:binary'` does for
+   individual actions for each file, like `'//CC:binary'` does for
    the source files. This is different from `jst.tree()`, where the artifact
    map contains a single artifact that happens to be a directory. The
    tree behaviour is preferable when the internals of the directory
@@ -287,7 +287,7 @@ files; but we still want to keep the patching. Most rules, like
 `"install"`, disallow staging conflicts to avoid accidentally ignoring a
 file due to a conflicting name. In our case, however, dropping the
 source file in favour of the patched one is deliberate. For this, there
-is the rule `@'rules//data:overlay'` taking the union of the artifacts of
+is the rule `'@rules//data:overlay'` taking the union of the artifacts of
 the specified targets, accepting conflicts and resolving them in a
 latest-wins fashion. Keep in mind that our target fields are lists, not
 sets. Looking at the definition of the rule, one finds that it is simply
@@ -297,7 +297,7 @@ a `"map_union"`. Hence, we refine our `"data-draft"` target into the target
 ``` {.jsonnet srcname="TARGETS.units"}
 ...
   data: {
-    type: @'rules//data:overlay',
+    type: '@rules//data:overlay',
     deps: [jst.glob('*.units'), 'definitions.units'],
   },
 ...
@@ -318,7 +318,7 @@ defining the binary is as follows.
 ``` {.jsonnet srcname="TARGETS.units"}
 ...
   'units-draft': {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['units'],
     'private-ldflags': ['-lm'],
     'pure C': true,
@@ -334,7 +334,7 @@ total, giving 5 compile actions and one link action.
 ``` sh
 $ jst build units-draft
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:units-draft' with config: {}
+INFO: Requested target '@units//:units-draft' with config: {}
 INFO: Discovered 6 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO (action:a6adae74a8b50103a46700203f32e2286cec0a31ac41667b88d5b1ebe9b9860c):
      Stderr of command ["cc","-I","work","-isystem","include","-c","work/strfunc.c","-o","work/strfunc.o"] in environment {"PATH":"/bin:/usr/bin"}
@@ -355,7 +355,7 @@ a patch.
 ``` sh
 $ jst install -o . strfunc.c
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:strfunc.c' with config: {}
+INFO: Requested target '@units//:strfunc.c' with config: {}
 INFO: Discovered 0 actions, 0 tree overlays, 0 trees, 0 blobs
 INFO: Processed 0 actions, 0 cache hits.
 INFO: Artifacts can be found in:
@@ -376,7 +376,7 @@ Then we amend our `"units"` target.
 ``` {.jsonnet srcname="TARGETS.units"}
 ...
   units: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['units'],
     'private-ldflags': ['-lm'],
     'pure C': true,
@@ -385,14 +385,14 @@ Then we amend our `"units"` target.
   },
 
   'patched srcs': {
-    type: @'rules//data:overlay',
+    type: '@rules//data:overlay',
     deps: [jst.glob('*.c'), 'strfunc.c'],
   },
 
   'strfunc.c': {
-    type: @'rules//patch:file',
+    type: '@rules//patch:file',
     src: [jst.file('strfunc.c')],
-    patch: [@'patches//:strfunc.c.diff'],
+    patch: ['@patches//:strfunc.c.diff'],
   },
 ...
 ```
@@ -406,7 +406,7 @@ cache.
 ``` sh
 $ jst build units
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:units' with config: {}
+INFO: Requested target '@units//:units' with config: {}
 INFO: Discovered 7 actions, 0 tree overlays, 1 trees, 1 blobs
 INFO: Processed 7 actions, 5 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -432,7 +432,7 @@ Then things work as expected.
 ``` sh
 $ jst install -o /tmp/testinstall
 INFO: Found 4 repositories involved
-INFO: Requested target 'units//:""' with config: {}
+INFO: Requested target '@units//:""' with config: {}
 INFO: Discovered 8 actions, 0 tree overlays, 1 trees, 1 blobs
 INFO: Processed 8 actions, 8 cache hits.
 INFO: Artifacts can be found in:

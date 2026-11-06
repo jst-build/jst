@@ -56,7 +56,7 @@ File `TARGETS`:
 ``` {.jsonnet srcname="TARGETS"}
 {
   tutorial: {
-    type: @'latex-rules//latex:latexmk',
+    type: '@latex-rules//latex:latexmk',
     main: ['hello'],
     srcs: ['hello.tex'],
   },
@@ -373,7 +373,7 @@ which should report:
 
 ``` sh
 INFO: Found 2 repositories to set up
-INFO: Requested target 'tutorial//doc/jst-execute/latex-hello-world:tutorial' with config: {}
+INFO: Requested target '@tutorial//doc/jst-execute/latex-hello-world:tutorial' with config: {}
 INFO: Discovered 1 actions, 0 trees, 1 blobs
 INFO: Processed 1 actions, 0 cache hits.
 INFO: Artifacts can be found in:

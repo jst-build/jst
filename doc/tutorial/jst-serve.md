@@ -667,7 +667,7 @@ serve endpoint
 $ jst build -R localhost:9999 --local-build-root ~/local-build-root helloworld
 INFO: Found 5 repositories involved
 INFO: Using '127.0.0.1:9999' as the remote execution endpoint.
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 0 cached, 1 served, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 0 cache hits.
@@ -840,7 +840,7 @@ endpoint still running, successfully
 $ jst build --rc rc-file helloworld
 INFO: Found 5 repositories involved
 INFO: Using 'localhost:9999' as the remote execution endpoint.
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 0 cached, 1 served, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 4 cache hits.

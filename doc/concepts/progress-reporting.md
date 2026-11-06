@@ -103,9 +103,9 @@ whole origin is cut on the left. Origins of a different shape, e.g. of
 anonymous targets, are always cut on the left:
 
 ```
-'jst//src/buildtool/multithreading:task_system'#0     fits
-'jst//...uildtool/multithreading:task_system'#0       module shortened
-'jst//...:task_system'#0                              module dropped
+'@jst//src/buildtool/multithreading:task_system'#0     fits
+'@jst//...uildtool/multithreading:task_system'#0       module shortened
+'@jst//...:task_system'#0                              module dropped
 '...ask_system'#0                                     cut on the left
 ```
 
@@ -119,12 +119,12 @@ Origin column the statistics `N/M done, C cached, P processing.`, of which
 At a terminal width of 100:
 
 ```
- ⠼ Patching file options.h                     0.4s  'absl//:absl/base/options.h'#0
- ⠼ Compiling task_system.cpp                   0.3s  'jst//...uildtool/multithreading:task_system'#0
- ⠼ Compiling builtin_functions.cpp           11m21s  'jst//src/buildtool/jstlang/ast:builtins'#0
- ⠼ Compiling git_context.cpp                  1m33s  'jst//src/buildtool/file_system:git_context'#0
- ⠼ Compiling expression_ptr.cpp                0.3s  'jst//.../build_engine/expression:expression'#2
- ⠼ Compiling a_really_long_file_name_for...    0.2s  'jst//test:long'#0
+ ⠼ Patching file options.h                     0.4s  '@absl//:absl/base/options.h'#0
+ ⠼ Compiling task_system.cpp                   0.3s  '@jst//...uildtool/multithreading:task_system'#0
+ ⠼ Compiling builtin_functions.cpp           11m21s  '@jst//src/buildtool/jstlang/ast:builtins'#0
+ ⠼ Compiling git_context.cpp                  1m33s  '@jst//src/buildtool/file_system:git_context'#0
+ ⠼ Compiling expression_ptr.cpp                0.3s  '@jst//.../build_engine/expression:expression'#2
+ ⠼ Compiling a_really_long_file_name_for...    0.2s  '@jst//test:long'#0
    ... and 16 more
     Building ━━╸───────────────────────────  11m22s  34/382 done, 0 cached, 24 processing.
 ```
@@ -155,12 +155,12 @@ from cache are counted but not printed, which leaves gaps in the
 numbering:
 
 ```
-[1/3558] Patching file options.h                      'absl//:absl/base/options.h'#0
-[2/3558] Compiling uncompr.c                          'zlib//:zlib_unexported'#13
-[5/3558] Compiling trees.c                            'zlib//:zlib_unexported'#12
-[9/3558] Compiling os.cc                              'fmt//:fmt_unexported'#1
-[10/3558] Compiling sha1-armv8-win.S                  'ssl//:crypto_asm'#67
-[12/3558] Compiling chacha20_poly1305_x86_64-linux.S  'ssl//:crypto_asm'#114
+[1/3558] Patching file options.h                      '@absl//:absl/base/options.h'#0
+[2/3558] Compiling uncompr.c                          '@zlib//:zlib_unexported'#13
+[5/3558] Compiling trees.c                            '@zlib//:zlib_unexported'#12
+[9/3558] Compiling os.cc                              '@fmt//:fmt_unexported'#1
+[10/3558] Compiling sha1-armv8-win.S                  '@ssl//:crypto_asm'#67
+[12/3558] Compiling chacha20_poly1305_x86_64-linux.S  '@ssl//:crypto_asm'#114
 ```
 
 ### Summary

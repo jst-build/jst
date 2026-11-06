@@ -4,10 +4,10 @@
   // - binary name 'helloworld'
   // - depends on exported top-level target 'libgreet'
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['helloworld.cpp'],
-    'private-deps': [@'//:libgreet'],
+    'private-deps': ['//:libgreet'],
   },
 
   // Target 'libgreet'
@@ -19,14 +19,14 @@
   // - stage 'greet', prefix used for library artifacts and its public headers
   //   (consumers include this library via '#include "greet/greet.hpp"')
   libgreet: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
     shared: $BUILD_SHARED,
     'private-cflags':
       if $USE_FMTLIB then ['-DUSE_FMTLIB'],
     'private-deps':
-      if $USE_FMTLIB then [@'fmtlib//:fmt'],
+      if $USE_FMTLIB then ['@fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers

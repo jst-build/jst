@@ -117,10 +117,10 @@ Naming of targets
 ### Reference in target files
 
 In addition to the normal target references (a string for a target in
-the same module, a module-target pair for a target in the same repository,
+the same module, `//module:target` for a target in the same repository,
 `./relpath:target` relative addressing, `jst.file(name)`
 explicit file reference in the same module), references of the
-form `repo//module:target` can be specified, where `repo` is a
+form `@repo//module:target` can be specified, where `repo` is a
 string referring to an open name. That open repository name is resolved
 to the global name by the `"bindings"` parameter of the repository the
 target reference is made in. Within the repository the resolved name

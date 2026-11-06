@@ -23,11 +23,11 @@ abstract nodes for our sources (`main.cpp`, `greet/greet.hpp`,
 ``` sh
 $ jst analyse -D '{"LINT": true}' --dump-nodes -
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {
+INFO: Requested target '@tutorial//:helloworld' with config: {
         "LINT": true
       }
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
-INFO: Result of target ['tutorial//:helloworld',{"LINT":true}]: {
+INFO: Result of target ['@tutorial//:helloworld',{"LINT":true}]: {
         "artifacts": {
           "helloworld": {"data":{"id":"1154ef311dff82653bc6a1a92bfc6152bc116cb86652b4b5218385fe39054391","path":"work/helloworld"},"type":"ACTION"}
         },
@@ -52,7 +52,7 @@ INFO: Result of target ['tutorial//:helloworld',{"LINT":true}]: {
         "runfiles": {
         }
       }
-INFO: Target nodes of target 'tutorial//:helloworld':
+INFO: Target nodes of target '@tutorial//:helloworld':
 {
   "509e506f8d0c2ebe4fca63fe7cc528be17165bae464410ac5fba97a6ed92930d": {
     "result": {
@@ -295,7 +295,7 @@ Now we can define our lint target.
 ``` {.jsonnet srcname="TARGETS"}
 ...
   lint: {
-    type: @'rules//lint:targets',
+    type: '@rules//lint:targets',
     targets: ['helloworld'],
     linter: ['run_clang_tidy.py'],
     summarizer: ['summary.py'],
@@ -321,7 +321,7 @@ We can now build our lint report in the same way as any test report.
 ``` sh
 $ jst build lint -P report
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:lint' with config: {}
+INFO: Requested target '@tutorial//:lint' with config: {}
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
 INFO: Target tainted ["lint"].
 INFO: Discovered 11 actions, 0 tree overlays, 7 trees, 0 blobs
@@ -363,7 +363,7 @@ Building succeeds without any warning.
 ``` sh
 $ jst build helloworld
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 1 cache hits.
@@ -375,7 +375,7 @@ However, the linter reports it.
 ``` sh
 $ jst build lint -P report || :
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:lint' with config: {}
+INFO: Requested target '@tutorial//:lint' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Target tainted ["lint"].
 INFO: Discovered 8 actions, 0 tree overlays, 6 trees, 0 blobs

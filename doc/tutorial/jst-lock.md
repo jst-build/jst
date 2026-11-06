@@ -155,7 +155,7 @@ $ jst-lock -C repos.in.json -o repos.out.json
 $
 $ jst build -C repos.out.json helloworld
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 4 cache hits.

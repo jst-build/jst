@@ -63,7 +63,7 @@ support different fields. Please consider the following example:
 ``` jsonnet
 {
   example: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: [/* binary name */],
     srcs: [/* C++ sources */],
   },
@@ -167,7 +167,7 @@ the binary target in the `src/TARGETS` file.
 ``` jsonnet
 {
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['helloworld.cpp'],
   },
@@ -191,7 +191,7 @@ build: `helloworld`.
 
 ``` plaintext
 INFO: Found 4 repositories involved
-INFO: Requested target 'stage1//src:helloworld' with config: {}
+INFO: Requested target '@stage1//src:helloworld' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -294,14 +294,14 @@ description in file `src/TARGETS`:
 ``` jsonnet
 {
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['helloworld.cpp'],
-    'private-deps': ['libgreet'],   // same as @'//src:libgreet'
+    'private-deps': ['libgreet'],   // same as '//src:libgreet'
   },
 
   libgreet: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     name: ['greet'],    // produces libgreet.a
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
@@ -388,8 +388,8 @@ local common_flags = ['-Wall', '-Werror', '-pedantic'];
 
 {
   defaults: {
-    type: @'//CC:defaults',
-    base: [@'base//CC:defaults'],
+    type: '//CC:defaults',
+    base: ['@base//CC:defaults'],
     ADD_CFLAGS: ['-std=c11'] + common_flags,
     ADD_CXXFLAGS: ['-std=c++14'] + common_flags,
   },
@@ -487,11 +487,11 @@ Let's create a binary test for the `libgreet` library in `test/TARGETS`.
 ``` jsonnet
 { // ...
   test_libgreet: {
-    type: @'rules//CC/test:test',
+    type: '@rules//CC/test:test',
     name: ['libgreet'],
     srcs: ['test_libgreet.cpp'],
     'private-deps': [
-      @'//src:libgreet',
+      '//src:libgreet',
     ],
   },
   // ...
@@ -524,11 +524,11 @@ Let's create the shell test for the `helloworld` binary in `test/TARGETS`.
 ``` jsonnet
 { // ...
   test_helloworld: {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     name: ['helloworld'],
     test: ['test_helloworld.sh'],
     deps: [
-      @'//src:helloworld',
+      '//src:helloworld',
     ],
   },
   // ...
@@ -563,10 +563,10 @@ Let's create the test suite target `ALL`:
 ``` jsonnet
 {
   ALL: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     deps: [
-      @':test_libgreet',
-      @':test_helloworld',
+      'test_libgreet',
+      'test_helloworld',
     ],
     stage: ['test'],
   },
@@ -671,14 +671,14 @@ Now the `libgreet` target can access the top-level target `fmt` from
 ``` jsonnet
 { // ...
   libgreet: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
     name: ['greet'],    // produces libgreet.[a|so]
     shared: $BUILD_SHARED,
     'private-cflags':
       if $USE_FMTLIB then ['-DUSE_FMTLIB'],
     'private-deps':
-      if $USE_FMTLIB then [@'fmtlib//:fmt'],
+      if $USE_FMTLIB then ['@fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],   // prefix used for public headers
@@ -756,7 +756,7 @@ The last missing piece is providing the target description in file
 ``` jsonnet
 {
   gtest_main: {
-    type: @'rules//CC/foreign/cmake:library',
+    type: '@rules//CC/foreign/cmake:library',
     arguments_config: ['DEBUG'],
     name: ['gtest_main'],
     project: [jst.tree('.')],
@@ -809,7 +809,7 @@ local config_vars = // ...
     doc: 'Exported helloworld binary',
     flexible_config: config_vars,
     config_doc: config_doc,
-    target: @'//src:helloworld',
+    target: '//src:helloworld',
   },
 
   libgreet: {
@@ -817,7 +817,7 @@ local config_vars = // ...
     doc: 'Exported libgreet library',
     flexible_config: config_vars,
     config_doc: config_doc,
-    target: @'//src:libgreet',
+    target: '//src:libgreet',
   },
   // ...
 }
@@ -857,12 +857,12 @@ Please see the top-level `TARGETS` file.
 ``` jsonnet
 { // ...
   APPS: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: ['helloworld'],
   },
 
   LIBS: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: ['libgreet'],
   },
 
@@ -870,7 +870,7 @@ Please see the top-level `TARGETS` file.
     type: 'install',
     tainted: ['test'],
     deps: [
-      @'//test:ALL',
+      '//test:ALL',
     ],
   },
   // ...

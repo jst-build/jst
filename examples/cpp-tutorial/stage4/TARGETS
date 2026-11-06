@@ -34,7 +34,7 @@ local config_vars = [opt[0] for opt in options];
     doc: 'Exported helloworld binary',
     flexible_config: config_vars,
     config_doc: config_doc,
-    target: @'//src:helloworld',
+    target: '//src:helloworld',
   },
 
   // Exported 'libgreet' library
@@ -46,7 +46,7 @@ local config_vars = [opt[0] for opt in options];
     doc: 'Exported libgreet library',
     flexible_config: config_vars,
     config_doc: config_doc,
-    target: @'//src:libgreet',
+    target: '//src:libgreet',
   },
 
   // Installation directory for applications (helloworld)
@@ -54,7 +54,7 @@ local config_vars = [opt[0] for opt in options];
   //   creates the folders 'bin' and 'lib' for shared libraries
   // - installs public export target 'helloworld'
   APPS: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: ['helloworld'],
   },
 
@@ -63,7 +63,7 @@ local config_vars = [opt[0] for opt in options];
   //   creates the folders 'lib' and 'include' for public headers
   // - installs public export target 'libgreet'
   LIBS: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: ['libgreet'],
   },
 
@@ -75,18 +75,18 @@ local config_vars = [opt[0] for opt in options];
     type: 'install',
     tainted: ['test'],
     deps: [
-      @'//test:ALL',
+      '//test:ALL',
     ],
   },
 
   // Installation directory with external library headers (fmtlib, gtest)
   // (useful for local development or static analysis of the local IDE)
   DEV: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     'hdrs-only': true,
     targets: [
-      @'fmtlib//:fmt',
-      @'gtest//:gtest_main',
+      '@fmtlib//:fmt',
+      '@gtest//:gtest_main',
     ],
   },
 }

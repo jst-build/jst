@@ -60,7 +60,7 @@ In that configuration, two repositories are defined:
    bound via the open name `"rules"` to the repository we just created,
    `"rules-cc"`. In this way, the entities provided by `"rules-cc"` can
    be accessed from within the `"tutorial"` repository via the
-   fully-qualified name `@'rules//<module>:<name>'`;
+   fully-qualified name `'@rules//<module>:<name>'`;
    fully-qualified names (for rules, targets to build (like libraries,
    binaries), etc.) are given by a repository name, a path specifying a
    directory within that repository (the "module") where the
@@ -82,7 +82,7 @@ a `TARGETS` file with the following content:
 ``` {.jsonnet srcname="TARGETS"}
 {
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['main.cpp'],
   },
@@ -122,7 +122,7 @@ command line:
 ``` sh
 $ jst build helloworld
 INFO: Found 2 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -167,7 +167,7 @@ object that sets `"CXX"` to `"clang++"`:
 ``` sh
 $ jst build helloworld -D'{"CXX":"clang++"}'
 INFO: Found 2 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {
+INFO: Requested target '@tutorial//:helloworld' with config: {
         "CXX": "clang++"
       }
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
@@ -206,7 +206,7 @@ from. In our case, we don't use any base.
 ``` {.jsonnet srcname="tutorial-defaults/CC/TARGETS"}
 {
   defaults: {
-    type: @'//CC:defaults',
+    type: '//CC:defaults',
     CC: ['cc'],
     CXX: ['c++'],
     ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
@@ -260,8 +260,8 @@ the following content:
 }
 ```
 
-Note that the `"defaults"` target uses the rule `@'//CC:defaults'`
-without specifying any external repository (e.g., `@'rules//...'`). This is because `"tutorial-defaults"` is not a
+Note that the `"defaults"` target uses the rule `'//CC:defaults'`
+without specifying any external repository (e.g., `'@rules//...'`). This is because `"tutorial-defaults"` is not a
 full-fledged repository but merely a file root that is considered local
 to the `"rules-cc"` repository. In fact, the `"rules-cc"` repository
 cannot refer to any external repository as it does not have any defined
@@ -278,7 +278,7 @@ change):
 ``` sh
 $ jst build helloworld
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 2 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -347,7 +347,7 @@ do so, we need to create the following target description in
 ``` {.jsonnet srcname="greet/TARGETS"}
 {
   greet: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     name: ['greet'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
@@ -386,10 +386,10 @@ The target `"helloworld"` will have a direct dependency to the target
 ``` {.jsonnet srcname="TARGETS"}
 {
   helloworld: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['helloworld'],
     srcs: ['main.cpp'],
-    'private-deps': [@'//greet:greet'],
+    'private-deps': ['//greet:greet'],
   },
 }
 ```
@@ -403,7 +403,7 @@ binary can be built with the same command as before (no need to rerun
 ``` sh
 $ jst build helloworld
 INFO: Found 3 repositories involved
-INFO: Requested target is 'tutorial//:helloworld' with config: {}
+INFO: Requested target is '@tutorial//:helloworld' with config: {}
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 0 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -417,7 +417,7 @@ run the following command:
 ``` sh
 $ jst build //greet:greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//greet:greet' with config: {}
+INFO: Requested target '@tutorial//greet:greet' with config: {}
 INFO: Discovered 2 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 2 actions, 2 cache hits.
 INFO: Artifacts built, logical paths are:
@@ -434,8 +434,8 @@ that library provides.
 ``` sh
 $ jst analyse //greet:greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//greet:greet' with config: {}
-INFO: Result of target ['tutorial//greet:greet',{}]: {
+INFO: Requested target '@tutorial//greet:greet' with config: {}
+INFO: Result of target ['@tutorial//greet:greet',{}]: {
         "artifacts": {
           "greet/libgreet.a": {"data":{"id":"d964a2747015935adc5fd7f06bbd910d5dde99e990436be0b1f7034270b5b11d","path":"work/greet/libgreet.a"},"type":"ACTION"}
         },

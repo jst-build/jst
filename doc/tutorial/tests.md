@@ -84,17 +84,17 @@ int main() {
 ```
 
 Next, a new test target needs to be created in module `greet`. This
-target uses the rule `@'rules//CC/test:test'` and needs to
-depend on the `@'//greet:greet'` target. To create the test target,
+target uses the rule `'@rules//CC/test:test'` and needs to
+depend on the `'//greet:greet'` target. To create the test target,
 add the following to `tests/TARGETS`:
 
 ``` {.jsonnet srcname="tests/TARGETS"}
 {
   greet: {
-    type: @'rules//CC/test:test',
+    type: '@rules//CC/test:test',
     name: ['test_greet'],
     srcs: ['greet.test.cpp'],
-    'private-deps': [@'//greet:greet'],
+    'private-deps': ['//greet:greet'],
   },
 }
 ```
@@ -111,8 +111,8 @@ seen via `jst describe`.
 ``` sh
 $ jst describe //tests:greet
 INFO: Found 3 repositories involved
-TARGET  'tutorial//tests:greet'
-RULE    'rules-cc//CC/test:test'  (user-defined)
+TARGET  '@tutorial//tests:greet'
+RULE    '@rules-cc//CC/test:test'  (user-defined)
 
   A test written in C++
 
@@ -124,20 +124,20 @@ STRING FIELDS (7)
 IMPLICIT DEPENDENCIES (4)
   defaults
     The C/C++ toolchain to use
-    - 'rules-cc//CC:defaults'
+    - '@rules-cc//CC:defaults'
   runner
     The test runner which starts the actual test binary after providing
     the respective environment. The runner also takes care of capturing
     stdout/stderr and timing information.
-    - 'rules-cc//CC/test:runner'
+    - '@rules-cc//CC/test:runner'
   'shell-defaults'
     The shell toolchain to use PATH from for calling the summary action
-    - 'rules-cc//shell:defaults'
+    - '@rules-cc//shell:defaults'
   summarizer
     Tool to aggregate the results of individual test runs (for flakyness
     detection) to an overall test result. If more fields than the result
     itself is needed, those can be specified using the "summarizer" rule.
-    - 'rules-cc//shell/test:summarizer'
+    - '@rules-cc//shell/test:summarizer'
 ...
 ```
 
@@ -176,7 +176,7 @@ Now we can run the test (i.e., build the test result):
 ``` sh
 $ jst build //tests:greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:greet' with config: {}
+INFO: Requested target '@tutorial//tests:greet' with config: {}
 INFO: Target tainted ["test"].
 INFO: Discovered 5 actions, 0 tree overlays, 3 trees, 1 blobs
 INFO: Processed 5 actions, 2 cache hits.
@@ -212,7 +212,7 @@ in our case `stdout`:
 ``` sh
 $ jst build -P stdout tests greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:greet' with config: {}
+INFO: Requested target '@tutorial//tests:greet' with config: {}
 INFO: Target tainted ["test"].
 INFO: Discovered 5 actions, 0 tree overlays, 3 trees, 1 blobs
 INFO: Processed 5 actions, 5 cache hits.
@@ -246,9 +246,9 @@ inputs.
 ``` sh
 $ jst analyse --request-action-input -1 tests greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:greet' with config: {}
+INFO: Requested target '@tutorial//tests:greet' with config: {}
 INFO: Request is input of action #-1
-INFO: Result of input of action #-1 of target ['tutorial//tests:greet',{}]: {
+INFO: Result of input of action #-1 of target ['@tutorial//tests:greet',{}]: {
         "artifacts": {
           "runner": {"data":{"file_type":"x","id":"4984b1766a38849c7039f8ae9ede9dae891eebc3","size":2004},"type":"KNOWN"},
           "test": {"data":{"id":"cd8801144beca99330c0003ea464f7c44e9547f4582317f5037b304425ee2d8b","path":"work/test_greet"},"type":"ACTION"},
@@ -289,11 +289,11 @@ can also be useful when debugging a build failure.
 ``` sh
 $ jst install -o work --request-action-input -1 tests greet
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:greet' with config: {}
+INFO: Requested target '@tutorial//tests:greet' with config: {}
 INFO: Request is input of action #-1
 INFO: Target tainted ["test"].
 INFO: Discovered 5 actions, 0 tree overlays, 3 trees, 1 blobs
-INFO: Building input of action #-1 of ['tutorial//tests:greet',{}].
+INFO: Building input of action #-1 of ['@tutorial//tests:greet',{}].
 INFO: Processed 4 actions, 4 cache hits.
 INFO: Artifacts can be found in:
         /tmp/tutorial/work/runner [4984b1766a38849c7039f8ae9ede9dae891eebc3:2004:x]
@@ -344,17 +344,17 @@ set -e
 ```
 
 The test target for this shell test uses the rule
-`@'rules//shell/test:script'` and must depend on the
+`'@rules//shell/test:script'` and must depend on the
 `"helloworld"` target. To create the test target, add the following to
 the `tests/TARGETS` file:
 
 ``` {.jsonnet srcname="tests/TARGETS"}
 ...
   helloworld: {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     name: ['test_helloworld'],
     test: ['test_helloworld.sh'],
-    deps: [@'//:helloworld'],
+    deps: ['//:helloworld'],
   },
 ...
 ```
@@ -370,7 +370,7 @@ Now we can run the shell test (i.e., build the test result):
 ``` sh
 $ jst build //tests:helloworld
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:helloworld' with config: {}
+INFO: Requested target '@tutorial//tests:helloworld' with config: {}
 INFO: Target tainted ["test"].
 INFO: Discovered 5 actions, 0 tree overlays, 4 trees, 2 blobs
 INFO: Processed 5 actions, 4 cache hits.
@@ -422,7 +422,7 @@ target `"ALL-simple"`:
 ``` sh
 $ jst build //tests:ALL-simple
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:ALL-simple' with config: {}
+INFO: Requested target '@tutorial//tests:ALL-simple' with config: {}
 INFO: Target tainted ["test"].
 INFO: Discovered 8 actions, 0 tree overlays, 5 trees, 3 blobs
 INFO: Processed 8 actions, 8 cache hits.
@@ -438,7 +438,7 @@ as artifacts. Both tests ran successfully, as none of the artifacts in
 the output above are tagged as `FAILED`.
 
 While the built-in `"install"` rule works in principle, the preferred
-way is to use the rule `@'rules//test:suite'`. For
+way is to use the rule `'@rules//test:suite'`. For
 artifacts and runfiles it does the same as `"install"`, however it
 also propagates the provided information appropriately; this means it
 can also be used, e.g., as a target for [linting](lint.md), allowing all
@@ -448,7 +448,7 @@ is similar, and, as a test target, it is also implicitly tainted.
 ``` {.jsonnet srcname="tests/TARGETS"}
 ...
   ALL: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     deps: ['greet', 'helloworld'],
   },
 ...
@@ -458,7 +458,7 @@ Again, we can run all tests at once by building the compound target.
 ``` sh
 $ jst build //tests:ALL
 INFO: Found 3 repositories involved
-INFO: Requested target 'tutorial//tests:ALL' with config: {}
+INFO: Requested target '@tutorial//tests:ALL' with config: {}
 INFO: Target tainted ["test"].
 INFO: Discovered 8 actions, 0 tree overlays, 5 trees, 3 blobs
 INFO: Processed 8 actions, 8 cache hits.

@@ -70,7 +70,7 @@ declare the library, create a `TARGETS` file with the following content:
 ``` {.jsonnet srcname="TARGETS"}
 {
   address: {
-    type: @'rules//proto:library',
+    type: '@rules//proto:library',
     name: ['addressbook'],
     srcs: ['addressbook.proto'],
   },
@@ -190,14 +190,14 @@ can simply use them. Our target file hence continues as follows.
 ``` {.jsonnet srcname="TARGETS"}
 ...
   add_person: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['add_person'],
     srcs: ['add_person.cc'],
     'private-proto': ['address'],
   },
 
   list_people: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     name: ['list_people'],
     srcs: ['list_people.cc'],
     'private-proto': ['address'],
@@ -373,7 +373,7 @@ purpose.
 ``` {.jsonnet srcname="TARGETS"}
 ...
   address_proto_library: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     proto: ['address'],
   },
 ...
@@ -434,7 +434,7 @@ keep the intermediate files the test generates. Add to the top-level
   },
 
   test: {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     name: ['read-write-test'],
     test: ['test.sh'],
     deps: ['add_person', 'list_people'],
@@ -572,7 +572,7 @@ in the chapter on [*Debugging*](./hello-world.md)).
   },
 
   list_people_debug_staged: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: ['list_people_debug'],
   },
 ...

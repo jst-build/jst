@@ -75,7 +75,7 @@ as:
 ``` {.jsonnet srcname="fmt-layer/include/fmt/TARGETS"}
 {
   hdrs: {
-    type: @'rules//data:staged',
+    type: '@rules//data:staged',
     srcs: [jst.tree('.')],
     stage: ['fmt'],
   },
@@ -84,16 +84,16 @@ as:
 
 The actual library target is defined in the directory `src`. For the
 public headers, it refers to the previously created `"hdrs"` target via
-its fully-qualified target name (`@'//include/fmt:hdrs'`). Source
+its fully-qualified target name (`'//include/fmt:hdrs'`). Source
 files are the two local files `format.cc`, and `os.cc`. The final target
 description in `src/TARGETS` will look like this:
 
 ``` {.jsonnet srcname="fmt-layer/src/TARGETS"}
 {
   fmt: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     name: ['fmt'],
-    hdrs: [@'//include/fmt:hdrs'],
+    hdrs: ['//include/fmt:hdrs'],
     srcs: ['format.cc', 'os.cc'],
   },
 }
@@ -105,7 +105,7 @@ technically not strictly required, it is considered good practice to
 targets are subject to high-level target caching, which allows skipping
 the analysis and traversal of entire subgraphs in the action graph.
 Therefore, we create an export target that exports the target
-`@'//src:fmt'`, with only the variables in the field
+`'//src:fmt'`, with only the variables in the field
 `"flexible_config"` being propagated.
 The top-level `TARGETS` file contains the following content:
 
@@ -113,7 +113,7 @@ The top-level `TARGETS` file contains the following content:
 {
   fmt: {
     type: 'export',
-    target: @'//src:fmt',
+    target: '//src:fmt',
     flexible_config: [
       'CXX',
       'CXXFLAGS',
@@ -128,7 +128,7 @@ The top-level `TARGETS` file contains the following content:
 ```
 
 After adding the library to the multi-repository configuration (next
-step), the list of configuration variables a target, like `@'//src:fmt'`,
+step), the list of configuration variables a target, like `'//src:fmt'`,
 actually depends on can be obtained using the `--dump-vars`
 option of the `analyse` subcommand. In this way, an informed decision
 can be made when deciding which variables of the export target to make
@@ -201,12 +201,12 @@ in `greet/TARGETS`:
 ``` {.jsonnet srcname="greet/TARGETS"}
 {
   greet: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     name: ['greet'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
     stage: ['greet'],
-    'private-deps': [@'format//:fmt'],
+    'private-deps': ['@format//:fmt'],
   },
 }
 ```
@@ -229,7 +229,7 @@ repositories:
 ``` sh
 $ jst build helloworld
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 0 cached, 0 uncached, 1 not eligible for caching
 INFO: Discovered 7 actions, 0 tree overlays, 3 trees, 0 blobs
 INFO: Processed 7 actions, 1 cache hits.
@@ -244,7 +244,7 @@ repository `fmtlib` must be specified via the `--main` option:
 ``` sh
 $ jst build --main fmtlib fmt
 INFO: Found 4 repositories involved
-INFO: Requested target 'fmtlib//:fmt' with config: {}
+INFO: Requested target '@fmtlib//:fmt' with config: {}
 INFO: Export targets found: 0 cached, 0 uncached, 1 not eligible for caching
 INFO: Discovered 3 actions, 0 tree overlays, 1 trees, 0 blobs
 INFO: Processed 3 actions, 3 cache hits.
@@ -342,7 +342,7 @@ the benefits of the target cache should be visible on the second build:
 ``` sh
 $ jst build helloworld
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 0 cached, 1 uncached, 0 not eligible for caching
 INFO: Discovered 7 actions, 0 tree overlays, 3 trees, 0 blobs
 INFO: Processed 7 actions, 7 cache hits.
@@ -352,7 +352,7 @@ INFO: Backing up artifacts of 1 export targets
 $
 $ jst build helloworld
 INFO: Found 5 repositories involved
-INFO: Requested target 'tutorial//:helloworld' with config: {}
+INFO: Requested target '@tutorial//:helloworld' with config: {}
 INFO: Export targets found: 1 cached, 0 uncached, 0 not eligible for caching
 INFO: Discovered 4 actions, 0 tree overlays, 2 trees, 0 blobs
 INFO: Processed 4 actions, 4 cache hits.
@@ -512,7 +512,7 @@ staging mechanism the logical repository it belongs to is rooted in the
 ``` {.jsonnet srcname="etc/import.prebuilt/TARGETS.fmt"}
 {
   fmt: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     name: ['fmt'],
     stage: ['fmt'],
     hdrs: [jst.tree('.')],
@@ -529,7 +529,7 @@ and the actual packaging-build version of `libfmt`, as provided in
 
 ``` {.jsonnet srcname="etc/import.pkgconfig/TARGETS.fmt"}
 {
-  fmt: {type: @'rules//CC/pkgconfig:system_library', name: ['fmt']},
+  fmt: {type: '@rules//CC/pkgconfig:system_library', name: ['fmt']},
 }
 ```
 

@@ -15,14 +15,14 @@ to their rule definition. For rules, the same naming scheme as for
 targets applies. However, built-in rules (always named by a single
 string) take precedence in naming; to explicitly refer to a rule defined
 in the current module, the module has to be specified, possibly by a
-relative path, e.g., `@'./:install'`.
+relative path, e.g., `'./:install'`.
 
 Code shared between rules is written as functions. Functions used by a
 single rules file are defined as `local` functions before the map of
 rules; functions used by several rules files are defined in separate
 Jstlang files and imported, either from the same rule root
-(`import '/CC/expressions.jst'`) or from the rule root of another
-repository (`import @'rules//CC/expressions.jst'`).
+(`import '//CC/expressions.jst'`) or from the rule root of another
+repository (`import '@rules//CC/expressions.jst'`).
 
 ``` jsonnet
 // Stage all artifacts of the targets in field "srcs"
@@ -471,12 +471,12 @@ Then we have to do some additional considerations.
 So, the overall organization of our rule might be as follows.
 
 ``` jsonnet
-local transitions = import '/transitions/expressions.jst';
+local transitions = import '//transitions/expressions.jst';
 
 {
   generated_code: {
     target_fields: ['srcs'],
-    implicit: {generator: [@'//generators:foogen']},
+    implicit: {generator: ['//generators:foogen']},
     config_vars: ['ARCH', 'HOST_ARCH', 'TARGET_ARCH'],
     config_transitions: {generator: [transitions.for_host()]},
     expression: ...,

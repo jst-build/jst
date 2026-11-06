@@ -115,7 +115,7 @@ the target files. We first write a target file `utils/targets.generate`.
     type: 'generic',
     cmds: ['cd src && ../call-generator-targets.py ../TARGETS'],
     outs: ['TARGETS'],
-    deps: [@'utils//:call-generator-targets.py', 'src'],
+    deps: ['@utils//:call-generator-targets.py', 'src'],
   },
 
   src: {
@@ -275,7 +275,7 @@ Therefore, our final repository description looks as follows.
 }
 ```
 
-With that, we can now analyse `@'//bar:""'` and see that the dependency we
+With that, we can now analyse `'//bar:""'` and see that the dependency we
 wrote in `src/bar/deps` is honored. With increased log level we can also see
 hints on the computation of the computed roots.
 

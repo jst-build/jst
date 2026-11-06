@@ -70,7 +70,7 @@ dependency could look as follows.
 ``` jsonnet
 {
   libfoo: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     arguments_config: ['DEBUG'],
     name: ['foo'],
     hdrs: ['foo.hpp'],

@@ -4,7 +4,7 @@
   // - uses the rule '//shell:defaults'
   // - inherits shell defaults from base (toolchain)
   defaults: {
-    type: @'//shell:defaults',
-    base: [@'base//shell:defaults'],
+    type: '//shell:defaults',
+    base: ['@base//shell:defaults'],
   },
 }
