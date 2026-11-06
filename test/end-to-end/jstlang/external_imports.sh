@@ -56,7 +56,7 @@ cat <<'EOF' > lib-rules/common.jst
 EOF
 
 cat <<'EOF' > main/RULES
-local lib = import @'lib//common.jst';
+local lib = import '@lib//common.jst';
 {
   greet: {
     expression:
@@ -67,7 +67,7 @@ local lib = import @'lib//common.jst';
 EOF
 
 cat <<'EOF' > main/TARGETS
-local lib = import @'lib//common.jst';
+local lib = import '@lib//common.jst';
 {
   from_targets: {type: 'file_gen', name: 'targets.txt', data: lib.greeting},
   from_rules: {type: 'greet'},
@@ -76,7 +76,7 @@ local lib = import @'lib//common.jst';
 EOF
 
 cat <<'EOF' > main/errors/TARGETS
-local other = import @'other//common.jst';
+local other = import '@other//common.jst';
 {unbound: {type: 'file_gen', name: 'out.txt', data: other.greeting}}
 EOF
 

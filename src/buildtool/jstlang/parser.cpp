@@ -948,10 +948,27 @@ auto NativeParser::ParseSource(SourceFile const& source) -> ASTNodePtr {
             switch (tok.type) {
                 case TokenType::STRING_SINGLE:
                 case TokenType::STRING_DOUBLE:
-                    file = tok.value;
+                    if (tok.value.starts_with("@")) {
+                        // file-reference to another repository:
+                        // '@<repo>//<file>'
+                        auto const& data = DecodeRefString(
+                            tok.value, jstlang::RefContext::File);
+                        file = data.module;
+                        repo = data.repo;
+                    }
+                    else if (tok.value.starts_with("//")) {
+                        // relative to the root of the current repository
+                        file = tok.value.substr(1);
+                    }
+                    else {
+                        // relative to the current file (or, as legacy, an
+                        // absolute path '/<file>' relative to the root)
+                        file = tok.value;
+                    }
                     break;
                 case TokenType::REF_STRING: {
-                    // file-reference to another repository: @'<repo>//<file>'
+                    // legacy file-reference to another repository:
+                    // @'<repo>//<file>'
                     auto const& data =
                         DecodeRefString(tok.value,
                                         jstlang::RefContext::File,

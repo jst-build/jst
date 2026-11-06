@@ -152,6 +152,28 @@ TEST_CASE("imports", "[other repositories]") {
     CHECK_THROWS_AS((jstlang::Parser{Context(), reader, true})
                         .ParseData(kMain, "import @'lib//lib.jst'"),
                     jstlang::ASTParseError);
+
+    // the same with plain strings, external ones starting with '@'
+    CHECK(jstlang::CollectImports(
+              parse(RootKind::Rules, "import '@lib//sub/x.jst'", true)) ==
+          std::vector{FileLocation{
+              .repo = "lib-v1", .path = "sub/x.jst", .root = RootKind::Rules}});
+    CHECK(Lower(parse(RootKind::Targets,
+                      "local lib = import '@lib//lib.jst'; lib.v")) ==
+          "targets");
+    CHECK_THROWS_AS(parse(RootKind::Rules, "import '@other//lib.jst'", true),
+                    jstlang::ASTParseError);
+
+    // '//' is the root of the current repository, other paths are relative
+    // to the importing file
+    CHECK(jstlang::CollectImports(
+              parse(RootKind::Rules, "import '//sub/x.jst'", true)) ==
+          std::vector{FileLocation{
+              .repo = "main", .path = "sub/x.jst", .root = RootKind::Rules}});
+    CHECK(jstlang::CollectImports(
+              parse(RootKind::Rules, "import './x.jst'", true)) ==
+          std::vector{FileLocation{
+              .repo = "main", .path = "dir/x.jst", .root = RootKind::Rules}});
 }
 
 TEST_CASE("imports", "[file locations]") {

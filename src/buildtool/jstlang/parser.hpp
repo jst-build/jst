@@ -42,7 +42,7 @@ class Parser {
     /// \brief Create parser.
     /// Imports are parsed recursively (via reader), unless they are deferred:
     /// then imports are unresolved references (ForeignNode). Files imported
-    /// from other repositories (`import @'<repo>//<path>'`) are read from the
+    /// from other repositories (`import '@<repo>//<path>'`) are read from the
     /// root of the same kind of the repository that the importing file's
     /// repository binds to the given name.
     /// \param context       The context of the created AST nodes, which must
