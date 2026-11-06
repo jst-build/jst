@@ -96,20 +96,20 @@ check_fail() {
 }
 
 # without a repository in the reference, the configuration decides
-check 'main_repo//:t' ':t'
+check '@main_repo//:t' ':t'
 
 # the repository segment is a binding of the main repository
-check 'dep_repo//:t' 'dep//:t'
+check '@dep_repo//:t' '@dep//:t'
 
 # --main selects the main repository
-check 'other_repo//:t' --main other_repo ':t'
+check '@other_repo//:t' --main other_repo ':t'
 
 # ... and the reference is then resolved from its point of view
-check 'dep_repo//:t' --main other_repo 'dep//:t'
+check '@dep_repo//:t' --main other_repo '@dep//:t'
 
 # a repository is named by its binding, not by its own name, and the main
 # repository does not bind itself
-check_fail 'not bound by repository' 'dep_repo//:t'
-check_fail 'not bound by repository' 'main_repo//:t'
+check_fail 'not bound by repository' '@dep_repo//:t'
+check_fail 'not bound by repository' '@main_repo//:t'
 
 echo OK

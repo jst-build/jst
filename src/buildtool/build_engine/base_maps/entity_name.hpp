@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
 #define INCLUDED_SRC_BUILDTOOL_BUILD_ENGINE_BASE_MAPS_ENTITY_NAME_HPP
 
 #include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <optional>
@@ -29,6 +31,7 @@
 #include "src/buildtool/build_engine/expression/expression.hpp"
 #include "src/buildtool/build_engine/expression/expression_ptr.hpp"
 #include "src/buildtool/common/repository_config.hpp"
+#include "src/buildtool/jstlang/ref.hpp"
 
 namespace BuildMaps::Base {
 
@@ -259,6 +262,98 @@ template <typename T>
     }
 }
 
+/// \brief Resolve a decoded reference relative to the entity it is given in;
+/// an omitted target (only possible on the command line) yields an empty name.
+[[nodiscard]] inline auto ParseEntityNameFromRefData(
+    jstlang::RefData const& ref,
+    EntityName const& current,
+    gsl::not_null<const RepositoryConfig*> const& repo_config,
+    std::optional<std::function<void(std::string const&)>> logger =
+        std::nullopt) noexcept -> std::optional<EntityName> {
+    try {
+        auto const& x = current.GetNamedTarget();
+        auto const& name = ref.target.value_or("");
+        switch (ref.type) {
+            case jstlang::RefType::Local:
+                return EntityName{x.repository, x.module, name};
+            case jstlang::RefType::Rel: {
+                auto const module =
+                    (std::filesystem::path{x.module} / ref.module)
+                        .lexically_normal()
+                        .string();
+                if (module.compare(0, 3, "../") != 0) {
+                    return EntityName{x.repository, module, name};
+                }
+                if (logger) {
+                    (*logger)(fmt::format(
+                        "Relative module name {} is outside of workspace",
+                        ref.module));
+                }
+                return std::nullopt;
+            }
+            case jstlang::RefType::Abs:
+                return EntityName{x.repository, ref.module, name};
+            case jstlang::RefType::Ext: {
+                auto const& local_repo_name = ref.repo.value_or("");
+                auto const* repo_name =
+                    repo_config->GlobalName(x.repository, local_repo_name);
+                if (repo_name != nullptr) {
+                    return EntityName{*repo_name, ref.module, name};
+                }
+                if (logger) {
+                    (*logger)(fmt::format(
+                        "Repository {} is not bound by repository {}",
+                        local_repo_name,
+                        x.repository));
+                }
+                return std::nullopt;
+            }
+        }
+        return std::nullopt;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+/// \brief Parse a target name given as string: a reference (starting with
+/// ':', './', '//', or '@'), or otherwise the name of a target in the current
+/// module.
+[[nodiscard]] inline auto ParseEntityNameFromString(
+    std::string const& str,
+    EntityName const& current,
+    gsl::not_null<const RepositoryConfig*> const& repo_config,
+    std::optional<std::function<void(std::string const&)>> const& logger =
+        std::nullopt) noexcept -> std::optional<EntityName> {
+    try {
+        if (jstlang::IsReference(str)) {
+            auto ref = std::optional<jstlang::RefData>{};
+            try {
+                ref = jstlang::DecodeRefString(str);
+            } catch (std::exception const& e) {
+                if (logger) {
+                    (*logger)(e.what());
+                }
+                return std::nullopt;
+            }
+            return ParseEntityNameFromRefData(
+                *ref, current, repo_config, logger);
+        }
+        if (str.find("//") != std::string::npos) {
+            if (logger) {
+                (*logger)(fmt::format(
+                    "Target name {} contains '//'; external references are "
+                    "written as '@<repo>//<module>:<target>'",
+                    nlohmann::json(str).dump()));
+            }
+            return std::nullopt;
+        }
+        auto const& x = current.GetNamedTarget();
+        return EntityName{x.repository, x.module, str};
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
 template <typename T>
 [[nodiscard]] inline auto ParseEntityName(
     T const& source,
@@ -269,10 +364,10 @@ template <typename T>
     try {
         std::optional<EntityName> res = std::nullopt;
         if (IsString(source)) {
-            const auto& x = current.GetNamedTarget();
-            return EntityName{x.repository, x.module, GetString(source)};
+            res = ParseEntityNameFromString(
+                GetString(source), current, repo_config, logger);
         }
-        if (IsList(source)) {
+        else if (IsList(source)) {
             auto const& list = GetList(source);
             const auto list_size = Size(list);
             if (list_size == 2) {

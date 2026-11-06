@@ -1,4 +1,5 @@
 // Copyright 2022 Huawei Cloud Computing Technology Co., Ltd.
+// Copyright 2026 The jst-build authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -446,16 +447,21 @@ void SetupFileChunker() {
     // a bare name is the target of that name in the current module, also the
     // empty name, which is a target like any other
     auto const& ref_str = *target;
-    if (ref_str.find("//") == std::string::npos and
-        not ref_str.starts_with(":") and not ref_str.starts_with("./")) {
+    if (not jstlang::IsReference(ref_str)) {
+        if (ref_str.find("//") != std::string::npos) {
+            Logger::Log(LogLevel::Error,
+                        "Target name {} contains '//'; external references are "
+                        "written as '@<repo>//<module>:<target>'.",
+                        nlohmann::json(ref_str).dump());
+            std::exit(kExitFailure);
+        }
         return jstlang::RefData{.type = jstlang::RefType::Local,
                                 .repo = std::nullopt,
                                 .module = {},
                                 .target = ref_str};
     }
     try {
-        return jstlang::DecodeRefString(
-            ref_str, jstlang::RefContext::CLI, jstlang::RefSyntax::Legacy);
+        return jstlang::DecodeRefString(ref_str, jstlang::RefContext::CLI);
     } catch (std::exception const& e) {
         Logger::Log(LogLevel::Error, "{}", e.what());
         std::exit(kExitFailure);
@@ -490,55 +496,25 @@ void SetupFileChunker() {
 
     // the repository segment is a name bound by the main repository, just as
     // it is bound by the repository a target file belongs to
-    auto repo = main_repo;
-    if (ref.repo) {
-        auto const* global = repo_config->GlobalName(main_repo, *ref.repo);
-        if (global == nullptr) {
-            Logger::Log(LogLevel::Error,
-                        "Repository {} is not bound by repository {}.",
-                        *ref.repo,
-                        main_repo);
-            std::exit(kExitFailure);
-        }
-        repo = *global;
+    auto entity = Base::ParseEntityNameFromRefData(
+        ref,
+        Base::EntityName{main_repo, current_module, ""},
+        repo_config,
+        [](std::string const& msg) {
+            Logger::Log(LogLevel::Error, "{}", msg);
+        });
+    if (not entity) {
+        std::exit(kExitFailure);
+    }
+    auto named = entity->GetNamedTarget();
+    if (not ref.target.has_value()) {
+        named.name =
+            DefaultTargetName(repo_config, named.repository, named.module);
     }
 
-    std::string module{};
-    switch (ref.type) {
-        case jstlang::RefType::Local:
-            module = current_module;
-            break;
-        case jstlang::RefType::Rel: {
-            auto const rel =
-                (std::filesystem::path{current_module} / ref.module)
-                    .lexically_normal()
-                    .string();
-            if (rel.compare(0, 3, "../") == 0) {
-                Logger::Log(LogLevel::Error,
-                            "Relative module name {} is outside of workspace.",
-                            ref.module);
-                std::exit(kExitFailure);
-            }
-            module = rel;
-        } break;
-        case jstlang::RefType::Abs:
-        case jstlang::RefType::Ext:
-            module = ref.module;
-            break;
-    }
-    if (module == ".") {
-        module = "";
-    }
-
-    auto target = ref.target.has_value()
-                      ? *ref.target
-                      : DefaultTargetName(repo_config, repo, module);
-
-    return {
-        Target::ConfiguredTarget{
-            .target = Base::EntityName{Base::NamedTarget{repo, module, target}},
-            .config = std::move(config)},
-        std::move(ordered_config)};
+    return {Target::ConfiguredTarget{.target = Base::EntityName{named},
+                                     .config = std::move(config)},
+            std::move(ordered_config)};
 }
 
 [[nodiscard]] auto DetermineWorkspaceRootByLookingForMarkers() noexcept

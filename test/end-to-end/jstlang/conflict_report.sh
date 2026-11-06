@@ -65,7 +65,7 @@ grep 'Conflicting files' "${LOG}"
 grep 'conflicting values for key "out.txt"' "${LOG}"
 [ "$(grep -c '"type":"ACTION"' "${LOG}")" -ge 2 ]
 [ "$(grep -c 'occurs in direct dependencies' "${LOG}")" -eq 2 ]
-grep -F "'\"\"//:hello'" "${LOG}"
-grep -F "'\"\"//:world'" "${LOG}"
+grep -F "'@\"\"//:hello'" "${LOG}"
+grep -F "'@\"\"//:world'" "${LOG}"
 
 echo "OK"

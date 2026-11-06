@@ -101,44 +101,72 @@ check_fail() {
 cd "${SRCDIR}"
 
 echo "=== from the top-level module ==="
-check '""//:baz'         baz
-check '""//:baz'         :baz
-check '""//:AAAdefault'  :
-check '""//:AAAdefault'
-check '""//sub:baz'      ./sub:baz
-check '""//sub:AAAdefault' ./sub:
-check '""//foo/bar:baz'  //foo/bar:baz
-check '""//foo/bar:AAAdefault' //foo/bar:
-check '""//foo/bar:bar'  //foo/bar
-check '""//:AAAdefault'  //:
-check 'other//mod:baz'   other//mod:baz
-check 'other//mod:AAAdefault' other//mod:
-check 'other//:AAAdefault' other//:
+check '@""//:baz'         baz
+check '@""//:baz'         :baz
+check '@""//:AAAdefault'  :
+check '@""//:AAAdefault'
+check '@""//sub:baz'      ./sub:baz
+check '@""//sub:AAAdefault' ./sub:
+check '@""//foo/bar:baz'  //foo/bar:baz
+check '@""//foo/bar:AAAdefault' //foo/bar:
+check '@""//foo/bar:bar'  //foo/bar
+check '@""//:AAAdefault'  //:
+check '@other//mod:baz'   @other//mod:baz
+check '@other//mod:AAAdefault' @other//mod:
+check '@other//:AAAdefault' @other//:
 
 echo "=== the repository segment is resolved to the bound repository ==="
-check 'other//mod:baz'   oth//mod:baz
-check 'other//:AAAdefault' oth//:
+check '@other//mod:baz'   @oth//mod:baz
+check '@other//:AAAdefault' @oth//:
 
 echo "=== from a subdirectory, the current module is used ==="
 cd "${SRCDIR}/foo/bar"
-check '""//foo/bar:baz'        baz
-check '""//foo/bar:AAAdefault' :
-check '""//foo/bar:AAAdefault'
-check '""//:AAAdefault'        //:
-check 'other//mod:baz'         other//mod:baz
+check '@""//foo/bar:baz'        baz
+check '@""//foo/bar:AAAdefault' :
+check '@""//foo/bar:AAAdefault'
+check '@""//:AAAdefault'        //:
+check '@other//mod:baz'         @other//mod:baz
 
 echo "=== names needing a fully qualified reference ==="
 cd "${SRCDIR}"
-check '""//:baz'  ':"baz"'
-check '""//:baz'  '//:"baz"'
+check '@""//:baz'  ':"baz"'
+check '@""//:baz'  '//:"baz"'
 
 echo "=== errors ==="
 check_fail 'Empty module without target' '//'
-check_fail 'Missing module name' 'other//'
+check_fail 'Missing module name' '@other//'
 check_fail 'outside of workspace' './../..:baz'
 # a repository the main repository does not bind cannot be named, and the main
 # repository does not bind itself either
-check_fail 'not bound by repository' 'nosuchrepo//:baz'
-check_fail 'not bound by repository' '""//:baz'
+check_fail 'not bound by repository' '@nosuchrepo//:baz'
+check_fail 'not bound by repository' '@""//:baz'
+# without '@', a name containing '//' is not an external reference
+check_fail "external references are written as '@" 'other//mod:baz'
+
+echo "=== references as plain strings in target files ==="
+mkdir -p "${SRCDIR}/refs/sub"
+target_file > "${SRCDIR}/refs/sub/TARGETS"
+cat > "${SRCDIR}/refs/TARGETS" <<'EOF'
+{ "all":
+  { "type": "install"
+  , "dirs":
+    [ ["baz", "plain"]
+    , [":baz", "local"]
+    , [":./weird", "escaped"]
+    , ["./sub:baz", "relative"]
+    , ["//foo/bar:baz", "absolute"]
+    , ["@oth//mod:baz", "external"]
+    ]
+  }
+, "bad": {"type": "install", "dirs": [["oth//mod:baz", "x"]]}
+, "baz": {"type": "generic", "outs": ["o"], "cmds": ["touch o"]}
+, "./weird": {"type": "generic", "outs": ["o"], "cmds": ["touch o"]}
+}
+EOF
+check '@""//refs:all' //refs:all
+for dir in plain local escaped relative absolute external; do
+  grep -F "\"${dir}/o\"" "${ROOT}/out.log"
+done
+check_fail "external references are written as '@" //refs:bad
 
 echo OK
