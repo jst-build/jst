@@ -213,26 +213,25 @@ local foo = |||
 
 ### Imports
 
-With the `import` keyword static data can be imported from other files within
-the same repository file root. Relative paths are always considered to be
-relative to the current file, while absolute paths are considered to be relative
-to the workspace root of the current repository.
+With the `import` keyword static data can be imported from other files. The
+path of the imported file is given with the same prefixes as
+[references](#references):
+
+ - `'//<path>'` is relative to the root of the current repository,
+ - `'@<repo>//<path>'` is relative to the root of another repository, with
+   `<repo>` being a name the current repository binds to the other repository
+   (as for target references), and
+ - any other path (e.g., `'./<path>'`) is relative to the current file.
+
+The file is read from the root of the same kind as the current file, e.g., a
+`RULES` file imports from the rule root.
 
 ``` jsonnet
-local foo = import '/foo.jst';  // contains: {bar: 'BAR', baz(): 'BAZ'}
+local foo = import '//foo.jst';  // contains: {bar: 'BAR', baz(): 'BAZ'}
 foo.bar;    // 'BAR'
 foo.baz();  // 'BAZ'
-```
 
-Files of other repositories are imported by a file-reference
-`@'<repo>//<path>'`, with `<repo>` being a name the current repository binds
-to the other repository (as for target references), and the path being relative
-to the root of the other repository. The file is read from the root of the same
-kind as the current file, e.g., a `RULES` file imports from the rule root of
-the other repository.
-
-``` jsonnet
-local common = import @'rules//expressions.jst';
+local common = import '@rules//expressions.jst';
 ```
 
 ### Runtime Variables
@@ -253,9 +252,11 @@ else 'DEBUG variable is not set or contains negative truth value'
 
 ### References
 
-References to entities (targets, rules, etc.) are represented by the syntactical
-construct `@'<ref>'`. The encoding of `<ref>` and its meaning are explained in
-section [Target naming](overview.md#target-naming) of the *Tool Overview*
+References to entities (targets, rules, etc.) are plain strings. Where a target
+or rule is expected (e.g., in a target field), a string starting with `:`, `./`,
+`//`, or `@` is a reference; any other string names a target of the current
+module. The encoding of references and their meaning are explained in section
+[Target naming](overview.md#target-naming) of the *Tool Overview*
 documentation.
 
 ``` jsonnet
@@ -263,10 +264,11 @@ documentation.
   ALL: {
     type: 'install',
     deps: [
-      @':README.md',        // local reference (same as 'README.md')
-      @'./bin:main',        // relative reference
-      @'//doc:html',        // absolute reference
-      @'ext//lib:shared',   // external reference
+      'README.md',          // target of the current module
+      ':README.md',         // the same, as local reference
+      './bin:main',         // relative reference
+      '//doc:html',         // absolute reference
+      '@ext//lib:shared',   // external reference
     ],
   }
 }
@@ -695,7 +697,7 @@ in a `TARGETS` file; their argument has to be a static string.
    submodule) matching the `pattern`.
 
    ``` jsonnet
-   {lib: {type: @'rules//CC:library', srcs: [jst.glob('*.c')]}}
+   {lib: {type: '@rules//CC:library', srcs: [jst.glob('*.c')]}}
    ```
 
 #### Constructs related to reporting of user errors
@@ -769,30 +771,6 @@ $ jst eval -D'{"BAR":"bar"}' snippet.jst
 "foobar"
 ```
 
-### Generate jst-build IR
-
-Advanced users might want to investigate the generated jst-build IR (JSON),
-which can be requested by specifying the flag `--ir`. The IR is an expression
-of the [JSON expression language](expressions.md):
-
-``` sh
-$ jst eval --ir snippet.jst
-{
-  "type": "join",
-  "$1": [
-    "foo",
-    {
-      "type": "var",
-      "name": "BAR",
-      "default": ""
-    }
-  ]
-}
-```
-
-> Note: For `TARGETS` files, use the flag `--targets`, which already implies the
-> `--ir` flag.
-
 ### Static type checks
 
 Static type errors will be detected immediately and reported with a detailed
@@ -801,11 +779,8 @@ log message:
 ``` sh
 $ echo "'foo' + 42 + 'bar'" > snippet.jst
 $ jst eval snippet.jst
-ERROR: Lowering failed with:
-       snippet.jst:1:6-11: Unsupported types for binary operation. Found String and Number.
+ERROR: [""] snippet.jst:1:6-11: Unsupported types for binary operation. Found String and Number.
 
        1 |  'foo' + 42 + 'bar'
          |       ^^^^^^
-
-ERROR: Parsing input file failed.
 ```

@@ -113,27 +113,30 @@ Targets
 
 In description files, targets and rules are referred to by name. As the
 context always determines whether a name for a target or a rule is
-expected, they both use the same naming scheme. Names are written as
-[references](jstlang.md#references) `@'<ref>'`, with `<ref>` being of one
-of the following forms.
+expected, they both use the same naming scheme. A name is a string; if it
+starts with `:`, `./`, `//`, or `@`, it is a
+[reference](jstlang.md#references) of one of the following forms,
+otherwise it is the name of a target in the same module.
 
- - `:<target>` refers to the target `<target>` in the same module. A
-   single string `'<target>'` is a short-hand for `@':<target>'`.
+ - `:<target>` refers to the target `<target>` in the same module. This
+   form is needed for target names starting with one of the above
+   prefixes, e.g., `':./foo.c'` for the source file `./foo.c`.
  - `./<module>:<target>` refers to the target `<target>` in the module
    that has the path `<module>` relative to the current module (in the
    current repository).
- - `<repo>//<module>:<target>` refers to the target `<target>` in the
+ - `//<module>:<target>` refers to the target `<target>` in the module
+   `<module>` of the current repository; an empty `<module>` refers to
+   the top-level module.
+ - `@<repo>//<module>:<target>` refers to the target `<target>` in the
    module `<module>` of the repository `<repo>`, a name the current
-   repository binds to another repository. If `<repo>` is omitted, the
-   current repository is meant; an empty `<module>` refers to the
-   top-level module.
+   repository binds to another repository.
 
-For the latter two forms, omitting `:<target>` refers to the target named
-like the last path segment of the module, e.g., `@'//foo/bar'` refers to
-the target `bar` in module `foo/bar`. Every segment may be specified in
-double-quotes, containing a JSON-encoded string. The same encoding is
-used to name targets on the command line, which additionally allows
-some shortcuts, see `jst`(1).
+For the latter three forms, omitting `:<target>` refers to the target
+named like the last path segment of the module, e.g., `'//foo/bar'`
+refers to the target `bar` in module `foo/bar`. Every segment may be
+specified in double-quotes, containing a JSON-encoded string. The same
+encoding is used to name targets on the command line, which additionally
+allows some shortcuts, see `jst`(1).
 
 Additionally, there are special targets that can also be referred to in
 target files.

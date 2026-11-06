@@ -3,18 +3,18 @@
 ### Breaking changes
 
 - Targets are named on the command line by a single reference, of the same
-  syntax that target files use: `[<repository>//][<module>][:[<target>]]`. The
+  syntax that target files use: `[@<repository>//][<module>][:[<target>]]`. The
   positional pair `<module> <target>` is gone, so `jst build tests greet`
   becomes `jst build //tests:greet`. Two shortcuts exist that a target file
   does not have: a bare name is a target of the current module, so `jst build
   baz` is `jst build :baz`; and an empty target segment is the default target
-  of that module, which `:`, `./sub:`, `//tests:` and `repo//:` name, and
+  of that module, which `:`, `./sub:`, `//tests:` and `@repo//:` name, and
   which naming no target at all keeps meaning. Note that `//foo/bar` is still
   the target `bar` of module `foo/bar`, while `//foo/bar:` is its default
   target. Naming the default target of a given module is new; previously it
   was only reachable by changing into its directory.
 - A target reference may name the repository to take the target from, as
-  `repo//module:target`, which was previously not expressible as a positional
+  `@repo//module:target`, which was previously not expressible as a positional
   argument at all. The segment means the same thing as it does in a target
   file: a name bound in the `"bindings"` of the repository the reference is
   read from, which on the command line is the main repository. A reference can
@@ -89,6 +89,21 @@
 - `jst describe --json` reports documentation fields (`doc`, `field_doc`,
   `config_doc`, etc.) as a single string instead of a list of strings. Lists
   given in the deprecated form are joined, each entry terminated by a newline.
+- Target references are plain strings: wherever a target or rule is expected,
+  a string starting with `:`, `./`, `//`, or `@` is a reference
+  (`@<repo>//<module>:<target>` for other repositories), and any other string
+  names a target of the current module, as before. This also applies to JSON
+  target files. A target whose name starts with one of these prefixes is named
+  as `:<name>`; names containing `//` are rejected. Targets are reported in the
+  same syntax, e.g., `'@repo//module:target'`.
+- Imports use the same prefixes: `import '//<path>'` imports from the root of
+  the current repository, `import '@<repo>//<path>'` from another repository,
+  and any other path is relative to the importing file.
+- `jst eval` evaluates Jstlang code directly, in the analysis' evaluator; the
+  options `--ir` and `--targets`, which printed the code lowered to the JSON
+  expression language, are gone, as is the lowering itself. Accordingly,
+  `jstlangc` evaluates a Jstlang file, in the configuration given by `-D` and
+  `-c`, instead of lowering it.
 
 ### Other changes
 
@@ -111,7 +126,7 @@
   limit is set.
 - The `jstlang` language implementation, formerly vendored as a separate
   repository under `extern/justlang`, now lives in the main source tree at
-  `src/buildtool/jstlang`. Its compiler binary is available as the export
+  `src/buildtool/jstlang`. Its evaluator binary is available as the export
   target `jstlangc`, which is deliberately not part of `INSTALL`.
 - Rules can now be defined in `jstlang`, like targets; an experimental
   translation of the rules shipped with `jst` (`etc/rules`) have shown: For a

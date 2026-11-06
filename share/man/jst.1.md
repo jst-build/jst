@@ -46,13 +46,14 @@ the current working directory.
 
 A target is named on the command line by a single *target-reference*, of
 the same syntax that target files use:
-*`[<repository>//][<module>][:[<target>]]`*. Two shortcuts exist that a
-target file does not have: a bare name is the target of that name in the
-module of the current working directory (so **`baz`** is the same as
-**`:baz`**), and an empty target segment denotes the default target of the
-module (**`:`**, **`./sub:`**, **`//tests:`**, *`repo`***`//:`**). Without
-any argument, the default target of the current module is built, which is
-the same as **`:`**.
+*`[@<repository>//][<module>][:[<target>]]`*. As in target files, a name
+not starting with **`:`**, **`./`**, **`//`**, or **`@`** is the target of
+that name in the module of the current working directory (so **`baz`** is
+the same as **`:baz`**). Additionally, an empty target segment denotes the
+default target of the module (**`:`**, **`./sub:`**, **`//tests:`**,
+**`@`***`repo`***`//:`**), which a target file cannot name. Without any
+argument, the default target of the current module is built, which is the
+same as **`:`**.
 
 A module given as **`//`***`module`* is relative to the target root, one
 given as **`./`***`module`* is relative to the module of the current
@@ -1139,12 +1140,10 @@ oldest generation.
 ----------
 
 The **`eval`** subcommand evaluates Jstlang code from file (use `-`
-for evaluating code from stdin). Runtime data can injected via options
-**`--config`** and **`--defines`**. To stop the evaluation after
-preprocessing and print only the generated low-level JSON code, use the
-option **`--ir`**. By default, no special restrictions on the file type
-are applied during preprocessing. The restrictions of `TARGETS` files
-can be enabled by specifying **`--targets`** (implying **`--ir`**).
+for evaluating code from stdin) and prints the resulting value as JSON.
+Imported files are read relative to the root given by **`--root`**
+(default: the current working directory). Runtime data can be injected via
+options **`--config`** and **`--defines`**.
 
 **`execute`**
 -------------
