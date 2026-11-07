@@ -95,6 +95,8 @@ auto ASTEvalVisitor::CallBuiltinWithParams(
     };
     try {
         return std::invoke(bt_it->second, loc, eval_callback, params);
+    } catch (ASTEvalError const&) {
+        throw;  // keeps the values involved in the error
     } catch (std::exception const& e) {
         throw ASTEvalError{e.what()};
     }
@@ -886,6 +888,11 @@ auto ASTEvalVisitor::Apply(CallNode const& caller,
             }
         }
         return WithScope(std::move(func_scope)).Evaluate(callee.GetBody());
+    } catch (ASTEvalError const& e) {
+        throw ASTEvalError{"Evaluating function call failed with:",
+                           caller.GetLocation(),
+                           e.what(),
+                           e.InvolvedValues()};
     } catch (std::exception const& e) {
         throw ASTEvalError{"Evaluating function call failed with:",
                            caller.GetLocation(),

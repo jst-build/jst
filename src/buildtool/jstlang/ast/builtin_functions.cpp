@@ -35,10 +35,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
 #include "src/buildtool/jstlang/ast/ast.hpp"
+#include "src/buildtool/jstlang/ast/eval_error.hpp"
 #include "src/buildtool/jstlang/ast/scope.hpp"
 #include "src/buildtool/jstlang/ast/to_json_visitor.hpp"
 
@@ -69,10 +71,13 @@ auto const kInitName = std::string{"jst init"};
         loc, jstlang::CallNode::target_t{std::move(name)});
 }
 
-class BuiltInError final : public std::runtime_error {
+class BuiltInError final : public jstlang::ASTEvalError {
   public:
-    explicit BuiltInError(jstlang::Location const& loc, std::string message)
-        : std::runtime_error(MakeMessage(loc, std::move(message))) {}
+    explicit BuiltInError(jstlang::Location const& loc,
+                          std::string message,
+                          std::vector<jstlang::ASTNodePtr> involved_values = {})
+        : ASTEvalError(MakeMessage(loc, std::move(message)),
+                       std::move(involved_values)) {}
 
   private:
     static auto MakeMessage(jstlang::Location const& loc,
@@ -111,6 +116,9 @@ template <typename T = jstlang::ASTNode>
 
 [[nodiscard]] auto NodeToJson(jstlang::ASTNodePtr const& node,
                               bool json_only) -> std::optional<nlohmann::json>;
+
+[[nodiscard]] auto DescribeValue(jstlang::ASTNodePtr const& node)
+    -> std::string;
 
 [[nodiscard]] auto CheckEqual(jstlang::ASTNodePtr const& lhs_node,
                               jstlang::ASTNodePtr const& rhs_node)
@@ -505,10 +513,23 @@ auto BuiltIn::map_union(Location const& loc,
                                             oss << msg_str->GetValue() << "\n";
                                         }
                                     }
-                                    oss << "disjoint union: Got conflicting "
-                                           "field name \""
-                                        << name->GetValue() << "\"";
-                                    throw BuiltInError(loc, oss.str());
+                                    else if (msg_node and
+                                             msg_node->TruthValue().value_or(
+                                                 true)) {
+                                        oss << DescribeValue(msg_node) << "\n";
+                                    }
+                                    oss << "disjoint union: conflicting values "
+                                           "for key "
+                                        << nlohmann::json(name->GetValue())
+                                               .dump()
+                                        << ":\n  - "
+                                        << DescribeValue(existing_field.second)
+                                        << "\n  - "
+                                        << DescribeValue(value_node);
+                                    throw BuiltInError(
+                                        loc,
+                                        oss.str(),
+                                        {existing_field.second, value_node});
                                 }
                             }
                             else {
@@ -2365,6 +2386,25 @@ template <typename T>
     } catch (...) {
         return std::nullopt;
     }
+}
+
+[[nodiscard]] auto DescribeValue(jstlang::ASTNodePtr const& node)
+    -> std::string {
+    // values of the build engine (e.g., artifacts) describe themselves
+    if (auto const* external = jstlang::ExternalValueNode::From(node.get())) {
+        return external->GetValue()->ToString();
+    }
+    // as for messages of the expression language, values are abbreviated
+    static constexpr std::size_t kMaxLength = 320;
+    auto json = NodeToJson(node, /*json_only=*/true);
+    if (not json) {
+        return "<unknown value>";
+    }
+    auto str = json->dump();
+    if (str.size() > kMaxLength) {
+        str = str.substr(0, kMaxLength - 3) + "...";
+    }
+    return str;
 }
 
 [[nodiscard]] auto CheckEqual(jstlang::ASTNodePtr const& lhs_node,

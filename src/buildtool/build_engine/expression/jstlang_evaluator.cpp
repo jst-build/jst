@@ -14,10 +14,12 @@
 
 #include "src/buildtool/build_engine/expression/jstlang_evaluator.hpp"
 
+#include <exception>
 #include <mutex>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 #include "src/buildtool/build_engine/expression/evaluator.hpp"
@@ -425,6 +427,30 @@ class RuleFunctions final {
     return fields;
 }
 
+/// \brief Description of a value involved in an error, or the empty string
+/// if the value cannot be described (e.g., a function or unevaluated code).
+[[nodiscard]] auto DescribeInvolvedValue(
+    ASTNodePtr const& value,
+    JstlangEvaluator::Annotator const& annotate) noexcept -> std::string {
+    try {
+        return annotate(ToExpression(value));
+    } catch (...) {
+        return std::string{};
+    }
+}
+
+/// \brief Message of an error, followed by the description of the values
+/// involved in it (e.g., where conflicting artifacts come from).
+[[nodiscard]] auto ErrorMessage(ASTEvalError const& e,
+                                JstlangEvaluator::Annotator const& annotate)
+    -> std::string {
+    auto message = std::string{e.what()};
+    for (auto const& value : e.InvolvedValues()) {
+        message += DescribeInvolvedValue(value, annotate);
+    }
+    return message;
+}
+
 }  // namespace
 
 auto JstlangEvaluator::Evaluate(
@@ -446,6 +472,8 @@ auto JstlangEvaluator::Evaluate(
             EvaluateValue(expr, bindings, env, functions ? &external : nullptr);
         RequireValue(value);
         return ToExpression(value);
+    } catch (ASTEvalError const& e) {
+        logger(ErrorMessage(e, annotate_object));
     } catch (std::exception const& e) {
         logger(e.what());
     }
@@ -501,6 +529,8 @@ auto JstlangEvaluator::Evaluate(
         }
         RequireValue(value);
         return ToExpression(value);
+    } catch (ASTEvalError const& e) {
+        logger(ErrorMessage(e, annotate_object));
     } catch (std::exception const& e) {
         logger(e.what());
     }

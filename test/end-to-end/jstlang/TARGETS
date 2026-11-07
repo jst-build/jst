@@ -13,10 +13,18 @@
     deps: [@'//:tool-under-test'],
   },
 
+  conflict_report: {
+    type: @'rules//shell/test:script',
+    name: ['conflict_report'],
+    test: ['conflict_report.sh'],
+    deps: ['//:tool-under-test'],
+  },
+
   TESTS: {
     type: @'rules//test:suite',
     stage: ['jstlang'],
     deps: [
+      'conflict_report',
       'rules_evaluation',
       'runtime_evaluation',
     ],

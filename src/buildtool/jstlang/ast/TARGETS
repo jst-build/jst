@@ -47,7 +47,7 @@
       'to_json_visitor',
       @'//src/buildtool/jstlang:ref',
     ],
-    'private-deps': [@'json//:json'],
+    'private-deps': ['eval_error', @'json//:json'],
     stage: ['src', 'buildtool', 'jstlang', 'ast'],
   },
 
