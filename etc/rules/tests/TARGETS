@@ -1,10 +1,11 @@
-{ "ALL":
-  { "type": "install"
-  , "deps":
-    [ ["test_cases/deps", "ALL"]
-    , ["test_cases/cflags", "ALL"]
-    , ["test_cases/config", "ALL"]
-    ]
-  , "tainted": ["test"]
-  }
+{
+  ALL: {
+    type: 'install',
+    deps: [
+      '//test_cases/deps:ALL',
+      '//test_cases/cflags:ALL',
+      '//test_cases/config:ALL',
+    ],
+    tainted: ['test'],
+  },
 }

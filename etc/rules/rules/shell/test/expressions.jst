@@ -1,0 +1,151 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+local shell = import '//shell/expressions.jst';
+
+// Run a shell test (one attempt, if attempt is given) and return its
+// result artifacts.
+local test_action(name, test_sh, keep, keep_dirs, runner, deps_fieldname, target_properties, attempt=null, deps_transition={}) =
+  local timeout_scale = jst.env('TIMEOUT_SCALE', default=1);
+  local runner = jst.union(
+    [
+      jst.union(
+        [
+          {runner: runner_}
+          for runner_ in jst.values(jst.dep_artifacts(runner))
+        ],
+      )
+      for runner in runner
+    ],
+  );
+  local toolchain_dirname = 'toolchain';
+  local toolchain = jst.to_subdir(
+    cc.default_toolchain(),
+    subdir=toolchain_dirname,
+  );
+  local sh = shell.default_sh();
+  local non_system_tools = cc.default_non_system_tools();
+  local sh_from_outside =
+    if jst.get('sh', non_system_tools) then
+      './toolchain/' + sh
+    else
+      sh;
+  local sh_from_workdir =
+    if jst.get('sh', non_system_tools) then
+      '../toolchain/' + sh
+    else
+      sh;
+  local with_env = {
+    'with-env': jst.make_blob(
+      jst.join(
+        shell.prolog(fieldname='defaults')
+        + ['', jst.join_cmd(['./runner'] + keep), ''],
+        sep='\n',
+      ),
+    ),
+  };
+  local invocation_cmd = [sh_from_workdir, '../test.sh'];
+  local invocation = {invocation: jst.make_blob(jst.join_cmd(invocation_cmd))};
+  local test_env = jst.env('TEST_ENV', default={});
+  local test_env_path = jst.get('PATH', test_env);
+  local path = jst.join(
+    (if test_env_path then [test_env_path]) + cc.default_path(),
+    sep=':',
+  );
+  local test_env =
+    if path then test_env + {PATH: path} else test_env;
+  local deps = jst.make_tree(
+    jst.union(
+      jst.flatten(
+        local fieldname = deps_fieldname;
+        local transition = deps_transition;
+        [
+          common.field_runfiles_list(
+            fieldname=fieldname,
+            transition=transition,
+          ),
+          common.field_artifacts_list(
+            fieldname=fieldname,
+            transition=transition,
+          ),
+        ],
+      ),
+      disjoint=true,
+      msg=['Field', deps_fieldname, 'has to stage in a conflict free way'],
+    ),
+  );
+  local run_libs = jst.make_tree(
+    common.field_map_provider(
+      fieldname=deps_fieldname,
+      provider='run-libs',
+      transition=deps_transition,
+    ),
+  );
+  local attempt_marker =
+    if attempt == null then {} else {ATTEMPT: jst.make_blob(attempt)};
+  local outs =
+    ['result', 'stdout', 'stderr', 'time-start', 'time-stop', 'pwd']
+    + ['work/' + filename for filename in keep];
+  local out_dirs = ['work/' + dir_path for dir_path in keep_dirs];
+  local action_label = 'Running shell test ' + name;
+  local inputs = jst.union(
+    [
+      {work: deps},
+      {libs: run_libs},
+      toolchain,
+      with_env,
+      runner,
+      invocation,
+      test_sh,
+      attempt_marker,
+    ],
+  );
+  local cmd = [sh_from_outside, 'with-env'];
+  local test_env =
+    (if attempt == null then {} else {TEST_RUN_NUMBER: attempt})
+    + test_env;
+  if attempt == null then
+    jst.action(
+      inputs=inputs,
+      cmd=cmd,
+      outs=outs,
+      out_dirs=out_dirs,
+      env=test_env,
+      label=action_label,
+      may_fail=['test'],
+      fail_message=jst.join(['shell test ', name, ' failed']),
+      timeout_scaling=timeout_scale,
+      execution_properties=target_properties,
+    )
+  else
+    jst.action(
+      inputs=inputs,
+      cmd=cmd,
+      outs=outs,
+      out_dirs=out_dirs,
+      env=test_env,
+      label=action_label,
+      may_fail=['test'],
+      fail_message=jst.join(
+        ['shell test ', name, ' failed (Run ', attempt, ')'],
+      ),
+      no_cache=['test'],
+      timeout_scaling=timeout_scale,
+      execution_properties=target_properties,
+    );
+
+// Run a shell test and return the result of the rule.
+local test_result(name, test_sh, keep, keep_dirs, runner, deps_fieldname, target_properties, lint, deps_transition={}) =
+  local test_results = test_action(
+    name=name,
+    test_sh=test_sh,
+    keep=keep,
+    keep_dirs=keep_dirs,
+    runner=runner,
+    deps_fieldname=deps_fieldname,
+    deps_transition=deps_transition,
+    target_properties=target_properties,
+  );
+  local runfiles = {[name]: jst.make_tree(test_results)};
+  jst.result(artifacts=test_results, runfiles=runfiles, provides={lint: lint});
+
+{test_action: test_action, test_result: test_result}

@@ -1,0 +1,87 @@
+local common = import '//expressions.jst';
+
+// Query the make tool from the MAKE provider of the foreign-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_make(defaults_transition={}) = common.field_list_provider(
+  fieldname='foreign-defaults',
+  provider='MAKE',
+  transition=defaults_transition,
+);
+
+// Query the cmake tool from the CMAKE provider of the foreign-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_cmake(defaults_transition={}) = common.field_list_provider(
+  fieldname='foreign-defaults',
+  provider='CMAKE',
+  transition=defaults_transition,
+);
+
+// Query the environment map from the ENV provider of the foreign-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_env(defaults_transition={}) = common.field_map_provider(
+  fieldname='foreign-defaults',
+  provider='ENV',
+  transition=defaults_transition,
+);
+
+// Query the list of PATH entries from the PATH provider of the
+// foreign-defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_path(defaults_transition={}) = common.field_list_provider(
+  fieldname='foreign-defaults',
+  provider='PATH',
+  transition=defaults_transition,
+);
+
+// Query the toolchain tree from the TOOLCHAIN provider of the
+// foreign-defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_toolchain(defaults_transition={}) = common.field_map_provider(
+  fieldname='foreign-defaults',
+  provider='TOOLCHAIN',
+  transition=defaults_transition,
+);
+
+// Query and merge the NON_SYSTEM_TOOLS maps of the foreign-defaults targets,
+// i.e., the tools taken from the toolchain instead of the system.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_non_system_tools(defaults_transition={}) = jst.union(
+  [
+    jst.dep_provides(
+      x,
+      'NON_SYSTEM_TOOLS',
+      transition=defaults_transition,
+      default={},
+    )
+    for x in jst.field('foreign-defaults')
+  ],
+);
+
+// Returns list of artifact maps (each map contains a single artifact)
+// with the given prefix being stripped from their path.
+// - `artifacts` A single map containing all artifacts.
+// - `paths`     List of (unprefixed) artifacts paths to consider.
+// - `prefix`    Prefix to strip from the artifact's path.
+local strip_prefix(artifacts, paths, prefix) = [
+  {[path]: jst.get(jst.join([prefix, path], sep='/'), artifacts)}
+  for path in paths
+];
+
+{
+  default_make: default_make,
+  default_cmake: default_cmake,
+  default_env: default_env,
+  default_path: default_path,
+  default_toolchain: default_toolchain,
+  default_non_system_tools: default_non_system_tools,
+  strip_prefix: strip_prefix,
+}

@@ -1,7 +1,8 @@
-{ "defaults":
-  { "type": ["CC/foreign", "defaults"]
-  , "MAKE": ["make"]
-  , "CMAKE": ["cmake"]
-  , "PATH": ["/bin", "/usr/bin"]
-  }
+{
+  defaults: {
+    type: '//CC/foreign:defaults',
+    MAKE: 'make',
+    CMAKE: 'cmake',
+    PATH: ['/bin', '/usr/bin'],
+  },
 }

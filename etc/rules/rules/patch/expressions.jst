@@ -1,0 +1,65 @@
+local common = import '//expressions.jst';
+
+// Query the patch tool from the PATCH provider of the patch-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_patch(defaults_transition={}) = common.field_list_provider(
+  fieldname='patch-defaults',
+  provider='PATCH',
+  transition=defaults_transition,
+);
+
+// Query the environment map from the ENV provider of the patch-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_env(defaults_transition={}) = common.field_map_provider(
+  fieldname='patch-defaults',
+  provider='ENV',
+  transition=defaults_transition,
+);
+
+// Query the list of PATH entries from the PATH provider of the
+// patch-defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_path(defaults_transition={}) = common.field_list_provider(
+  fieldname='patch-defaults',
+  provider='PATH',
+  transition=defaults_transition,
+);
+
+// Query the toolchain tree from the TOOLCHAIN provider of the patch-defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_toolchain(defaults_transition={}) = common.field_map_provider(
+  fieldname='patch-defaults',
+  provider='TOOLCHAIN',
+  transition=defaults_transition,
+);
+
+// Query and merge the NON_SYSTEM_TOOLS maps of the patch-defaults targets,
+// i.e., the tools taken from the toolchain instead of the system.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_non_system_tools(defaults_transition={}) = jst.union(
+  [
+    jst.dep_provides(
+      x,
+      'NON_SYSTEM_TOOLS',
+      transition=defaults_transition,
+      default={},
+    )
+    for x in jst.field('patch-defaults')
+  ],
+);
+
+{
+  default_patch: default_patch,
+  default_env: default_env,
+  default_path: default_path,
+  default_toolchain: default_toolchain,
+  default_non_system_tools: default_non_system_tools,
+}

@@ -52,7 +52,7 @@ for t in config.get('targets', []):
     target = t[1:]
     should_fail = t[0] == "-"
     ret = subprocess.run([
-        "jst", "install", "--local-build-root", "./build_root", "-C",
+        "jst", "backend", "install", "--local-build-root", "./build_root", "-B",
         "repos.json", "-o", "/".join(["./outs", target]),
         "-c", "conf_vars.json", target
     ],

@@ -1,230 +1,188 @@
-{ "CC test":
-  { "doc":
-    ["A test written in C++, depending on serve service and remote execution"]
-  , "tainted": ["test"]
-  , "target_fields": ["srcs", "private-hdrs", "private-deps", "data"]
-  , "string_fields":
-    [ "name"
-    , "args"
-    , "stage"
-    , "pure C"
-    , "private-defines"
-    , "private-cflags"
-    , "private-ldflags"
-    , "compatible remote"
-    ]
-  , "config_vars":
-    [ "ARCH"
-    , "HOST_ARCH"
-    , "CC"
-    , "CXX"
-    , "CFLAGS"
-    , "CXXFLAGS"
-    , "LDFLAGS"
-    , "ADD_CFLAGS"
-    , "ADD_CXXFLAGS"
-    , "ADD_LDFLAGS"
-    , "ENV"
-    , "TEST_ENV"
-    , "CC_TEST_LAUNCHER"
-    , "TEST_COMPATIBLE_REMOTE"
-    , "LINT"
-    ]
-  , "implicit":
-    { "defaults": [["@", "rules", "CC", "defaults"]]
-    , "runner": ["test_runner.py"]
-    , "just": [["", "tool-under-test"]]
-    }
-  , "field_doc":
-    { "name":
-      [ "The name of the test"
-      , ""
-      , "Used to name the test binary as well as for staging the test result"
-      ]
-    , "args": ["Command line arguments for the test binary"]
-    , "srcs": ["The sources of the test binary"]
-    , "private-hdrs":
-      [ "Any additional header files that need to be present when compiling"
-      , "the test binary."
-      ]
-    , "private-defines":
-      [ "List of defines set for source files local to this target."
-      , "Each list entry will be prepended by \"-D\"."
-      ]
-    , "private-cflags":
-      ["List of compile flags set for source files local to this target."]
-    , "private-ldflags":
-      [ "Additional linker flags for linking external libraries (not built"
-      , "by this tool, typically system libraries)."
-      ]
-    , "stage":
-      [ "The logical location of all header and source files."
-      , "Individual directory components are joined with \"/\"."
-      ]
-    , "pure C":
-      [ "If non-empty, compile as C sources rather than C++ sources."
-      , "In particular, CC is used to compile rather than CXX (or their"
-      , "respective defaults)."
-      ]
-    , "data": ["Any files the test binary needs access to when running"]
-    }
-  , "config_doc":
-    { "CC": ["The name of the C compiler to be used."]
-    , "CXX": ["The name of the C++ compiler to be used."]
-    , "CFLAGS":
-      [ "The flags for CC to be used instead of the default ones"
-      , "taken from the [\"CC\", \"defaults\"] target"
-      ]
-    , "CXXFLAGS":
-      [ "The flags for CXX to be used instead of the default ones"
-      , "taken from the [\"CC\", \"defaults\"] target"
-      ]
-    , "ADD_CFLAGS":
-      [ "The flags to add to the default ones for CC"
-      , "taken from the [\"CC\", \"defaults\"] target"
-      ]
-    , "ADD_CXXFLAGS":
-      [ "The flags to add to the default ones for CXX"
-      , "taken from the [\"CC\", \"defaults\"] target"
-      ]
-    , "ENV": ["The environment for any action generated."]
-    , "TEST_ENV": ["The environment for executing the test runner."]
-    , "CC_TEST_LAUNCHER":
-      [ "List of strings representing the launcher that is prepend to the"
-      , "command line for running the test binary."
-      ]
-    , "TEST_COMPATIBLE_REMOTE":
-      [ "If true, provide compatible remote execution and set COMPATIBLE in the"
-      , " test environment; otherwise, provide a native remote execution"
-      , "do not modify the environment"
-      ]
-    }
-  , "artifacts_doc":
-    [ "result: the result of this test (\"PASS\" or \"FAIL\"); useful for"
-    , "        generating test reports."
-    , "stdout/stderr: Any output the invocation of the test binary produced on"
-    , "        the respective file descriptor"
-    , "time-start/time-stop: The time (decimally coded) in seconds since the"
-    , "        epoch when the test invocation started and ended."
-    , "pwd:    the directory in which the test was carried out"
-    ]
-  , "runfiles_doc":
-    [ "A tree consisting of the artifacts staged at the name of the test."
-    , "As the built-in \"install\" rule only takes the runfiles of its"
-    , "\"private-deps\" argument, this gives an easy way of defining test"
-    , "suites."
-    ]
-  , "imports":
-    { "artifacts": ["@", "rules", "", "field_artifacts"]
-    , "runfiles": ["@", "rules", "", "field_runfiles"]
-    , "host transition": ["@", "rules", "transitions", "for host"]
-    , "stage": ["@", "rules", "", "stage_singleton_field"]
-    , "run_test": ["@", "rules", "CC/test", "run_test"]
-    }
-  , "config_transitions":
-    { "defaults": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "private-deps": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "private-hdrs": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "srcs": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "data": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "just": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "runner": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    }
-  , "expression":
-    { "type": "let*"
-    , "bindings":
-      [ [ "name"
-        , { "type": "assert_non_empty"
-          , "msg": "A non-empty name has to be provided for binaries"
-          , "$1": {"type": "join", "$1": {"type": "FIELD", "name": "name"}}
-          }
-        ]
-      , ["pure C", {"type": "FIELD", "name": "pure C"}]
-      , [ "stage"
-        , { "type": "join"
-          , "separator": "/"
-          , "$1": {"type": "FIELD", "name": "stage"}
-          }
-        ]
-      , ["host-trans", {"type": "CALL_EXPRESSION", "name": "host transition"}]
-      , [ "srcs"
-        , { "type": "to_subdir"
-          , "subdir": {"type": "var", "name": "stage"}
-          , "$1":
-            { "type": "let*"
-            , "bindings":
-              [ ["fieldname", "srcs"]
-              , ["transition", {"type": "var", "name": "host-trans"}]
-              ]
-            , "body": {"type": "CALL_EXPRESSION", "name": "artifacts"}
-            }
-          }
-        ]
-      , [ "private-hdrs"
-        , { "type": "to_subdir"
-          , "subdir": {"type": "var", "name": "stage"}
-          , "$1":
-            { "type": "let*"
-            , "bindings":
-              [ ["fieldname", "private-hdrs"]
-              , ["transition", {"type": "var", "name": "host-trans"}]
-              ]
-            , "body": {"type": "CALL_EXPRESSION", "name": "artifacts"}
-            }
-          }
-        ]
-      , ["defaults-transition", {"type": "var", "name": "host-trans"}]
-      , ["deps-transition", {"type": "var", "name": "host-trans"}]
-      , ["deps-fieldnames", ["private-deps", "defaults"]]
-      , ["transition", {"type": "CALL_EXPRESSION", "name": "host transition"}]
-      , ["fieldname", "runner"]
-      , ["location", "runner"]
-      , ["runner", {"type": "CALL_EXPRESSION", "name": "stage"}]
-      , ["fieldname", "just"]
-      , ["just", {"type": "CALL_EXPRESSION", "name": "artifacts"}]
-      , [ "compatible-remote"
-        , { "type": "singleton_map"
-          , "key": "compatible-remote.json"
-          , "value":
-            { "type": "BLOB"
-            , "data":
-              { "type": "if"
-              , "cond": {"type": "var", "name": "TEST_COMPATIBLE_REMOTE"}
-              , "then": "true"
-              , "else": "false"
-              }
-            }
-          }
-        ]
-      , [ "runner-data"
-        , { "type": "map_union"
-          , "$1":
-            [ {"type": "var", "name": "compatible-remote"}
-            , { "type": "to_subdir"
-              , "subdir": "staged"
-              , "$1": {"type": "var", "name": "just"}
-              }
-            ]
-          }
-        ]
-      , ["test-args", {"type": "FIELD", "name": "args", "default": []}]
-      , [ "test-data"
-        , { "type": "let*"
-          , "bindings":
-            [ ["fieldname", "data"]
-            , ["transition", {"type": "var", "name": "deps-transition"}]
-            ]
-          , "body":
-            { "type": "map_union"
-            , "$1":
-              [ {"type": "CALL_EXPRESSION", "name": "runfiles"}
-              , {"type": "CALL_EXPRESSION", "name": "artifacts"}
-              ]
-            }
-          }
-        ]
-      ]
-    , "body": {"type": "CALL_EXPRESSION", "name": "run_test"}
-    }
-  }
+local common = import '@rules//expressions.jst';
+local cc_test = import '@rules//CC/test/expressions.jst';
+local transitions = import '@rules//transitions/expressions.jst';
+
+{
+  'CC test': {
+    doc:
+      'A test written in C++, depending on serve service and remote execution',
+    tainted: ['test'],
+    target_fields: ['srcs', 'private-hdrs', 'private-deps', 'data'],
+    bool_fields: ['pure C'],
+    string_fields: [
+      'name',
+      'args',
+      'stage',
+      'private-defines',
+      'private-cflags',
+      'private-ldflags',
+      'compatible remote',
+    ],
+    config_vars: [
+      'ARCH',
+      'HOST_ARCH',
+      'CC',
+      'CXX',
+      'CFLAGS',
+      'CXXFLAGS',
+      'LDFLAGS',
+      'ADD_CFLAGS',
+      'ADD_CXXFLAGS',
+      'ADD_LDFLAGS',
+      'ENV',
+      'TEST_ENV',
+      'CC_TEST_LAUNCHER',
+      'TEST_COMPATIBLE_REMOTE',
+      'LINT',
+    ],
+    implicit: {
+      defaults: ['@rules//CC:defaults'],
+      runner: ['test_runner.py'],
+      just: ['//:tool-under-test'],
+    },
+    field_doc: {
+      name: |||
+        The name of the test
+
+        Used to name the test binary as well as for staging the test result
+      |||,
+      args: 'Command line arguments for the test binary',
+      srcs: 'The sources of the test binary',
+      'private-hdrs': |||
+        Any additional header files that need to be present when compiling
+        the test binary.
+      |||,
+      'private-defines': |||
+        List of defines set for source files local to this target.
+        Each list entry will be prepended by "-D".
+      |||,
+      'private-cflags':
+        'List of compile flags set for source files local to this target.',
+      'private-ldflags': |||
+        Additional linker flags for linking external libraries (not built
+        by this tool, typically system libraries).
+      |||,
+      stage: |||
+        The logical location of all header and source files.
+        Individual directory components are joined with "/".
+      |||,
+      'pure C': |||
+        If true, compile as C sources rather than C++ sources.
+        In particular, CC is used to compile rather than CXX (or their
+        respective defaults).
+      |||,
+      data: 'Any files the test binary needs access to when running',
+    },
+    config_doc: {
+      CC: 'The name of the C compiler to be used.',
+      CXX: 'The name of the C++ compiler to be used.',
+      CFLAGS: |||
+        The flags for CC to be used instead of the default ones
+        taken from the ["CC", "defaults"] target
+      |||,
+      CXXFLAGS: |||
+        The flags for CXX to be used instead of the default ones
+        taken from the ["CC", "defaults"] target
+      |||,
+      ADD_CFLAGS: |||
+        The flags to add to the default ones for CC
+        taken from the ["CC", "defaults"] target
+      |||,
+      ADD_CXXFLAGS: |||
+        The flags to add to the default ones for CXX
+        taken from the ["CC", "defaults"] target
+      |||,
+      ENV: 'The environment for any action generated.',
+      TEST_ENV: 'The environment for executing the test runner.',
+      CC_TEST_LAUNCHER: |||
+        List of strings representing the launcher that is prepend to the
+        command line for running the test binary.
+      |||,
+      TEST_COMPATIBLE_REMOTE: |||
+        If true, provide compatible remote execution and set COMPATIBLE in the
+         test environment; otherwise, provide a native remote execution
+        do not modify the environment
+      |||,
+    },
+    artifacts_doc: |||
+      result: the result of this test ("PASS" or "FAIL"); useful for
+              generating test reports.
+      stdout/stderr: Any output the invocation of the test binary produced on
+              the respective file descriptor
+      time-start/time-stop: The time (decimally coded) in seconds since the
+              epoch when the test invocation started and ended.
+      pwd:    the directory in which the test was carried out
+    |||,
+    runfiles_doc: |||
+      A tree consisting of the artifacts staged at the name of the test.
+      As the built-in "install" rule only takes the runfiles of its
+      "private-deps" argument, this gives an easy way of defining test
+      suites.
+    |||,
+    config_transitions: {
+      defaults: [transitions.for_host()],
+      'private-deps': [transitions.for_host()],
+      'private-hdrs': [transitions.for_host()],
+      srcs: [transitions.for_host()],
+      data: [transitions.for_host()],
+      just: [transitions.for_host()],
+      runner: [transitions.for_host()],
+    },
+    expression:
+      local name = jst.assert_non_empty(
+        jst.join(jst.field('name')),
+        msg='A non-empty name has to be provided for binaries',
+      );
+      local pure_c = jst.field('pure C');
+      local stage = jst.join(jst.field('stage'), sep='/');
+      local host_trans = transitions.for_host();
+      local srcs = jst.to_subdir(
+        common.field_artifacts(fieldname='srcs', transition=host_trans),
+        subdir=stage,
+      );
+      local private_hdrs = jst.to_subdir(
+        common.field_artifacts(
+          fieldname='private-hdrs',
+          transition=host_trans,
+        ),
+        subdir=stage,
+      );
+      local deps_transition = host_trans;
+      local transition = transitions.for_host();
+      local runner = common.stage_singleton_field(
+        fieldname='runner',
+        transition=transition,
+        location='runner',
+      );
+      local just = common.field_artifacts(
+        fieldname='just',
+        transition=transition,
+      );
+      local compatible_remote = {
+        'compatible-remote.json': jst.make_blob(
+          if $TEST_COMPATIBLE_REMOTE then 'true' else 'false',
+        ),
+      };
+      local runner_data =
+        compatible_remote
+        + jst.to_subdir(just, subdir='staged');
+      local test_args = jst.field('args');
+      local test_data =
+        common.field_runfiles(fieldname='data', transition=deps_transition)
+        + common.field_artifacts(fieldname='data', transition=deps_transition);
+      cc_test.run_test(
+        name=name,
+        pure_c=pure_c,
+        stage=stage,
+        srcs=srcs,
+        private_hdrs=private_hdrs,
+        defaults_transition=host_trans,
+        deps_transition=deps_transition,
+        deps_fieldnames=['private-deps', 'defaults'],
+        runner=runner,
+        runner_data=runner_data,
+        test_args=test_args,
+        test_data=test_data,
+      ),
+  },
 }

@@ -1,0 +1,182 @@
+local cc = import '//CC/expressions.jst';
+
+// Returns true if all file names end with the given ending.
+// - `files`  Artifact map that contains the files.
+// - `ending` The ending to check for (without ".").
+// - `invert` Invert condition to file name not ending with "ending".
+local check_file_ending(files, ending, invert=false) = jst.all(
+  [
+    local is_equal =
+      file == jst.change_ending(file, ending='.' + ending);
+    if invert then if is_equal then false else true else is_equal
+    for file in jst.keys(files)
+  ],
+);
+
+// Returns true if all libs are non-static libraries or false otherwise.
+// Throws if static and non-static libraries are mixed.
+// - `libs` List of artifact maps that contain the libraries.
+local check_libs_non_static(libs) =
+  local files = jst.union(libs);
+  local static = check_file_ending(files=files, ending='a');
+  local shared = check_file_ending(files=files, ending='a', invert=true);
+  if static || shared then
+    shared
+  else
+    jst.fail('Prebuilt library types (static/shared) may not be mixed.');
+
+// Provide prebuilt libraries and headers as CC library and return the
+// result of the rule.
+local prebuilt_result(name, version, stage, cflags, ldflags, libs, hdrs, config_reader, deps_fieldnames, pkg_configs=[]) =
+  local shared = check_libs_non_static(libs=libs);
+  local lib_stage = if shared then '.' else stage;
+  local staged_libs = [
+    jst.to_subdir(
+      lib,
+      subdir=lib_stage,
+      flat=true,
+      msg='prebuilt libraries may not overlap',
+    )
+    for lib in libs
+  ];
+  local link_args =
+    if shared then
+      []
+    else
+      jst.flatten([jst.keys(libs) for libs in staged_libs]);
+  local run_libs_args =
+    if shared then jst.flatten([jst.keys(libs) for libs in staged_libs]);
+  local libs = jst.union(
+    staged_libs,
+    disjoint=true,
+    msg='prebuilt libraries may not overlap',
+  );
+  local hdrs = jst.to_subdir(
+    jst.union(hdrs, disjoint=true, msg='prebuilt headers may not overlap'),
+    subdir=stage,
+  );
+  local compile_deps = cc.compile_deps(deps_fieldnames=deps_fieldnames);
+  local compile_args = jst.nub_right(
+    cflags + cc.compile_args_deps(deps_fieldnames=deps_fieldnames),
+  );
+  local link_deps = cc.link_deps(deps_fieldnames=deps_fieldnames);
+  local link_args = jst.nub_right(
+    link_args + cc.link_args_deps(deps_fieldnames=deps_fieldnames),
+  );
+  local run_libs = cc.run_libs_deps(deps_fieldnames=deps_fieldnames);
+  local run_libs_args = jst.nub_right(
+    jst.flatten(
+      [
+        run_libs_args,
+        ldflags,
+        cc.run_libs_args_deps(deps_fieldnames=deps_fieldnames),
+      ],
+    ),
+  );
+  local env = cc.default_env() + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        cc.default_path() + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  local main_pkg_config = jst.foldl(
+    function(config, name) if name then name else config,
+    null,
+    jst.flatten(
+      [
+        jst.keys(configs)
+        for configs in pkg_configs
+      ],
+    ),
+  );
+  local reader_inputs = jst.to_subdir(
+    jst.union(
+      [
+        libs,
+        link_deps,
+        run_libs,
+        jst.to_subdir(jst.union(pkg_configs), subdir='pkgconfig', flat=true),
+      ],
+    ),
+    subdir='lib',
+  );
+  local pc_args = if shared then [] else ['--static'];
+  local cflags_filename = name + '.cflags';
+  local cflags_file = jst.to_subdir(
+    if pkg_configs then
+      jst.action(
+        inputs=config_reader + reader_inputs,
+        cmd=['./config_reader', cflags_filename, main_pkg_config] + pc_args,
+        outs=[cflags_filename],
+        env=env,
+        label='Reading cflags ' + jst.basename(main_pkg_config),
+      )
+    else
+      {},
+    subdir=stage,
+  );
+  local cflags_files =
+    cc.cflags_files_deps(deps_fieldnames=deps_fieldnames)
+    + cflags_file;
+  local compile_args =
+    compile_args
+    + (if cflags_file then
+      [jst.join(['@'] + jst.keys(cflags_file))]);
+  local ldflags_filename = name + '.ldflags';
+  local ldflags_file = jst.to_subdir(
+    if pkg_configs then
+      jst.action(
+        inputs=config_reader + reader_inputs,
+        cmd=['./config_reader', ldflags_filename, main_pkg_config] + pc_args,
+        outs=[ldflags_filename],
+        env=env,
+        label='Reading ldflags ' + jst.basename(main_pkg_config),
+      )
+    else
+      {},
+    subdir=stage,
+  );
+  local ldflags_files =
+    cc.ldflags_files_deps(deps_fieldnames=deps_fieldnames)
+    + ldflags_file;
+  local run_libs = (if shared then libs else {}) + run_libs;
+  local run_libs_args =
+    run_libs_args
+    + (if ldflags_file then
+      [jst.join(['@'] + jst.keys(ldflags_file))]);
+  local package =
+    local name = name;
+    local version = if version then jst.join(version, sep='.') else null;
+    {
+      name: name,
+      version: version,
+      'cflags-files': cflags_files,
+      'ldflags-files': ldflags_files,
+    };
+  jst.result(
+    artifacts=libs,
+    runfiles=hdrs,
+    provides=jst.union(
+      [
+        {
+          'compile-deps': compile_deps,
+          'compile-args': compile_args,
+          'link-deps': link_deps,
+          'link-args': link_args,
+          'run-libs': run_libs,
+          'run-libs-args': run_libs_args,
+          package: package,
+        },
+      ],
+    ),
+  );
+
+{
+  check_file_ending: check_file_ending,
+  check_libs_non_static: check_libs_non_static,
+  prebuilt_result: prebuilt_result,
+}

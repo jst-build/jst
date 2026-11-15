@@ -1,610 +1,450 @@
-{ "with remote":
-  { "doc":
-    [ "Shell test, given by a test script,"
-    , "implicitly assuming a remote execution in the background."
-    ]
-  , "target_fields": ["deps", "test"]
-  , "string_fields": ["keep", "name", "keep-dirs"]
-  , "config_vars":
-    [ "ARCH"
-    , "HOST_ARCH"
-    , "RUNS_PER_TEST"
-    , "TEST_ENV"
-    , "TEST_COMPATIBLE_REMOTE"
-    , "TEST_REMOTE_EXECUTION"
-    , "TIMEOUT_SCALE"
-    , "TEST_SUMMARY_EXECUTION_PROPERTIES"
-    ]
-  , "field_doc":
-    { "test":
-      [ "The shell script for the test, launched with sh."
-      , ""
-      , "The script will be invoked in the specified TEST_ENV with the"
-      , "following variables added."
-      , " - REMOTE_EXECUTION_ADDRESS containing the IP:port pair the"
-      , "   implicit remote-execution endpoint is listening at."
-      , " - COMPATIBLE is set to an non-empty string, if the server was"
-      , "   started in compatible mode, and unset otherwise."
-      , " - REMOTE_BIN specifying an extra directory added to remote-execution"
-      , "   actions early in path."
-      , "Additionally, the variables TLS_CA_CERT, TLS_CLIENT_CERT, and"
-      , "TLS_CLIENT_KEY are removed from the environment."
-      , ""
-      , "Moreover, an empty directory is created for any temporary files needed"
-      , "by the test, and it is made available in the environment variable"
-      , "TEST_TMPDIR. The test should not assume write permissions"
-      , "outside the working directory and the TEST_TMPDIR."
-      , "For convenience, the environment variable TMPDIR is also set to"
-      , "TEST_TMPDIR."
-      ]
-    , "name":
-      [ "A name for the test, used in reporting, as well as for staging"
-      , "the test result tree in the runfiles"
-      ]
-    , "keep":
-      [ "List of names (relative to the test working directory) of files that"
-      , "the test might generate that should be kept as part of the output."
-      , "This might be useful for further analysis of the test"
-      ]
-    , "keep-dirs":
-      [ "List of names (relative to the test working directory) of directories"
-      , "that the test might generate that should be kept as part of the"
-      , "output. This might be useful for further analysis of the test"
-      ]
-    , "deps":
-      [ "Any targets that should be staged (with artifacts and runfiles) into"
-      , "the tests working directory"
-      ]
-    }
-  , "config_doc":
-    { "RUNS_PER_TEST":
-      [ "The number of times the test should be run in order to detect flakyness."
-      , "If set, no test action will be taken from cache."
-      ]
-    , "TEST_ENV": ["The environment for executing the test runner."]
-    , "TEST_COMPATIBLE_REMOTE":
-      ["If true, run the remote execution in compatible mode."]
-    , "TEST_REMOTE_EXECUTION":
-      [ "JSON object (aka map) containing at least \"interface\" and \"port\"."
-      , "If the remote execution service requires additional arguments, they can be listed"
-      , "in the list of strings named \"args\"."
-      ]
-    , "TIMEOUT_SCALE":
-      ["Factor on how to scale the timeout for this test. Defaults to 1.0."]
-    , "TEST_SUMMARY_EXECUTION_PROPERTIES":
-      [ "Additional remote-execution properties for the test-summarizing action"
-      , "in case RUNS_PER_TEST is set; defaults to the empty map."
-      ]
-    }
-  , "tainted": ["test"]
-  , "artifacts_doc":
-    [ "result: the result of this test (\"PASS\" or \"FAIL\"); useful for"
-    , "        generating test reports."
-    , "stdout/stderr: Any output the invocation of the test binary produced on"
-    , "        the respective file descriptor"
-    , "remotestdout/remotestderr: Any output of the remote-execution server"
-    , "        implicit to that test"
-    , "work:   In this directory, all the files specified to \"keep\" and"
-    , "        \"keep-dirs\" are staged"
-    , "time-start/time-stop: The time (decimally coded) in seconds since the"
-    , "        epoch when the test invocation started and ended."
-    , "pwd:    the directory in which the test was carried out"
-    ]
-  , "runfiles_doc":
-    [ "A tree consisting of the artifacts staged at the name of the test."
-    , "As the built-in \"install\" rule only takes the runfiles of its \"deps\""
-    , "argument, this gives an easy way of defining test suites."
-    ]
-  , "implicit":
-    { "runner": ["with_remote_test_runner.py"]
-    , "summarizer": [["@", "rules", "shell/test", "summarizer"]]
-    , "just": [["", "tool-under-test"]]
-    }
-  , "imports":
-    { "test-result": "test-result"
-    , "action": "test-action"
-    , "stage": ["@", "rules", "", "stage_singleton_field"]
-    , "host transition": ["@", "rules", "transitions", "for host"]
-    , "field_list": ["@", "rules", "", "field_list_provider"]
-    }
-  , "config_transitions":
-    { "deps": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "just": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "runner": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "summarizer": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    }
-  , "expression":
-    { "type": "let*"
-    , "bindings":
-      [ ["test type name", "remote execution"]
-      , ["USES_SERVE", false]
-      , ["extra_infra", []]
-      , ["data", {"type": "empty_map"}]
-      , [ "test.sh"
-        , { "type": "context"
-          , "msg": "Expecting 'test' to specify precisely one file containing a shell script"
-          , "$1":
-            { "type": "let*"
-            , "bindings": [["fieldname", "test"], ["location", "test.sh"]]
-            , "body": {"type": "CALL_EXPRESSION", "name": "stage"}
-            }
-          }
-        ]
-      , [ "name"
-        , { "type": "assert_non_empty"
-          , "msg": "Have to provide a non-empty name for the test (e.g., for result staging)"
-          , "$1": {"type": "join", "$1": {"type": "FIELD", "name": "name"}}
-          }
-        ]
-      , ["keep", {"type": "FIELD", "name": "keep"}]
-      , ["keep-dirs", {"type": "FIELD", "name": "keep-dirs"}]
-      , ["deps-fieldname", "deps"]
-      , ["transition", {"type": "CALL_EXPRESSION", "name": "host transition"}]
-      ]
-    , "body":
-      { "type": "if"
-      , "cond": {"type": "var", "name": "RUNS_PER_TEST"}
-      , "else": {"type": "CALL_EXPRESSION", "name": "test-result"}
-      , "then":
-        { "type": "let*"
-        , "bindings":
-          [ [ "attempts (plain)"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach"
-                , "var": "ATTEMPT"
-                , "range":
-                  { "type": "range"
-                  , "$1": {"type": "var", "name": "RUNS_PER_TEST"}
-                  }
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "ATTEMPT"}
-                  , "value": {"type": "CALL_EXPRESSION", "name": "action"}
-                  }
-                }
-              }
-            ]
-          , [ "summarizer"
-            , { "type": "let*"
-              , "bindings":
-                [["fieldname", "summarizer"], ["location", "summarizer"]]
-              , "body": {"type": "CALL_EXPRESSION", "name": "stage"}
-              }
-            ]
-          , [ "summary artifacts"
-            , { "type": "++"
-              , "$1":
-                [ ["result"]
-                , { "type": "let*"
-                  , "bindings":
-                    [["provider", "artifacts"], ["fieldname", "summarizer"]]
-                  , "body": {"type": "CALL_EXPRESSION", "name": "field_list"}
-                  }
-                ]
-              }
-            ]
-          , [ "attempts (for summary)"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach_map"
-                , "range": {"type": "var", "name": "attempts (plain)"}
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "_"}
-                  , "value":
-                    { "type": "TREE"
-                    , "$1":
-                      { "type": "map_union"
-                      , "$1":
-                        { "type": "foreach"
-                        , "range": {"type": "var", "name": "summary artifacts"}
-                        , "body":
-                          { "type": "singleton_map"
-                          , "key": {"type": "var", "name": "_"}
-                          , "value":
-                            { "type": "lookup"
-                            , "map": {"type": "var", "name": "$_"}
-                            , "key": {"type": "var", "name": "_"}
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          , [ "summary"
-            , { "type": "ACTION"
-              , "inputs":
-                { "type": "map_union"
-                , "$1":
-                  [ {"type": "var", "name": "attempts (for summary)"}
-                  , {"type": "var", "name": "summarizer"}
-                  ]
-                }
-              , "outs":
-                ["stdout", "stderr", "result", "time-start", "time-stop"]
-              , "cmd": ["./summarizer"]
-              , "label": "Summarize remote shell test reports"
-              , "execution properties":
-                { "type": "var"
-                , "name": "TEST_SUMMARY_EXECUTION_PROPERTIES"
-                , "default": {"type": "empty_map"}
-                }
-              }
-            ]
-          , [ "attempts"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach_map"
-                , "range": {"type": "var", "name": "attempts (plain)"}
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "_"}
-                  , "value":
-                    {"type": "TREE", "$1": {"type": "var", "name": "$_"}}
-                  }
-                }
-              }
-            ]
-          , [ "artifacts"
-            , { "type": "map_union"
-              , "$1":
-                [ { "type": "singleton_map"
-                  , "key": "pwd"
-                  , "value": {"type": "BLOB", "data": "/summary"}
-                  }
-                , {"type": "var", "name": "summary"}
-                , { "type": "singleton_map"
-                  , "key": "work"
-                  , "value":
-                    {"type": "TREE", "$1": {"type": "var", "name": "attempts"}}
-                  }
-                ]
-              }
-            ]
-          , [ "runfiles"
-            , { "type": "singleton_map"
-              , "key": {"type": "var", "name": "name"}
-              , "value":
-                {"type": "TREE", "$1": {"type": "var", "name": "artifacts"}}
-              }
-            ]
-          ]
-        , "body":
-          { "type": "RESULT"
-          , "artifacts": {"type": "var", "name": "artifacts"}
-          , "runfiles": {"type": "var", "name": "runfiles"}
-          }
-        }
-      }
-    }
-  }
-, "with serve":
-  { "doc":
-    [ "Shell test, given by a test script,"
-    , "implicitly assuming a remote execution and a just serve instance"
-    , "in the background."
-    ]
-  , "target_fields": ["deps", "test", "repos"]
-  , "string_fields": ["keep", "keep-dirs", "name"]
-  , "config_vars":
-    [ "ARCH"
-    , "HOST_ARCH"
-    , "RUNS_PER_TEST"
-    , "TEST_ENV"
-    , "TEST_COMPATIBLE_REMOTE"
-    , "TEST_STANDALONE_SERVE"
-    , "TIMEOUT_SCALE"
-    , "TEST_SUMMARY_EXECUTION_PROPERTIES"
-    ]
-  , "field_doc":
-    { "test":
-      [ "The shell script for the test, launched with sh."
-      , ""
-      , "The script will be invoked in the specified TEST_ENV with the"
-      , "following variables added."
-      , " - REMOTE_EXECUTION_ADDRESS containing the IP:port pair the"
-      , "   implicit remote-execution endpoint is listening at."
-      , " - COMPATIBLE is set to an non-empty string, if the server was"
-      , "   started in compatible mode, and unset otherwise."
-      , " - REMOTE_LBR containing the absolute path to the local build root"
-      , "   of the implicit remote-execution end point"
-      , " - SERVE_ADDRESS containing the IP:port pair the"
-      , "   implicit serve endpoint is listening at."
-      , " - SERVE_LBR containing the absolute path to the local build root"
-      , "   of the implicit serve end point"
-      , " - COMMIT_0, COMMIT_1, ... containing the commit id of the head"
-      , "   commit of the repositories available to the serve endpoint"
-      , " - TREE_0, TREE_1, ... containing the git tree identifiers of"
-      , "   the head commit of the repositories available ot the serve"
-      , "   endpoint"
-      , "Additionally, the variables TLS_CA_CERT, TLS_CLIENT_CERT, and"
-      , "TLS_CLIENT_KEY are removed from the environment."
-      , ""
-      , "Moreover, an empty directory is created for any temporary files needed"
-      , "by the test, and it is made available in the environment variable"
-      , "TEST_TMPDIR. The test should not assume write permissions"
-      , "write permissions outside the working directory, the TEST_TMPDIR,"
-      , "REMOTE_LBR, and SERVE_LBR."
-      , "For convenience, the environment variable TMPDIR is also set to"
-      , "TEST_TMPDIR."
-      ]
-    , "name":
-      [ "A name for the test, used in reporting, as well as for staging"
-      , "the test result tree in the runfiles"
-      ]
-    , "keep":
-      [ "List of names (relative to the test working directory) of files that"
-      , "the test might generate that should be kept as part of the output."
-      , "This might be useful for further analysis of the test"
-      ]
-    , "keep-dirs":
-      [ "List of names (relative to the test working directory) of directories"
-      , "that the test might generate that should be kept as part of the"
-      , "output. This might be useful for further analysis of the test"
-      ]
-    , "deps":
-      [ "Any targets that should be staged (with artifacts and runfiles) into"
-      , "the tests working directory"
-      ]
-    , "repos":
-      [ "The trees, one per entry, that the just serve instance should have"
-      , "available. The respective commits will be generated and passed to the"
-      , "test script as COMMIT_0, COMMIT_1, etc., while their respective root"
-      , "tree identifiers are passed to the test script as TREE_0, TREE_1, etc."
-      ]
-    }
-  , "config_doc":
-    { "RUNS_PER_TEST":
-      [ "The number of times the test should be run in order to detect flakyness."
-      , "If set, no test action will be taken from cache."
-      ]
-    , "TEST_ENV": ["The environment for executing the test runner."]
-    , "TEST_COMPATIBLE_REMOTE":
-      ["If true, run the remote execution in compatible mode."]
-    , "TIMEOUT_SCALE":
-      ["Factor on how to scale the timeout for this test. Defaults to 1.0."]
-    , "TEST_SUMMARY_EXECUTION_PROPERTIES":
-      [ "Additional remote-execution properties for the test-summarizing action"
-      , "in case RUNS_PER_TEST is set; defaults to the empty map."
-      ]
-    }
-  , "tainted": ["test"]
-  , "artifacts_doc":
-    [ "result: the result of this test (\"PASS\" or \"FAIL\"); useful for"
-    , "        generating test reports."
-    , "stdout/stderr: Any output the invocation of the test binary produced on"
-    , "        the respective file descriptor"
-    , "remotestdout/remotestderr: Any output of the remote-execution server"
-    , "        implicit to that test"
-    , "servestdout/servestderr: Any output of the serve-execution server"
-    , "        implicit to that test"
-    , "work:   In this directory, all the files specified to \"keep\" are staged"
-    , "time-start/time-stop: The time (decimally coded) in seconds since the"
-    , "        epoch when the test invocation started and ended."
-    ]
-  , "runfiles_doc":
-    [ "A tree consisting of the artifacts staged at the name of the test."
-    , "As the built-in \"install\" rule only takes the runfiles of its \"deps\""
-    , "argument, this gives an easy way of defining test suites."
-    ]
-  , "implicit":
-    { "runner": ["with_serve_test_runner.py"]
-    , "summarizer": [["@", "rules", "shell/test", "summarizer"]]
-    , "just": [["", "tool-under-test"]]
-    }
-  , "imports":
-    { "test-result": "test-result"
-    , "action": "test-action"
-    , "stage": ["@", "rules", "", "stage_singleton_field"]
-    , "host transition": ["@", "rules", "transitions", "for host"]
-    , "field_list": ["@", "rules", "", "field_list_provider"]
-    }
-  , "config_transitions":
-    { "deps": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "repos": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "just": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "runner": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    , "summarizer": [{"type": "CALL_EXPRESSION", "name": "host transition"}]
-    }
-  , "expression":
-    { "type": "let*"
-    , "bindings":
-      [ ["test type name", "target-level cache serving"]
-      , ["USES_SERVE", true]
-      , ["extra_infra", ["servestdout", "servestderr"]]
-      , [ "test.sh"
-        , { "type": "context"
-          , "msg": "Expecting 'test' to specify precisely one file containing a shell script"
-          , "$1":
-            { "type": "let*"
-            , "bindings": [["fieldname", "test"], ["location", "test.sh"]]
-            , "body": {"type": "CALL_EXPRESSION", "name": "stage"}
-            }
-          }
-        ]
-      , [ "name"
-        , { "type": "assert_non_empty"
-          , "msg": "Have to provide a non-empty name for the test (e.g., for result staging)"
-          , "$1": {"type": "join", "$1": {"type": "FIELD", "name": "name"}}
-          }
-        ]
-      , ["keep", {"type": "FIELD", "name": "keep"}]
-      , ["keep-dirs", {"type": "FIELD", "name": "keep-dirs"}]
-      , ["deps-fieldname", "deps"]
-      , ["transition", {"type": "CALL_EXPRESSION", "name": "host transition"}]
-      , [ "data"
-        , { "type": "to_subdir"
-          , "subdir": "data"
-          , "$1":
-            { "type": "map_union"
-            , "$1":
-              { "type": "foreach_map"
-              , "range":
-                {"type": "enumerate", "$1": {"type": "FIELD", "name": "repos"}}
-              , "body":
-                { "type": "to_subdir"
-                , "subdir": {"type": "var", "name": "_"}
-                , "$1":
-                  { "type": "DEP_ARTIFACTS"
-                  , "dep": {"type": "var", "name": "$_"}
-                  , "transition": {"type": "var", "name": "transition"}
-                  }
-                }
-              }
-            }
-          }
-        ]
-      , [ "TEST_REMOTE_EXECUTION"
-        , { "type": "if"
-          , "cond": {"type": "var", "name": "TEST_STANDALONE_SERVE"}
-          , "then": true
-          , "else": false
-          }
-        ]
-      ]
-    , "body":
-      { "type": "if"
-      , "cond": {"type": "var", "name": "RUNS_PER_TEST"}
-      , "else": {"type": "CALL_EXPRESSION", "name": "test-result"}
-      , "then":
-        { "type": "let*"
-        , "bindings":
-          [ [ "attempts (plain)"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach"
-                , "var": "ATTEMPT"
-                , "range":
-                  { "type": "range"
-                  , "$1": {"type": "var", "name": "RUNS_PER_TEST"}
-                  }
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "ATTEMPT"}
-                  , "value": {"type": "CALL_EXPRESSION", "name": "action"}
-                  }
-                }
-              }
-            ]
-          , [ "summarizer"
-            , { "type": "let*"
-              , "bindings":
-                [["fieldname", "summarizer"], ["location", "summarizer"]]
-              , "body": {"type": "CALL_EXPRESSION", "name": "stage"}
-              }
-            ]
-          , [ "summary artifacts"
-            , { "type": "++"
-              , "$1":
-                [ ["result"]
-                , { "type": "let*"
-                  , "bindings":
-                    [["provider", "artifacts"], ["fieldname", "summarizer"]]
-                  , "body": {"type": "CALL_EXPRESSION", "name": "field_list"}
-                  }
-                ]
-              }
-            ]
-          , [ "attempts (for summary)"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach_map"
-                , "range": {"type": "var", "name": "attempts (plain)"}
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "_"}
-                  , "value":
-                    { "type": "TREE"
-                    , "$1":
-                      { "type": "map_union"
-                      , "$1":
-                        { "type": "foreach"
-                        , "range": {"type": "var", "name": "summary artifacts"}
-                        , "body":
-                          { "type": "singleton_map"
-                          , "key": {"type": "var", "name": "_"}
-                          , "value":
-                            { "type": "lookup"
-                            , "map": {"type": "var", "name": "$_"}
-                            , "key": {"type": "var", "name": "_"}
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          , [ "summary"
-            , { "type": "ACTION"
-              , "inputs":
-                { "type": "map_union"
-                , "$1":
-                  [ {"type": "var", "name": "attempts (for summary)"}
-                  , {"type": "var", "name": "summarizer"}
-                  ]
-                }
-              , "outs":
-                ["stdout", "stderr", "result", "time-start", "time-stop"]
-              , "cmd": ["./summarizer"]
-              , "label": "Summarize serve shell test reports"
-              , "execution properties":
-                { "type": "var"
-                , "name": "TEST_SUMMARY_EXECUTION_PROPERTIES"
-                , "default": {"type": "empty_map"}
-                }
-              }
-            ]
-          , [ "attempts"
-            , { "type": "map_union"
-              , "$1":
-                { "type": "foreach_map"
-                , "range": {"type": "var", "name": "attempts (plain)"}
-                , "body":
-                  { "type": "singleton_map"
-                  , "key": {"type": "var", "name": "_"}
-                  , "value":
-                    {"type": "TREE", "$1": {"type": "var", "name": "$_"}}
-                  }
-                }
-              }
-            ]
-          , [ "artifacts"
-            , { "type": "map_union"
-              , "$1":
-                [ { "type": "singleton_map"
-                  , "key": "pwd"
-                  , "value": {"type": "BLOB", "data": "/summary"}
-                  }
-                , {"type": "var", "name": "summary"}
-                , { "type": "singleton_map"
-                  , "key": "work"
-                  , "value":
-                    {"type": "TREE", "$1": {"type": "var", "name": "attempts"}}
-                  }
-                ]
-              }
-            ]
-          , [ "runfiles"
-            , { "type": "singleton_map"
-              , "key": {"type": "var", "name": "name"}
-              , "value":
-                {"type": "TREE", "$1": {"type": "var", "name": "artifacts"}}
-              }
-            ]
-          ]
-        , "body":
-          { "type": "RESULT"
-          , "artifacts": {"type": "var", "name": "artifacts"}
-          , "runfiles": {"type": "var", "name": "runfiles"}
-          }
-        }
-      }
-    }
-  }
+local common = import '@rules//expressions.jst';
+local transitions = import '@rules//transitions/expressions.jst';
+local test = import 'expressions.jst';
+
+{
+  'with remote': {
+    doc: |||
+      Shell test, given by a test script,
+      implicitly assuming a remote execution in the background.
+    |||,
+    target_fields: ['deps', 'test'],
+    string_fields: ['keep', 'name', 'keep-dirs'],
+    config_vars: [
+      'ARCH',
+      'HOST_ARCH',
+      'RUNS_PER_TEST',
+      'TEST_ENV',
+      'TEST_COMPATIBLE_REMOTE',
+      'TEST_REMOTE_EXECUTION',
+      'TIMEOUT_SCALE',
+      'TEST_SUMMARY_EXECUTION_PROPERTIES',
+    ],
+    field_doc: {
+      test: |||
+        The shell script for the test, launched with sh.
+
+        The script will be invoked in the specified TEST_ENV with the
+        following variables added.
+         - REMOTE_EXECUTION_ADDRESS containing the IP:port pair the
+           implicit remote-execution endpoint is listening at.
+         - COMPATIBLE is set to an non-empty string, if the server was
+           started in compatible mode, and unset otherwise.
+         - REMOTE_BIN specifying an extra directory added to remote-execution
+           actions early in path.
+        Additionally, the variables TLS_CA_CERT, TLS_CLIENT_CERT, and
+        TLS_CLIENT_KEY are removed from the environment.
+
+        Moreover, an empty directory is created for any temporary files needed
+        by the test, and it is made available in the environment variable
+        TEST_TMPDIR. The test should not assume write permissions
+        outside the working directory and the TEST_TMPDIR.
+        For convenience, the environment variable TMPDIR is also set to
+        TEST_TMPDIR.
+      |||,
+      name: |||
+        A name for the test, used in reporting, as well as for staging
+        the test result tree in the runfiles
+      |||,
+      keep: |||
+        List of names (relative to the test working directory) of files that
+        the test might generate that should be kept as part of the output.
+        This might be useful for further analysis of the test
+      |||,
+      'keep-dirs': |||
+        List of names (relative to the test working directory) of directories
+        that the test might generate that should be kept as part of the
+        output. This might be useful for further analysis of the test
+      |||,
+      deps: |||
+        Any targets that should be staged (with artifacts and runfiles) into
+        the tests working directory
+      |||,
+    },
+    config_doc: {
+      RUNS_PER_TEST: |||
+        The number of times the test should be run in order to detect flakyness.
+        If set, no test action will be taken from cache.
+      |||,
+      TEST_ENV: 'The environment for executing the test runner.',
+      TEST_COMPATIBLE_REMOTE:
+        'If true, run the remote execution in compatible mode.',
+      TEST_REMOTE_EXECUTION: |||
+        JSON object (aka map) containing at least "interface" and "port". If the
+        remote execution service requires additional arguments, they can be
+        listed in the list of strings named "args".
+      |||,
+      TIMEOUT_SCALE:
+        'Factor on how to scale the timeout for this test. Defaults to 1.0.',
+      TEST_SUMMARY_EXECUTION_PROPERTIES: |||
+        Additional remote-execution properties for the test-summarizing action
+        in case RUNS_PER_TEST is set; defaults to the empty map.
+      |||,
+    },
+    tainted: ['test'],
+    artifacts_doc: |||
+      result: the result of this test ("PASS" or "FAIL"); useful for
+              generating test reports.
+      stdout/stderr: Any output the invocation of the test binary produced on
+              the respective file descriptor
+      remotestdout/remotestderr: Any output of the remote-execution server
+              implicit to that test
+      work:   In this directory, all the files specified to "keep" and
+              "keep-dirs" are staged
+      time-start/time-stop: The time (decimally coded) in seconds since the
+              epoch when the test invocation started and ended.
+      pwd:    the directory in which the test was carried out
+    |||,
+    runfiles_doc: |||
+      A tree consisting of the artifacts staged at the name of the test.
+      As the built-in "install" rule only takes the runfiles of its "deps"
+      argument, this gives an easy way of defining test suites.
+    |||,
+    implicit: {
+      runner: ['with_remote_test_runner.py'],
+      summarizer: ['@rules//shell/test:summarizer'],
+      just: ['//:tool-under-test'],
+    },
+    config_transitions: {
+      deps: [transitions.for_host()],
+      just: [transitions.for_host()],
+      runner: [transitions.for_host()],
+      summarizer: [transitions.for_host()],
+    },
+    expression:
+      local test_type_name = 'remote execution';
+      local uses_serve = false;
+      local extra_infra = [];
+      local data = {};
+      local test_sh = jst.context(
+        common.stage_singleton_field(fieldname='test', location='test.sh'),
+        'Expecting \'test\' to specify precisely one file containing a shell script',
+      );
+      local name = jst.assert_non_empty(
+        jst.join(jst.field('name')),
+        msg='Have to provide a non-empty name for the test (e.g., for result staging)',
+      );
+      local keep = jst.field('keep');
+      local keep_dirs = jst.field('keep-dirs');
+      local transition = transitions.for_host();
+      if $RUNS_PER_TEST then
+        local attempts_plain = {
+          [attempt]: test.test_action(
+            attempt=attempt,
+            name=name,
+            test_type_name=test_type_name,
+            test_sh=test_sh,
+            data=data,
+            extra_infra=extra_infra,
+            keep=keep,
+            keep_dirs=keep_dirs,
+            transition=transition,
+            test_remote_execution=$TEST_REMOTE_EXECUTION,
+            uses_serve=uses_serve,
+          )
+          for attempt in jst.range($RUNS_PER_TEST)
+        };
+        local summarizer = common.stage_singleton_field(
+          fieldname='summarizer',
+          transition=transition,
+          location='summarizer',
+        );
+        local summary_artifacts =
+          ['result']
+          + common.field_list_provider(
+            fieldname='summarizer',
+            provider='artifacts',
+            transition=transition,
+          );
+        local attempts_for_summary = jst.union(
+          jst.zip_with(
+            function(it, v)
+              {
+                [it]: jst.make_tree(
+                  {[it_]: jst.get(it_, v) for it_ in summary_artifacts},
+                ),
+              },
+            jst.keys(attempts_plain),
+            jst.values(attempts_plain),
+          ),
+        );
+        local summary = jst.action(
+          inputs=attempts_for_summary + summarizer,
+          outs=['stdout', 'stderr', 'result', 'time-start', 'time-stop'],
+          cmd=['./summarizer'],
+          label='Summarize remote shell test reports',
+          execution_properties=jst.env(
+            'TEST_SUMMARY_EXECUTION_PROPERTIES',
+            default={},
+          ),
+        );
+        local attempts = jst.union(
+          jst.zip_with(
+            function(it, v) {[it]: jst.make_tree(v)},
+            jst.keys(attempts_plain),
+            jst.values(attempts_plain),
+          ),
+        );
+        local artifacts = jst.union(
+          [
+            {pwd: jst.make_blob('/summary')},
+            summary,
+            {work: jst.make_tree(attempts)},
+          ],
+        );
+        jst.result(
+          artifacts=artifacts,
+          runfiles={[name]: jst.make_tree(artifacts)},
+        )
+      else
+        test.test_result(
+          name=name,
+          test_type_name=test_type_name,
+          test_sh=test_sh,
+          data=data,
+          extra_infra=extra_infra,
+          keep=keep,
+          keep_dirs=keep_dirs,
+          transition=transition,
+          test_remote_execution=$TEST_REMOTE_EXECUTION,
+          uses_serve=uses_serve,
+        ),
+  },
+
+  'with serve': {
+    doc: |||
+      Shell test, given by a test script,
+      implicitly assuming a remote execution and a just serve instance
+      in the background.
+    |||,
+    target_fields: ['deps', 'test', 'repos'],
+    string_fields: ['keep', 'keep-dirs', 'name'],
+    config_vars: [
+      'ARCH',
+      'HOST_ARCH',
+      'RUNS_PER_TEST',
+      'TEST_ENV',
+      'TEST_COMPATIBLE_REMOTE',
+      'TEST_STANDALONE_SERVE',
+      'TIMEOUT_SCALE',
+      'TEST_SUMMARY_EXECUTION_PROPERTIES',
+    ],
+    field_doc: {
+      test: |||
+        The shell script for the test, launched with sh.
+
+        The script will be invoked in the specified TEST_ENV with the
+        following variables added.
+         - REMOTE_EXECUTION_ADDRESS containing the IP:port pair the
+           implicit remote-execution endpoint is listening at.
+         - COMPATIBLE is set to an non-empty string, if the server was
+           started in compatible mode, and unset otherwise.
+         - REMOTE_LBR containing the absolute path to the local build root
+           of the implicit remote-execution end point
+         - SERVE_ADDRESS containing the IP:port pair the
+           implicit serve endpoint is listening at.
+         - SERVE_LBR containing the absolute path to the local build root
+           of the implicit serve end point
+         - COMMIT_0, COMMIT_1, ... containing the commit id of the head
+           commit of the repositories available to the serve endpoint
+         - TREE_0, TREE_1, ... containing the git tree identifiers of
+           the head commit of the repositories available ot the serve
+           endpoint
+        Additionally, the variables TLS_CA_CERT, TLS_CLIENT_CERT, and
+        TLS_CLIENT_KEY are removed from the environment.
+
+        Moreover, an empty directory is created for any temporary files needed
+        by the test, and it is made available in the environment variable
+        TEST_TMPDIR. The test should not assume write permissions
+        write permissions outside the working directory, the TEST_TMPDIR,
+        REMOTE_LBR, and SERVE_LBR.
+        For convenience, the environment variable TMPDIR is also set to
+        TEST_TMPDIR.
+      |||,
+      name: |||
+        A name for the test, used in reporting, as well as for staging
+        the test result tree in the runfiles
+      |||,
+      keep: |||
+        List of names (relative to the test working directory) of files that
+        the test might generate that should be kept as part of the output.
+        This might be useful for further analysis of the test
+      |||,
+      'keep-dirs': |||
+        List of names (relative to the test working directory) of directories
+        that the test might generate that should be kept as part of the
+        output. This might be useful for further analysis of the test
+      |||,
+      deps: |||
+        Any targets that should be staged (with artifacts and runfiles) into
+        the tests working directory
+      |||,
+      repos: |||
+        The trees, one per entry, that the just serve instance should have
+        available. The respective commits will be generated and passed to the
+        test script as COMMIT_0, COMMIT_1, etc., while their respective root
+        tree identifiers are passed to the test script as TREE_0, TREE_1, etc.
+      |||,
+    },
+    config_doc: {
+      RUNS_PER_TEST: |||
+        The number of times the test should be run in order to detect flakyness.
+        If set, no test action will be taken from cache.
+      |||,
+      TEST_ENV: 'The environment for executing the test runner.',
+      TEST_COMPATIBLE_REMOTE:
+        'If true, run the remote execution in compatible mode.',
+      TIMEOUT_SCALE:
+        'Factor on how to scale the timeout for this test. Defaults to 1.0.',
+      TEST_SUMMARY_EXECUTION_PROPERTIES: |||
+        Additional remote-execution properties for the test-summarizing action
+        in case RUNS_PER_TEST is set; defaults to the empty map.
+      |||,
+    },
+    tainted: ['test'],
+    artifacts_doc: |||
+      result: the result of this test ("PASS" or "FAIL"); useful for
+              generating test reports.
+      stdout/stderr: Any output the invocation of the test binary produced on
+              the respective file descriptor
+      remotestdout/remotestderr: Any output of the remote-execution server
+              implicit to that test
+      servestdout/servestderr: Any output of the serve-execution server
+              implicit to that test
+      work:   In this directory, all the files specified to "keep" are staged
+      time-start/time-stop: The time (decimally coded) in seconds since the
+              epoch when the test invocation started and ended.
+    |||,
+    runfiles_doc: |||
+      A tree consisting of the artifacts staged at the name of the test.
+      As the built-in "install" rule only takes the runfiles of its "deps"
+      argument, this gives an easy way of defining test suites.
+    |||,
+    implicit: {
+      runner: ['with_serve_test_runner.py'],
+      summarizer: ['@rules//shell/test:summarizer'],
+      just: ['//:tool-under-test'],
+    },
+    config_transitions: {
+      deps: [transitions.for_host()],
+      repos: [transitions.for_host()],
+      just: [transitions.for_host()],
+      runner: [transitions.for_host()],
+      summarizer: [transitions.for_host()],
+    },
+    expression:
+      local test_type_name = 'target-level cache serving';
+      local uses_serve = true;
+      local extra_infra = ['servestdout', 'servestderr'];
+      local test_sh = jst.context(
+        common.stage_singleton_field(fieldname='test', location='test.sh'),
+        'Expecting \'test\' to specify precisely one file containing a shell script',
+      );
+      local name = jst.assert_non_empty(
+        jst.join(jst.field('name')),
+        msg='Have to provide a non-empty name for the test (e.g., for result staging)',
+      );
+      local keep = jst.field('keep');
+      local keep_dirs = jst.field('keep-dirs');
+      local transition = transitions.for_host();
+      local repos = jst.enumerate(jst.field('repos'));
+      local data = jst.to_subdir(
+        jst.union(
+          jst.zip_with(
+            function(index, repo)
+              jst.to_subdir(
+                jst.dep_artifacts(repo, transition=transition),
+                subdir=index,
+              ),
+            jst.keys(repos),
+            jst.values(repos),
+          ),
+        ),
+        subdir='data',
+      );
+      local test_remote_execution =
+        if $TEST_STANDALONE_SERVE then true else false;
+      if $RUNS_PER_TEST then
+        local attempts_plain = {
+          [attempt]: test.test_action(
+            attempt=attempt,
+            name=name,
+            test_type_name=test_type_name,
+            test_sh=test_sh,
+            data=data,
+            extra_infra=extra_infra,
+            keep=keep,
+            keep_dirs=keep_dirs,
+            transition=transition,
+            test_remote_execution=test_remote_execution,
+            uses_serve=uses_serve,
+          )
+          for attempt in jst.range($RUNS_PER_TEST)
+        };
+        local summarizer = common.stage_singleton_field(
+          fieldname='summarizer',
+          transition=transition,
+          location='summarizer',
+        );
+        local summary_artifacts =
+          ['result']
+          + common.field_list_provider(
+            fieldname='summarizer',
+            provider='artifacts',
+            transition=transition,
+          );
+        local attempts_for_summary = jst.union(
+          jst.zip_with(
+            function(it, v)
+              {
+                [it]: jst.make_tree(
+                  {[it_]: jst.get(it_, v) for it_ in summary_artifacts},
+                ),
+              },
+            jst.keys(attempts_plain),
+            jst.values(attempts_plain),
+          ),
+        );
+        local summary = jst.action(
+          inputs=attempts_for_summary + summarizer,
+          outs=['stdout', 'stderr', 'result', 'time-start', 'time-stop'],
+          cmd=['./summarizer'],
+          label='Summarize serve shell test reports',
+          execution_properties=jst.env(
+            'TEST_SUMMARY_EXECUTION_PROPERTIES',
+            default={},
+          ),
+        );
+        local attempts = jst.union(
+          jst.zip_with(
+            function(it, v) {[it]: jst.make_tree(v)},
+            jst.keys(attempts_plain),
+            jst.values(attempts_plain),
+          ),
+        );
+        local artifacts = jst.union(
+          [
+            {pwd: jst.make_blob('/summary')},
+            summary,
+            {work: jst.make_tree(attempts)},
+          ],
+        );
+        jst.result(
+          artifacts=artifacts,
+          runfiles={[name]: jst.make_tree(artifacts)},
+        )
+      else
+        test.test_result(
+          name=name,
+          test_type_name=test_type_name,
+          test_sh=test_sh,
+          data=data,
+          extra_infra=extra_infra,
+          keep=keep,
+          keep_dirs=keep_dirs,
+          transition=transition,
+          test_remote_execution=test_remote_execution,
+          uses_serve=uses_serve,
+        ),
+  },
 }

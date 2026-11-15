@@ -1,0 +1,125 @@
+// Query list of artifacts from target_field's targets
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+local field_artifacts_list(fieldname, transition={}) = [
+  jst.dep_artifacts(x, transition=transition)
+  for x in jst.field(fieldname)
+];
+
+// Query and merge artifacts from target_field's targets
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+local field_artifacts(fieldname, transition={}) = jst.union(
+  field_artifacts_list(fieldname=fieldname, transition=transition),
+  disjoint=true,
+  msg=['artifacts', fieldname, 'must not overlap'],
+);
+
+// Query list of runfiles from target_field's targets
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+local field_runfiles_list(fieldname, transition={}) = [
+  jst.dep_runfiles(x, transition=transition)
+  for x in jst.field(fieldname)
+];
+
+// Query and merge runfiles from target_field's targets
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+local field_runfiles(fieldname, transition={}) = jst.union(
+  field_runfiles_list(fieldname=fieldname, transition=transition),
+  disjoint=true,
+  msg=['runfiles', fieldname, 'must not overlap'],
+);
+
+// Query list of providers from targets' provides map
+// - `fieldname`  The name of the target_field to query.
+// - `provider`   The name of the map provider in the provides map.
+// - `transition` The optional configuration transition for the targets.
+// - `default`    The default if the provider was not found (default: []).
+local field_provider_list(fieldname, provider, transition={}, default=[]) = [
+  jst.dep_provides(x, provider, transition=transition, default=default)
+  for x in jst.field(fieldname)
+];
+
+// Query and merge map-providers from targets' provides map
+// - `fieldname`  The name of the target_field to query.
+// - `provider`   The name of the map provider in the provides map.
+// - `transition` The optional configuration transition for the targets.
+local field_map_provider(fieldname, provider, transition={}) = jst.union(
+  field_provider_list(
+    fieldname=fieldname,
+    provider=provider,
+    transition=transition,
+    default={},
+  ),
+  disjoint=true,
+  msg=['Overlapping entries in provider', provider],
+);
+
+// Query and merge list-providers from targets' provides map
+// - `fieldname`  The name of the target_field to query.
+// - `provider`   The name of the list provider in the provides map.
+// - `transition` The optional configuration transition for the targets.
+local field_list_provider(fieldname, provider, transition={}) = jst.flatten(
+  field_provider_list(
+    fieldname=fieldname,
+    provider=provider,
+    transition=transition,
+  ),
+);
+
+// Stage the single artifact of a target_field at the given location.
+// - `fieldname`  The name of the target_field.
+// - `location`   The path to stage the artifact to.
+// - `transition` The optional configuration transition for the targets.
+local stage_singleton_field(fieldname, location, transition={}) = jst.assert_non_empty(
+  jst.union(
+    [
+      jst.union(
+        [
+          {[location]: artifact}
+          for artifact in jst.values(
+            jst.dep_artifacts(src, transition=transition),
+          )
+        ],
+        disjoint=true,
+      )
+      for src in jst.field(fieldname)
+    ],
+    disjoint=true,
+    msg=['Expecting (essentially) a single artifact in field', fieldname],
+  ),
+  msg=['No artifact specified in field', fieldname],
+);
+
+// Stage the given artifact at the location of the single artifact of a
+// target_field.
+// - `artifact`   The artifact to stage.
+// - `fieldname`  The name of the target_field.
+// - `transition` The optional configuration transition for the targets.
+local stage_artifact_to_singleton_field(artifact, fieldname, transition={}) =
+  local location = jst.flatten(
+    [
+      jst.keys(jst.dep_artifacts(src, transition=transition))
+      for src in jst.field(fieldname)
+    ],
+  );
+  local staged_artifact = jst.zip_with(
+    function(it, val) [{[pos]: val} for pos in location],
+    jst.keys(artifact),
+    jst.values(artifact),
+  );
+  jst.union(jst.flatten(staged_artifact), disjoint=true);
+
+{
+  field_artifacts_list: field_artifacts_list,
+  field_artifacts: field_artifacts,
+  field_runfiles_list: field_runfiles_list,
+  field_runfiles: field_runfiles,
+  field_provider_list: field_provider_list,
+  field_map_provider: field_map_provider,
+  field_list_provider: field_list_provider,
+  stage_singleton_field: stage_singleton_field,
+  stage_artifact_to_singleton_field: stage_artifact_to_singleton_field,
+}

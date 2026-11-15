@@ -1,0 +1,120 @@
+local cc = import '@rules//CC/expressions.jst';
+local transitions = import '@rules//transitions/expressions.jst';
+
+// Build and run a CC test binary using the provided runner that is expected
+// to also generate remotestdout and remotestderr.
+local run_test(name, pure_c, stage, srcs, private_hdrs, deps_transition, deps_fieldnames, runner, test_data, private_defines=[], private_cflags=[], private_ldflags=[], defaults_transition={}, runner_data={}, test_args=[]) =
+  local cflags_files = cc.cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local compile_deps = cc.compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local compile_args = jst.flatten(
+    [
+      ['-D' + def for def in private_defines],
+      private_cflags,
+      cc.compile_args_deps(
+        deps_fieldnames=deps_fieldnames,
+        deps_transition=deps_transition,
+      ),
+    ],
+  );
+  local ldflags_files = cc.ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local link_deps = cc.link_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+  );
+  local link_args =
+    cc.link_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+    )
+    + private_ldflags;
+  local binary = cc.bin_artifact(
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    private_hdrs=private_hdrs,
+    stage=stage,
+    compile_deps_=compile_deps,
+    compile_args=compile_args,
+    link_deps_=link_deps,
+    link_args=link_args,
+    cflags_files=cflags_files,
+    ldflags_files=ldflags_files,
+    defaults_transition=defaults_transition,
+  );
+  local lint =
+    if $LINT then
+      cc.lint_information(
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs={},
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=['private-hdrs', 'srcs', 'private-deps'],
+        deps_transition=deps_transition,
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+        defaults_transition=defaults_transition,
+      );
+  local staged_test_binary = jst.union(
+    jst.zip_with(
+      function(it, binary) {test: binary},
+      jst.keys(binary),
+      jst.values(binary),
+    ),
+  );
+  local test_args = {
+    'test-args.json': jst.make_blob(jst.json_encode(test_args)),
+  };
+  local test_launcher = {
+    'test-launcher.json':
+      jst.make_blob(jst.json_encode(jst.env('CC_TEST_LAUNCHER', default=[]))),
+  };
+  local test_name = jst.join([stage, name], sep='/');
+  local test_input = jst.union(
+    [
+      jst.to_subdir(test_data, subdir='work'),
+      runner,
+      runner_data,
+      test_args,
+      test_launcher,
+      staged_test_binary,
+    ],
+  );
+  local target_properties = transitions.target_properties();
+  local test_results = jst.action(
+    outs=[
+      'result',
+      'stdout',
+      'stderr',
+      'remotestdout',
+      'remotestderr',
+      'time-start',
+      'time-stop',
+      'pwd',
+    ],
+    inputs=test_input,
+    cmd=['./runner'],
+    env=jst.env('TEST_ENV', default={}),
+    label='Running test ' + name,
+    may_fail=['test'],
+    fail_message=jst.join(['CC test ', test_name, ' failed']),
+    timeout_scaling=jst.env('TIMEOUT_SCALE', default=1.0),
+    execution_properties=target_properties,
+  );
+  jst.result(
+    artifacts=test_results,
+    runfiles={[name]: jst.make_tree(test_results)},
+    provides={lint: lint},
+  );
+
+{run_test: run_test}

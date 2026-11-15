@@ -1,0 +1,2296 @@
+local common = import '//expressions.jst';
+local shell = import '//shell/expressions.jst';
+
+// global fallbacks, if the defaults provide no values
+local fallback_cc = ['cc'];
+local fallback_cxx = ['c++'];
+local fallback_ar = ['ar'];
+local fallback_dwp = ['dwp'];
+local fallback_arflags = ['cqs'];
+
+// Query the C compiler from the CC provider of the defaults targets (falls
+// back to "cc" if not provided).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_cc(defaults_transition={}) =
+  local cc = common.field_list_provider(
+    fieldname='defaults',
+    provider='CC',
+    transition=defaults_transition,
+  );
+  if cc then cc else fallback_cc;
+
+// Query the C++ compiler from the CXX provider of the defaults targets
+// (falls back to "c++" if not provided).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_cxx(defaults_transition={}) =
+  local cxx = common.field_list_provider(
+    fieldname='defaults',
+    provider='CXX',
+    transition=defaults_transition,
+  );
+  if cxx then cxx else fallback_cxx;
+
+// Query the archiver from the AR provider of the defaults targets (falls
+// back to "ar" if not provided).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_ar(defaults_transition={}) =
+  local ar = common.field_list_provider(
+    fieldname='defaults',
+    provider='AR',
+    transition=defaults_transition,
+  );
+  if ar then ar else fallback_ar;
+
+// Query the include scanner artifacts from the INCLUDE_SCANNER provider of
+// the defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_include_scanner(defaults_transition={}) = common.field_map_provider(
+  fieldname='defaults',
+  provider='INCLUDE_SCANNER',
+  transition=defaults_transition,
+);
+
+// Query the DWARF packaging tool from the DWP provider of the defaults
+// targets (falls back to "dwp" if not provided).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_dwp(defaults_transition={}) =
+  local dwp = common.field_list_provider(
+    fieldname='defaults',
+    provider='DWP',
+    transition=defaults_transition,
+  );
+  if dwp then dwp else fallback_dwp;
+
+// Query the archiver flags from the ARFLAGS provider of the defaults targets
+// (falls back to "cqs" if not provided).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_arflags(defaults_transition={}) =
+  local arflags = common.field_list_provider(
+    fieldname='defaults',
+    provider='ARFLAGS',
+    transition=defaults_transition,
+  );
+  if arflags then arflags else fallback_arflags;
+
+// Query the C compile flags from the CFLAGS provider of the defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_cflags(defaults_transition={}) = common.field_list_provider(
+  fieldname='defaults',
+  provider='CFLAGS',
+  transition=defaults_transition,
+);
+
+// Query the C++ compile flags from the CXXFLAGS provider of the defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_cxxflags(defaults_transition={}) = common.field_list_provider(
+  fieldname='defaults',
+  provider='CXXFLAGS',
+  transition=defaults_transition,
+);
+
+// Query the linker flags from the LDFLAGS provider of the defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_ldflags(defaults_transition={}) = common.field_list_provider(
+  fieldname='defaults',
+  provider='LDFLAGS',
+  transition=defaults_transition,
+);
+
+// Query the environment map from the ENV provider of the defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_env(defaults_transition={}) = common.field_map_provider(
+  fieldname='defaults',
+  provider='ENV',
+  transition=defaults_transition,
+);
+
+// Query the list of PATH entries from the PATH provider of the defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_path(defaults_transition={}) = common.field_list_provider(
+  fieldname='defaults',
+  provider='PATH',
+  transition=defaults_transition,
+);
+
+// Query the toolchain tree from the TOOLCHAIN provider of the defaults
+// targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_toolchain(defaults_transition={}) = common.field_map_provider(
+  fieldname='defaults',
+  provider='TOOLCHAIN',
+  transition=defaults_transition,
+);
+
+// Query and merge the NON_SYSTEM_TOOLS maps of the defaults targets, i.e.,
+// the tools taken from the toolchain instead of the system.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local default_non_system_tools(defaults_transition={}) = jst.union(
+  [
+    jst.dep_provides(
+      x,
+      'NON_SYSTEM_TOOLS',
+      transition=defaults_transition,
+      default={},
+    )
+    for x in jst.field('defaults')
+  ],
+);
+
+// Query list of providers from 'base' targets
+// - `provider` The name of the provider in the provides map.
+// - `default`  The default if provider is missing (default: []).
+local defaults_base_provides_list(provider, default=[]) = common.field_provider_list(
+  fieldname='base',
+  provider=provider,
+  default=default,
+);
+
+// Query flattend list of providers from 'base' targets
+// - `provider` The name of the provider in the provides map.
+// - `default`  The default if provider is missing (default: []).
+local defaults_base_provides__concat(provider, default=[]) = jst.flatten(
+  defaults_base_provides_list(provider=provider, default=default),
+);
+
+// Query provider from 'base' targets (last wins)
+// - `provider` The name of the provider in the provides map.
+// - `default`  The default if provider is missing (default: []).
+local defaults_base_provides(provider, default=[]) = jst.foldl(
+  function(next, curr) if next then next else curr,
+  default,
+  defaults_base_provides_list(provider=provider, default=default),
+);
+
+// Collect debug dependencies (sources/headers) from given target_fields
+// - `deps_provider`        Name of provider to use (debug-srcs/debug-hdrs).
+// - `deps_fieldnames`      List of target_field names to collect dependencies from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local debug_deps(deps_provider, deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.union(
+  jst.flatten(
+    [
+      jst.flatten(
+        local transition = jst.get(
+          fieldname,
+          modified_transitions,
+          default=deps_transition,
+        );
+        [
+          common.field_provider_list(
+            fieldname=fieldname,
+            provider=deps_provider,
+            transition=transition,
+            default={},
+          ),
+        ],
+      )
+      for fieldname in deps_fieldnames
+    ],
+  ),
+);
+
+// Collect compile dependencies (headers) from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect dependencies from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local compile_deps(deps_fieldnames, deps_transition={}, modified_transitions={}, component_fieldnames=[]) = jst.union(
+  jst.flatten(
+    [
+      jst.flatten(
+        [
+          local transition = jst.get(
+            fieldname,
+            modified_transitions,
+            default=deps_transition,
+          );
+          common.field_provider_list(
+            fieldname=fieldname,
+            provider='compile-deps',
+            transition=transition,
+            default={},
+          )
+          for fieldname in deps_fieldnames + component_fieldnames
+        ],
+      ),
+      jst.flatten(
+        [
+          local transition = jst.get(
+            fieldname,
+            modified_transitions,
+            default=deps_transition,
+          );
+          common.field_runfiles_list(
+            fieldname=fieldname,
+            transition=transition,
+          )
+          for fieldname in deps_fieldnames
+        ],
+      ),
+    ],
+  ),
+  disjoint=true,
+);
+
+// Collect compile arguments from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect arguments from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local compile_args_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.nub_right(
+  jst.flatten(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      common.field_list_provider(
+        fieldname=fieldname,
+        provider='compile-args',
+        transition=transition,
+      )
+      for fieldname in deps_fieldnames
+    ],
+  ),
+);
+
+// Collect link dependencies (libraries) from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect dependencies from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local link_deps(deps_fieldnames, deps_transition={}, modified_transitions={}, component_fieldnames=[]) =
+  local drop_artifacts = {[it]: true for it in component_fieldnames};
+  jst.union(
+    jst.flatten(
+      [
+        jst.flatten(
+          local transition = jst.get(
+            fieldname,
+            modified_transitions,
+            default=deps_transition,
+          );
+          [
+            common.field_provider_list(
+              fieldname=fieldname,
+              provider='link-deps',
+              transition=transition,
+              default={},
+            ),
+            if jst.get(fieldname, drop_artifacts) then
+              []
+            else
+              common.field_artifacts_list(
+                fieldname=fieldname,
+                transition=transition,
+              ),
+          ],
+        )
+        for fieldname in deps_fieldnames
+      ],
+    ),
+    disjoint=true,
+  );
+
+// Collect linker arguments from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect arguments from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local link_args_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.nub_right(
+  jst.flatten(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      common.field_list_provider(
+        fieldname=fieldname,
+        provider='link-args',
+        transition=transition,
+      )
+      for fieldname in deps_fieldnames
+    ],
+  ),
+);
+
+// Collect runtime libraries from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect dependencies from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local run_libs_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.to_subdir(
+  jst.union(
+    jst.flatten(
+      [
+        local transition = jst.get(
+          fieldname,
+          modified_transitions,
+          default=deps_transition,
+        );
+        common.field_provider_list(
+          fieldname=fieldname,
+          provider='run-libs',
+          transition=transition,
+          default={},
+        )
+        for fieldname in deps_fieldnames
+      ],
+    ),
+    disjoint=true,
+  ),
+  flat=true,
+);
+
+// Collect runtime libraries link arguments from given target_fields
+// - `deps_fieldnames`      List of target_field names to collect arguments from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local run_libs_args_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.nub_right(
+  jst.flatten(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      common.field_list_provider(
+        fieldname=fieldname,
+        provider='run-libs-args',
+        transition=transition,
+      )
+      for fieldname in deps_fieldnames
+    ],
+  ),
+);
+
+// Collect maps from provider "package" for given target_fields
+// - `pkg_key`              Key to lookup in provider "package".
+// - `deps_fieldnames`      List of target_field names to collect maps from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local pkg_map_provider_deps(pkg_key, deps_fieldnames, deps_transition={}, modified_transitions={}) = jst.union(
+  jst.flatten(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      [
+        jst.get(pkg_key, map, default={})
+        for map in common.field_provider_list(
+          fieldname=fieldname,
+          provider='package',
+          transition=transition,
+          default={},
+        )
+      ]
+      for fieldname in deps_fieldnames
+    ],
+  ),
+  disjoint=true,
+);
+
+// Collect cflags files from target_fields
+// - `deps_fieldnames`      List of target_field names to collect files from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local cflags_files_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = pkg_map_provider_deps(
+  pkg_key='cflags-files',
+  deps_fieldnames=deps_fieldnames,
+  deps_transition=deps_transition,
+  modified_transitions=modified_transitions,
+);
+
+// Collect cflags files from target_fields
+// - `deps_fieldnames`      List of target_field names to collect files from.
+// - `deps_transition`      The optional configuration transition for the targets.
+// - `modified_transitions` Map telling fields that need to be transitioned differently
+local ldflags_files_deps(deps_fieldnames, deps_transition={}, modified_transitions={}) = pkg_map_provider_deps(
+  pkg_key='ldflags-files',
+  deps_fieldnames=deps_fieldnames,
+  deps_transition=deps_transition,
+  modified_transitions=modified_transitions,
+);
+
+// Detect ldflags referring to local libs and prefix them.
+local pkg_prefix_lib_paths(pkg_ldflags, pkg_libs, flat_libs, lib_prefix) =
+  local libs_set = {[it]: true for it in jst.keys(pkg_libs)};
+  [
+    if jst.get(item, libs_set) then
+      jst.join(
+        if flat_libs then
+          ['-l:', jst.basename(item)]
+        else
+          [lib_prefix, '/', item],
+      )
+    else
+      item
+    for item in pkg_ldflags
+  ];
+
+// Create shell commands that print the given flags. Flags referring to
+// local flag files are replaced by a command that inlines the content of
+// the respective flag file.
+local pkg_flag_print_cmds(flags_, pkg_flag_files) =
+  local pkg_flag_files_unprefix_map = {
+    ['@' + name]: name
+    for name in jst.keys(pkg_flag_files)
+  };
+  [
+    local flag_file = jst.get(item, pkg_flag_files_unprefix_map);
+    if flag_file then
+      jst.join_cmd(['inline_flags', flag_file])
+    else
+      jst.join_cmd(['put_flags', item])
+    for item in flags_
+  ];
+
+// Generate a pkg-config file. As the content of flag files is only known
+// at build time, the file is created by an action running a generated
+// POSIX shell script, which inlines the content of any flag file that is
+// referred to by the collected compile or link flags.
+local pkg_config(pkg_name, pkg_cflags, pkg_ldflags, pkg_flag_files, pkg_libs, flat_libs, sh, shell_toolchain, shell_env, pkg_prefix='/', pkg_version='unknown') =
+  local pkg_ldflags = pkg_prefix_lib_paths(
+    pkg_ldflags=pkg_ldflags,
+    pkg_libs=pkg_libs,
+    flat_libs=flat_libs,
+    lib_prefix='${libdir}',
+  );
+  local pc_filename = pkg_name + '.pc';
+  local flags_ = ['-I${includedir}'] + pkg_cflags;
+  local cflags_cmds = pkg_flag_print_cmds(
+    flags_=flags_,
+    pkg_flag_files=pkg_flag_files,
+  );
+  local flags_ = (if flat_libs then ['-L${libdir}']) + pkg_ldflags;
+  local ldflags_cmds = pkg_flag_print_cmds(
+    flags_=flags_,
+    pkg_flag_files=pkg_flag_files,
+  );
+  local script = jst.join(
+    jst.flatten(
+      [
+        [
+          '# Print the given flags, separated by a single space.',
+          'put_flags() { printf \' %s\' "$@"; }',
+          '# Print the flags read from the given flag file. Lines are',
+          '# read and printed verbatim, except for leading blanks, so',
+          '# that any quoting produced by pkg-config is preserved.',
+          'inline_flags() {',
+          '  while IFS= read -r line || [ -n "$line" ]; do',
+          '    while :; do',
+          '      case "$line" in',
+          '        \' \'*|\'\t\'*) line=${line#?} ;;',
+          '        *) break ;;',
+          '      esac',
+          '    done',
+          '    if [ -n "$line" ]; then printf \' %s\' "$line"; fi',
+          '  done < "$1"',
+          '}',
+          'exec > ' + jst.join_cmd([pc_filename]),
+          jst.join_cmd(
+            ['printf', '%s\\n']
+            + [
+              'prefix=' + pkg_prefix,
+              'libdir=${prefix}/lib',
+              'includedir=${prefix}/include',
+              'Name: ' + pkg_name,
+              'Version: ' + pkg_version,
+              jst.join(
+                [
+                  'Description: Pkg-config for ',
+                  pkg_name,
+                  ', generated by jst-build',
+                ],
+              ),
+              'URL: unknown',
+            ],
+          ),
+          jst.join_cmd(['printf', '%s', 'Cflags:']),
+        ],
+        cflags_cmds,
+        [
+          jst.join_cmd(['printf', '\\n']),
+          jst.join_cmd(['printf', '%s', 'Libs:']),
+        ],
+        ldflags_cmds,
+        [jst.join_cmd(['printf', '\\n'])],
+      ],
+    ),
+    sep='\n',
+  );
+  jst.action(
+    inputs=jst.union(
+      [
+        pkg_flag_files,
+        shell_toolchain,
+        {'gen_pkg_config.sh': jst.make_blob(script)},
+      ],
+    ),
+    cmd=[sh, 'gen_pkg_config.sh'],
+    outs=[pc_filename],
+    env=shell_env,
+    label='Generating pkg-config file ' + pc_filename,
+  );
+
+// Add debug fission flags, if enabled, to existing compile flags.
+local add_fission_compile_flags(compile_flags, debug={}) =
+  local fission_config =
+    if jst.get('USE_DEBUG_FISSION', debug) then
+      jst.assert_non_empty(
+        jst.get('FISSION_CONFIG', debug),
+        msg=['Debug fission requires non-empty debug map FISSION_CONFIG field'],
+      )
+    else
+      {};
+  local flags_ = jst.flatten(
+    [
+      compile_flags,
+      if jst.get('USE_SPLIT_DWARF', fission_config) then ['-gsplit-dwarf'],
+      local version = jst.get('DWARF_VERSION', fission_config);
+      if version then ['-gdwarf-' + version],
+      if jst.get('USE_DEBUG_TYPES_SECTION', fission_config) then
+        ['-fdebug-types-section'],
+    ],
+  );
+  flags_;
+
+// Add debug fission flags, if enabled, to existing link flags.
+local add_fission_link_flags(ldflags, debug={}) =
+  local fission_config =
+    if jst.get('USE_DEBUG_FISSION', debug) then
+      jst.assert_non_empty(
+        jst.get('FISSION_CONFIG', debug),
+        msg=['Debug fission requires non-empty debug map FISSION_CONFIG field'],
+      )
+    else
+      {};
+  local flags_ =
+    ldflags
+    + (if jst.get('USE_GDB_INDEX', fission_config) then ['-Wl,--gdb-index']);
+  flags_;
+
+// Run the DWARF packaging tool on the given dwarf objects and dependencies
+// and return the resulting package (name.dwp, below stage).
+// - `toolchain`        The staged toolchain tree.
+// - `toolchain_dir`    The directory the toolchain is staged to.
+// - `non_system_tools` Map of tools to take from the toolchain.
+// - `name`             The base name of the package.
+// - `dwarf_deps`       The dwarf packages of the dependencies.
+// - `dwp`              The packaging tool (default: from the defaults).
+// - `env`              The environment for the action.
+// - `dwarf_objects`    The dwarf objects of the target itself.
+// - `stage`            The optional stage of the package.
+local dwarf_package(toolchain, toolchain_dir, non_system_tools, name, dwarf_deps, dwp=null, env={}, dwarf_objects={}, stage=null) =
+  local dwp =
+    if dwp == null then
+      jst.join(
+        (if jst.get('DWP', non_system_tools) then ['./', toolchain_dir, '/'])
+        + default_dwp(),
+      )
+    else
+      dwp;
+  local pkgname = name + '.dwp';
+  local pkgpath =
+    if stage then jst.join([stage, pkgname], sep='/') else pkgname;
+  local objects_ = dwarf_objects;
+  local objects_ = jst.union([objects_, dwarf_deps], disjoint=true);
+  local dwarf_pkg =
+    if objects_ then
+      local staged_objects = jst.to_subdir(objects_, subdir='work');
+      local staged_pkgpath = 'work/' + pkgpath;
+      local staged_pkg = jst.action(
+        inputs=toolchain + staged_objects,
+        cmd=[dwp, '-o', staged_pkgpath] + jst.keys(staged_objects),
+        outs=[staged_pkgpath],
+        env=env,
+        label='DWARF-pkg ' + jst.basename(staged_pkgpath),
+      );
+      local pkg_artifact = jst.get(staged_pkgpath, staged_pkg);
+      {[pkgpath]: pkg_artifact}
+    else
+      {};
+  dwarf_pkg;
+
+// Compile the given sources to object files and return them (merged
+// with the objects of the component fields) as map with the keys
+// "objects" and "dwarf objects".
+// - `compiler`      The compiler to use.
+// - `compile_flags` The flags to compile with.
+// - `srcs`          The sources to compile.
+// - `hdrs`          The public headers.
+// - `private_hdrs`  The private headers.
+// - `compile_deps_` The headers of the dependencies.
+// - `env`           The environment for the compile actions.
+// - `debug`         The value of the "DEBUG" variable.
+// - `toolchain`     The staged toolchain tree.
+// - `cflags_files`  The cflags files to pass to the compiler.
+local objects(compiler, compile_flags, srcs, hdrs, private_hdrs, compile_deps_, env={}, debug={}, toolchain={}, cflags_files={}, component_fieldnames=[], defaults_transition={}, deps_transition={}, modified_transitions={}) =
+  local include_tree = {include: jst.make_tree(compile_deps_)};
+  local all_hdrs =
+    include_tree
+    + jst.to_subdir(
+      jst.union([hdrs, private_hdrs], disjoint=true),
+      subdir='work',
+    );
+  local include_scan_tool = jst.union(
+    [
+      {include_scan: artifact}
+      for artifact in jst.values(
+        default_include_scanner(defaults_transition=defaults_transition),
+      )
+    ],
+    disjoint=true,
+    msg='Include scanner should be single artifact',
+  );
+  local compile_flags = add_fission_compile_flags(
+    compile_flags=compile_flags,
+    debug=debug,
+  );
+  local my_output_artifacts = jst.zip_with(
+    function(src_name, src_val)
+      local work_src_name = jst.join(['work', src_name], sep='/');
+      local inputs = jst.union(
+        [all_hdrs, {[work_src_name]: src_val}, cflags_files, toolchain],
+      );
+      local out = jst.change_ending(src_name, ending='.o');
+      local work_out = jst.join(['work', out], sep='/');
+      local dwarf_out = jst.change_ending(src_name, ending='.dwo');
+      local work_dwarf_out = jst.join(['work', dwarf_out], sep='/');
+      local cmdline = jst.flatten(
+        [
+          [compiler],
+          compile_flags,
+          ['-I', 'work', '-isystem', 'include'],
+          ['-c', work_src_name],
+        ],
+      );
+      local minimal_include_tree =
+        if include_scan_tool then
+          jst.from_subdir(
+            jst.action(
+              inputs=inputs + include_scan_tool,
+              cmd=jst.flatten(
+                [['./include_scan'], ['out'], cmdline, ['-E', '-M']],
+              ),
+              out_dirs=['out/include'],
+              env=env,
+              label='Include-scan ' + jst.basename(src_name),
+            ),
+            subdir='out',
+          )
+        else
+          include_tree;
+      local minimal_inputs = inputs + minimal_include_tree;
+      local action_output = jst.action(
+        inputs=minimal_inputs,
+        cmd=cmdline + ['-o', work_out],
+        outs=
+          (if jst.get('USE_DEBUG_FISSION', debug) then
+            [work_dwarf_out]
+          else
+            [])
+          + [work_out],
+        env=env,
+        label='Compiling ' + jst.basename(src_name),
+      );
+      local staged_output_artifacts =
+        [{[out]: jst.get(work_out, action_output)}]
+        + (if jst.get('USE_DEBUG_FISSION', debug) then
+          [{[dwarf_out]: jst.get(work_dwarf_out, action_output)}]
+        else
+          []);
+      staged_output_artifacts,
+    jst.keys(srcs),
+    jst.values(srcs),
+  );
+  local my_objects = jst.union([jst.at('0', it) for it in my_output_artifacts]);
+  local my_dwarf_objects =
+    if jst.get('USE_DEBUG_FISSION', debug) then
+      jst.union([jst.at('1', it) for it in my_output_artifacts])
+    else
+      {};
+  local component_artifacts = jst.union(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      common.field_artifacts(fieldname=fieldname, transition=transition)
+      for fieldname in component_fieldnames
+    ],
+    disjoint=true,
+  );
+  {
+    objects: jst.union(
+      [my_objects, component_artifacts],
+      disjoint=true,
+      msg='Staging conflict between own objects and objects of components',
+    ),
+  }
+  + {'dwarf objects': my_dwarf_objects};
+
+// The C compiler: the variable "CC" or the one from the defaults
+// (prefixed with toolchain_dir, if it is a non-system tool).
+local compiler_cc(toolchain_dir, non_system_tools, defaults_transition={}) =
+  jst.env(
+    'CC',
+    default=jst.join(
+      (if jst.get('CC', non_system_tools) then ['./', toolchain_dir, '/'])
+      + default_cc(defaults_transition=defaults_transition),
+    ),
+  );
+
+// The C++ compiler: the variable "CXX" or the one from the defaults
+// (prefixed with toolchain_dir, if it is a non-system tool).
+local compiler_cxx(toolchain_dir, non_system_tools, defaults_transition={}) =
+  jst.env(
+    'CXX',
+    default=jst.join(
+      (if jst.get('CXX', non_system_tools) then ['./', toolchain_dir, '/'])
+      + default_cxx(defaults_transition=defaults_transition),
+    ),
+  );
+
+// The C compiler if pure_c is set, the C++ compiler otherwise.
+local get_compiler(pure_c, toolchain_dir, non_system_tools, defaults_transition={}) =
+  if pure_c then
+    compiler_cc(
+      toolchain_dir=toolchain_dir,
+      non_system_tools=non_system_tools,
+      defaults_transition=defaults_transition,
+    )
+  else
+    compiler_cxx(
+      toolchain_dir=toolchain_dir,
+      non_system_tools=non_system_tools,
+      defaults_transition=defaults_transition,
+    );
+
+// The C compile flags: "-fPIC" (if build_position_independent), the
+// variable "CFLAGS" or the flags from the defaults, and "ADD_CFLAGS".
+local flags_cc(build_position_independent, defaults_transition={}) =
+  jst.flatten(
+    [
+      if build_position_independent then ['-fPIC'],
+      jst.env(
+        'CFLAGS',
+        default=default_cflags(defaults_transition=defaults_transition),
+      ),
+      jst.env('ADD_CFLAGS', default=[]),
+    ],
+  );
+
+// The C++ compile flags: "-fPIC" (if build_position_independent), the
+// variable "CXXFLAGS" or the flags from the defaults, and
+// "ADD_CXXFLAGS".
+local flags_cxx(build_position_independent, defaults_transition={}) =
+  jst.flatten(
+    [
+      if build_position_independent then ['-fPIC'],
+      jst.env(
+        'CXXFLAGS',
+        default=default_cxxflags(defaults_transition=defaults_transition),
+      ),
+      jst.env('ADD_CXXFLAGS', default=[]),
+    ],
+  );
+
+// The C or C++ compile flags (depending on pure_c); if there are none,
+// "-g" in debug mode.
+local flags(debug, pure_c, build_position_independent=false, defaults_transition={}) =
+  local flags_ =
+    if pure_c then
+      flags_cc(
+        build_position_independent=build_position_independent,
+        defaults_transition=defaults_transition,
+      )
+    else
+      flags_cxx(
+        build_position_independent=build_position_independent,
+        defaults_transition=defaults_transition,
+      );
+  if flags_ then flags_ else if debug then ['-g'];
+
+// Collect the lint information (compile commands of sources and headers)
+// of a target and its dependencies.
+local lint_information(pure_c, srcs, hdrs, private_hdrs, compile_deps_, lint_deps_fieldnames, deps_fieldnames, compile_args, debug={}, cflags_files={}, deps_transition={}, defaults_transition={}, modified_transitions={}) =
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain(defaults_transition=defaults_transition);
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools(
+    defaults_transition=defaults_transition,
+  );
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local compile_flags =
+    flags(debug=debug, pure_c=pure_c, defaults_transition=defaults_transition)
+    + compile_args;
+  local compile_flags = add_fission_compile_flags(
+    compile_flags=compile_flags,
+    debug=debug,
+  );
+  local include_tree = {include: jst.make_tree(compile_deps_)};
+  local all_hdrs =
+    include_tree
+    + jst.to_subdir(
+      jst.union([hdrs, private_hdrs], disjoint=true),
+      subdir='work',
+    );
+  local direct_deps_hdrs = jst.to_subdir(
+    jst.union(
+      jst.flatten(
+        [
+          local transition = jst.get(
+            fieldname,
+            modified_transitions,
+            default=deps_transition,
+          );
+          common.field_runfiles_list(
+            fieldname=fieldname,
+            transition=transition,
+          )
+          for fieldname in deps_fieldnames
+        ],
+      ),
+    ),
+    subdir='include',
+  );
+  local own_headers = jst.to_subdir(hdrs + private_hdrs, subdir='work');
+  local direct_hdrs = own_headers + direct_deps_hdrs;
+  local direct_deps_artifact_names = jst.keys(direct_hdrs);
+  local hdr_lint = [
+    jst.value_node(
+      jst.result(
+        artifacts=jst.union([all_hdrs, cflags_files, toolchain]),
+        provides=
+          local src = 'work/' + it;
+          local cmd = jst.flatten(
+            [
+              [compiler],
+              compile_flags,
+              ['-I', 'work', '-isystem', 'include', '-E', src],
+            ],
+          );
+          local extra_outs = [];
+          {
+            cmd: cmd,
+            src: src,
+            'direct deps artifact names': direct_deps_artifact_names,
+            'extra outs': extra_outs,
+          },
+      ),
+    )
+    for it in jst.keys(private_hdrs) + jst.keys(hdrs)
+  ];
+  local src_lint = jst.zip_with(
+    function(src_name, src_val)
+      local work_src_name = jst.join(['work', src_name], sep='/');
+      local inputs = jst.union(
+        [all_hdrs, {[work_src_name]: src_val}, cflags_files, toolchain],
+      );
+      local out = jst.change_ending(src_name, ending='.o');
+      local work_out = jst.join(['work', out], sep='/');
+      local dwarf_out = jst.change_ending(src_name, ending='.dwo');
+      local work_dwarf_out = jst.join(['work', dwarf_out], sep='/');
+      local extra_outs =
+        if jst.get(
+          'USE_DEBUG_FISSION',
+          debug,
+        ) then
+          [work_dwarf_out]
+        else
+          [];
+      local cmd = jst.flatten(
+        [
+          [compiler],
+          compile_flags,
+          ['-I', 'work', '-isystem', 'include'],
+          ['-c', work_src_name],
+          ['-o', work_out],
+        ],
+      );
+      jst.value_node(
+        jst.result(
+          artifacts=inputs,
+          provides=
+            local src = work_src_name;
+            {
+              cmd: cmd,
+              src: src,
+              'direct deps artifact names': direct_deps_artifact_names,
+              'extra outs': extra_outs,
+            },
+        ),
+      ),
+    jst.keys(srcs),
+    jst.values(srcs),
+  );
+  local dep_lint_nodes = jst.flatten(
+    [
+      local transition = jst.get(
+        fieldname,
+        modified_transitions,
+        default=deps_transition,
+      );
+      common.field_list_provider(
+        fieldname=fieldname,
+        provider='lint',
+        transition=transition,
+      )
+      for fieldname in lint_deps_fieldnames
+    ],
+  );
+  local lint_nodes = jst.flatten([hdr_lint, src_lint, dep_lint_nodes]);
+  local lint_nodes = jst.nub_right(lint_nodes);
+  lint_nodes;
+
+// Run the action producing the library artifact and pass it together with
+// related information to consumers.
+local lib_action(name, pure_c, srcs, hdrs, private_hdrs, stage, compile_deps_, compile_args, env={}, cflags_files={}, defaults_transition={}, component_fieldnames=[], deps_transition={}, modified_transitions={}) =
+  local debug = jst.env('DEBUG', default={});
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain(defaults_transition=defaults_transition);
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools(
+    defaults_transition=defaults_transition,
+  );
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local compile_flags =
+    flags(
+      debug=debug,
+      build_position_independent=$BUILD_POSITION_INDEPENDENT,
+      pure_c=pure_c,
+      defaults_transition=defaults_transition,
+    )
+    + compile_args;
+  local ar =
+    jst.env(
+      'AR',
+      default=jst.join(
+        (if jst.get('AR', non_system_tools) then ['./', toolchain_dir, '/'])
+        + default_ar(defaults_transition=defaults_transition),
+      ),
+    );
+  local arflags = default_arflags(defaults_transition=defaults_transition);
+  local env = default_env(defaults_transition=defaults_transition) + env;
+  local env_path = jst.get('PATH', env);
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        default_path(defaults_transition=defaults_transition)
+        + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  local objects_result = objects(
+    compiler=compiler,
+    compile_flags=compile_flags,
+    env=env,
+    debug=debug,
+    toolchain=toolchain,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    compile_deps_=compile_deps_,
+    cflags_files=cflags_files,
+    component_fieldnames=component_fieldnames,
+    defaults_transition=defaults_transition,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local objects_ = jst.get('objects', objects_result);
+  local base_name =
+    if objects_ then
+      jst.assert_non_empty(
+        name,
+        msg='A name has to be provided for non-header-only libraries',
+      )
+    else
+      name;
+  local libname = jst.join(['lib', base_name, '.a']);
+  local libpath =
+    if stage then jst.join([stage, libname], sep='/') else libname;
+  local lib =
+    if objects_ then
+      local staged_objects = jst.to_subdir(objects_, subdir='work');
+      local staged_libpath = 'work/' + libpath;
+      local staged_lib = jst.action(
+        inputs=toolchain + staged_objects,
+        cmd=jst.flatten(
+          [[ar], arflags, [staged_libpath], jst.keys(staged_objects)],
+        ),
+        outs=[staged_libpath],
+        env=env,
+        label='Archiving ' + jst.basename(libpath),
+      );
+      local lib_artifact_ = jst.get(staged_libpath, staged_lib);
+      {[libpath]: lib_artifact_}
+    else
+      {};
+  jst.union(
+    [
+      {library: lib},
+      {'dwarf objects': jst.get('dwarf objects', objects_result)},
+      {
+        TOOLCHAIN: toolchain,
+        TOOLCHAIN_DIR: toolchain_dir,
+        NON_SYSTEM_TOOLS: non_system_tools,
+        ENV: env,
+      },
+    ],
+  );
+
+// Build a static library and return the result of the rule.
+local lib_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, public_fieldnames, private_fieldnames, lint_deps_fieldnames, env={}, ldflags=[], private_ldflags=[], pkg_name=null, extra_provides={}, component_fieldnames=[], private_component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
+  local debug = jst.env('DEBUG', default={});
+  local deps_fieldnames = private_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    jst.flatten(
+      [
+        cflags,
+        private_cflags,
+        compile_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local link_deps_ = link_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local lib_action_result = lib_action(
+    env=env,
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    stage=stage,
+    compile_deps_=compile_deps_,
+    compile_args=compile_args,
+    cflags_files=cflags_files,
+    defaults_transition=defaults_transition,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local lib = jst.get('library', lib_action_result);
+  local dwarf_objects = jst.get('dwarf objects', lib_action_result);
+  local dwarf_pkg_ =
+    if dwarf_objects
+    && jst.get('USE_DEBUG_FISSION', debug) then
+      local toolchain = jst.get('TOOLCHAIN', lib_action_result);
+      local toolchain_dir = jst.get('TOOLCHAIN_DIR', lib_action_result);
+      local non_system_tools = jst.get('NON_SYSTEM_TOOLS', lib_action_result);
+      local env = jst.get('ENV', lib_action_result);
+      dwarf_package(
+        toolchain=toolchain,
+        toolchain_dir=toolchain_dir,
+        non_system_tools=non_system_tools,
+        env=if env == null then {} else env,
+        name=name,
+        dwarf_objects=if dwarf_objects == null then {} else dwarf_objects,
+        dwarf_deps={},
+        stage=stage,
+      )
+    else
+      {};
+  local lint =
+    if $LINT then
+      lint_information(
+        debug=debug,
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs=hdrs,
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps_,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=lint_deps_fieldnames,
+        deps_transition=deps_transition,
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+        defaults_transition=defaults_transition,
+        modified_transitions=modified_transitions,
+      );
+  local link_args = jst.nub_right(
+    jst.flatten(
+      [
+        jst.keys(lib),
+        ldflags,
+        private_ldflags,
+        link_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local run_libs = run_libs_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local run_libs_args = run_libs_args_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local ldflags_files = ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local debug_srcs =
+    if debug then
+      jst.union(
+        [
+          debug_deps(
+            deps_provider='debug-srcs',
+            deps_fieldnames=deps_fieldnames,
+            deps_transition=deps_transition,
+            modified_transitions=modified_transitions,
+          ),
+          srcs,
+          private_hdrs,
+          hdrs,
+        ],
+      )
+    else
+      {};
+  local debug_hdrs =
+    if debug then
+      debug_deps(
+        deps_provider='debug-hdrs',
+        deps_fieldnames=deps_fieldnames,
+        deps_transition=deps_transition,
+        modified_transitions=modified_transitions,
+      )
+      + hdrs
+    else
+      {};
+  local deps_fieldnames = public_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    cflags
+    + compile_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+      modified_transitions=modified_transitions,
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local package =
+    local name = pkg_name;
+    {name: name, 'cflags-files': cflags_files, 'ldflags-files': ldflags_files};
+  jst.result(
+    artifacts=lib,
+    runfiles=hdrs,
+    provides=
+      {
+        'compile-deps': compile_deps_,
+        'compile-args': compile_args,
+        'link-deps': link_deps_,
+        'link-args': link_args,
+        'run-libs': run_libs,
+        'run-libs-args': run_libs_args,
+        package: package,
+        'debug-srcs': debug_srcs,
+        'debug-hdrs': debug_hdrs,
+        lint: lint,
+        'dwarf-pkg': dwarf_pkg_,
+      }
+      + extra_provides,
+  );
+
+// Run the action producing the shared artifact and pass it together with
+// related information to consumers.
+local shared_action(name, pure_c, srcs, hdrs, private_hdrs, soversion, compile_deps_, compile_args, link_deps_, link_args, run_libs, run_libs_args, cflags_files={}, ldflags_files={}, defaults_transition={}, component_fieldnames=[], deps_transition={}, modified_transitions={}) =
+  local debug = jst.env('DEBUG', default={});
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain(defaults_transition=defaults_transition);
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools(
+    defaults_transition=defaults_transition,
+  );
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local compile_flags =
+    flags(
+      debug=debug,
+      build_position_independent=true,
+      pure_c=pure_c,
+      defaults_transition=defaults_transition,
+    )
+    + compile_args;
+  local ldflags =
+    jst.env(
+      'LDFLAGS',
+      default=default_ldflags(defaults_transition=defaults_transition),
+    )
+    + jst.env('ADD_LDFLAGS', default=[]);
+  local env =
+    default_env(defaults_transition=defaults_transition)
+    + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        default_path(defaults_transition=defaults_transition)
+        + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  local objects_result = objects(
+    compiler=compiler,
+    compile_flags=compile_flags,
+    env=env,
+    debug=debug,
+    toolchain=toolchain,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    compile_deps_=compile_deps_,
+    cflags_files=cflags_files,
+    component_fieldnames=component_fieldnames,
+    defaults_transition=defaults_transition,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local objects_ = jst.get('objects', objects_result);
+  local compile_flags = add_fission_compile_flags(
+    compile_flags=compile_flags,
+    debug=debug,
+  );
+  local ld_flags = add_fission_link_flags(ldflags=ldflags, debug=debug);
+  local base_name =
+    if objects_ || link_deps_ then
+      jst.assert_non_empty(
+        name,
+        msg='A name has to be provided for non-header-only libraries',
+      )
+    else
+      name;
+  local libname = jst.join(['lib', base_name, '.so']);
+  local libname = jst.join([libname] + soversion, sep='.');
+  local lib =
+    if objects_ || link_deps_ then
+      jst.action(
+        inputs=jst.union(
+          [
+            toolchain,
+            objects_,
+            link_deps_,
+            run_libs,
+            cflags_files,
+            ldflags_files,
+          ],
+        ),
+        cmd=jst.flatten(
+          [
+            [
+              compiler,
+              '-shared',
+              '-Wl,-rpath,$ORIGIN',
+              '-Wl,-rpath,$ORIGIN/../lib',
+              '-Wl,-soname,' + libname,
+            ],
+            compile_flags,
+            ['-o', libname],
+            jst.keys(objects_),
+            link_args,
+            run_libs_args,
+            ld_flags,
+          ],
+        ),
+        outs=[libname],
+        env=env,
+        label='Linking ' + jst.basename(libname),
+      )
+    else
+      {};
+  jst.union(
+    [
+      {library: lib},
+      {'dwarf objects': jst.get('dwarf objects', objects_result)},
+      {
+        TOOLCHAIN: toolchain,
+        TOOLCHAIN_DIR: toolchain_dir,
+        NON_SYSTEM_TOOLS: non_system_tools,
+        ENV: env,
+      },
+    ],
+  );
+
+// Build a shared library and return the result of the rule.
+local shared_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, soversion, pkg_name, public_fieldnames, private_fieldnames, lint_deps_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, defaults_transition={}, deps_transition={}, modified_transitions={}, component_fieldnames=[], private_component_fieldnames=[]) =
+  local debug = jst.env('DEBUG', default={});
+  local deps_fieldnames = private_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    jst.flatten(
+      [
+        cflags,
+        private_cflags,
+        compile_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local link_deps_ = link_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local link_args = link_args_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local run_libs = run_libs_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local run_libs_args = jst.nub_right(
+    jst.flatten(
+      [
+        ldflags,
+        private_ldflags,
+        run_libs_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local ldflags_files = ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local lib_action_result = shared_action(
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    soversion=soversion,
+    compile_deps_=compile_deps_,
+    compile_args=compile_args,
+    link_deps_=link_deps_,
+    link_args=link_args,
+    run_libs=run_libs,
+    run_libs_args=run_libs_args,
+    cflags_files=cflags_files,
+    ldflags_files=ldflags_files,
+    defaults_transition=defaults_transition,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local lib = jst.get('library', lib_action_result);
+  local dwarf_objects = jst.get('dwarf objects', lib_action_result);
+  local dwarf_pkg_ =
+    if dwarf_objects
+    && jst.get('USE_DEBUG_FISSION', debug) then
+      local toolchain = jst.get('TOOLCHAIN', lib_action_result);
+      local toolchain_dir = jst.get('TOOLCHAIN_DIR', lib_action_result);
+      local non_system_tools = jst.get('NON_SYSTEM_TOOLS', lib_action_result);
+      local env = jst.get('ENV', lib_action_result);
+      dwarf_package(
+        toolchain=toolchain,
+        toolchain_dir=toolchain_dir,
+        non_system_tools=non_system_tools,
+        env=if env == null then {} else env,
+        name=name,
+        dwarf_objects=if dwarf_objects == null then {} else dwarf_objects,
+        dwarf_deps={},
+      )
+    else
+      {};
+  local debug_srcs =
+    if debug then
+      jst.union(
+        [
+          debug_deps(
+            deps_provider='debug-srcs',
+            deps_fieldnames=deps_fieldnames,
+            deps_transition=deps_transition,
+            modified_transitions=modified_transitions,
+          ),
+          srcs,
+          private_hdrs,
+          hdrs,
+        ],
+      )
+    else
+      {};
+  local lint =
+    if $LINT then
+      lint_information(
+        debug=debug,
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs=hdrs,
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps_,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=lint_deps_fieldnames,
+        deps_transition=deps_transition,
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+        defaults_transition=defaults_transition,
+        modified_transitions=modified_transitions,
+      );
+  local debug_hdrs =
+    if debug then
+      debug_deps(
+        deps_provider='debug-hdrs',
+        deps_fieldnames=deps_fieldnames,
+        deps_transition=deps_transition,
+        modified_transitions=modified_transitions,
+      )
+      + hdrs
+    else
+      {};
+  local deps_fieldnames = public_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    cflags
+    + compile_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+      modified_transitions=modified_transitions,
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local link_deps_ = {};
+  local link_args = [];
+  local run_libs = lib + run_libs;
+  local run_libs_args = jst.nub_right(jst.keys(lib) + ldflags);
+  local ldflags_files = ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local package =
+    local name = pkg_name;
+    local version = if soversion then jst.join(soversion, sep='.') else null;
+    {
+      name: name,
+      version: version,
+      'cflags-files': cflags_files,
+      'ldflags-files': ldflags_files,
+    };
+  jst.result(
+    artifacts=lib,
+    runfiles=hdrs,
+    provides=
+      {
+        'compile-deps': compile_deps_,
+        'compile-args': compile_args,
+        'link-deps': link_deps_,
+        'link-args': link_args,
+        'run-libs': run_libs,
+        'run-libs-args': run_libs_args,
+        package: package,
+        'debug-srcs': debug_srcs,
+        'debug-hdrs': debug_hdrs,
+        lint: lint,
+        'dwarf-pkg': dwarf_pkg_,
+      }
+      + extra_provides,
+  );
+
+// Get the relevant object artifacts and pass them together with related
+// information to consumers.
+local object_artifacts(pure_c, srcs, hdrs, private_hdrs, compile_deps_, compile_args, cflags_files={}, defaults_transition={}, modified_transitions={}, component_fieldnames=[]) =
+  local debug = jst.env('DEBUG', default={});
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain(defaults_transition=defaults_transition);
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools(
+    defaults_transition=defaults_transition,
+  );
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local compile_flags =
+    flags(
+      debug=debug,
+      build_position_independent=$BUILD_POSITION_INDEPENDENT,
+      pure_c=pure_c,
+      defaults_transition=defaults_transition,
+    )
+    + compile_args;
+  local env =
+    default_env(defaults_transition=defaults_transition)
+    + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        default_path(defaults_transition=defaults_transition)
+        + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  objects(
+    compiler=compiler,
+    compile_flags=compile_flags,
+    env=env,
+    debug=debug,
+    toolchain=toolchain,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    compile_deps_=compile_deps_,
+    cflags_files=cflags_files,
+    component_fieldnames=component_fieldnames,
+    defaults_transition=defaults_transition,
+    modified_transitions=modified_transitions,
+  )
+  + {
+    TOOLCHAIN: toolchain,
+    TOOLCHAIN_DIR: toolchain_dir,
+    NON_SYSTEM_TOOLS: non_system_tools,
+    ENV: env,
+  };
+
+// Compile the objects of a library (object-only build) and return the
+// result of the rule.
+local object_result(name, pure_c, srcs, hdrs, private_hdrs, cflags, private_cflags, stage, pkg_name, public_fieldnames, private_fieldnames, lint_deps_fieldnames, ldflags=[], private_ldflags=[], extra_provides={}, component_fieldnames=[], private_component_fieldnames=[], deps_transition={}, modified_transitions={}, defaults_transition={}) =
+  local debug = jst.env('DEBUG', default={});
+  local deps_fieldnames = private_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    jst.flatten(
+      [
+        cflags,
+        private_cflags,
+        compile_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local link_deps_ = link_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local object_artifacts_with_env = object_artifacts(
+    pure_c=pure_c,
+    srcs=srcs,
+    hdrs=hdrs,
+    private_hdrs=private_hdrs,
+    compile_deps_=compile_deps_,
+    compile_args=compile_args,
+    cflags_files=cflags_files,
+    defaults_transition=defaults_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames + private_component_fieldnames,
+  );
+  local objects_ = jst.get('objects', object_artifacts_with_env);
+  local dwarf_objects = jst.get('dwarf objects', object_artifacts_with_env);
+  local dwarf_pkg_ =
+    if dwarf_objects
+    && jst.get('USE_DEBUG_FISSION', debug) then
+      local toolchain = jst.get('TOOLCHAIN', object_artifacts_with_env);
+      local toolchain_dir = jst.get('TOOLCHAIN_DIR', object_artifacts_with_env);
+      local non_system_tools = jst.get(
+        'NON_SYSTEM_TOOLS',
+        object_artifacts_with_env,
+      );
+      local env = jst.get('ENV', object_artifacts_with_env);
+      dwarf_package(
+        dwp=$DWP,
+        toolchain=toolchain,
+        toolchain_dir=toolchain_dir,
+        non_system_tools=non_system_tools,
+        env=if env == null then {} else env,
+        name=name,
+        dwarf_objects=if dwarf_objects == null then {} else dwarf_objects,
+        dwarf_deps={},
+        stage=stage,
+      )
+    else
+      {};
+  local lint =
+    if $LINT then
+      lint_information(
+        debug=debug,
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs=hdrs,
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps_,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=lint_deps_fieldnames,
+        deps_transition=deps_transition,
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+        defaults_transition=defaults_transition,
+        modified_transitions=modified_transitions,
+      );
+  local link_args = jst.nub_right(
+    jst.flatten(
+      [
+        if $BUILD_OBJECT_ONLY_DROP_OBJECT_LINKING then
+          []
+        else
+          jst.keys(objects_),
+        ldflags,
+        private_ldflags,
+        link_args_deps(
+          deps_fieldnames=deps_fieldnames,
+          deps_transition=deps_transition,
+          modified_transitions=modified_transitions,
+        ),
+      ],
+    ),
+  );
+  local run_libs = run_libs_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local run_libs_args = jst.nub_right(
+    run_libs_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+      modified_transitions=modified_transitions,
+    ),
+  );
+  local ldflags_files = ldflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local debug_srcs =
+    if debug then
+      jst.union(
+        [
+          debug_deps(
+            deps_provider='debug-srcs',
+            deps_fieldnames=deps_fieldnames,
+            deps_transition=deps_transition,
+            modified_transitions=modified_transitions,
+          ),
+          srcs,
+          private_hdrs,
+          hdrs,
+        ],
+      )
+    else
+      {};
+  local debug_hdrs =
+    if debug then
+      debug_deps(
+        deps_provider='debug-hdrs',
+        deps_fieldnames=deps_fieldnames,
+        deps_transition=deps_transition,
+        modified_transitions=modified_transitions,
+      )
+      + hdrs
+    else
+      {};
+  local deps_fieldnames = public_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+    component_fieldnames=component_fieldnames,
+  );
+  local compile_args = jst.nub_right(
+    cflags
+    + compile_args_deps(
+      deps_fieldnames=deps_fieldnames,
+      deps_transition=deps_transition,
+      modified_transitions=modified_transitions,
+    ),
+  );
+  local cflags_files = cflags_files_deps(
+    deps_fieldnames=deps_fieldnames,
+    deps_transition=deps_transition,
+    modified_transitions=modified_transitions,
+  );
+  local package =
+    local name = pkg_name;
+    {name: name, 'cflags-files': cflags_files, 'ldflags-files': ldflags_files};
+  jst.result(
+    artifacts=objects_,
+    runfiles=hdrs,
+    provides=
+      {
+        'compile-deps': compile_deps_,
+        'compile-args': compile_args,
+        'link-deps': link_deps_,
+        'link-args': link_args,
+        'run-libs': run_libs,
+        'run-libs-args': run_libs_args,
+        package: package,
+        'debug-srcs': debug_srcs,
+        'debug-hdrs': debug_hdrs,
+        lint: lint,
+        'dwarf-pkg': dwarf_pkg_,
+      }
+      + extra_provides,
+  );
+
+// Run the action producing the binary artifact and pass it together with
+// related information to consumers.
+local bin_action(build_position_independent, name, pure_c, srcs, private_hdrs, stage, compile_deps_, compile_args, link_deps_, link_args, debug={}, run_libs={}, run_libs_args=[], cflags_files={}, ldflags_files={}, defaults_transition={}) =
+  local toolchain_dir = 'toolchain';
+  local toolchain = default_toolchain(defaults_transition=defaults_transition);
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools = default_non_system_tools(
+    defaults_transition=defaults_transition,
+  );
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local compile_flags =
+    flags(
+      debug=debug,
+      build_position_independent=build_position_independent,
+      pure_c=pure_c,
+      defaults_transition=defaults_transition,
+    )
+    + compile_args;
+  local ldflags =
+    jst.env(
+      'LDFLAGS',
+      default=default_ldflags(defaults_transition=defaults_transition),
+    )
+    + jst.env('ADD_LDFLAGS', default=[]);
+  local env =
+    default_env(defaults_transition=defaults_transition)
+    + jst.env('ENV', default={});
+  local env_path = jst.get('PATH', env);
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        default_path(defaults_transition=defaults_transition)
+        + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  local objects_result = objects(
+    compiler=compiler,
+    compile_flags=compile_flags,
+    env=env,
+    debug=debug,
+    toolchain=toolchain,
+    srcs=srcs,
+    hdrs={},
+    private_hdrs=private_hdrs,
+    compile_deps_=compile_deps_,
+    cflags_files=cflags_files,
+    defaults_transition=defaults_transition,
+  );
+  local objects_ = jst.get('objects', objects_result);
+  local compile_flags = add_fission_compile_flags(
+    compile_flags=compile_flags,
+    debug=debug,
+  );
+  local ld_flags = add_fission_link_flags(
+    ldflags=ldflags,
+    debug=debug,
+  );
+  local link_args = jst.nub_right(jst.keys(objects_) + link_args);
+  local binpath = if stage then jst.join([stage, name], sep='/') else name;
+  local binpath_in_work = 'work/' + binpath;
+  local toolchain_dir = '../toolchain';
+  local compiler = get_compiler(
+    pure_c=pure_c,
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+    defaults_transition=defaults_transition,
+  );
+  local env =
+    env
+    + {
+      PATH: jst.join(
+        default_path(defaults_transition=defaults_transition)
+        + (if env_path then [env_path]),
+        sep=':',
+      ),
+    };
+  local cmd = jst.flatten(
+    [
+      [
+        compiler,
+        '-Wl,-rpath,$ORIGIN',
+        '-Wl,-rpath,$ORIGIN/../lib',
+        '-o',
+        binpath,
+      ],
+      compile_flags,
+      link_args,
+      run_libs_args,
+      ld_flags,
+    ],
+  );
+  local binary_in_work = jst.action(
+    inputs=jst.union(
+      [
+        toolchain,
+        jst.to_subdir(
+          jst.union(
+            [objects_, link_deps_, run_libs, cflags_files, ldflags_files],
+            disjoint=true,
+          ),
+          subdir='work',
+        ),
+      ],
+      disjoint=true,
+    ),
+    cmd=cmd,
+    outs=[binpath_in_work],
+    env=env,
+    cwd='work',
+    label='Linking ' + jst.basename(binpath),
+  );
+  local binary = {[binpath]: jst.get(binpath_in_work, binary_in_work)};
+  jst.union(
+    [
+      {binary: binary},
+      {'dwarf objects': jst.get('dwarf objects', objects_result)},
+      {
+        TOOLCHAIN: toolchain,
+        TOOLCHAIN_DIR: toolchain_dir,
+        NON_SYSTEM_TOOLS: non_system_tools,
+        ENV: env,
+      },
+    ],
+  );
+
+// Provides the linked binary.
+local bin_artifact(name, pure_c, srcs, private_hdrs, stage, compile_deps_, compile_args, link_deps_, link_args, build_position_independent=false, debug={}, run_libs={}, run_libs_args=[], cflags_files={}, ldflags_files={}, defaults_transition={}) = jst.get(
+  'binary',
+  bin_action(
+    build_position_independent=build_position_independent,
+    debug=debug,
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    private_hdrs=private_hdrs,
+    stage=stage,
+    compile_deps_=compile_deps_,
+    compile_args=compile_args,
+    link_deps_=link_deps_,
+    link_args=link_args,
+    run_libs=run_libs,
+    run_libs_args=run_libs_args,
+    cflags_files=cflags_files,
+    ldflags_files=ldflags_files,
+    defaults_transition=defaults_transition,
+  ),
+  default={},
+);
+
+// Produces the binary target result.
+local bin_result(name, pure_c, srcs, private_hdrs, private_cflags, private_ldflags, stage, private_fieldnames, component_fieldnames=[]) =
+  local debug = jst.env('DEBUG', default={});
+  local deps_fieldnames = private_fieldnames;
+  local compile_deps_ = compile_deps(
+    deps_fieldnames=deps_fieldnames,
+    component_fieldnames=component_fieldnames,
+  );
+  local compile_args =
+    compile_args_deps(deps_fieldnames=deps_fieldnames)
+    + private_cflags;
+  local link_deps_ = link_deps(
+    deps_fieldnames=deps_fieldnames,
+    component_fieldnames=component_fieldnames,
+  );
+  local link_args = jst.nub_right(
+    private_ldflags + link_args_deps(deps_fieldnames=deps_fieldnames),
+  );
+  local run_libs = run_libs_deps(deps_fieldnames=deps_fieldnames);
+  local run_libs_args = run_libs_args_deps(deps_fieldnames=deps_fieldnames);
+  local cflags_files = cflags_files_deps(deps_fieldnames=deps_fieldnames);
+  local ldflags_files = ldflags_files_deps(deps_fieldnames=deps_fieldnames);
+  local package = {to_bin: true};
+  local debug_srcs =
+    if debug then
+      jst.union(
+        [
+          debug_deps(
+            deps_provider='debug-srcs',
+            deps_fieldnames=deps_fieldnames,
+          ),
+          srcs,
+          private_hdrs,
+        ],
+      )
+    else
+      {};
+  local debug_hdrs =
+    if debug then
+      debug_deps(deps_provider='debug-hdrs', deps_fieldnames=deps_fieldnames)
+      + compile_deps_
+    else
+      {};
+  local lint =
+    if $LINT then
+      lint_information(
+        debug=debug,
+        pure_c=pure_c,
+        srcs=srcs,
+        hdrs={},
+        private_hdrs=private_hdrs,
+        compile_deps_=compile_deps_,
+        cflags_files=cflags_files,
+        lint_deps_fieldnames=['private-deps'],
+        deps_fieldnames=deps_fieldnames,
+        compile_args=compile_args,
+      );
+  local bin_action_result = bin_action(
+    build_position_independent=$BUILD_POSITION_INDEPENDENT,
+    debug=debug,
+    name=name,
+    pure_c=pure_c,
+    srcs=srcs,
+    private_hdrs=private_hdrs,
+    stage=stage,
+    compile_deps_=compile_deps_,
+    compile_args=compile_args,
+    link_deps_=link_deps_,
+    link_args=link_args,
+    run_libs=run_libs,
+    run_libs_args=run_libs_args,
+    cflags_files=cflags_files,
+    ldflags_files=ldflags_files,
+  );
+  local binary = jst.get('binary', bin_action_result);
+  local dwarf_objects = jst.get('dwarf objects', bin_action_result);
+  local dwarf_deps =
+    if dwarf_objects
+    && jst.get('USE_DEBUG_FISSION', debug) then
+      debug_deps(deps_provider='dwarf-pkg', deps_fieldnames=deps_fieldnames)
+    else
+      {};
+  local dwarf_pkg_ =
+    if dwarf_objects
+    && jst.get('USE_DEBUG_FISSION', debug) then
+      local toolchain = jst.get('TOOLCHAIN', bin_action_result);
+      local toolchain_dir = jst.get('TOOLCHAIN_DIR', bin_action_result);
+      local non_system_tools = jst.get('NON_SYSTEM_TOOLS', bin_action_result);
+      local env = jst.get('ENV', bin_action_result);
+      dwarf_package(
+        toolchain=toolchain,
+        toolchain_dir=toolchain_dir,
+        non_system_tools=non_system_tools,
+        env=if env == null then {} else env,
+        name=name,
+        dwarf_objects=if dwarf_objects == null then {} else dwarf_objects,
+        dwarf_deps=dwarf_deps,
+        stage=stage,
+      )
+    else
+      {};
+  jst.result(
+    artifacts=binary,
+    provides={
+      'run-libs': run_libs,
+      package: package,
+      'debug-srcs': debug_srcs,
+      'debug-hdrs': debug_hdrs,
+      lint: lint,
+      'dwarf-pkg': dwarf_pkg_,
+    },
+  );
+
+// Stage the artifacts of the given targets and their transitive
+// dependencies to the subdirectories "bin", "include", and "lib",
+// including pkg-config files and debug information.
+// - `pc_install_dir`   The directory to install the pkg-config files to.
+// - `targets`          The targets to install.
+// - `prefix`           The installation prefix for the pkg-config files.
+// - `flat_libs`        Install libraries flat into "lib".
+// - `hdrs_only`        Only install the headers.
+// - `skip_debug_stage` Do not stage debug sources and dwarf packages.
+local install_with_deps_stage(pc_install_dir, targets, prefix='/', flat_libs=false, hdrs_only=false, skip_debug_stage=false) =
+  local toolchain_dir = 'toolchain';
+  local shell_toolchain = jst.to_subdir(
+    common.field_map_provider(
+      fieldname='shell defaults',
+      provider='TOOLCHAIN',
+    ),
+    subdir=toolchain_dir,
+  );
+  local sh = shell.sh(toolchain_dir=toolchain_dir, fieldname='shell defaults');
+  local sh_path = shell.path(fieldname='shell defaults');
+  local shell_env = if sh_path then {PATH: jst.join(sh_path, sep=':')} else {};
+  local install_stage = jst.union(
+    [
+      local runfiles = jst.dep_runfiles(target);
+      local compile_deps_ = jst.dep_provides(
+        target,
+        'compile-deps',
+        default={},
+      );
+      local headers = jst.union(
+        [runfiles, compile_deps_],
+        disjoint=true,
+        msg='headers may not overlap',
+      );
+      local debug_srcs =
+        if skip_debug_stage then
+          {}
+        else
+          jst.dep_provides(target, 'debug-srcs', default={});
+      local debug_hdrs =
+        if skip_debug_stage then
+          {}
+        else
+          jst.dep_provides(target, 'debug-hdrs', default={});
+      local dwarf_pkg_ =
+        if skip_debug_stage then
+          {}
+        else
+          jst.dep_provides(target, 'dwarf-pkg', default={});
+      if hdrs_only then
+        headers
+      else
+        local artifacts = jst.dep_artifacts(target) + dwarf_pkg_;
+        local link_deps_ = jst.dep_provides(target, 'link-deps', default={});
+        local run_libs = jst.dep_provides(target, 'run-libs', default={});
+        local package = jst.dep_provides(target, 'package', default={});
+        local to_bin = jst.get('to_bin', package);
+        local binaries = if to_bin then artifacts else {};
+        local libraries = jst.union(
+          jst.flatten(
+            [if to_bin then [] else [artifacts], [link_deps_], [run_libs]],
+          ),
+          disjoint=true,
+          msg='libraries may not overlap',
+        );
+        local pkg_name = jst.get('name', package);
+        local pkg_config_ =
+          if pkg_name then
+            local pkg_version = jst.get('version', package);
+            local pkg_cflags = jst.dep_provides(
+              target,
+              'compile-args',
+              default=[],
+            );
+            local pkg_ldflags =
+              jst.dep_provides(target, 'link-args', default=[])
+              + jst.dep_provides(target, 'run-libs-args', default=[]);
+            local pkg_flag_files =
+              jst.get('cflags-files', package, default={})
+              + jst.get('ldflags-files', package, default={});
+            pkg_config(
+              pkg_name=pkg_name,
+              pkg_prefix=prefix,
+              pkg_version=
+                if pkg_version == null then 'unknown' else pkg_version,
+              pkg_cflags=pkg_cflags,
+              pkg_ldflags=pkg_ldflags,
+              pkg_flag_files=pkg_flag_files,
+              pkg_libs=libraries,
+              flat_libs=flat_libs,
+              sh=sh,
+              shell_toolchain=shell_toolchain,
+              shell_env=shell_env,
+            )
+          else
+            {};
+        jst.union(
+          [
+            jst.to_subdir(
+              binaries,
+              subdir='bin',
+              flat=true,
+              msg='install binaries may not overlap',
+            ),
+            jst.to_subdir(headers + debug_hdrs, subdir='include'),
+            jst.to_subdir(
+              libraries,
+              subdir='lib',
+              flat=flat_libs,
+              msg='install libraries may not overlap',
+            ),
+            jst.to_subdir(pkg_config_, subdir=pc_install_dir),
+            jst.to_subdir(debug_srcs, subdir='work'),
+          ],
+        )
+      for target in targets
+    ],
+    disjoint=true,
+    msg='install stages may not overlap',
+  );
+  install_stage;
+
+// The result of installing the given targets with their dependencies
+// (see install_with_deps_stage).
+local install_with_deps_result(pc_install_dir, targets, flat_libs, hdrs_only, skip_debug_stage, prefix='/') = jst.result(
+  artifacts=install_with_deps_stage(
+    pc_install_dir=pc_install_dir,
+    targets=targets,
+    prefix=prefix,
+    flat_libs=flat_libs,
+    hdrs_only=hdrs_only,
+    skip_debug_stage=skip_debug_stage,
+  ),
+);
+
+{
+  default_cc: default_cc,
+  default_cxx: default_cxx,
+  default_ar: default_ar,
+  default_include_scanner: default_include_scanner,
+  default_dwp: default_dwp,
+  default_arflags: default_arflags,
+  default_cflags: default_cflags,
+  default_cxxflags: default_cxxflags,
+  default_ldflags: default_ldflags,
+  default_env: default_env,
+  default_path: default_path,
+  default_toolchain: default_toolchain,
+  default_non_system_tools: default_non_system_tools,
+  defaults_base_provides_list: defaults_base_provides_list,
+  defaults_base_provides__concat: defaults_base_provides__concat,
+  defaults_base_provides: defaults_base_provides,
+  debug_deps: debug_deps,
+  compile_deps: compile_deps,
+  compile_args_deps: compile_args_deps,
+  link_deps: link_deps,
+  link_args_deps: link_args_deps,
+  run_libs_deps: run_libs_deps,
+  run_libs_args_deps: run_libs_args_deps,
+  pkg_map_provider_deps: pkg_map_provider_deps,
+  cflags_files_deps: cflags_files_deps,
+  ldflags_files_deps: ldflags_files_deps,
+  pkg_prefix_lib_paths: pkg_prefix_lib_paths,
+  pkg_flag_print_cmds: pkg_flag_print_cmds,
+  pkg_config: pkg_config,
+  add_fission_compile_flags: add_fission_compile_flags,
+  add_fission_link_flags: add_fission_link_flags,
+  dwarf_package: dwarf_package,
+  objects: objects,
+  compiler_cc: compiler_cc,
+  compiler_cxx: compiler_cxx,
+  get_compiler: get_compiler,
+  flags_cc: flags_cc,
+  flags_cxx: flags_cxx,
+  flags: flags,
+  lint_information: lint_information,
+  lib_action: lib_action,
+  lib_result: lib_result,
+  shared_action: shared_action,
+  shared_result: shared_result,
+  object_artifacts: object_artifacts,
+  object_result: object_result,
+  bin_action: bin_action,
+  bin_artifact: bin_artifact,
+  bin_result: bin_result,
+  install_with_deps_stage: install_with_deps_stage,
+  install_with_deps_result: install_with_deps_result,
+}

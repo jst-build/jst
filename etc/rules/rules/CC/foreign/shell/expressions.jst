@@ -1,0 +1,182 @@
+local common = import '//expressions.jst';
+local cc = import '//CC/expressions.jst';
+local cc_foreign = import '//CC/foreign/expressions.jst';
+local shell = import '//shell/expressions.jst';
+
+// Run the given shell commands to build and install a project; return
+// the installed files and directories.
+// - `cmds`             The commands to run.
+// - `sources`          The staged project sources.
+// - `localbase`        Staged dependencies (LOCALBASE).
+// - `installed_files`  The files expected to be installed.
+// - `installed_dirs`   The directories expected to be installed.
+// - `resolve_symlinks` Resolve symlinks in the installed artifacts.
+local shell_build(cmds, sources, localbase, installed_files, installed_dirs, resolve_symlinks) =
+  local toolchain_dir = 'toolchain';
+  local shell_toolchain = common.field_map_provider(
+    fieldname='shell defaults',
+    provider='TOOLCHAIN',
+  );
+  local sh = shell.sh(toolchain_dir=toolchain_dir, fieldname='shell defaults');
+  local toolchain = jst.union(
+    [cc_foreign.default_toolchain(), cc.default_toolchain(), shell_toolchain],
+    disjoint=true,
+    msg='Toolchain trees may not overlap',
+  );
+  local toolchain = jst.to_subdir(toolchain, subdir=toolchain_dir);
+  local non_system_tools =
+    cc_foreign.default_non_system_tools()
+    + cc.default_non_system_tools();
+  local make_tool = jst.join(
+    (if jst.get('MAKE', non_system_tools) then ['./', toolchain_dir, '/'])
+    + cc_foreign.default_make(),
+  );
+  local cmake_tool = jst.join(
+    (if jst.get('CMAKE', non_system_tools) then ['./', toolchain_dir, '/'])
+    + cc_foreign.default_cmake(),
+  );
+  local cc_tool = cc.compiler_cc(
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+  );
+  local cxx_tool = cc.compiler_cxx(
+    toolchain_dir=toolchain_dir,
+    non_system_tools=non_system_tools,
+  );
+  local cflags = jst.join(
+    cc.flags_cc(build_position_independent=$BUILD_POSITION_INDEPENDENT),
+    sep=' ',
+  );
+  local cxxflags = jst.join(
+    cc.flags_cxx(build_position_independent=$BUILD_POSITION_INDEPENDENT),
+    sep=' ',
+  );
+  local ldflags = jst.join(
+    jst.flatten(
+      [
+        ['-Wl,-rpath,$ORIGIN', '-Wl,-rpath,$ORIGIN/../lib'],
+        jst.env('LDFLAGS', default=cc.default_ldflags()),
+        [],
+      ],
+    ),
+    sep=' ',
+  );
+  local ar_tool =
+    jst.env(
+      'AR',
+      default=jst.join(
+        (if jst.get('AR', non_system_tools) then ['./', toolchain_dir, '/'])
+        + cc.default_ar(),
+      ),
+    );
+  local path = jst.join(
+    jst.nub_left(
+      jst.flatten(
+        [
+          cc_foreign.default_path(),
+          cc.default_path(),
+          shell.path(fieldname='shell defaults'),
+        ],
+      ),
+    ),
+    sep=':',
+  );
+  local env =
+    {
+      MAKE: make_tool,
+      CMAKE: cmake_tool,
+      CC: cc_tool,
+      CXX: cxx_tool,
+      CFLAGS: cflags,
+      CXXFLAGS: cxxflags,
+      LDFLAGS: ldflags,
+      AR: ar_tool,
+      PREFIX: jst.env('PREFIX', default='/'),
+    }
+    + jst.env('ENV', default={});
+  local localbase = jst.to_subdir(localbase, subdir='localbase');
+  local work_dir = jst.to_subdir(sources, subdir='work');
+  local script = {
+    'run_cmds.sh': jst.make_blob(
+      jst.join(
+        jst.flatten(
+          [
+            shell.prolog(
+              fieldname='shell defaults',
+              toolchain_dir=toolchain_dir,
+            ),
+            [
+              'set -eu',
+              'mkdir -p scratch work install',
+              'export ACTION_DIR="$(pwd)"',
+              'export TMPDIR="$(pwd)/scratch"',
+              'export WORKDIR="$(pwd)/work"',
+              'export TOOLCHAIN="$(pwd)/toolchain"',
+              'export LOCALBASE="$(pwd)/localbase"',
+              'export DESTDIR="$(pwd)/install"',
+              if jst.get('CC', non_system_tools) then
+                'export CC=$(pwd)/${CC}'
+              else
+                '',
+              if jst.get('CXX', non_system_tools) then
+                'export CXX=$(pwd)/${CXX}'
+              else
+                '',
+              if jst.get('AR', non_system_tools) then
+                'export AR=$(pwd)/${AR}'
+              else
+                '',
+              if jst.get('MAKE', non_system_tools) then
+                'export MAKE=$(pwd)/${MAKE}'
+              else
+                '',
+              if jst.get('CMAKE', non_system_tools) then
+                'export CMAKE=$(pwd)/${CMAKE}'
+              else
+                '',
+              jst.join(
+                ['export PATH=', jst.join_cmd([path]), '${PATH:+:}"${PATH}"'],
+              ),
+            ],
+            ['(', 'set --', 'cd ./work'],
+            cmds,
+            [')'],
+            if resolve_symlinks then
+              [
+                'mv install install_with_symlinks',
+                'cp -rL install_with_symlinks install >copy.log 2>&1 || (echo \'ERROR: symlink resolve failed with:\' && cat copy.log && exit 1)',
+              ],
+          ],
+        ),
+        sep='\n',
+      ),
+    ),
+  };
+  local artifacts = jst.action(
+    inputs=jst.union([toolchain, work_dir, localbase, script]),
+    cmd=[sh, 'run_cmds.sh'],
+    outs=installed_files,
+    out_dirs=installed_dirs,
+    env=env,
+    label=jst.join(
+      [
+        'Building Shell ',
+        jst.join_cmd(
+          jst.keys(
+            jst.from_subdir(
+              {
+                [it]: true
+                for it in installed_files + installed_dirs
+              },
+              subdir='install',
+            ),
+          ),
+        ),
+      ],
+    ),
+    timeout_scaling=jst.env('TIMEOUT_SCALE', default=10),
+    execution_properties=$FOREIGN_EXECUTION_PROPERTIES,
+  );
+  artifacts;
+
+{shell_build: shell_build}

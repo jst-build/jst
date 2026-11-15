@@ -1,0 +1,101 @@
+local common = import '//expressions.jst';
+
+// The shell from the "sh" provider of the defaults (default: "sh").
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+// - `fieldname`           The name of the defaults target_field.
+local default_sh(defaults_transition={}, fieldname='defaults') =
+  local provided_sh = jst.join(
+    common.field_list_provider(
+      fieldname=fieldname,
+      provider='sh',
+      transition=defaults_transition,
+    ),
+  );
+  local sh_ = if provided_sh then provided_sh else 'sh';
+  sh_;
+
+// Query and merge the NON_SYSTEM_TOOLS maps of the defaults targets.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+// - `fieldname`           The name of the defaults target_field.
+local non_system(defaults_transition={}, fieldname='defaults') = jst.union(
+  [
+    jst.dep_provides(
+      x,
+      'NON_SYSTEM_TOOLS',
+      transition=defaults_transition,
+      default={},
+    )
+    for x in jst.field(fieldname)
+  ],
+);
+
+// The shell to use (prefixed with toolchain_dir if it is taken from the
+// toolchain).
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+// - `toolchain_dir`       The directory the toolchain is staged to.
+// - `fieldname`           The name of the defaults target_field.
+local sh(defaults_transition={}, toolchain_dir='toolchain', fieldname='defaults') =
+  local sh_ = default_sh(
+    defaults_transition=defaults_transition,
+    fieldname=fieldname,
+  );
+  local non_system_ = non_system(
+    defaults_transition=defaults_transition,
+    fieldname=fieldname,
+  );
+  local sh_ =
+    if jst.get('sh', non_system_) then
+      jst.join(['.', toolchain_dir, sh_], sep='/')
+    else
+      sh_;
+  sh_;
+
+// Query the list of PATH entries from the "PATH" provider of the
+// defaults targets.
+// - `fieldname`           The name of the defaults target_field.
+// - `defaults_transition` The optional configuration transition for the
+//                         defaults targets.
+local path(fieldname='defaults', defaults_transition={}) = common.field_list_provider(
+  fieldname=fieldname,
+  provider='PATH',
+  transition=defaults_transition,
+);
+
+// Shell commands adding the "bin dirs" of the toolchain (staged to
+// toolchain_dir) to PATH, both relative and absolute.
+// - `fieldname`     The name of the defaults target_field.
+// - `toolchain_dir` The directory the toolchain is staged to.
+local prolog(fieldname, toolchain_dir='toolchain') =
+  local bin_dirs = common.field_list_provider(
+    fieldname=fieldname,
+    provider='bin dirs',
+  );
+  local relative_paths = [
+    jst.join(['.', toolchain_dir, it], sep='/')
+    for it in bin_dirs
+  ];
+  local pwd_paths = [
+    jst.join(['$(pwd)', toolchain_dir, it], sep='/')
+    for it in bin_dirs
+  ];
+  [
+    '__PATH=$PATH',
+    jst.join(
+      ['export PATH=', jst.join(relative_paths, sep=':'), '${PATH:+:}${PATH}'],
+    ),
+    jst.join(
+      ['export PATH=', jst.join(pwd_paths, sep=':'), '${__PATH:+:}${__PATH}'],
+    ),
+    'unset __PATH',
+  ];
+
+{
+  default_sh: default_sh,
+  non_system: non_system,
+  sh: sh,
+  path: path,
+  prolog: prolog,
+}

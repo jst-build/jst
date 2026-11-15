@@ -1,0 +1,54 @@
+// Query and merge artifacts from target_field's targets,
+// leaving out the specified logical paths.
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+// - `exclude`    The logical paths to exclude
+local field_artifacts_without(fieldname, exclude, transition={}) = jst.union(
+  [
+    jst.union(
+      jst.zip_with(
+        function(it, v) if jst.get(it, exclude) then {} else {[it]: v},
+        jst.keys(jst.dep_artifacts(x, transition=transition)),
+        jst.values(jst.dep_artifacts(x, transition=transition)),
+      ),
+    )
+    for x in jst.field(fieldname)
+  ],
+  disjoint=true,
+  msg=[
+    'artifacts',
+    fieldname,
+    'must not overlap after dropping paths',
+    exclude,
+  ],
+);
+
+// Query and merge runfiles from target_field's targets,
+// leaving out the specified logical paths.
+// - `fieldname`  The name of the target_field to query.
+// - `transition` The optional configuration transition for the targets.
+// - `exclude`    The logical paths to exclude
+local field_runfiles_without(fieldname, exclude, transition={}) = jst.union(
+  [
+    jst.union(
+      jst.zip_with(
+        function(it, v) if jst.get(it, exclude) then {} else {[it]: v},
+        jst.keys(jst.dep_runfiles(x, transition=transition)),
+        jst.values(jst.dep_runfiles(x, transition=transition)),
+      ),
+    )
+    for x in jst.field(fieldname)
+  ],
+  disjoint=true,
+  msg=[
+    'artifacts',
+    fieldname,
+    'must not overlap after dropping paths',
+    exclude,
+  ],
+);
+
+{
+  field_artifacts_without: field_artifacts_without,
+  field_runfiles_without: field_runfiles_without,
+}

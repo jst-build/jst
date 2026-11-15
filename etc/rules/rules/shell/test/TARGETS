@@ -1,6 +1,7 @@
-{ "summarizer":
-  { "type": "summarizer"
-  , "summarizer": [["FILE", null, "summarizer"]]
-  , "artifacts": ["time-start", "time-stop"]
-  }
+{
+  summarizer: {
+    type: 'summarizer',
+    summarizer: [jst.file('summarizer')],
+    artifacts: ['time-start', 'time-stop'],
+  },
 }

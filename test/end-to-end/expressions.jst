@@ -1,0 +1,128 @@
+local common = import '@rules//expressions.jst';
+
+// Run the test script, staged as test.sh, together with the implicit
+// remote-execution (and serve) endpoint started by the runner.
+local test_action(name, test_type_name, test_sh, data, extra_infra, keep, keep_dirs, transition, test_remote_execution, uses_serve, attempt=null) =
+  local test_env = jst.env('TEST_ENV', default={});
+  local timeout_scale = jst.env('TIMEOUT_SCALE', default=1.0);
+  local runner = common.stage_singleton_field(
+    fieldname='runner',
+    transition=transition,
+    location='runner',
+  );
+  local just = common.field_artifacts(fieldname='just', transition=transition);
+  local deps = jst.make_tree(
+    jst.union(
+      common.field_runfiles_list(fieldname='deps', transition=transition)
+      + common.field_artifacts_list(fieldname='deps', transition=transition),
+      disjoint=true,
+      msg='Field "deps" has to stage in a conflict free way',
+    ),
+  );
+  local attempt_marker =
+    if attempt == null then {} else {ATTEMPT: jst.make_blob(attempt)};
+  local outs =
+    [
+      'result',
+      'stdout',
+      'stderr',
+      'time-start',
+      'time-stop',
+      'pwd',
+      'remotestdout',
+      'remotestderr',
+    ]
+    + extra_infra
+    + ['work/' + filename for filename in keep];
+  local out_dirs =
+    (
+      if uses_serve then
+        if $TEST_STANDALONE_SERVE then ['serve'] else ['remote', 'serve']
+      else
+        ['remote']
+    )
+    + ['work/' + dir_path for dir_path in keep_dirs];
+  local inputs = jst.union(
+    [
+      {work: deps},
+      jst.to_subdir(just, subdir='staged'),
+      runner,
+      test_sh,
+      data,
+      attempt_marker,
+    ],
+  );
+  local cmd =
+    [
+      './runner',
+      if $TEST_COMPATIBLE_REMOTE then 'true' else 'false',
+      jst.json_encode(test_remote_execution),
+    ]
+    + keep;
+  local action_label = 'Running test ' + name;
+  if attempt == null then
+    jst.action(
+      outs=outs,
+      out_dirs=out_dirs,
+      inputs=inputs,
+      cmd=cmd,
+      label=action_label,
+      env=test_env,
+      timeout_scaling=timeout_scale,
+      may_fail=['test'],
+      fail_message=jst.join(
+        [
+          'shell test with ',
+          if $TEST_COMPATIBLE_REMOTE then 'compatible' else 'native',
+          ' ',
+          test_type_name,
+          ' ',
+          name,
+          ' failed',
+        ],
+      ),
+    )
+  else
+    jst.action(
+      outs=outs,
+      out_dirs=out_dirs,
+      inputs=inputs,
+      cmd=cmd,
+      label=action_label,
+      env=test_env,
+      timeout_scaling=timeout_scale,
+      may_fail=['test'],
+      no_cache=['test'],
+      fail_message=jst.join(
+        [
+          'shell test with ',
+          test_type_name,
+          ' ',
+          name,
+          ' failed (Run ',
+          attempt,
+          ')',
+        ],
+      ),
+    );
+
+// Result of a single run of the test, see test_action.
+local test_result(name, test_type_name, test_sh, data, extra_infra, keep, keep_dirs, transition, test_remote_execution, uses_serve) =
+  local test_results = test_action(
+    name=name,
+    test_type_name=test_type_name,
+    test_sh=test_sh,
+    data=data,
+    extra_infra=extra_infra,
+    keep=keep,
+    keep_dirs=keep_dirs,
+    transition=transition,
+    test_remote_execution=test_remote_execution,
+    uses_serve=uses_serve,
+  );
+  jst.result(
+    artifacts=test_results,
+    runfiles={[name]: jst.make_tree(test_results)},
+  );
+
+{test_action: test_action, test_result: test_result}

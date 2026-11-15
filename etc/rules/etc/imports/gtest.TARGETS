@@ -1,6 +1,7 @@
-{ "tree":
-  { "type": "install"
-  , "dirs": [[["TREE", null, "."], "googletest"]]
-  , "tainted": ["test"]
-  }
+{
+  tree: {
+    type: 'install',
+    dirs: [[jst.tree('.'), 'googletest']],
+    tainted: ['test'],
+  },
 }

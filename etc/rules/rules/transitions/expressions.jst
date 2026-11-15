@@ -1,0 +1,64 @@
+// Transition to build for the host architecture.
+local for_host() = {
+  BUILD_ARCH: jst.env('TARGET_ARCH', default=$ARCH),
+  TARGET_ARCH: jst.env('HOST_ARCH', default=$ARCH),
+};
+
+// Transition that enables BUILD_POSITION_INDEPENDENT if config_field
+// "shared" is not empty.
+local with_fpic() =
+  if jst.field('shared') then
+    {BUILD_POSITION_INDEPENDENT: true}
+  else
+    {};
+
+// Like "with fPIC", but also clearing BUILD_OBJECT_ONLY
+local with_fpic_not_object_only() = jst.union(
+  [
+    with_fpic(),
+    {BUILD_OBJECT_ONLY: null},
+    {BUILD_OBJECT_ONLY_DROP_OBJECT_LINKING: null},
+  ],
+);
+
+// Like "with fPIC", but also unconditionally setting BUILD_OBJECT_ONLY
+local with_fpic_object_only() = jst.union(
+  [
+    with_fpic(),
+    {BUILD_OBJECT_ONLY: true},
+    {BUILD_OBJECT_ONLY_DROP_OBJECT_LINKING: true},
+  ],
+);
+
+// The execution properties for the target architecture (from the
+// variable "ARCH_DISPATCH").
+local target_properties() =
+  local target_arch = jst.env('TARGET_ARCH', default=$ARCH);
+  if target_arch == null then
+    {}
+  else
+    jst.get(target_arch, jst.env('ARCH_DISPATCH', default={}), default={});
+
+// Transition to build for the host, unless the target architecture can
+// be dispatched to (see target_properties).
+local maybe_for_host() =
+  if target_properties() then
+    {}
+  else
+    for_host();
+
+// Transition to build the include scanner (for the host, without
+// scanning includes).
+local include_scan_build() =
+  for_host()
+  + {FORCE_DISABLE_INCLUDE_SCAN: true};
+
+{
+  for_host: for_host,
+  with_fpic: with_fpic,
+  with_fpic_not_object_only: with_fpic_not_object_only,
+  with_fpic_object_only: with_fpic_object_only,
+  target_properties: target_properties,
+  maybe_for_host: maybe_for_host,
+  include_scan_build: include_scan_build,
+}

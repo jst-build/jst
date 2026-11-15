@@ -1,0 +1,27 @@
+// The configurations of the test matrix given by the variable
+// "TEST_MATRIX": a map from stage to configuration overlay.
+local matrix() =
+  jst.foldl(
+    function(var, so_far)
+      jst.flatten(
+        jst.zip_with(
+          function(stage, value)
+            jst.flatten(
+              [
+                jst.zip_with(
+                  function(it_, v) {[it_]: v + {[var]: value}},
+                  jst.keys(jst.to_subdir(it, subdir=stage)),
+                  jst.values(jst.to_subdir(it, subdir=stage)),
+                )
+                for it in so_far
+              ],
+            ),
+          jst.keys(jst.get(var, $TEST_MATRIX)),
+          jst.values(jst.get(var, $TEST_MATRIX)),
+        ),
+      ),
+    [{'': {TEST_MATRIX: null}}],
+    jst.keys(jst.env('TEST_MATRIX', default={})),
+  );
+
+{matrix: matrix}
