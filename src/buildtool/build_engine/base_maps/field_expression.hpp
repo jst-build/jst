@@ -76,9 +76,25 @@ class FieldExpression final {
             env, functions, logger, annotate_object, note_user_context);
     }
 
+    /// \brief Normalize single string value to list.
+    /// This is only done for jstlang definitions; for JSON definitions and any
+    /// other value than string, it is returned unchanged.
+    [[nodiscard]] auto ListOfSingle(ExpressionPtr value) const
+        -> ExpressionPtr {
+        if (IsJstlang() and value->IsString()) {
+            return ExpressionPtr{Expression::list_t{value}};
+        }
+        return value;
+    }
+
   private:
     ExpressionPtr expr_{nullptr};
     JstlangEvaluator::FieldPtr field_;
+
+    /// \brief Whether this is a field of a jstlang definition.
+    [[nodiscard]] auto IsJstlang() const noexcept -> bool {
+        return static_cast<bool>(field_);
+    }
 };
 
 }  // namespace BuildMaps::Base

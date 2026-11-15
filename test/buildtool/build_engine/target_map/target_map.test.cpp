@@ -2063,7 +2063,8 @@ TEST_CASE("wrong arguments", "[target_map]") {
         }
         CHECK(error);
         CHECK(error_msg != "NONE");
-        CHECK(error_msg.find("PlAiN sTrInG") != std::string::npos);
+        CHECK(error_msg.find("PlAiN") != std::string::npos);
+        CHECK(error_msg.find("sTrInG") != std::string::npos);
     }
 
     SECTION("string field 2") {

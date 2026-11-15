@@ -347,6 +347,7 @@ void BlobGenRule(
     if (not deps_value) {
         return;
     }
+    deps_value = deps_exp.ListOfSingle(std::move(deps_value));
     if (not deps_value->IsList()) {
         (*logger)(fmt::format("Expected deps to evaluate to a list of targets, "
                               "but found {}",
@@ -625,6 +626,7 @@ void CommonTreeRule(
     if (not deps_value) {
         return;
     }
+    deps_value = deps_exp.ListOfSingle(std::move(deps_value));
     if (not deps_value->IsList()) {
         (*logger)(fmt::format("Expected deps to evaluate to a list of targets, "
                               "but found {}",
@@ -929,6 +931,7 @@ void InstallRule(
     if (not deps_value) {
         return;
     }
+    deps_value = deps_exp.ListOfSingle(std::move(deps_value));
     if (not deps_value->IsList()) {
         (*logger)(fmt::format("Expected deps to evaluate to a list of targets, "
                               "but found {}",
@@ -1187,6 +1190,7 @@ void GenericRuleWithDeps(
         if (not outs_value) {
             return;
         }
+        outs_value = outs_exp.ListOfSingle(std::move(outs_value));
         if (not outs_value->IsList()) {
             (*logger)(fmt::format("outs has to evaluate to a list of "
                                   "strings, but found {}",
@@ -1217,6 +1221,7 @@ void GenericRuleWithDeps(
         if (not out_dirs_value) {
             return;
         }
+        out_dirs_value = out_dirs_exp.ListOfSingle(std::move(out_dirs_value));
         if (not out_dirs_value->IsList()) {
             (*logger)(fmt::format("out_dirs has to evaluate to a list of "
                                   "strings, but found {}",
@@ -1276,6 +1281,7 @@ void GenericRuleWithDeps(
     if (not cmd_value) {
         return;
     }
+    cmd_value = cmd_exp.ListOfSingle(std::move(cmd_value));
     if (not cmd_value->IsList()) {
         (*logger)(fmt::format(
                       "cmds has to evaluate to a list of strings, but found {}",
@@ -1387,9 +1393,10 @@ void GenericRuleWithDeps(
     if (sh_val->IsNone()) {
         sh_val = Expression::kEmptyList;
     }
+    sh_val = sh_exp.ListOfSingle(std::move(sh_val));
     if (not sh_val->IsList()) {
-        (*logger)(fmt::format("sh has evaluate to list of strings or null, but "
-                              "found {}",
+        (*logger)(fmt::format("sh has to evaluate to a list of strings or "
+                              "null, but found {}",
                               sh_val->ToString()),
                   true);
         return;
@@ -1572,6 +1579,7 @@ void GenericRule(
         deps_exp.Evaluate(param_config, {}, [&logger](auto const& msg) {
             (*logger)(fmt::format("While evaluating deps:\n{}", msg), true);
         });
+    deps_value = deps_exp.ListOfSingle(std::move(deps_value));
     if (not deps_value->IsList()) {
         (*logger)(fmt::format("Expected deps to evaluate to a list of targets, "
                               "but found {}",

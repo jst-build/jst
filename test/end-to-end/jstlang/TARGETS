@@ -34,6 +34,13 @@
     deps: ['//:tool-under-test'],
   },
 
+  single_values: {
+    type: '@rules//shell/test:script',
+    name: ['single_values'],
+    test: ['single_values.sh'],
+    deps: ['//:tool-under-test'],
+  },
+
   TESTS: {
     type: @'rules//test:suite',
     stage: ['jstlang'],
@@ -43,6 +50,7 @@
       'external_imports',
       'rules_evaluation',
       'runtime_evaluation',
+      'single_values',
     ],
   },
 }

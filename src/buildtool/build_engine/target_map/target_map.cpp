@@ -584,6 +584,7 @@ void withDependencies(
         if (not field_value) {
             return;
         }
+        field_value = field_exp.ListOfSingle(std::move(field_value));
         if (not field_value->IsList()) {
             (*logger)(fmt::format("String field {} should be a list of "
                                   "strings, but found {}",
@@ -1306,6 +1307,7 @@ void withRuleDefinition(
         if (not field_value) {
             return;
         }
+        field_value = field_expression.ListOfSingle(std::move(field_value));
         if (not field_value->IsList()) {
             (*logger)(fmt::format("Config string field {} should evaluate to a "
                                   "list of strings, but got {}",
@@ -1438,6 +1440,7 @@ void withRuleDefinition(
         if (not deps_names) {
             return;
         }
+        deps_names = deps_expression.ListOfSingle(std::move(deps_names));
         if (not deps_names->IsList()) {
             (*logger)(fmt::format("Target parameter {} should evaluate to a "
                                   "list, but got {}",

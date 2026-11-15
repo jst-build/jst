@@ -1,6 +1,6 @@
 { "string field":
   { "type": ["simple_rules", "text file"]
-  , "name": "PlAiN sTrInG"
+  , "name": {"PlAiN": "sTrInG"}
   , "content": ["This is FOO!"]
   }
 , "string field 2":
