@@ -62,7 +62,10 @@ value; so the rule obtains `true` or `false` via `jst.field`, with
 `false` if the field is not set. A string field has to evaluate to a
 list of strings, whereas `target_fields` have to evaluate to a list of
 target references. Those references are evaluated immediately, and in
-the name context of the target they occur in.
+the name context of the target they occur in. Instead of a list, a
+single string can be given (e.g., `name: 'foo'` or `test: 'test.sh'`),
+which stands for the list containing only that string; via `jst.field`,
+the rule always obtains a list.
 
 The config fields (`config_bool_fields` and `config_string_fields`) are
 evaluated like bool and string fields, respectively, but before the
@@ -331,7 +334,8 @@ runfiles, and provided data. So it is not very useful.
 ### String inputs
 
 Let's allow the target definition to have some fields. The most simple
-fields are `string_fields`; they are given by a list of strings. In the
+fields are `string_fields`; they are given by a list of strings (or a
+single string). In the
 defining expression we can access them directly via `jst.field`.
 Strings can be used when defining maps, but we can also create
 artifacts from them, using `jst.make_blob`. We define values step by step,

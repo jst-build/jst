@@ -148,6 +148,13 @@
   `skip-debug-stage`, and `service`, as well as the config field `shared`.
   Existing target definitions keep working, as only the truth value of the given
   value is relevant.
+- In Jstlang target files, string and target fields accept a single string
+  instead of a list, e.g., `name: 'foo'` or `test: 'test.sh'`, which stands for
+  the list containing only that string; rules still obtain a list via
+  `jst.field`. The same holds for the fields of the built-in rules. The
+  reserved fields `arguments_config`, `tainted`, and `flexible_config` (of
+  `export` targets), as well as all fields of target files in plain JSON,
+  still require a list.
 - `jst-lock` now derives the default output file name from the input file
   name: an input of the form `<path>/<name>.in.json` results in output
   `<path>/<name>.json`. If the input name does not end in `.in.json`, the

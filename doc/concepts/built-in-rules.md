@@ -17,7 +17,11 @@ built-in rules are added later (as built-in rules will always be only
 named by a single string).
 
 The following rules are built in. Built-in rules can have a special
-syntax.
+syntax. In a target description, every field that takes a list of strings
+or of targets also accepts a single string, which stands for the list
+containing only that string. The reserved fields `"arguments_config"`,
+`"tainted"`, and `"flexible_config"` (of `"export"` targets) are exempt
+and always have to be given as lists.
 
 `"export"`
 ----------
