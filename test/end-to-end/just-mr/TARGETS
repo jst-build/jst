@@ -1,109 +1,109 @@
 {
   'cas-independent': {
-    type: @'rules//shell/test:script',
-    name: ['cas-independent'],
-    test: ['cas-independent.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'cas-independent',
+    test: 'cas-independent.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   fetch: {
-    type: @'rules//shell/test:script',
-    name: ['fetch'],
-    test: ['fetch.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'fetch',
+    test: 'fetch.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   'fetch-gc': {
-    type: @'rules//shell/test:script',
-    name: ['fetch-gc'],
-    test: ['fetch-gc.sh'],
+    type: '@rules//shell/test:script',
+    name: 'fetch-gc',
+    test: 'fetch-gc.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   create_test_archives: {
-    type: @'rules//CC:binary',
+    type: '@rules//CC:binary',
     tainted: ['test'],
-    name: ['create_test_archives'],
+    name: 'create_test_archives',
     srcs: ['create_test_archives.cpp'],
     'private-deps': [
-      @'src//src/buildtool/file_system:file_system_manager',
-      @'src//src/buildtool/file_system:object_type',
-      @'src//src/buildtool/logging:log_level',
-      @'src//src/buildtool/logging:logging',
-      @'src//src/utils/archive:archive_ops',
-      @'src//src/utils/cpp:tmp_dir',
+      '@src//src/buildtool/file_system:file_system_manager',
+      '@src//src/buildtool/file_system:object_type',
+      '@src//src/buildtool/logging:log_level',
+      '@src//src/buildtool/logging:logging',
+      '@src//src/utils/archive:archive_ops',
+      '@src//src/utils/cpp:tmp_dir',
     ],
     'private-ldflags': ['-pthread'],
-    stage: ['src'],
+    stage: 'src',
   },
 
   just_mr_mp: {
-    type: @'rules//shell/test:script',
-    name: ['just_mr_mp'],
-    test: ['just-mr.test.sh'],
+    type: '@rules//shell/test:script',
+    name: 'just_mr_mp',
+    test: 'just-mr.test.sh',
     deps: [
       'create_test_archives',
-      @'//:mr-tool-under-test',
-      @'//utils:test_utils_install',
+      '//:mr-tool-under-test',
+      '//utils:test_utils_install',
     ],
   },
 
   just_mr_mirrors: {
-    type: @'rules//shell/test:script',
-    name: ['just_mr_mirrors'],
-    test: ['just-mr-mirrors.test.sh'],
+    type: '@rules//shell/test:script',
+    name: 'just_mr_mirrors',
+    test: 'just-mr-mirrors.test.sh',
     deps: [
       'create_test_archives',
-      @'//:mr-tool-under-test',
-      @'//utils:null server',
-      @'//utils:test_utils_install',
+      '//:mr-tool-under-test',
+      '//utils:null server',
+      '//utils:test_utils_install',
     ],
   },
 
   'git-tree-verbosity': {
-    type: @'rules//shell/test:script',
-    name: ['git-tree-verbosity'],
-    test: ['verbosity.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'git-tree-verbosity',
+    test: 'verbosity.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   defaults: {
-    type: @'rules//shell/test:script',
-    name: ['default-values'],
-    test: ['defaults.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'default-values',
+    test: 'defaults.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   target_reference_repo: {
-    type: @'rules//shell/test:script',
-    name: ['target-reference-repo'],
-    test: ['target-reference-repo.sh'],
+    type: '@rules//shell/test:script',
+    name: 'target-reference-repo',
+    test: 'target-reference-repo.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'install-roots': {
-    type: @'rules//shell/test:script',
-    name: ['install-roots'],
-    test: ['install-roots.sh'],
+    type: '@rules//shell/test:script',
+    name: 'install-roots',
+    test: 'install-roots.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'install-roots-symlinks': {
-    type: @'rules//shell/test:script',
-    name: ['install-roots-symlinks'],
-    test: ['install-roots-symlinks.sh'],
+    type: '@rules//shell/test:script',
+    name: 'install-roots-symlinks',
+    test: 'install-roots-symlinks.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     keep: [
       'log/archive.txt',
@@ -112,104 +112,104 @@
   },
 
   'fetch-remote': {
-    type: @'//end-to-end:with remote',
-    name: ['fetch-remote'],
-    test: ['fetch-remote.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'fetch-remote',
+    test: 'fetch-remote.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   'fetch-remote-git-tree': {
-    type: @'//end-to-end:with remote',
-    name: ['fetch-remote-git-tree'],
-    test: ['fetch-remote-git-tree.sh'],
+    type: '//end-to-end:with remote',
+    name: 'fetch-remote-git-tree',
+    test: 'fetch-remote-git-tree.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'absent-roots': {
-    type: @'rules//shell/test:script',
-    name: ['absent-roots'],
-    test: ['absent-roots.sh'],
+    type: '@rules//shell/test:script',
+    name: 'absent-roots',
+    test: 'absent-roots.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'fetch-absent': {
-    type: @'//end-to-end:with serve',
-    name: ['fetch-absent'],
-    test: ['fetch-absent.sh'],
+    type: '//end-to-end:with serve',
+    name: 'fetch-absent',
+    test: 'fetch-absent.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent (data)'],
   },
 
   'fetch-absent-git-tree': {
-    type: @'//end-to-end:with serve',
-    name: ['fetch-absent-git-tree'],
-    test: ['fetch-absent-git-tree.sh'],
+    type: '//end-to-end:with serve',
+    name: 'fetch-absent-git-tree',
+    test: 'fetch-absent-git-tree.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent (data)'],
   },
 
   'absent-closure': {
-    type: @'rules//shell/test:script',
-    name: ['absent-closure'],
-    test: ['absent-closure.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'absent-closure',
+    test: 'absent-closure.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   'absent-config': {
-    type: @'//end-to-end:with serve',
-    name: ['absent-config'],
-    test: ['absent-config.sh'],
+    type: '//end-to-end:with serve',
+    name: 'absent-config',
+    test: 'absent-config.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent (data)'],
   },
 
   'fetch-absent-archives': {
-    type: @'//end-to-end:with serve',
-    name: ['fetch-absent-archives'],
-    test: ['fetch-absent-archives.sh'],
+    type: '//end-to-end:with serve',
+    name: 'fetch-absent-archives',
+    test: 'fetch-absent-archives.sh',
     deps: [
       'fetch-absent (data)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent (data)'],
   },
 
   'fetch-absent-archives-symlinks': {
-    type: @'//end-to-end:with serve',
-    name: ['fetch-absent-archives-symlinks'],
-    test: ['fetch-absent-archives-symlinks.sh'],
+    type: '//end-to-end:with serve',
+    name: 'fetch-absent-archives-symlinks',
+    test: 'fetch-absent-archives-symlinks.sh',
     deps: [
       'fetch-absent-with-symlinks (data)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent-with-symlinks (data)'],
   },
 
   'fetch-absent-distdir-archive': {
-    type: @'//end-to-end:with serve',
-    name: ['fetch-absent-distdir-archive'],
-    test: ['fetch-absent-distdir-archive.sh'],
+    type: '//end-to-end:with serve',
+    name: 'fetch-absent-distdir-archive',
+    test: 'fetch-absent-distdir-archive.sh',
     deps: [
       'fetch-absent (data)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['fetch-absent (data)'],
   },
@@ -240,76 +240,76 @@
   },
 
   'git-tree-env': {
-    type: @'rules//shell/test:script',
-    name: ['git-tree-git-tree-env'],
-    test: ['git-tree-env.sh'],
+    type: '@rules//shell/test:script',
+    name: 'git-tree-git-tree-env',
+    test: 'git-tree-env.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'git-env': {
-    type: @'rules//shell/test:script',
-    name: ['git-env'],
-    test: ['git-env.sh'],
+    type: '@rules//shell/test:script',
+    name: 'git-env',
+    test: 'git-env.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'git-ssh': {
-    type: @'rules//shell/test:script',
-    name: ['git-ssh'],
-    test: ['git-ssh.sh'],
+    type: '@rules//shell/test:script',
+    name: 'git-ssh',
+    test: 'git-ssh.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//other_tools/git_operations:ssh_support_probe_install',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//other_tools/git_operations:ssh_support_probe_install',
     ],
   },
 
   'foreign-file': {
-    type: @'rules//shell/test:script',
-    name: ['foreign-file'],
-    test: ['foreign-file.sh'],
+    type: '@rules//shell/test:script',
+    name: 'foreign-file',
+    test: 'foreign-file.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'reporting-verbosity': {
-    type: @'//end-to-end:with remote',
-    name: ['reporting-verbosity'],
-    test: ['reporting-verbosity.sh'],
+    type: '//end-to-end:with remote',
+    name: 'reporting-verbosity',
+    test: 'reporting-verbosity.sh',
     deps: [
       'fetch-absent (data)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'stay-local': {
-    type: @'//end-to-end:with remote',
-    name: ['stay-local'],
-    test: ['stay-local.sh'],
+    type: '//end-to-end:with remote',
+    name: 'stay-local',
+    test: 'stay-local.sh',
     deps: [
       'fetch-absent (data)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//utils:null server',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//utils:null server',
     ],
   },
 
   'gc-repo': {
-    type: @'rules//shell/test:script',
-    name: ['gc-repo'],
-    test: ['gc-repo.sh'],
+    type: '@rules//shell/test:script',
+    name: 'gc-repo',
+    test: 'gc-repo.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     keep: [
       'log/log-1',
@@ -318,54 +318,54 @@
   },
 
   'repeated-gc': {
-    type: @'rules//shell/test:script',
-    name: ['repeated-gc'],
-    test: ['repeated-gc.sh'],
+    type: '@rules//shell/test:script',
+    name: 'repeated-gc',
+    test: 'repeated-gc.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'gc-drop': {
-    type: @'rules//shell/test:script',
-    name: ['gc-drop'],
-    test: ['gc-drop.sh'],
+    type: '@rules//shell/test:script',
+    name: 'gc-drop',
+    test: 'gc-drop.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'ignore-special': {
-    type: @'rules//shell/test:script',
-    name: ['ignore-special'],
-    test: ['ignore-special.sh'],
+    type: '@rules//shell/test:script',
+    name: 'ignore-special',
+    test: 'ignore-special.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'invocation-log': {
-    type: @'rules//shell/test:script',
-    name: ['invocation-log'],
-    test: ['invocation-log.sh'],
+    type: '@rules//shell/test:script',
+    name: 'invocation-log',
+    test: 'invocation-log.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     'keep-dirs': ['log'],
     keep: ['out/just-repo-config.json'],
   },
 
   'cas-root': {
-    type: @'//end-to-end:with serve',
-    name: ['cas-root'],
-    test: ['cas-root.sh'],
+    type: '//end-to-end:with serve',
+    name: 'cas-root',
+    test: 'cas-root.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     'keep-dirs': [
       'lbr-analyse',
@@ -374,16 +374,16 @@
   },
 
   'error-reporting': {
-    type: @'rules//shell/test:script',
-    name: ['error-reporting'],
-    test: ['error-reporting.sh'],
-    deps: [@'//:mr-tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'error-reporting',
+    test: 'error-reporting.sh',
+    deps: ['//:mr-tool-under-test'],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     arguments_config: ['TEST_BOOTSTRAP_JUST_MR', 'TEST_COMPATIBLE_REMOTE'],
-    stage: ['just-mr'],
+    stage: 'just-mr',
     deps:
       [
         'cas-independent',
@@ -392,7 +392,7 @@
         'install-roots',
         'target_reference_repo',
       ]
-      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+      + (if !$TEST_BOOTSTRAP_JUST_MR then
            [
              'install-roots-symlinks',
              'just_mr_mp',
@@ -411,7 +411,7 @@
              'invocation-log',
              'error-reporting',
            ]
-           + (if !jst.env('TEST_COMPATIBLE_REMOTE') then
+           + (if !$TEST_COMPATIBLE_REMOTE then
                 [
                   'fetch-remote',
                   'fetch-remote-git-tree',

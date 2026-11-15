@@ -2,8 +2,8 @@
   defaults: {
     type: 'defaults',
     base: [
-      @'//CC:defaults',
-      @'//shell:defaults',
+      '//CC:defaults',
+      '//shell:defaults',
     ],
   },
 }

@@ -1,12 +1,12 @@
 {
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['execution_engine'],
+    type: '@rules//test:suite',
+    stage: 'execution_engine',
     deps: [
-      @'./dag:TESTS',
-      @'./executor:TESTS',
-      @'./traverser:TESTS',
-      @'./tree_operations:TESTS',
+      './dag:TESTS',
+      './executor:TESTS',
+      './traverser:TESTS',
+      './tree_operations:TESTS',
     ],
   },
 }

@@ -1,13 +1,13 @@
 {
   'bundled-test': {
-    type: @'rules//shell/test:script',
+    type: '@rules//shell/test:script',
     arguments_config: ['SUFFIX'],
     name: ['bootstrap-test-bundled' + jst.env('SUFFIX', default='')],
-    test: ['test-bootstrap.sh'],
+    test: 'test-bootstrap.sh',
     deps: [
       'prune-config.py',
-      @'just-distfiles//:distdir',
-      @'src//:bootstrap-src',
+      '@just-distfiles//:distdir',
+      '@src//:bootstrap-src',
     ],
   },
 
@@ -41,45 +41,45 @@
   },
 
   just_cc_deps: {
-    type: @'rules//CC:install-with-deps',
+    type: '@rules//CC:install-with-deps',
     targets: [
-      @'json//:json',
-      @'fmt//:fmt',
-      @'gsl//:gsl',
-      @'cli11//:cli11',
-      @'ssl//:crypto',
-      @'src//:libgit2',
-      @'protoc//:protoc',
-      @'protoc//:libprotobuf',
-      @'grpc//:grpc++',
-      @'grpc//:grpc',
-      @'grpc//:grpc_cpp_plugin',
-      @'src//:libarchive',
-      @'src//:libcurl',
+      '@json//:json',
+      '@fmt//:fmt',
+      '@gsl//:gsl',
+      '@cli11//:cli11',
+      '@ssl//:crypto',
+      '@src//:libgit2',
+      '@protoc//:protoc',
+      '@protoc//:libprotobuf',
+      '@grpc//:grpc++',
+      '@grpc//:grpc',
+      '@grpc//:grpc_cpp_plugin',
+      '@src//:libarchive',
+      '@src//:libcurl',
     ],
   },
 
   just_other_deps: {
-    type: @'//bootstrap:stage-deps',
+    type: '//bootstrap:stage-deps',
     protos: [
-      @'bazel_remote_apis//:remote_execution_proto',
-      @'googleapis//:google_bytestream_proto',
-      @'googleapis//:google_api_httpbody_proto',
-      @'googleapis//:google_api_expr_v1alpha1_checked_proto',
-      @'googleapis//:google_api_expr_v1alpha1_syntax_proto',
+      '@bazel_remote_apis//:remote_execution_proto',
+      '@googleapis//:google_bytestream_proto',
+      '@googleapis//:google_api_httpbody_proto',
+      '@googleapis//:google_api_expr_v1alpha1_checked_proto',
+      '@googleapis//:google_api_expr_v1alpha1_syntax_proto',
     ],
   },
 
   'staged-sources': {
     type: 'install',
     tainted: ['test'],
-    dirs: [[@'src//:bootstrap-src', 'srcs/just']],
+    dirs: [['@src//:bootstrap-src', 'srcs/just']],
   },
 
   'pkgconfig-test': {
-    type: @'rules//shell/test:script',
-    name: ['bootstrap-test-pkgconfig'],
-    test: ['test-bootstrap-pkgconfig.sh'],
+    type: '@rules//shell/test:script',
+    name: 'bootstrap-test-pkgconfig',
+    test: 'test-bootstrap-pkgconfig.sh',
     deps: [
       'distro-bootstrap-deps',
       'staged-sources',
@@ -87,20 +87,20 @@
   },
 
   'mixed-test': {
-    type: @'rules//shell/test:script',
-    name: ['bootstrap-test-mixed'],
-    test: ['test-mixed-bootstrap.sh'],
+    type: '@rules//shell/test:script',
+    name: 'bootstrap-test-mixed',
+    test: 'test-mixed-bootstrap.sh',
     deps: [
       'distro-bootstrap-deps',
       'staged-sources',
-      @'just-distfiles//:distdir',
+      '@just-distfiles//:distdir',
     ],
   },
 
   'symlink-test': {
-    type: @'rules//shell/test:script',
-    name: ['bootstrap-test-symlink'],
-    test: ['test-symlink-bootstrap.sh'],
+    type: '@rules//shell/test:script',
+    name: 'bootstrap-test-symlink',
+    test: 'test-symlink-bootstrap.sh',
     deps: [
       'distro-bootstrap-deps',
       'staged-sources',
@@ -108,8 +108,8 @@
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['bootstrap'],
+    type: '@rules//test:suite',
+    stage: 'bootstrap',
     deps: [
       'bundled-test',
       'bundled-test-debug',

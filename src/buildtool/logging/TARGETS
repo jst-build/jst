@@ -1,15 +1,15 @@
 {
   log_level: {
-    type: @'rules//CC:library',
-    name: ['log_level'],
+    type: '@rules//CC:library',
+    name: 'log_level',
     hdrs: ['log_level.hpp'],
-    deps: [@'gsl//:gsl'],
-    stage: ['src', 'buildtool', 'logging'],
+    deps: ['@gsl//:gsl'],
+    stage: 'src/buildtool/logging',
   },
 
   logging: {
-    type: @'rules//CC:library',
-    name: ['logging'],
+    type: '@rules//CC:library',
+    name: 'logging',
     hdrs: [
       'log_config.hpp',
       'log_sink.hpp',
@@ -19,10 +19,10 @@
     ],
     deps: [
       'log_level',
-      @'fmt//:fmt',
-      @'gsl//:gsl',
+      '@fmt//:fmt',
+      '@gsl//:gsl',
     ],
-    stage: ['src', 'buildtool', 'logging'],
+    stage: 'src/buildtool/logging',
     'private-ldflags': [
       '-pthread',
       '-Wl,--whole-archive,-lpthread,--no-whole-archive',

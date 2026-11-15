@@ -1,10 +1,10 @@
 {
   shell: {
-    type: @'rules//shell/test:script',
-    name: ['shell'],
-    test: ['shell-script.sh'],
+    type: '@rules//shell/test:script',
+    name: 'shell',
+    test: 'shell-script.sh',
     keep: ['out/out.txt'],
-    deps: [@'//:tool-under-test'],
+    deps: ['//:tool-under-test'],
   },
 
   'compile rules': {
@@ -15,22 +15,22 @@
   },
 
   compiled: {
-    type: @'rules//shell/test:script',
-    name: ['compiled'],
-    test: ['compiled.sh'],
+    type: '@rules//shell/test:script',
+    name: 'compiled',
+    test: 'compiled.sh',
     keep: [
       'graph.json',
       'out/out.txt',
     ],
     deps: [
       'compile rules',
-      @'//:tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['generated-binary'],
+    type: '@rules//test:suite',
+    stage: 'generated-binary',
     deps: [
       'compiled',
       'shell',

@@ -24,17 +24,17 @@ local unset_key(key, map) =
 
   // Defines test matrix selectively via config variables
   TESTS: {
-    type: @'rules//test:matrix',
+    type: '@rules//test:matrix',
     arguments_config: ['DROP_LARGE_TESTS', 'DROP_END_TO_END_TESTS'],
     deps:
       [
         'unit tests with compatibility',
-        @'./utils:TESTS',
-        @'./other_tools:TESTS',
+        './utils:TESTS',
+        './other_tools:TESTS',
       ]
-      + (if !jst.env('DROP_END_TO_END_TESTS') then
-           [@'./end-to-end:TESTS'])
-      + (if !jst.env('DROP_END_TO_END_TESTS') && !jst.env('DROP_LARGE_TESTS', default=true) then
+      + (if !$DROP_END_TO_END_TESTS then
+           ['./end-to-end:TESTS'])
+      + (if !$DROP_END_TO_END_TESTS && !jst.env('DROP_LARGE_TESTS', default=true) then
            ['bootstrap-test']),
   },
 
@@ -61,65 +61,60 @@ local unset_key(key, map) =
   },
 
   'tested jst_backend': {
-    type: @'rules//CC:install-with-deps',
-    'skip-debug-stage': ['yes'],
-    targets: [@'src//:jst_backend'],
+    type: '@rules//CC:install-with-deps',
+    'skip-debug-stage': true,
+    targets: ['@src//:jst_backend'],
   },
 
   'tool-under-test': {
     type: 'install',
     dirs: [['tested jst_backend', '.']],
     files: {
-      'bin/tool-under-test': @'src//:jst_backend',
+      'bin/tool-under-test': '@src//:jst_backend',
     },
   },
 
   'tested jst': {
-    type: @'rules//CC:install-with-deps',
-    'skip-debug-stage': ['yes'],
-    targets: [@'src//:jst'],
+    type: '@rules//CC:install-with-deps',
+    'skip-debug-stage': true,
+    targets: ['@src//:jst'],
   },
 
   'mr-tool-under-test': {
     type: 'install',
     arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
     dirs:
-      if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+      if !$TEST_BOOTSTRAP_JUST_MR then
         [['tested jst', '.']],
     files: {
       'bin/mr-tool-under-test':
-        if jst.env('TEST_BOOTSTRAP_JUST_MR') then
-          @'src//:bin/jst.py'
+        if $TEST_BOOTSTRAP_JUST_MR then
+          '@src//:bin/jst.py'
         else
-          @'src//:jst',
+          '@src//:jst',
     },
   },
 
   'catch-main': {
-    type: @'rules//CC:library',
-    name: ['catch-main'],
+    type: '@rules//CC:library',
+    name: 'catch-main',
     srcs: ['main.cpp'],
     deps: [
-      @'catch2//:catch2',
-      @'src//src/buildtool/file_system:git_context',
-      @'src//src/buildtool/storage:config',
-      @'src//src/buildtool/storage:file_chunker',
-      @'//utils:log_config',
-      @'//utils:test_env',
+      '@catch2//:catch2',
+      '@src//src/buildtool/file_system:git_context',
+      '@src//src/buildtool/storage:config',
+      '@src//src/buildtool/storage:file_chunker',
+      '//utils:log_config',
+      '//utils:test_env',
     ],
-    stage: ['test'],
+    stage: 'test',
   },
 
   'unit tests with compatibility (unconfigured)': {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     arguments_config: ['TEST_COMPATIBLE_REMOTE'],
-    stage: [
-      if jst.env('TEST_COMPATIBLE_REMOTE') then
-        'compatible'
-      else
-        'native',
-    ],
-    deps: [@'./buildtool:TESTS'],
+    stage: if $TEST_COMPATIBLE_REMOTE then 'compatible' else 'native',
+    deps: ['./buildtool:TESTS'],
   },
 
   'unit tests with compatibility, compatible': {
@@ -145,8 +140,8 @@ local unset_key(key, map) =
   },
 
   'unit tests with compatibility': {
-    type: @'rules//test:suite',
-    stage: ['using-remote'],
+    type: '@rules//test:suite',
+    stage: 'using-remote',
     deps: [
       'unit tests with compatibility, compatible',
       'unit tests with compatibility, native',
@@ -156,21 +151,21 @@ local unset_key(key, map) =
   'bootstrap-test': {
     type: 'configure',
     tainted: ['test'],
-    target: @'./bootstrap:TESTS',
+    target: './bootstrap:TESTS',
     arguments_config: ['TIMEOUT_SCALE'],
     config: { TIMEOUT_SCALE: 40 * jst.env('TIMEOUT_SCALE', default=1.0) },
   },
 
   test_extern_hdrs: {
-    type: @'rules//CC:install-with-deps',
-    'hdrs-only': ['yes'],
-    targets: [@'catch2//:catch2'],
+    type: '@rules//CC:install-with-deps',
+    'hdrs-only': true,
+    targets: ['@catch2//:catch2'],
   },
 
   all_extern_hdrs: {
     type: 'install',
     dirs: [
-      [@'src//:DEV', '.'],
+      ['@src//:DEV', '.'],
       ['test_extern_hdrs', '.'],
     ],
   },

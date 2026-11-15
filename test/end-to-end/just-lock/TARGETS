@@ -1,25 +1,25 @@
 {
   'git-imports': {
-    type: @'rules//shell/test:script',
-    name: ['git-imports'],
-    test: ['git-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'git-imports',
+    test: 'git-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:git-import-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:git-import-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   deduplicate: {
-    type: @'rules//shell/test:script',
-    name: ['deduplicate'],
-    test: ['deduplicate.sh'],
+    type: '@rules//shell/test:script',
+    name: 'deduplicate',
+    test: 'deduplicate.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:deduplicate-tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:deduplicate-tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
     keep: [
       'repos-keep.json',
@@ -31,24 +31,24 @@
   },
 
   absent: {
-    type: @'rules//shell/test:script',
-    name: ['absent'],
-    test: ['absent.sh'],
+    type: '@rules//shell/test:script',
+    name: 'absent',
+    test: 'absent.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   computed: {
-    type: @'rules//shell/test:script',
-    name: ['computed'],
-    test: ['computed.sh'],
+    type: '@rules//shell/test:script',
+    name: 'computed',
+    test: 'computed.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
     keep: [
       'repos.json',
@@ -57,116 +57,116 @@
   },
 
   'file-imports': {
-    type: @'rules//shell/test:script',
-    name: ['file-imports'],
-    test: ['file-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'file-imports',
+    test: 'file-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'archive-imports': {
-    type: @'rules//shell/test:script',
-    name: ['archive-imports'],
-    test: ['archive-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'archive-imports',
+    test: 'archive-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'git-tree-imports': {
-    type: @'rules//shell/test:script',
-    name: ['git-tree-imports'],
-    test: ['git-tree-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'git-tree-imports',
+    test: 'git-tree-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'plain-imports': {
-    type: @'rules//shell/test:script',
-    name: ['plain-imports'],
-    test: ['plain-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'plain-imports',
+    test: 'plain-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'generic-imports': {
-    type: @'rules//shell/test:script',
-    name: ['generic-imports'],
-    test: ['generic-imports.sh'],
+    type: '@rules//shell/test:script',
+    name: 'generic-imports',
+    test: 'generic-imports.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:git-import-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:git-import-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'clone-file': {
-    type: @'rules//shell/test:script',
-    name: ['clone-file'],
-    test: ['clone/file-repos.sh'],
+    type: '@rules//shell/test:script',
+    name: 'clone-file',
+    test: 'clone/file-repos.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'clone-git': {
-    type: @'rules//shell/test:script',
-    name: ['clone-git'],
-    test: ['clone/git-repos.sh'],
+    type: '@rules//shell/test:script',
+    name: 'clone-git',
+    test: 'clone/git-repos.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   'clone-archive': {
-    type: @'rules//shell/test:script',
-    name: ['clone-archive'],
-    test: ['clone/archive-repos.sh'],
+    type: '@rules//shell/test:script',
+    name: 'clone-archive',
+    test: 'clone/archive-repos.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
-      @'//end-to-end/just-mr:create_test_archives',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
+      '//end-to-end/just-mr:create_test_archives',
     ],
   },
 
   'clone-git-tree': {
-    type: @'rules//shell/test:script',
-    name: ['clone-git-tree'],
-    test: ['clone/git-tree-repos.sh'],
+    type: '@rules//shell/test:script',
+    name: 'clone-git-tree',
+    test: 'clone/git-tree-repos.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:lock-tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:lock-tool-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
-    stage: ['just-lock'],
+    stage: 'just-lock',
     deps:
       [
         'deduplicate',
         'absent',
       ]
-      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+      + (if !$TEST_BOOTSTRAP_JUST_MR then
            [
              'git-imports',
              'computed',

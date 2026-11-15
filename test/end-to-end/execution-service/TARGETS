@@ -1,28 +1,28 @@
 {
   batch_size_limit: {
-    type: @'rules//shell/test:script',
-    name: ['batch_size_limit'],
-    test: ['batch_size_limit.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'batch_size_limit',
+    test: 'batch_size_limit.sh',
+    deps: ['//:tool-under-test'],
   },
 
   simple_build: {
-    type: @'rules//shell/test:script',
-    name: ['simple_build'],
-    test: ['simple_build.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'simple_build',
+    test: 'simple_build.sh',
+    deps: ['//:tool-under-test'],
   },
 
   tree_inputs: {
-    type: @'//end-to-end:with remote',
-    name: ['tree_inputs'],
-    test: ['tree_inputs.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'tree_inputs',
+    test: 'tree_inputs.sh',
+    deps: ['//:tool-under-test'],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['execution-service'],
+    type: '@rules//test:suite',
+    stage: 'execution-service',
     deps: [
       'batch_size_limit',
       'simple_build',

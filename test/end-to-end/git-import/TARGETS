@@ -1,24 +1,24 @@
 {
   'chained-import': {
-    type: @'rules//shell/test:script',
-    name: ['chained-import'],
-    test: ['chained-import.sh'],
+    type: '@rules//shell/test:script',
+    name: 'chained-import',
+    test: 'chained-import.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
   },
 
   deduplicate: {
-    type: @'rules//shell/test:script',
-    name: ['deduplicate'],
-    test: ['deduplicate.sh'],
+    type: '@rules//shell/test:script',
+    name: 'deduplicate',
+    test: 'deduplicate.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:deduplicate-tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:deduplicate-tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
     keep: [
       'repos-full.json',
@@ -29,24 +29,24 @@
   },
 
   annotations: {
-    type: @'rules//shell/test:script',
-    name: ['annotations'],
-    test: ['annotations.sh'],
+    type: '@rules//shell/test:script',
+    name: 'annotations',
+    test: 'annotations.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
     keep: ['repos.json'],
   },
 
   absent: {
-    type: @'rules//shell/test:script',
-    name: ['absent'],
-    test: ['absent.sh'],
+    type: '@rules//shell/test:script',
+    name: 'absent',
+    test: 'absent.sh',
     deps: [
-      @'//end-to-end:deduplicate-tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//end-to-end:deduplicate-tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
     keep: [
       'repos.json',
@@ -55,14 +55,14 @@
   },
 
   computed: {
-    type: @'rules//shell/test:script',
-    name: ['computed'],
-    test: ['computed.sh'],
+    type: '@rules//shell/test:script',
+    name: 'computed',
+    test: 'computed.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:deduplicate-tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:deduplicate-tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
     keep: [
       'repos-full.json',
@@ -73,38 +73,38 @@
   },
 
   tree_structure: {
-    type: @'rules//shell/test:script',
-    name: ['tree_structure'],
-    test: ['tree_structure.sh'],
+    type: '@rules//shell/test:script',
+    name: 'tree_structure',
+    test: 'tree_structure.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:deduplicate-tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:deduplicate-tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
   },
 
   indirections: {
-    type: @'rules//shell/test:script',
-    name: ['indirections'],
-    test: ['indirections.sh'],
+    type: '@rules//shell/test:script',
+    name: 'indirections',
+    test: 'indirections.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end:git-import-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end:git-import-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
+    type: '@rules//test:suite',
     arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
-    stage: ['git-import'],
+    stage: 'git-import',
     deps:
       [
         'deduplicate',
         'absent',
       ]
-      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+      + (if !$TEST_BOOTSTRAP_JUST_MR then
            [
              'chained-import',
              'annotations',

@@ -1,21 +1,21 @@
 {
   'flat-stage': {
-    type: @'rules//shell/test:script',
-    name: ['flat-stage'],
-    test: ['flat-stage.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'flat-stage',
+    test: 'flat-stage.sh',
+    deps: ['//:tool-under-test'],
   },
 
   'json-errors': {
-    type: @'rules//shell/test:script',
-    name: ['json-errors'],
-    test: ['json-errors.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'json-errors',
+    test: 'json-errors.sh',
+    deps: ['//:tool-under-test'],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['user-errors'],
+    type: '@rules//test:suite',
+    stage: 'user-errors',
     deps: [
       'flat-stage',
       'json-errors',

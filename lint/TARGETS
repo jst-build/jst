@@ -25,59 +25,59 @@
   // Restage Clang installation (linters expect clang in directory 'toolchain')
   clang: {
     type: 'install',
-    dirs: [[@'clang//:INSTALL', 'toolchain']],
+    dirs: [['@clang//:INSTALL', 'toolchain']],
   },
 
   // Runs clang-tidy linter on targets (wont run on export targets)
   run_clang_tidy: {
-    type: @'rules//lint:targets',
+    type: '@rules//lint:targets',
     tainted: ['test'],
     name: ['clang-tidy'],
     linter: ['run_clang_tidy.py'],
     summarizer: ['summary.py'],
     config: [
-      @'jst//:.clang-tidy',
+      '@jst//:.clang-tidy',
       'clang',
     ],
     targets: [
-      @'jst//:jst_configured',
-      @'jst//:jst_backend_configured',
-      @'jst//:jstlangc_configured',
-      @'tests//:ALL',
+      '@jst//:jst_configured',
+      '@jst//:jst_backend_configured',
+      '@jst//:jstlangc_configured',
+      '@tests//:ALL',
     ],
   },
 
   // Runs clang-format verification on targets (wont run on export targets)
   run_clang_format: {
-    type: @'rules//lint:targets',
+    type: '@rules//lint:targets',
     tainted: ['test'],
     name: ['clang-format'],
     linter: ['run_clang_format.py'],
     summarizer: ['summary.py'],
     config: [
-      @'jst//:.clang-format',
+      '@jst//:.clang-format',
       'clang',
     ],
     targets: [
-      @'jst//:jst_configured',
-      @'jst//:jst_backend_configured',
-      @'jst//:jstlangc_configured',
-      @'tests//:ALL',
+      '@jst//:jst_configured',
+      '@jst//:jst_backend_configured',
+      '@jst//:jstlangc_configured',
+      '@tests//:ALL',
     ],
   },
 
   // Runs strict dependency verification on targets (wont run on export targets)
   run_strict_deps: {
-    type: @'rules//lint:targets',
+    type: '@rules//lint:targets',
     tainted: ['test'],
     name: ['strict deps'],
     linter: ['run_strict_deps.py'],
     summarizer: ['summary.py'],
     targets: [
-      @'jst//:jst_configured',
-      @'jst//:jst_backend_configured',
-      @'jst//:jstlangc_configured',
-      @'tests//:ALL',
+      '@jst//:jst_configured',
+      '@jst//:jst_backend_configured',
+      '@jst//:jstlangc_configured',
+      '@tests//:ALL',
     ],
   },
 

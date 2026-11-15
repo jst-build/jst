@@ -1,24 +1,24 @@
 {
   'stage-links': {
-    type: @'//end-to-end:with remote',
-    name: ['stage-links'],
-    test: ['stage-links.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'stage-links',
+    test: 'stage-links.sh',
+    deps: ['//:tool-under-test'],
   },
 
   'tree-reference': {
-    type: @'//end-to-end:with remote',
-    name: ['tree-reference'],
-    test: ['tree-reference.sh'],
+    type: '//end-to-end:with remote',
+    name: 'tree-reference',
+    test: 'tree-reference.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['symlinks'],
+    type: '@rules//test:suite',
+    stage: 'symlinks',
     deps: [
       'stage-links',
       'tree-reference',

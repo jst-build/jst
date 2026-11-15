@@ -1,75 +1,75 @@
 {
   'target-cache-hit': {
-    type: @'//end-to-end:with remote',
-    name: ['target-cache-hit'],
-    test: ['target-cache-hit.sh'],
+    type: '//end-to-end:with remote',
+    name: 'target-cache-hit',
+    test: 'target-cache-hit.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'artifacts-sync': {
-    type: @'rules//shell/test:script',
-    name: ['artifacts-sync'],
-    test: ['artifacts-sync.sh'],
+    type: '@rules//shell/test:script',
+    name: 'artifacts-sync',
+    test: 'artifacts-sync.sh',
     deps: [
       'bootstrap-src-staged',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'./data:greetlib',
-      @'./data:pydicts',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      './data:greetlib',
+      './data:pydicts',
     ],
   },
 
   'serve-sync': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-sync'],
-    test: ['serve-sync.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-sync',
+    test: 'serve-sync.sh',
     deps: [
       'bootstrap-src-staged',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'./data:lib with generated hdr',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      './data:lib with generated hdr',
     ],
-    repos: [@'./data:lib with generated hdr'],
+    repos: ['./data:lib with generated hdr'],
   },
 
   'export-extern': {
-    type: @'rules//shell/test:script',
-    name: ['export-extern'],
-    test: ['export-extern.sh'],
+    type: '@rules//shell/test:script',
+    name: 'export-extern',
+    test: 'export-extern.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'bootstrap-src-staged': {
     type: 'install',
     tainted: ['test'],
-    dirs: [[@'src//:bootstrap-src', 'src']],
+    dirs: [['@src//:bootstrap-src', 'src']],
   },
 
   'check-sharding': {
-    type: @'rules//shell/test:script',
-    name: ['check-sharding'],
-    test: ['check-sharding.sh'],
+    type: '@rules//shell/test:script',
+    name: 'check-sharding',
+    test: 'check-sharding.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['target-cache'],
+    type: '@rules//test:suite',
+    stage: 'target-cache',
     arguments_config: ['TEST_BOOTSTRAP_JUST_MR'],
     deps:
       [
         'target-cache-hit',
       ]
-      + (if !jst.env('TEST_BOOTSTRAP_JUST_MR') then
+      + (if !$TEST_BOOTSTRAP_JUST_MR then
            [
              'artifacts-sync',
              'serve-sync',

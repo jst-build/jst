@@ -5,7 +5,7 @@
     out_dirs: ['src'],
     cmds: ['for i in `seq 1 5` ; do ln -s $i.txt src/link-$i ; done'],
     deps: [
-      @'//end-to-end/serve-service:serve-target-remote-build (repo)',
+      '//end-to-end/serve-service:serve-target-remote-build (repo)',
     ],
     env: jst.env('TEST_ENV', default={}),
   },
@@ -27,13 +27,13 @@
   },
 
   'unresolved-present': {
-    type: @'//end-to-end:with serve',
-    name: ['unresolved-present'],
-    test: ['unresolved-present.sh'],
+    type: '//end-to-end:with serve',
+    name: 'unresolved-present',
+    test: 'unresolved-present.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end/serve-service:serve-tree (archive)',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end/serve-service:serve-tree (archive)',
     ],
     repos: [[
       'end-to-end/serve-service',
@@ -42,13 +42,13 @@
   },
 
   'unresolved-absent': {
-    type: @'//end-to-end:with serve',
-    name: ['unresolved-absent'],
-    test: ['unresolved-absent.sh'],
+    type: '//end-to-end:with serve',
+    name: 'unresolved-absent',
+    test: 'unresolved-absent.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end/serve-service:serve-tree (archive)',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end/serve-service:serve-tree (archive)',
     ],
     repos: [[
       'end-to-end/serve-service',
@@ -57,13 +57,13 @@
   },
 
   'unresolved-absent-known': {
-    type: @'//end-to-end:with serve',
-    name: ['unresolved-absent-known'],
-    test: ['unresolved-absent-known.sh'],
+    type: '//end-to-end:with serve',
+    name: 'unresolved-absent-known',
+    test: 'unresolved-absent-known.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end/serve-service:serve-tree (archive)',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end/serve-service:serve-tree (archive)',
     ],
     repos: [[
       'end-to-end/serve-service',
@@ -72,66 +72,66 @@
   },
 
   'unresolved-absent-known-upload': {
-    type: @'//end-to-end:with serve',
-    name: ['unresolved-absent-known-upload'],
-    test: ['unresolved-absent-known-upload.sh'],
+    type: '//end-to-end:with serve',
+    name: 'unresolved-absent-known-upload',
+    test: 'unresolved-absent-known-upload.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end/serve-service:serve-tree (archive)',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end/serve-service:serve-tree (archive)',
     ],
   },
 
   'resolved-present': {
-    type: @'//end-to-end:with serve',
-    name: ['resolved-present'],
-    test: ['resolved-present.sh'],
+    type: '//end-to-end:with serve',
+    name: 'resolved-present',
+    test: 'resolved-present.sh',
     deps: [
       'serve-tree-syms (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-tree-syms (archive)'],
   },
 
   'resolved-absent': {
-    type: @'//end-to-end:with serve',
-    name: ['resolved-absent'],
-    test: ['resolved-absent.sh'],
+    type: '//end-to-end:with serve',
+    name: 'resolved-absent',
+    test: 'resolved-absent.sh',
     deps: [
       'serve-tree-syms (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-tree-syms (archive)'],
   },
 
   'resolved-absent-known': {
-    type: @'//end-to-end:with serve',
-    name: ['resolved-absent-known'],
-    test: ['resolved-absent-known.sh'],
+    type: '//end-to-end:with serve',
+    name: 'resolved-absent-known',
+    test: 'resolved-absent-known.sh',
     deps: [
       'serve-tree-syms (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-tree-syms (archive)'],
   },
 
   'resolved-absent-known-upload': {
-    type: @'//end-to-end:with serve',
-    name: ['resolved-absent-known-upload'],
-    test: ['resolved-absent-known-upload.sh'],
+    type: '//end-to-end:with serve',
+    name: 'resolved-absent-known-upload',
+    test: 'resolved-absent-known-upload.sh',
     deps: [
       'serve-tree-syms (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['serve-archive-root'],
+    type: '@rules//test:suite',
+    stage: 'serve-archive-root',
     deps: [
       'resolved-absent',
       'resolved-absent-known',

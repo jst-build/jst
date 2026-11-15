@@ -1,6 +1,6 @@
 {
   gsl: {
-    type: @'rules//CC:library',
+    type: '@rules//CC:library',
     arguments_config: ['LOCALBASE'],
     cflags: ['-isystem=' + jst.env('LOCALBASE', default='/usr') + '/include']
   },

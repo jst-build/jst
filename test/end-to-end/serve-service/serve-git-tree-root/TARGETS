@@ -1,11 +1,11 @@
 {
   present: {
-    type: @'//end-to-end:with serve',
-    name: ['present'],
-    test: ['present.sh'],
+    type: '//end-to-end:with serve',
+    name: 'present',
+    test: 'present.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: [[
       'end-to-end/serve-service',
@@ -14,12 +14,12 @@
   },
 
   absent: {
-    type: @'//end-to-end:with serve',
-    name: ['absent'],
-    test: ['absent.sh'],
+    type: '//end-to-end:with serve',
+    name: 'absent',
+    test: 'absent.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: [[
       'end-to-end/serve-service',
@@ -28,8 +28,8 @@
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['serve-git-tree-root'],
+    type: '@rules//test:suite',
+    stage: 'serve-git-tree-root',
     deps: [
       'absent',
       'present',

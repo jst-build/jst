@@ -1,18 +1,18 @@
 {
   upload: {
-    type: @'//end-to-end:with serve',
-    name: ['upload'],
-    test: ['upload.sh'],
+    type: '//end-to-end:with serve',
+    name: 'upload',
+    test: 'upload.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
-      @'//end-to-end/serve-service:serve-tree (archive)',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
+      '//end-to-end/serve-service:serve-tree (archive)',
     ],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['serve-file-root'],
+    type: '@rules//test:suite',
+    stage: 'serve-file-root',
     deps: [
       'upload',
     ],

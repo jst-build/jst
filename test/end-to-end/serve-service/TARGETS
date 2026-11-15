@@ -1,11 +1,11 @@
 {
   'serve-target-remote-build': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-target-remote-build'],
-    test: ['serve_target_remote_build.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-target-remote-build',
+    test: 'serve_target_remote_build.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: [
       'serve-target-remote-build (repo)',
@@ -15,16 +15,16 @@
   },
 
   'serve-target-failed-build': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-target-failed-build'],
-    test: ['serve_target_failed_build.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-target-failed-build',
+    test: 'serve_target_failed_build.sh',
     deps: [
       'data/rules/RULES',
       'data/rules/RULES.dummy',
       'data/targets/TARGETS',
       'serve-tree (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: [
       'serve-target-remote-build (repo)',
@@ -47,57 +47,57 @@
   },
 
   'serve-target-remote-build (target)': {
-    type: @'rules//data:staged',
+    type: '@rules//data:staged',
     srcs: ['data/targets/TARGETS'],
-    stage: ['test', 'end-to-end', 'serve-service'],
+    stage: 'test/end-to-end/serve-service',
   },
 
   'serve-target-remote-build (rule)': {
-    type: @'rules//data:staged',
+    type: '@rules//data:staged',
     srcs: ['data/rules/RULES'],
-    stage: ['test', 'end-to-end', 'serve-service'],
+    stage: 'test/end-to-end/serve-service',
   },
 
   'serve-target-failed-build (rule)': {
-    type: @'rules//data:staged',
+    type: '@rules//data:staged',
     srcs: ['data/rules/RULES.dummy'],
-    stage: ['test', 'end-to-end', 'serve-service'],
+    stage: 'test/end-to-end/serve-service',
   },
 
   'serve-target-cache-hit': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-target-cache-hit'],
-    test: ['serve_target_cache_hit.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-target-cache-hit',
+    test: 'serve_target_cache_hit.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'serve-start-execute': {
-    type: @'rules//shell/test:script',
-    name: ['serve-start-execute'],
-    test: ['serve_start_execute.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'serve-start-execute',
+    test: 'serve_start_execute.sh',
+    deps: ['//:tool-under-test'],
   },
 
   'serve-start-execute-sharding': {
-    type: @'rules//shell/test:script',
-    name: ['serve-start-execute-sharding'],
-    test: ['serve_start_execute_sharding.sh'],
+    type: '@rules//shell/test:script',
+    name: 'serve-start-execute-sharding',
+    test: 'serve_start_execute_sharding.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'serve-export-deps': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-export-deps'],
-    test: ['serve_export_deps.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-export-deps',
+    test: 'serve_export_deps.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
@@ -116,14 +116,14 @@
   },
 
   'serve-tree': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-tree'],
-    test: ['serve-tree.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-tree',
+    test: 'serve-tree.sh',
     deps: [
       'data/targets/TARGETS.tree',
       'serve-tree (archive)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-tree (archive)'],
   },
@@ -137,23 +137,23 @@
   },
 
   'serve-target-remote-build-dispatch': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-target-remote-build-dispatch'],
-    test: ['serve_target_remote_build_dispatch.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-target-remote-build-dispatch',
+    test: 'serve_target_remote_build_dispatch.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-target-remote-build-dispatch (data)'],
   },
 
   'serve-query-target-cache-value': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-query-target-cache-value'],
-    test: ['serve_query_target_cache_value.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-query-target-cache-value',
+    test: 'serve_query_target_cache_value.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
@@ -171,13 +171,13 @@
   },
 
   describe: {
-    type: @'//end-to-end:with serve',
-    name: ['describe'],
-    test: ['describe.sh'],
+    type: '//end-to-end:with serve',
+    name: 'describe',
+    test: 'describe.sh',
     deps: [
       'describe (locally installed)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['describe (data)'],
     keep: [
@@ -195,13 +195,13 @@
   },
 
   'failure-report': {
-    type: @'//end-to-end:with serve',
-    name: ['failure-report'],
-    test: ['failure-report.sh'],
+    type: '//end-to-end:with serve',
+    name: 'failure-report',
+    test: 'failure-report.sh',
     deps: [
       'describe (locally installed)',
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['failure-report (data)'],
     keep: [
@@ -221,12 +221,12 @@
   },
 
   'deep tree': {
-    type: @'//end-to-end:with serve',
-    name: ['deep-tree'],
-    test: ['deep-tree.sh'],
+    type: '//end-to-end:with serve',
+    name: 'deep-tree',
+    test: 'deep-tree.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['deep tree (data)'],
     'keep-dirs': ['out'],
@@ -241,12 +241,12 @@
   },
 
   'interruption-test': {
-    type: @'//end-to-end:with serve',
-    name: ['interruption-test'],
-    test: ['interruption-test.sh'],
+    type: '//end-to-end:with serve',
+    name: 'interruption-test',
+    test: 'interruption-test.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['interruption-test (data)'],
     'keep-dirs': ['out'],
@@ -265,12 +265,12 @@
   },
 
   'load test': {
-    type: @'//end-to-end:with serve',
-    name: ['load-test'],
-    test: ['load-test.sh'],
+    type: '//end-to-end:with serve',
+    name: 'load-test',
+    test: 'load-test.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['load test (data)'],
     'keep-dirs': ['out'],
@@ -293,12 +293,12 @@
   },
 
   'serve-many-targets': {
-    type: @'//end-to-end:with serve',
-    name: ['serve-many-targets'],
-    test: ['serve_many_targets.sh'],
+    type: '//end-to-end:with serve',
+    name: 'serve-many-targets',
+    test: 'serve_many_targets.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: [
       'serve-many-targets (data)',
@@ -307,19 +307,19 @@
   },
 
   'deduplication-of-serve-requests': {
-    type: @'//end-to-end:with serve',
-    name: ['deduplication-of-serve-requests'],
-    test: ['deduplication_of_serve_requests.sh'],
+    type: '//end-to-end:with serve',
+    name: 'deduplication-of-serve-requests',
+    test: 'deduplication_of_serve_requests.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
     repos: ['serve-many-targets (data)'],
   },
 
   'TESTS (unconfigured)': {
-    type: @'rules//test:matrix',
-    stage: ['serve-service'],
+    type: '@rules//test:matrix',
+    stage: 'serve-service',
     deps: [
       'deduplication-of-serve-requests',
       'deep tree',
@@ -337,11 +337,11 @@
       'serve-target-remote-build',
       'serve-target-remote-build-dispatch',
       'serve-tree',
-      @'./serve-archive-root:TESTS',
-      @'./serve-distdir-root:TESTS',
-      @'./serve-file-root:TESTS',
-      @'./serve-git-root:TESTS',
-      @'./serve-git-tree-root:TESTS',
+      './serve-archive-root:TESTS',
+      './serve-distdir-root:TESTS',
+      './serve-file-root:TESTS',
+      './serve-git-root:TESTS',
+      './serve-git-tree-root:TESTS',
     ],
   },
 

@@ -1,9 +1,9 @@
 {
   basic: {
-    type: @'rules//shell/test:script',
-    name: ['basic'],
-    test: ['basic.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'basic',
+    test: 'basic.sh',
+    deps: ['//:tool-under-test'],
     keep: [
       'out/base/TARGETS',
       'out/derived/out',
@@ -15,10 +15,10 @@
   },
 
   'build params': {
-    type: @'rules//shell/test:script',
-    name: ['build-params'],
-    test: ['build-params.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'build-params',
+    test: 'build-params.sh',
+    deps: ['//:tool-under-test'],
     keep: [
       'out/stdout',
       'out/stderr',
@@ -26,30 +26,30 @@
   },
 
   mr_computed_setup: {
-    type: @'rules//shell/test:script',
-    name: ['mr_computed_setup'],
-    test: ['mr_computed_setup.sh'],
+    type: '@rules//shell/test:script',
+    name: 'mr_computed_setup',
+    test: 'mr_computed_setup.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   mr_take_over: {
-    type: @'rules//shell/test:script',
-    name: ['mr_take_over'],
-    test: ['mr_take_over.sh'],
+    type: '@rules//shell/test:script',
+    name: 'mr_take_over',
+    test: 'mr_take_over.sh',
     deps: [
-      @'//:mr-tool-under-test',
-      @'//:tool-under-test',
+      '//:mr-tool-under-test',
+      '//:tool-under-test',
     ],
   },
 
   'error-reporting': {
-    type: @'rules//shell/test:script',
-    name: ['error-reporting'],
-    test: ['error-reporting.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'error-reporting',
+    test: 'error-reporting.sh',
+    deps: ['//:tool-under-test'],
     keep: [
       'out/not-export.log',
       'out/not-content-fixed.log',
@@ -58,18 +58,18 @@
   },
 
   'error-remote': {
-    type: @'//end-to-end:with remote',
-    name: ['error-remote'],
-    test: ['error-remote.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'error-remote',
+    test: 'error-remote.sh',
+    deps: ['//:tool-under-test'],
     keep: ['out/build.log'],
   },
 
   'basic remote build': {
-    type: @'//end-to-end:with remote',
-    name: ['remote'],
-    test: ['remote.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'remote',
+    test: 'remote.sh',
+    deps: ['//:tool-under-test'],
     keep: [
       'out/log',
       'out/log.root',
@@ -77,10 +77,10 @@
   },
 
   'remote sharding': {
-    type: @'//end-to-end:with remote',
-    name: ['sharding'],
-    test: ['sharding.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'sharding',
+    test: 'sharding.sh',
+    deps: ['//:tool-under-test'],
     keep: [
       'out/base-local.log',
       'out/derived-local.log',
@@ -92,10 +92,10 @@
   },
 
   'artifacts-only': {
-    type: @'//end-to-end:with remote',
-    name: ['artifacts-only'],
-    test: ['artifacts-only.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with remote',
+    name: 'artifacts-only',
+    test: 'artifacts-only.sh',
+    deps: ['//:tool-under-test'],
   },
 
   'absent base of root (data)': {
@@ -106,10 +106,10 @@
   },
 
   'absent base of root': {
-    type: @'//end-to-end:with serve',
-    name: ['absent-base'],
-    test: ['absent-base.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with serve',
+    name: 'absent-base',
+    test: 'absent-base.sh',
+    deps: ['//:tool-under-test'],
     repos: ['absent base of root (data)'],
   },
 
@@ -122,10 +122,10 @@
   },
 
   'absent computed root': {
-    type: @'//end-to-end:with serve',
-    name: ['absent-computed'],
-    test: ['absent-computed.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '//end-to-end:with serve',
+    name: 'absent-computed',
+    test: 'absent-computed.sh',
+    deps: ['//:tool-under-test'],
     repos: [
       'absent base of root (data)',
       'absent target root (data)',
@@ -134,16 +134,16 @@
   },
 
   progress: {
-    type: @'rules//shell/test:script',
-    name: ['progress'],
-    test: ['progress.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'progress',
+    test: 'progress.sh',
+    deps: ['//:tool-under-test'],
     keep: ['out/log'],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['computed-roots'],
+    type: '@rules//test:suite',
+    stage: 'computed-roots',
     deps: [
       'absent base of root',
       'absent computed root',

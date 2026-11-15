@@ -1,49 +1,49 @@
 {
   runtime_evaluation: {
-    type: @'rules//shell/test:script',
-    name: ['runtime_evaluation'],
-    test: ['runtime_evaluation.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'runtime_evaluation',
+    test: 'runtime_evaluation.sh',
+    deps: ['//:tool-under-test'],
   },
 
   external_imports: {
-    type: @'rules//shell/test:script',
-    name: ['external_imports'],
-    test: ['external_imports.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'external_imports',
+    test: 'external_imports.sh',
+    deps: ['//:tool-under-test'],
   },
 
   rules_evaluation: {
-    type: @'rules//shell/test:script',
-    name: ['rules_evaluation'],
-    test: ['rules_evaluation.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'rules_evaluation',
+    test: 'rules_evaluation.sh',
+    deps: ['//:tool-under-test'],
   },
 
   bool_fields: {
-    type: @'rules//shell/test:script',
-    name: ['bool_fields'],
-    test: ['bool_fields.sh'],
-    deps: [@'//:tool-under-test'],
+    type: '@rules//shell/test:script',
+    name: 'bool_fields',
+    test: 'bool_fields.sh',
+    deps: ['//:tool-under-test'],
   },
 
   conflict_report: {
-    type: @'rules//shell/test:script',
-    name: ['conflict_report'],
-    test: ['conflict_report.sh'],
+    type: '@rules//shell/test:script',
+    name: 'conflict_report',
+    test: 'conflict_report.sh',
     deps: ['//:tool-under-test'],
   },
 
   single_values: {
     type: '@rules//shell/test:script',
-    name: ['single_values'],
-    test: ['single_values.sh'],
+    name: 'single_values',
+    test: 'single_values.sh',
     deps: ['//:tool-under-test'],
   },
 
   TESTS: {
-    type: @'rules//test:suite',
-    stage: ['jstlang'],
+    type: '@rules//test:suite',
+    stage: 'jstlang',
     deps: [
       'bool_fields',
       'conflict_report',
