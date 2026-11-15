@@ -71,7 +71,7 @@ declare the library, create a `TARGETS` file with the following content:
 {
   address: {
     type: '@rules//proto:library',
-    name: ['addressbook'],
+    name: 'addressbook',
     srcs: ['addressbook.proto'],
   },
 }
@@ -191,14 +191,14 @@ can simply use them. Our target file hence continues as follows.
 ...
   add_person: {
     type: '@rules//CC:binary',
-    name: ['add_person'],
+    name: 'add_person',
     srcs: ['add_person.cc'],
     'private-proto': ['address'],
   },
 
   list_people: {
     type: '@rules//CC:binary',
-    name: ['list_people'],
+    name: 'list_people',
     srcs: ['list_people.cc'],
     'private-proto': ['address'],
   },
@@ -435,8 +435,8 @@ keep the intermediate files the test generates. Add to the top-level
 
   test: {
     type: '@rules//shell/test:script',
-    name: ['read-write-test'],
-    test: ['test.sh'],
+    name: 'read-write-test',
+    test: 'test.sh',
     deps: ['add_person', 'list_people'],
     keep: ['addressbook.data', 'out.txt'],
   },

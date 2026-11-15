@@ -126,7 +126,7 @@ allowed for the current module. So we add this target and obtain as
   'definitions.units': {
     type: '@rules//patch:file',
     src: [jst.file('definitions.units')],
-    patch: ['@patches//:definitions.units.diff'],
+    patch: '@patches//:definitions.units.diff',
   },
 }
 ```
@@ -319,7 +319,7 @@ defining the binary is as follows.
 ...
   'units-draft': {
     type: '@rules//CC:binary',
-    name: ['units'],
+    name: 'units',
     'private-ldflags': ['-lm'],
     'pure C': true,
     srcs: [jst.glob('*.c')],
@@ -377,7 +377,7 @@ Then we amend our `"units"` target.
 ...
   units: {
     type: '@rules//CC:binary',
-    name: ['units'],
+    name: 'units',
     'private-ldflags': ['-lm'],
     'pure C': true,
     srcs: ['patched srcs'],
@@ -392,7 +392,7 @@ Then we amend our `"units"` target.
   'strfunc.c': {
     type: '@rules//patch:file',
     src: [jst.file('strfunc.c')],
-    patch: ['@patches//:strfunc.c.diff'],
+    patch: '@patches//:strfunc.c.diff',
   },
 ...
 ```

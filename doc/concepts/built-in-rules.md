@@ -158,7 +158,7 @@ Example:
 {
   foobar: {
     type: 'generic',
-    deps: ['//src:foo']
+    deps: ['//src:foo'],
     cmds: [
       './foo > foo.txt',
       'echo bar > bar/bar.txt',

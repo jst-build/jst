@@ -5,7 +5,7 @@
   // - depends on exported top-level target 'libgreet'
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['helloworld.cpp'],
     'private-deps': ['//:libgreet'],
   },
@@ -21,7 +21,7 @@
   libgreet: {
     type: '@rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
-    name: ['greet'],    // produces libgreet.[a|so]
+    name: 'greet',    // produces libgreet.[a|so]
     shared: $BUILD_SHARED,
     'private-cflags':
       if $USE_FMTLIB then ['-DUSE_FMTLIB'],
@@ -29,6 +29,6 @@
       if $USE_FMTLIB then ['@fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],   // prefix used for public headers
+    stage: 'greet',   // prefix used for public headers
   },
 }

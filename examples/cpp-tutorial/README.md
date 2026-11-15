@@ -168,7 +168,7 @@ the binary target in the `src/TARGETS` file.
 {
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['helloworld.cpp'],
   },
 }
@@ -295,17 +295,17 @@ description in file `src/TARGETS`:
 {
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['helloworld.cpp'],
     'private-deps': ['libgreet'],   // same as '//src:libgreet'
   },
 
   libgreet: {
     type: '@rules//CC:library',
-    name: ['greet'],    // produces libgreet.a
+    name: 'greet',    // produces libgreet.a
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],   // prefix used for public headers
+    stage: 'greet',   // prefix used for public headers
   },
 }
 ```
@@ -389,7 +389,7 @@ local common_flags = ['-Wall', '-Werror', '-pedantic'];
 {
   defaults: {
     type: '//CC:defaults',
-    base: ['@base//CC:defaults'],
+    base: '@base//CC:defaults',
     ADD_CFLAGS: ['-std=c11'] + common_flags,
     ADD_CXXFLAGS: ['-std=c++14'] + common_flags,
   },
@@ -488,7 +488,7 @@ Let's create a binary test for the `libgreet` library in `test/TARGETS`.
 { // ...
   test_libgreet: {
     type: '@rules//CC/test:test',
-    name: ['libgreet'],
+    name: 'libgreet',
     srcs: ['test_libgreet.cpp'],
     'private-deps': [
       '//src:libgreet',
@@ -525,8 +525,8 @@ Let's create the shell test for the `helloworld` binary in `test/TARGETS`.
 { // ...
   test_helloworld: {
     type: '@rules//shell/test:script',
-    name: ['helloworld'],
-    test: ['test_helloworld.sh'],
+    name: 'helloworld',
+    test: 'test_helloworld.sh',
     deps: [
       '//src:helloworld',
     ],
@@ -568,7 +568,7 @@ Let's create the test suite target `ALL`:
       'test_libgreet',
       'test_helloworld',
     ],
-    stage: ['test'],
+    stage: 'test',
   },
   // ...
 }
@@ -673,7 +673,7 @@ Now the `libgreet` target can access the top-level target `fmt` from
   libgreet: {
     type: '@rules//CC:library',
     arguments_config: ['BUILD_SHARED', 'USE_FMTLIB'],
-    name: ['greet'],    // produces libgreet.[a|so]
+    name: 'greet',    // produces libgreet.[a|so]
     shared: $BUILD_SHARED,
     'private-cflags':
       if $USE_FMTLIB then ['-DUSE_FMTLIB'],
@@ -681,7 +681,7 @@ Now the `libgreet` target can access the top-level target `fmt` from
       if $USE_FMTLIB then ['@fmtlib//:fmt'],
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],   // prefix used for public headers
+    stage: 'greet',   // prefix used for public headers
   }
 }
 ```
@@ -758,7 +758,7 @@ The last missing piece is providing the target description in file
   gtest_main: {
     type: '@rules//CC/foreign/cmake:library',
     arguments_config: ['DEBUG'],
-    name: ['gtest_main'],
+    name: 'gtest_main',
     project: [jst.tree('.')],
     defines: [
       'BUILD_GMOCK=OFF',

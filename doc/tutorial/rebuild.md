@@ -69,7 +69,7 @@ and the following `TARGETS` file:
 
   hello: {
     type: '@rules//CC:binary',
-    name: ['hello'],
+    name: 'hello',
     srcs: ['hello.cpp'],
     'private-hdrs': ['version.h'],
   },

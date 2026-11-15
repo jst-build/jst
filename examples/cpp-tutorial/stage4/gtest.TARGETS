@@ -9,7 +9,7 @@
   gtest_main: {
     type: '@rules//CC/foreign/cmake:library',
     arguments_config: ['DEBUG'],
-    name: ['gtest_main'],
+    name: 'gtest_main',
     project: [jst.tree('.')],
     defines: [
       'BUILD_GMOCK=OFF',

@@ -5,7 +5,7 @@
   // - depends on module-local target 'libgreet'
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['helloworld.cpp'],
     'private-deps': [
       'libgreet',     // same as '//src:libgreet'
@@ -19,9 +19,9 @@
   //   (consumers include this library via '#include "greet/greet.hpp"')
   libgreet: {
     type: '@rules//CC:library',
-    name: ['greet'],    // produces libgreet.a
+    name: 'greet',    // produces libgreet.a
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],   // prefix used for public headers
+    stage: 'greet',   // prefix used for public headers
   },
 }

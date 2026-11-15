@@ -5,6 +5,6 @@
   // - inherits shell defaults from base (toolchain)
   defaults: {
     type: '//shell:defaults',
-    base: ['@base//shell:defaults'],
+    base: '@base//shell:defaults',
   },
 }

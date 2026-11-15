@@ -77,7 +77,7 @@ as:
   hdrs: {
     type: '@rules//data:staged',
     srcs: [jst.tree('.')],
-    stage: ['fmt'],
+    stage: 'fmt',
   },
 }
 ```
@@ -92,7 +92,7 @@ description in `src/TARGETS` will look like this:
 {
   fmt: {
     type: '@rules//CC:library',
-    name: ['fmt'],
+    name: 'fmt',
     hdrs: ['//include/fmt:hdrs'],
     srcs: ['format.cc', 'os.cc'],
   },
@@ -202,10 +202,10 @@ in `greet/TARGETS`:
 {
   greet: {
     type: '@rules//CC:library',
-    name: ['greet'],
+    name: 'greet',
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],
+    stage: 'greet',
     'private-deps': ['@format//:fmt'],
   },
 }
@@ -513,8 +513,8 @@ staging mechanism the logical repository it belongs to is rooted in the
 {
   fmt: {
     type: '@rules//CC:library',
-    name: ['fmt'],
-    stage: ['fmt'],
+    name: 'fmt',
+    stage: 'fmt',
     hdrs: [jst.tree('.')],
     'private-ldflags': ['-lfmt'],
   },
@@ -529,7 +529,7 @@ and the actual packaging-build version of `libfmt`, as provided in
 
 ``` {.jsonnet srcname="etc/import.pkgconfig/TARGETS.fmt"}
 {
-  fmt: {type: '@rules//CC/pkgconfig:system_library', name: ['fmt']},
+  fmt: {type: '@rules//CC/pkgconfig:system_library', name: 'fmt'},
 }
 ```
 

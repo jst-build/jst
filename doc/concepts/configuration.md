@@ -72,7 +72,7 @@ dependency could look as follows.
   libfoo: {
     type: '@rules//CC:library',
     arguments_config: ['DEBUG'],
-    name: ['foo'],
+    name: 'foo',
     hdrs: ['foo.hpp'],
     srcs: ['foo.cpp'],
     defines: if $DEBUG then ['DEBUG'],

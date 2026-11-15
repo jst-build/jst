@@ -27,12 +27,12 @@ flags) for our example project. This can be done by extending the existing
 {
   defaults: {
     type: '//CC:defaults',
-    CC: ['cc'],
-    CXX: ['c++'],
+    CC: 'cc',
+    CXX: 'c++',
     ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
     ADD_DEBUGFLAGS: ['-O2', '-Wall', '-g'],
-    AR: ['ar'],
-    DWP: ['dwp'],
+    AR: 'ar',
+    DWP: 'dwp',
     PATH: ['/bin', '/usr/bin'],
   }
 }

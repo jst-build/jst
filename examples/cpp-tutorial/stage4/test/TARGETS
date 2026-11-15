@@ -10,7 +10,7 @@
       'test_libgreet',
       'test_helloworld',
     ],
-    stage: ['test'],
+    stage: 'test',
   },
 
   // Binary test for the 'libgreet' library
@@ -19,7 +19,7 @@
   // - depends on exported public top-level targets 'libgreet' and 'gtest_main'
   test_libgreet: {
     type: '@rules//CC/test:test',
-    name: ['libgreet'],
+    name: 'libgreet',
     srcs: ['test_libgreet.cpp'],
     'private-deps': [
       '//:libgreet',
@@ -34,8 +34,8 @@
   // - depends on exported public top-level target 'helloworld'
   test_helloworld: {
     type: '@rules//shell/test:script',
-    name: ['helloworld'],
-    test: ['test_helloworld.sh'],
+    name: 'helloworld',
+    test: 'test_helloworld.sh',
     deps: [
       '//:helloworld',
     ],

@@ -57,7 +57,7 @@ File `TARGETS`:
 {
   tutorial: {
     type: '@latex-rules//latex:latexmk',
-    main: ['hello'],
+    main: 'hello',
     srcs: ['hello.tex'],
   },
 }

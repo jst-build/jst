@@ -83,7 +83,7 @@ a `TARGETS` file with the following content:
 {
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['main.cpp'],
   },
 }
@@ -207,11 +207,11 @@ from. In our case, we don't use any base.
 {
   defaults: {
     type: '//CC:defaults',
-    CC: ['cc'],
-    CXX: ['c++'],
+    CC: 'cc',
+    CXX: 'c++',
     ADD_COMPILE_FLAGS: ['-O2', '-Wall'],
-    AR: ['ar'],
-    DWP: ['dwp'],
+    AR: 'ar',
+    DWP: 'dwp',
     PATH: ['/bin', '/usr/bin'],
   },
 }
@@ -348,10 +348,10 @@ do so, we need to create the following target description in
 {
   greet: {
     type: '@rules//CC:library',
-    name: ['greet'],
+    name: 'greet',
     hdrs: ['greet.hpp'],
     srcs: ['greet.cpp'],
-    stage: ['greet'],
+    stage: 'greet',
   },
 }
 ```
@@ -387,7 +387,7 @@ The target `"helloworld"` will have a direct dependency to the target
 {
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['main.cpp'],
     'private-deps': ['//greet:greet'],
   },

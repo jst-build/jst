@@ -297,9 +297,9 @@ Now we can define our lint target.
   lint: {
     type: '@rules//lint:targets',
     targets: ['helloworld'],
-    linter: ['run_clang_tidy.py'],
-    summarizer: ['summary.py'],
-    config: ['.clang-tidy'],
+    linter: 'run_clang_tidy.py',
+    summarizer: 'summary.py',
+    config: '.clang-tidy',
   },
 ...
 ```

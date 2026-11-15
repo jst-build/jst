@@ -71,7 +71,7 @@ Then, a `TARGETS` file describing a simple binary.
 {
   helloworld: {
     type: '@rules//CC:binary',
-    name: ['helloworld'],
+    name: 'helloworld',
     srcs: ['main.cpp'],
   }
 }
@@ -145,8 +145,8 @@ by adding a file `test/TARGETS` containing
 {
   basic: {
     type: '@rules//shell/test:script',
-    name: ['basic'],
-    test: ['basic.sh'],
+    name: 'basic',
+    test: 'basic.sh',
     deps: ['//:helloworld'],
   },
 

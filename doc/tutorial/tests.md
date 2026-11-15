@@ -92,7 +92,7 @@ add the following to `tests/TARGETS`:
 {
   greet: {
     type: '@rules//CC/test:test',
-    name: ['test_greet'],
+    name: 'test_greet',
     srcs: ['greet.test.cpp'],
     'private-deps': ['//greet:greet'],
   },
@@ -352,8 +352,8 @@ the `tests/TARGETS` file:
 ...
   helloworld: {
     type: '@rules//shell/test:script',
-    name: ['test_helloworld'],
-    test: ['test_helloworld.sh'],
+    name: 'test_helloworld',
+    test: 'test_helloworld.sh',
     deps: ['//:helloworld'],
   },
 ...
