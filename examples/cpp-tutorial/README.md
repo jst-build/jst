@@ -236,7 +236,7 @@ One of the supported variables is `DEBUG`, which is not set by default. Setting
 it to a non-empty map will result in a debug build.
 
 ```sh
-$ jst build src helloworld -D'{"DEBUG":{"ENABLE":true}}' -v
+$ jst build //src:helloworld -D'{"DEBUG":{"ENABLE":true}}' -v
 ```
 
 The `-v` flag shows that the compile command now contains debug flags
@@ -246,7 +246,7 @@ Similarly, the variables `TARGET_ARCH` and toolchain `FAMILY` must be specified
 for cross-compilation, according to the same [General Configuration](https://github.com/jst-build/toolchains-cc/blob/system/README.md#general-configuration) section.
 
 ```sh
-$ jst build src helloworld -D'{"TARGET_ARCH":"arm64","TOOLCHAIN_CONFIG":{"FAMILY":"gnu"}}' -v
+$ jst build //src:helloworld -D'{"TARGET_ARCH":"arm64","TOOLCHAIN_CONFIG":{"FAMILY":"gnu"}}' -v
 ```
 
 Again, the `-v` flag shows that the executed compile and linker commands are
@@ -326,7 +326,7 @@ You can see that the build succeeds, now with four processed actions in total.
 Of course, you can also build the `libgreet` target separately.
 
 ``` sh
-$ jst build src libgreet -s
+$ jst build //src:libgreet -s
 ```
 
 > Note: the flag `-s` will also print *runfiles*, e.g., public headers.
@@ -403,7 +403,7 @@ project-wide compile flags using the fields `ADD_CFLAGS` and `ADD_CXXFLAGS`.
 Now build the `helloworld` target again with the verbose flag `-v`.
 
 ``` sh
-$ jst build src helloworld -v
+$ jst build //src:helloworld -v
 ```
 
 The produced output reveals that the compile flags `[..., "-std=c++14", "-Wall",
@@ -505,7 +505,7 @@ test report from running the binary test.
 Now build the test report and print the `stdout` artifact.
 
 ``` sh
-$ jst build test test_libgreet -P stdout
+$ jst build //test:test_libgreet -P stdout
 ```
 
 From the output you should see that the test was run successfully.
@@ -545,7 +545,7 @@ targets listed as dependencies in field `deps`, the binary target
 Now build the test report and print the `stdout` artifact.
 
 ``` sh
-$ jst build test test_helloworld -P stdout
+$ jst build //test:test_helloworld -P stdout
 ```
 
 From the output you should see that the test was run successfully.
@@ -692,7 +692,7 @@ The target `libgreet` was modified to honor the configuration variable
 `private-deps` are specified. Try building `helloworld` with this variable:
 
 ``` sh
-$ jst build src helloworld -D'{"USE_FMTLIB":true}' -v
+$ jst build //src:helloworld -D'{"USE_FMTLIB":true}' -v
 ```
 
 You can see that `libfmt.a` was built and added to the final command for linking
@@ -784,7 +784,7 @@ building this target.
 Now add `gtest//:gtest_main` to the `test_libgreet` target and run the test:
 
 ``` sh
-$ jst build test test_libgreet -P stdout
+$ jst build //test:test_libgreet -P stdout
 ```
 
 From the `stdout` artifact of the produced test report, you can see that `gtest`
